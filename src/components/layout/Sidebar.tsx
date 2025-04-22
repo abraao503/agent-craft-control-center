@@ -2,7 +2,8 @@ import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, Bot, MessageSquare, Settings, LogOut } from 'lucide-react';
+import { Bot, MessageSquare, Settings, LogOut, LayoutDashboard } from 'lucide-react';
+import { ThemeToggle } from '@/components/theme/ThemeToggle';
 
 const Sidebar = () => {
   const location = useLocation();
@@ -13,19 +14,22 @@ const Sidebar = () => {
   };
 
   return (
-    <div className="w-64 bg-white border-r border-gray-200 h-screen flex flex-col">
-      <div className="p-4 border-b">
+    <div className="w-64 bg-background border-r border-border h-screen flex flex-col">
+      <div className="p-4 border-b border-border">
         <Link to="/" className="flex items-center space-x-2">
           <div className="w-8 h-8 bg-primary rounded-md flex items-center justify-center">
-            <Bot className="w-5 h-5 text-white" />
+            <Bot className="w-5 h-5 text-primary-foreground" />
           </div>
           <span className="text-lg font-bold">AgentCraft</span>
         </Link>
       </div>
       
-      <div className="p-4">
-        <p className="text-sm text-gray-500 mb-1">Logged in as</p>
-        <p className="font-medium truncate">{user?.name}</p>
+      <div className="p-4 flex justify-between items-center border-b border-border">
+        <div>
+          <p className="text-sm text-muted-foreground mb-1">Logged in as</p>
+          <p className="font-medium truncate">{user?.name}</p>
+        </div>
+        <ThemeToggle />
       </div>
       
       <nav className="flex-1 p-4 space-y-2">
@@ -70,7 +74,7 @@ const Sidebar = () => {
         </Link>
       </nav>
       
-      <div className="p-4 border-t mt-auto">
+      <div className="p-4 border-t border-border mt-auto">
         <Button 
           variant="ghost" 
           className="w-full justify-start text-red-500 hover:text-red-700 hover:bg-red-50"
