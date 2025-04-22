@@ -1,8 +1,7 @@
-
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Robot, MessageSquare, Activity, Users } from 'lucide-react';
+import { Bot, MessageSquare, Activity, Users } from 'lucide-react';
 import { AGENTS, WHATSAPP_INTEGRATIONS } from '@/services/mockData';
 
 const DashboardCards = () => {
@@ -18,7 +17,7 @@ const DashboardCards = () => {
       <Card>
         <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
           <CardTitle className="text-sm font-medium">Total Agents</CardTitle>
-          <Robot className="w-4 h-4 text-muted-foreground" />
+          <Bot className="w-4 h-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{totalAgents}</div>

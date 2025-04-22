@@ -1,9 +1,8 @@
-
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, Robot, MessageSquare, Settings, LogOut } from 'lucide-react';
+import { LayoutDashboard, Bot, MessageSquare, Settings, LogOut } from 'lucide-react';
 
 const Sidebar = () => {
   const location = useLocation();
@@ -18,7 +17,7 @@ const Sidebar = () => {
       <div className="p-4 border-b">
         <Link to="/" className="flex items-center space-x-2">
           <div className="w-8 h-8 bg-primary rounded-md flex items-center justify-center">
-            <Robot className="w-5 h-5 text-white" />
+            <Bot className="w-5 h-5 text-white" />
           </div>
           <span className="text-lg font-bold">AgentCraft</span>
         </Link>
@@ -45,7 +44,7 @@ const Sidebar = () => {
             variant="ghost" 
             className={cn("w-full justify-start", isActive('/agents') && "bg-accent text-primary")}
           >
-            <Robot className="mr-2 h-5 w-5" />
+            <Bot className="mr-2 h-5 w-5" />
             Agents
           </Button>
         </Link>

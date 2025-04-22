@@ -1,8 +1,7 @@
-
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Robot, MessageSquare, Settings, MessageCircleQuestion } from 'lucide-react';
+import { Robot, MessageSquare, Settings, MessageCircleQuestion, Bot } from 'lucide-react';
 
 const QuickActions = () => {
   return (
@@ -17,7 +16,7 @@ const QuickActions = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Link to="/agents/new">
             <Button variant="outline" className="w-full justify-start">
-              <Robot className="mr-2 h-5 w-5" />
+              <Bot className="mr-2 h-5 w-5" />
               Create Agent
             </Button>
           </Link>
