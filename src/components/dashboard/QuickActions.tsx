@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Robot, MessageSquare, Settings, MessageCircleQuestion, Bot } from 'lucide-react';
+import { Bot, MessageSquare, Settings, MessageCircleQuestion } from 'lucide-react';
 
 const QuickActions = () => {
   return (
