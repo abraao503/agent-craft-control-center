@@ -1,4 +1,3 @@
-
 import { Agent } from '@/types/agent';
 import { WhatsAppIntegration } from '@/types/whatsapp';
 
@@ -137,7 +136,42 @@ export let WHATSAPP_INTEGRATIONS: WhatsAppIntegration[] = [
   }
 ];
 
-// Helper functions to manage mock data
+// Mock content data
+export let CONTENTS: Content[] = [
+  {
+    id: 'c1',
+    name: 'Product Manual',
+    fileId: 'file-manual.pdf',
+    fileType: 'pdf',
+    uploadedAt: new Date('2024-01-15'),
+  },
+  {
+    id: 'c2',
+    name: 'FAQ Document',
+    fileId: 'file-faq.txt',
+    fileType: 'txt',
+    uploadedAt: new Date('2024-02-20'),
+  },
+];
+
+export const addContent = (name: string, fileId: string, fileType: 'pdf' | 'txt') => {
+  const newContent = {
+    id: Math.random().toString(36).substring(2, 9),
+    name,
+    fileId,
+    fileType,
+    uploadedAt: new Date(),
+  };
+  
+  CONTENTS.push(newContent);
+  return newContent;
+};
+
+export const deleteContent = (id: string) => {
+  CONTENTS = CONTENTS.filter(content => content.id !== id);
+  return true;
+};
+
 export const addAgent = (agent: Omit<Agent, 'id' | 'createdAt' | 'updatedAt'>) => {
   const newAgent: Agent = {
     ...agent,

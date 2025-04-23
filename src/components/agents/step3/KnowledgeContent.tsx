@@ -1,11 +1,16 @@
 
 import { useState } from 'react';
 import { AgentFormData } from '@/types/agent';
+import { Content } from '@/types/content';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { X, Plus, Upload } from 'lucide-react';
+import { Card } from '@/components/ui/card';
+import { X, Upload, FileText } from 'lucide-react';
+import { CONTENTS, addContent } from '@/services/mockData';
+import { format } from 'date-fns';
+import { useToast } from '@/components/ui/use-toast';
 
 interface KnowledgeContentProps {
   formData: AgentFormData;
@@ -13,36 +18,61 @@ interface KnowledgeContentProps {
 }
 
 const KnowledgeContent = ({ formData, updateFormData }: KnowledgeContentProps) => {
-  const [newContent, setNewContent] = useState('');
+  const [newContentName, setNewContentName] = useState('');
+  const { toast } = useToast();
 
-  const addContent = () => {
-    if (newContent.trim() === '') return;
-    
-    const updatedContents = [...formData.contentsIds, newContent.trim()];
-    updateFormData({ contentsIds: updatedContents });
-    setNewContent('');
+  const handleContentSelect = (contentId: string) => {
+    if (formData.contentsIds.includes(contentId)) {
+      removeContent(contentId);
+    } else {
+      const updatedContents = [...formData.contentsIds, contentId];
+      updateFormData({ contentsIds: updatedContents });
+    }
   };
 
-  const removeContent = (index: number) => {
-    const updatedContents = [...formData.contentsIds];
-    updatedContents.splice(index, 1);
+  const removeContent = (contentId: string) => {
+    const updatedContents = formData.contentsIds.filter(id => id !== contentId);
     updateFormData({ contentsIds: updatedContents });
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
     
-    // In a real app, you would upload these files to storage and get back content IDs
-    const newContents = [...formData.contentsIds];
+    const fileType = file.name.toLowerCase().endsWith('.pdf') ? 'pdf' : 'txt';
+    if (fileType !== 'pdf' && fileType !== 'txt') {
+      toast({
+        title: "Invalid file type",
+        description: "Only PDF and TXT files are supported.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!newContentName.trim()) {
+      toast({
+        title: "Content name required",
+        description: "Please provide a name for the content before uploading.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Mock file upload - in real app this would upload to storage
+    const newContent = addContent(newContentName.trim(), `file-${file.name}`, fileType);
     
-    Array.from(files).forEach(file => {
-      // Using file name as a mock content ID
-      newContents.push(`file-${file.name}`);
+    // Add the new content ID to the agent's contents
+    const updatedContents = [...formData.contentsIds, newContent.id];
+    updateFormData({ contentsIds: updatedContents });
+    
+    // Reset form
+    setNewContentName('');
+    e.target.value = '';
+    
+    toast({
+      title: "Content uploaded successfully",
+      description: `${newContent.name} has been added to your knowledge base.`
     });
-    
-    updateFormData({ contentsIds: newContents });
-    e.target.value = ''; // Reset input
   };
 
   return (
@@ -50,78 +80,105 @@ const KnowledgeContent = ({ formData, updateFormData }: KnowledgeContentProps) =
       <div className="mb-6">
         <h3 className="text-lg font-medium mb-2">Knowledge Content</h3>
         <p className="text-sm text-muted-foreground">
-          Add documents, articles, FAQs, or other content that your agent can use to answer questions.
+          Select existing content or upload new files for your agent to use as knowledge sources.
         </p>
       </div>
 
       <div className="space-y-6">
-        <div className="border rounded-lg p-4">
-          <Label htmlFor="upload" className="block mb-2">Upload Files</Label>
-          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-            <Upload className="mx-auto h-12 w-12 text-gray-400" />
-            <p className="mt-2 text-sm text-muted-foreground">
-              Drag and drop files here, or click to select files
-            </p>
+        <Card className="p-4">
+          <Label className="block mb-4">Upload New Content</Label>
+          <div className="space-y-4">
             <Input
-              id="upload"
-              type="file"
-              multiple
-              className="hidden"
-              onChange={handleFileChange}
+              placeholder="Content name"
+              value={newContentName}
+              onChange={(e) => setNewContentName(e.target.value)}
             />
-            <Button 
-              variant="outline" 
-              onClick={() => document.getElementById('upload')?.click()}
-              className="mt-4"
-            >
-              Select Files
-            </Button>
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+              <Upload className="mx-auto h-12 w-12 text-gray-400" />
+              <p className="mt-2 text-sm text-muted-foreground">
+                Upload PDF or TXT files (max 10MB)
+              </p>
+              <Input
+                id="upload"
+                type="file"
+                accept=".pdf,.txt"
+                className="hidden"
+                onChange={handleFileUpload}
+              />
+              <Button 
+                variant="outline" 
+                onClick={() => document.getElementById('upload')?.click()}
+                className="mt-4"
+              >
+                Select File
+              </Button>
+            </div>
           </div>
-        </div>
+        </Card>
 
-        <div className="space-y-2">
-          <Label htmlFor="content">Add Content ID manually</Label>
-          <div className="flex space-x-2">
-            <Input
-              id="content"
-              placeholder="Enter content ID or URL"
-              value={newContent}
-              onChange={(e) => setNewContent(e.target.value)}
-            />
-            <Button 
-              variant="outline" 
-              onClick={addContent}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Add
-            </Button>
+        <Card className="p-4">
+          <Label className="block mb-4">Available Content</Label>
+          <div className="space-y-2">
+            {CONTENTS.map((content) => (
+              <div
+                key={content.id}
+                className="flex items-center justify-between p-2 rounded-md hover:bg-accent cursor-pointer"
+                onClick={() => handleContentSelect(content.id)}
+              >
+                <div className="flex items-center gap-3">
+                  <FileText className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <p className="font-medium">{content.name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {content.fileType.toUpperCase()} • {format(content.uploadedAt, 'MMM d, yyyy')}
+                    </p>
+                  </div>
+                </div>
+                <Badge
+                  variant={formData.contentsIds.includes(content.id) ? "default" : "outline"}
+                  className="ml-2"
+                >
+                  {formData.contentsIds.includes(content.id) ? "Selected" : "Select"}
+                </Badge>
+              </div>
+            ))}
+            {CONTENTS.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                No content available. Upload your first file above.
+              </p>
+            )}
           </div>
-        </div>
+        </Card>
 
         <div className="mt-4">
-          <Label className="block mb-2">Current Contents ({formData.contentsIds.length})</Label>
+          <Label className="block mb-2">Selected Content ({formData.contentsIds.length})</Label>
           {formData.contentsIds.length === 0 ? (
             <p className="text-sm text-muted-foreground py-4 text-center border rounded-md">
-              No content added yet
+              No content selected yet
             </p>
           ) : (
             <div className="border rounded-md p-4 space-y-2">
-              {formData.contentsIds.map((content, index) => (
-                <div key={index} className="flex justify-between items-center">
-                  <Badge variant="secondary" className="flex-grow mr-2 px-3 py-1 h-auto text-left font-normal">
-                    {content}
-                  </Badge>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={() => removeContent(index)}
-                    className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0"
-                  >
-                    <X className="h-4 w-4" />
-                    <span className="sr-only">Remove</span>
-                  </Button>
-                </div>
-              ))}
+              {formData.contentsIds.map((contentId) => {
+                const content = CONTENTS.find(c => c.id === contentId);
+                if (!content) return null;
+                
+                return (
+                  <div key={contentId} className="flex justify-between items-center">
+                    <Badge variant="secondary" className="flex-grow mr-2 px-3 py-1 h-auto text-left font-normal">
+                      {content.name}
+                    </Badge>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => removeContent(contentId)}
+                      className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0"
+                    >
+                      <X className="h-4 w-4" />
+                      <span className="sr-only">Remove</span>
+                    </Button>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
