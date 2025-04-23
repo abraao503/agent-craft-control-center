@@ -1,5 +1,7 @@
+
 import { Agent } from '@/types/agent';
 import { WhatsAppIntegration } from '@/types/whatsapp';
+import { Content } from '@/types/content';
 
 // Sample AI models
 export const AI_MODELS = [
