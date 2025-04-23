@@ -122,6 +122,19 @@ export let WHATSAPP_INTEGRATIONS: WhatsAppIntegration[] = [
     createdAt: new Date('2023-03-05'),
     updatedAt: new Date('2023-03-05'),
   },
+  {
+    id: '2',
+    name: 'Z-API Integration',
+    provider: 'zapi',
+    phoneNumber: '+55987654321',
+    status: 'active',
+    agentId: '2',
+    instanceApi: 'https://api.z-api.io/instances/xyz123',
+    token: 'secret-token-123',
+    webhookUrl: 'https://yourdomain.com/api/whatsapp/webhook/abc123',
+    createdAt: new Date('2023-07-10'),
+    updatedAt: new Date('2023-07-10'),
+  }
 ];
 
 // Helper functions to manage mock data

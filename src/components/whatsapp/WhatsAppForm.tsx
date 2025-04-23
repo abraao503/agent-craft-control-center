@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { WhatsAppFormData } from '@/types/whatsapp';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AGENTS } from '@/services/mockData';
+import ZapiWebhookForm from './ZapiWebhookForm';
 
 interface WhatsAppFormProps {
   onSubmit: (data: WhatsAppFormData) => void;
@@ -18,6 +19,8 @@ const defaultFormData: WhatsAppFormData = {
   provider: 'twilio',
   phoneNumber: '',
   agentId: '',
+  instanceApi: '',
+  token: '',
 };
 
 const WhatsAppForm = ({ onSubmit, initialData = defaultFormData }: WhatsAppFormProps) => {
@@ -39,6 +42,22 @@ const WhatsAppForm = ({ onSubmit, initialData = defaultFormData }: WhatsAppFormP
 
   const updateFormData = (updates: Partial<WhatsAppFormData>) => {
     setFormData((prev) => ({ ...prev, ...updates }));
+  };
+
+  const generateWebhook = (instanceApi: string, token: string) => {
+    // Generate a webhook URL based on instance API and token
+    // In a real app, this might call an API to register the webhook
+    const webhookId = Math.random().toString(36).substring(2, 15);
+    const webhookUrl = `${window.location.origin}/api/whatsapp/webhook/${webhookId}`;
+    
+    // Update form data with Z-API credentials and webhook
+    updateFormData({
+      instanceApi,
+      token,
+      webhookUrl,
+    });
+    
+    return webhookUrl;
   };
 
   return (
@@ -121,6 +140,16 @@ const WhatsAppForm = ({ onSubmit, initialData = defaultFormData }: WhatsAppFormP
             </p>
           </div>
         </form>
+
+        {formData.provider === 'zapi' && (
+          <ZapiWebhookForm
+            instanceApi={formData.instanceApi || ''}
+            token={formData.token || ''}
+            webhookUrl={formData.webhookUrl}
+            onGenerateWebhook={generateWebhook}
+            onSave={() => {}}
+          />
+        )}
       </CardContent>
       <CardFooter className="flex justify-between">
         <Button variant="outline" type="button">
@@ -128,7 +157,8 @@ const WhatsAppForm = ({ onSubmit, initialData = defaultFormData }: WhatsAppFormP
         </Button>
         <Button 
           onClick={handleSubmit}
-          disabled={isSubmitting || !formData.name || !formData.phoneNumber || !formData.agentId}
+          disabled={isSubmitting || !formData.name || !formData.phoneNumber || !formData.agentId || 
+            (formData.provider === 'zapi' && (!formData.instanceApi || !formData.token || !formData.webhookUrl))}
         >
           {isSubmitting ? "Saving..." : "Save Integration"}
         </Button>

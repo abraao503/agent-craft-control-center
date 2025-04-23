@@ -1,6 +1,5 @@
 
 import { WhatsAppIntegration } from '@/types/whatsapp';
-import { Agent } from '@/types/agent';
 import {
   Card,
   CardContent,
@@ -11,8 +10,10 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Edit, Trash2 } from 'lucide-react';
+import { Edit, Trash2, Copy, Webhook } from 'lucide-react';
 import { AGENTS } from '@/services/mockData';
+import { useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
 
 interface WhatsAppIntegrationCardProps {
   integration: WhatsAppIntegration;
@@ -21,6 +22,8 @@ interface WhatsAppIntegrationCardProps {
 
 const WhatsAppIntegrationCard = ({ integration, onDelete }: WhatsAppIntegrationCardProps) => {
   const agent = AGENTS.find(a => a.id === integration.agentId);
+  const [copied, setCopied] = useState(false);
+  const { toast } = useToast();
   
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -43,6 +46,18 @@ const WhatsAppIntegrationCard = ({ integration, onDelete }: WhatsAppIntegrationC
         return 'Z-API';
       default:
         return 'Other';
+    }
+  };
+
+  const copyWebhookToClipboard = () => {
+    if (integration.webhookUrl) {
+      navigator.clipboard.writeText(integration.webhookUrl);
+      setCopied(true);
+      toast({
+        title: "Copied to clipboard",
+        description: "The webhook URL has been copied to your clipboard.",
+      });
+      setTimeout(() => setCopied(false), 2000);
     }
   };
 
@@ -73,6 +88,28 @@ const WhatsAppIntegrationCard = ({ integration, onDelete }: WhatsAppIntegrationC
             <span className="font-medium text-foreground">Created:</span>{' '}
             {new Date(integration.createdAt).toLocaleDateString()}
           </p>
+          
+          {integration.provider === 'zapi' && integration.webhookUrl && (
+            <div className="pt-2">
+              <div className="flex items-center gap-1 mb-1">
+                <Webhook className="h-3 w-3" />
+                <span className="font-medium text-foreground">Webhook URL:</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="truncate text-xs font-mono bg-gray-50 p-1 rounded border flex-grow">
+                  {integration.webhookUrl}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-shrink-0 h-6 w-6 p-0"
+                  onClick={copyWebhookToClipboard}
+                >
+                  <Copy className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </CardContent>
       <CardFooter className="pt-2 flex justify-end">

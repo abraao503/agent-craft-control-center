@@ -8,6 +8,10 @@ export interface WhatsAppIntegration {
   agentId: string;
   createdAt: Date;
   updatedAt: Date;
+  // Z-API specific fields
+  instanceApi?: string;
+  token?: string;
+  webhookUrl?: string;
 }
 
 export interface WhatsAppFormData {
@@ -15,4 +19,8 @@ export interface WhatsAppFormData {
   provider: 'twilio' | 'zapi' | 'other';
   phoneNumber: string;
   agentId: string;
+  // Z-API specific fields
+  instanceApi?: string;
+  token?: string;
+  webhookUrl?: string;
 }
