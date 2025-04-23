@@ -15,6 +15,7 @@ import WhatsAppIntegrationsPage from "./pages/WhatsAppIntegrationsPage";
 import CreateWhatsAppIntegrationPage from "./pages/CreateWhatsAppIntegrationPage";
 import SettingsPage from "./pages/SettingsPage";
 import NotFound from "./pages/NotFound";
+import ContentManagementPage from "./pages/ContentManagementPage";
 
 const queryClient = new QueryClient();
 
@@ -36,6 +37,7 @@ const App = () => (
               <Route path="/integrations" element={<WhatsAppIntegrationsPage />} />
               <Route path="/integrations/new" element={<CreateWhatsAppIntegrationPage />} />
               <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/contents" element={<ContentManagementPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
