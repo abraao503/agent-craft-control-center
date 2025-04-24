@@ -1,6 +1,6 @@
 import { Agent, AIModel, CustomField, Language, TimeZone } from "@/types/agent";
 import { Content } from "@/types/content";
-import { WhatsAppIntegration } from "@/types/whatsapp";
+import { WhatsAppIntegration, WhatsAppFormData } from "@/types/whatsapp";
 
 // Mock Data
 export const AI_MODELS: AIModel[] = [
@@ -79,7 +79,7 @@ export let AGENTS: Agent[] = [
   },
 ];
 
-export const CONTENTS: Content[] = [
+export let CONTENTS: Content[] = [
   {
     id: "content-1",
     name: "Product Catalog",
@@ -103,7 +103,7 @@ export const CONTENTS: Content[] = [
   },
 ];
 
-export const WHATSAPP_INTEGRATIONS: WhatsAppIntegration[] = [
+export let WHATSAPP_INTEGRATIONS: WhatsAppIntegration[] = [
   {
     id: "whatsapp-1",
     agentId: "agent-1",
@@ -160,6 +160,22 @@ export const addContent = (name: string, fileId: string, fileType: "pdf" | "txt"
   return newContent;
 };
 
+export const deleteContent = (id: string): void => {
+  CONTENTS = CONTENTS.filter(content => content.id !== id);
+};
+
+export const addWhatsAppIntegration = (data: WhatsAppFormData): WhatsAppIntegration => {
+  const newIntegration: WhatsAppIntegration = {
+    id: `whatsapp-${WHATSAPP_INTEGRATIONS.length + 1}`,
+    agentId: data.agentId,
+    phoneNumber: data.phoneNumber,
+    apiKey: "generated-" + Math.random().toString(36).substring(2, 10),
+    createdAt: new Date(),
+  };
+  WHATSAPP_INTEGRATIONS.push(newIntegration);
+  return newIntegration;
+};
+
 export const deleteWhatsAppIntegration = (id: string): void => {
-  WHATSAPP_INTEGRATIONS.filter(integration => integration.id !== id);
+  WHATSAPP_INTEGRATIONS = WHATSAPP_INTEGRATIONS.filter(integration => integration.id !== id);
 };

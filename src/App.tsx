@@ -12,6 +12,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import AgentsPage from "./pages/AgentsPage";
 import CreateAgentPage from "./pages/CreateAgentPage";
+import EditAgentPage from "./pages/EditAgentPage";
 import AgentDetailsPage from "./pages/AgentDetailsPage";
 import WhatsAppIntegrationsPage from "./pages/WhatsAppIntegrationsPage";
 import CreateWhatsAppIntegrationPage from "./pages/CreateWhatsAppIntegrationPage";
