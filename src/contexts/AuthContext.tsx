@@ -1,5 +1,5 @@
 
-import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { AuthContextType, User } from '@/types/auth';
 import { useToast } from '@/components/ui/use-toast';
 
