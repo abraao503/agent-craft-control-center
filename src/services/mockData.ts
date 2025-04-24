@@ -37,12 +37,15 @@ export let AGENTS: Agent[] = [
     initialMessage: "Hello! How can I assist you today?",
     iaModelId: "gpt-4o",
     prompt: {
-      description: "A helpful customer support agent that assists users with product inquiries.",
+      description:
+        "A helpful customer support agent that assists users with product inquiries.",
       goal: "Help users find the right product for their needs and resolve any issues.",
-      habilities: "Product knowledge, troubleshooting, empathy, clear communication.",
+      habilities:
+        "Product knowledge, troubleshooting, empathy, clear communication.",
       companyName: "Acme Inc.",
       companySite: "https://www.example.com",
-      companyDescription: "Acme Inc. is a leading provider of innovative solutions for...",
+      companyDescription:
+        "Acme Inc. is a leading provider of innovative solutions for...",
       companySector: "Technology",
     },
     contentsIds: ["content-1", "content-2"],
@@ -61,12 +64,15 @@ export let AGENTS: Agent[] = [
     initialMessage: "Hi there! Looking for something special today?",
     iaModelId: "gemini-1.5-pro",
     prompt: {
-      description: "A sales assistant agent that helps users discover and purchase products.",
+      description:
+        "A sales assistant agent that helps users discover and purchase products.",
       goal: "Guide users through the product catalog and assist them in making a purchase.",
-      habilities: "Product knowledge, sales techniques, persuasion, clear communication.",
+      habilities:
+        "Product knowledge, sales techniques, persuasion, clear communication.",
       companyName: "Acme Inc.",
       companySite: "https://www.example.com",
-      companyDescription: "Acme Inc. is a leading provider of innovative solutions for...",
+      companyDescription:
+        "Acme Inc. is a leading provider of innovative solutions for...",
       companySector: "Technology",
     },
     contentsIds: ["content-3"],
@@ -105,16 +111,23 @@ export let CONTENTS: Content[] = [
 
 export let WHATSAPP_INTEGRATIONS: WhatsAppIntegration[] = [
   {
-    id: "whatsapp-1",
+    id: "2",
     agentId: "agent-1",
     phoneNumber: "+15551234567",
     apiKey: "abcdef123456",
     createdAt: new Date("2024-02-01T10:00:00.000Z"),
+    name: "Z-API Integration",
+    provider: "zapi",
+    status: "active",
+    instanceApi: "https://api.z-api.io/instances/xyz123",
+    webhookUrl: "https://yourdomain.com/api/whatsapp/webhook/abc123",
   },
 ];
 
 // Mock API Functions
-export const addAgent = (data: Omit<Agent, 'id' | 'createdAt' | 'updatedAt'>): Agent => {
+export const addAgent = (
+  data: Omit<Agent, "id" | "createdAt" | "updatedAt">
+): Agent => {
   const newAgent: Agent = {
     id: `agent-${AGENTS.length + 1}`,
     ...data,
@@ -125,9 +138,12 @@ export const addAgent = (data: Omit<Agent, 'id' | 'createdAt' | 'updatedAt'>): A
   return newAgent;
 };
 
-export const updateAgent = (id: string, data: Omit<Agent, 'id' | 'createdAt' | 'updatedAt'>): Agent => {
-  const index = AGENTS.findIndex(a => a.id === id);
-  if (index === -1) throw new Error('Agent not found');
+export const updateAgent = (
+  id: string,
+  data: Omit<Agent, "id" | "createdAt" | "updatedAt">
+): Agent => {
+  const index = AGENTS.findIndex((a) => a.id === id);
+  if (index === -1) throw new Error("Agent not found");
 
   const updatedAgent: Agent = {
     ...data,
@@ -141,14 +157,20 @@ export const updateAgent = (id: string, data: Omit<Agent, 'id' | 'createdAt' | '
 };
 
 export const deleteAgent = (id: string): void => {
-  AGENTS = AGENTS.filter(agent => agent.id !== id);
+  AGENTS = AGENTS.filter((agent) => agent.id !== id);
   // Also delete any associated WhatsApp integrations
-  WHATSAPP_INTEGRATIONS.filter(integration => integration.agentId !== id).forEach(integration => {
+  WHATSAPP_INTEGRATIONS.filter(
+    (integration) => integration.agentId !== id
+  ).forEach((integration) => {
     deleteWhatsAppIntegration(integration.id);
   });
 };
 
-export const addContent = (name: string, fileId: string, fileType: "pdf" | "txt"): Content => {
+export const addContent = (
+  name: string,
+  fileId: string,
+  fileType: "pdf" | "txt"
+): Content => {
   const newContent: Content = {
     id: `content-${CONTENTS.length + 1}`,
     name,
@@ -161,21 +183,32 @@ export const addContent = (name: string, fileId: string, fileType: "pdf" | "txt"
 };
 
 export const deleteContent = (id: string): void => {
-  CONTENTS = CONTENTS.filter(content => content.id !== id);
+  CONTENTS = CONTENTS.filter((content) => content.id !== id);
 };
 
-export const addWhatsAppIntegration = (data: WhatsAppFormData): WhatsAppIntegration => {
+export const addWhatsAppIntegration = (
+  data: WhatsAppFormData
+): WhatsAppIntegration => {
   const newIntegration: WhatsAppIntegration = {
     id: `whatsapp-${WHATSAPP_INTEGRATIONS.length + 1}`,
     agentId: data.agentId,
     phoneNumber: data.phoneNumber,
     apiKey: "generated-" + Math.random().toString(36).substring(2, 10),
     createdAt: new Date(),
+    name: data.name || "WhatsApp Integration",
+    provider: data.provider as "twilio" | "zapi" | "other",
+    status: "pending",
+    instanceApi: "https://api.example.com/instances/xyz123",
+    webhookUrl: `https://yourdomain.com/api/whatsapp/webhook/${Math.random()
+      .toString(36)
+      .substring(2, 10)}`,
   };
   WHATSAPP_INTEGRATIONS.push(newIntegration);
   return newIntegration;
 };
 
 export const deleteWhatsAppIntegration = (id: string): void => {
-  WHATSAPP_INTEGRATIONS = WHATSAPP_INTEGRATIONS.filter(integration => integration.id !== id);
+  WHATSAPP_INTEGRATIONS = WHATSAPP_INTEGRATIONS.filter(
+    (integration) => integration.id !== id
+  );
 };
