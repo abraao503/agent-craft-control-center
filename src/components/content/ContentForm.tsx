@@ -1,16 +1,22 @@
-
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { z } from 'zod';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
-import { CONTENTS, addContent } from '@/services/mockData';
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { CONTENTS, addContent } from "@/services/mockData";
 
 const formSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
+  name: z.string().min(1, "Name is required"),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -24,12 +30,14 @@ const ContentForm = ({ contentId, onComplete }: ContentFormProps) => {
   const { toast } = useToast();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-  const existingContent = contentId ? CONTENTS.find(c => c.id === contentId) : null;
+  const existingContent = contentId
+    ? CONTENTS.find((c) => c.id === contentId)
+    : null;
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: existingContent?.name || '',
+      name: existingContent?.name || "",
     },
   });
 
@@ -38,13 +46,13 @@ const ContentForm = ({ contentId, onComplete }: ContentFormProps) => {
     if (!file) return;
 
     const fileType = file.name.toLowerCase();
-    if (!fileType.endsWith('.pdf') && !fileType.endsWith('.txt')) {
+    if (!fileType.endsWith(".pdf") && !fileType.endsWith(".txt")) {
       toast({
         title: "Invalid file type",
         description: "Only PDF and TXT files are supported",
         variant: "destructive",
       });
-      e.target.value = '';
+      e.target.value = "";
       return;
     }
 
@@ -61,8 +69,10 @@ const ContentForm = ({ contentId, onComplete }: ContentFormProps) => {
       return;
     }
 
-    const fileType = (selectedFile?.name.toLowerCase().endsWith('.pdf') ? 'pdf' : 'txt') as 'pdf' | 'txt';
-    
+    const fileType = (
+      selectedFile?.name.toLowerCase().endsWith(".pdf") ? "pdf" : "txt"
+    ) as "pdf" | "txt";
+
     // In a real app, we would upload the file to storage here
     // For now, we'll just create the content with a mock fileId
     const newContent = addContent(
@@ -73,7 +83,9 @@ const ContentForm = ({ contentId, onComplete }: ContentFormProps) => {
 
     toast({
       title: contentId ? "Content updated" : "Content created",
-      description: `${newContent.name} has been ${contentId ? 'updated' : 'saved'} successfully`,
+      description: `${newContent.name} has been ${
+        contentId ? "updated" : "saved"
+      } successfully`,
     });
 
     onComplete();
@@ -103,7 +115,7 @@ const ContentForm = ({ contentId, onComplete }: ContentFormProps) => {
               type="file"
               accept=".pdf,.txt"
               onChange={handleFileChange}
-              className="file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
+              className="file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground hover:file:bg-primary/90 pb-10"
             />
           </FormControl>
           <p className="text-sm text-muted-foreground">
@@ -113,7 +125,7 @@ const ContentForm = ({ contentId, onComplete }: ContentFormProps) => {
 
         <div className="flex justify-end gap-4">
           <Button type="submit">
-            {contentId ? 'Save Changes' : 'Create Content'}
+            {contentId ? "Save Changes" : "Create Content"}
           </Button>
         </div>
       </form>
