@@ -35,6 +35,7 @@ const App = () => (
               <Route path="/signup" element={<Signup />} />
               <Route path="/agents" element={<AgentsPage />} />
               <Route path="/agents/new" element={<CreateAgentPage />} />
+              <Route path="/agents/edit/:id" element={<EditAgentPage />} />
               <Route path="/agents/:id" element={<AgentDetailsPage />} />
               <Route path="/integrations" element={<WhatsAppIntegrationsPage />} />
               <Route path="/integrations/new" element={<CreateWhatsAppIntegrationPage />} />
