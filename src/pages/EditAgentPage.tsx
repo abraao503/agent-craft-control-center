@@ -11,30 +11,28 @@ import CustomFields from '@/components/agents/step4/CustomFields';
 import { AgentFormData } from '@/types/agent';
 import { AGENTS, updateAgent } from '@/services/mockData';
 import { useToast } from '@/hooks/use-toast';
-import { useLanguage } from '@/contexts/LanguageContext';
+
+const STEPS = [
+  'Basic Information',
+  'Prompt & Context',
+  'Knowledge Content',
+  'Custom Fields',
+];
 
 const EditAgentPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { t } = useLanguage();
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [formData, setFormData] = useState<AgentFormData | null>(null);
-
-  const STEPS = [
-    t('agents.step1'),
-    t('agents.step2'),
-    t('agents.step3'),
-    t('agents.step4'),
-  ];
 
   useEffect(() => {
     const agent = AGENTS.find(a => a.id === id);
     if (!agent) {
       toast({
-        title: t("common.error"),
-        description: t("agents.noAgents"),
+        title: "Agent not found",
+        description: "The requested agent could not be found.",
         variant: "destructive"
       });
       navigate('/agents');
@@ -61,7 +59,7 @@ const EditAgentPage = () => {
       customFields: agent.customFields,
     });
     setIsLoading(false);
-  }, [id, navigate, toast, t]);
+  }, [id, navigate, toast]);
 
   const updateFormData = (data: Partial<AgentFormData>) => {
     setFormData(prev => prev ? { ...prev, ...data } : null);
@@ -101,8 +99,8 @@ const EditAgentPage = () => {
     });
 
     toast({
-      title: t("agents.agentUpdated"),
-      description: `${updatedAgent.name} ${t("common.success").toLowerCase()}.`,
+      title: "Agent updated successfully",
+      description: `${updatedAgent.name} has been updated.`,
     });
 
     navigate(`/agents/${id}`);
@@ -148,7 +146,7 @@ const EditAgentPage = () => {
         <div className="flex items-center justify-center h-[60vh]">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4" />
-            <p className="text-muted-foreground">{t("agents.loadingAgent")}</p>
+            <p className="text-muted-foreground">Loading agent data...</p>
           </div>
         </div>
       </MainLayout>
@@ -159,9 +157,9 @@ const EditAgentPage = () => {
     <MainLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">{t('agents.edit')}</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Edit Agent</h1>
           <p className="text-muted-foreground">
-            {t('agents.editDescription')}
+            Update your AI agent's configuration
           </p>
         </div>
 
@@ -176,7 +174,7 @@ const EditAgentPage = () => {
               onClick={prevStep}
               disabled={currentStep === 1}
             >
-              {t('common.previous')}
+              Previous Step
             </Button>
             
             {currentStep < STEPS.length ? (
@@ -184,14 +182,14 @@ const EditAgentPage = () => {
                 onClick={nextStep}
                 disabled={!isStepValid()}
               >
-                {t('common.next')}
+                Next Step
               </Button>
             ) : (
               <Button 
                 onClick={handleSubmit}
                 disabled={!isStepValid()}
               >
-                {t('common.save')}
+                Save Changes
               </Button>
             )}
           </div>

@@ -1,10 +1,7 @@
-
 import { ReactNode } from "react";
 import Sidebar from "./Sidebar";
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
-import { useLanguage } from "@/contexts/LanguageContext";
-import LanguageSwitcher from "@/components/ui/language-switcher";
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -12,7 +9,6 @@ interface MainLayoutProps {
 
 const MainLayout = ({ children }: MainLayoutProps) => {
   const { user, isLoading } = useAuth();
-  const { t } = useLanguage();
 
   if (isLoading) {
     return (
@@ -30,9 +26,6 @@ const MainLayout = ({ children }: MainLayoutProps) => {
     <div className="flex">
       <Sidebar />
       <main className="flex-1 p-6 bg-background max-h-screen overflow-y-auto dark:text-gray-200">
-        <div className="absolute top-4 right-6">
-          <LanguageSwitcher />
-        </div>
         {children}
       </main>
     </div>

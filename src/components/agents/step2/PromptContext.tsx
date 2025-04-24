@@ -3,7 +3,6 @@ import { AgentFormData } from '@/types/agent';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { useLanguage } from '@/contexts/LanguageContext';
 
 interface PromptContextProps {
   formData: AgentFormData;
@@ -11,65 +10,63 @@ interface PromptContextProps {
 }
 
 const PromptContext = ({ formData, updateFormData }: PromptContextProps) => {
-  const { t } = useLanguage();
-
   return (
     <div className="form-container">
       <div className="space-y-2">
-        <Label htmlFor="promptDescription">{t('agents.promptDescription')}</Label>
+        <Label htmlFor="promptDescription">Prompt Description</Label>
         <Textarea
           id="promptDescription"
-          placeholder={t('agents.promptDescriptionPlaceholder')}
+          placeholder="A helpful customer support agent that assists users with product inquiries..."
           value={formData.promptDescription}
           onChange={(e) => updateFormData({ promptDescription: e.target.value })}
           required
           className="min-h-[100px]"
         />
         <p className="text-sm text-muted-foreground">
-          {t('agents.promptDescriptionHelp')}
+          Describe your agent's personality and general purpose.
         </p>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="goal">{t('agents.goal')}</Label>
+        <Label htmlFor="goal">Main Goal</Label>
         <Textarea
           id="goal"
-          placeholder={t('agents.goalPlaceholder')}
+          placeholder="Help users find the right product for their needs and resolve any issues..."
           value={formData.goal}
           onChange={(e) => updateFormData({ goal: e.target.value })}
           required
         />
         <p className="text-sm text-muted-foreground">
-          {t('agents.goalHelp')}
+          What should your agent help users accomplish?
         </p>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="habilities">{t('agents.skills')}</Label>
+        <Label htmlFor="habilities">Skills</Label>
         <Textarea
           id="habilities"
-          placeholder={t('agents.skillsPlaceholder')}
+          placeholder="Product knowledge, troubleshooting, empathy, clear communication..."
           value={formData.habilities}
           onChange={(e) => updateFormData({ habilities: e.target.value })}
           required
         />
         <p className="text-sm text-muted-foreground">
-          {t('agents.skillsHelp')}
+          List the skills and abilities your agent should demonstrate.
         </p>
       </div>
 
       <div className="py-2 my-4 border-t border-b">
-        <h3 className="text-lg font-medium mb-2">{t('agents.companyInfo')}</h3>
+        <h3 className="text-lg font-medium mb-2">Company Information</h3>
         <p className="text-sm text-muted-foreground mb-4">
-          {t('agents.companyInfoDescription')}
+          Provide details about your company to help your agent represent your brand accurately.
         </p>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="companyName">{t('agents.companyName')}</Label>
+        <Label htmlFor="companyName">Company Name</Label>
         <Input
           id="companyName"
-          placeholder={t('agents.companyNamePlaceholder')}
+          placeholder="Acme Inc."
           value={formData.companyName}
           onChange={(e) => updateFormData({ companyName: e.target.value })}
           required
@@ -77,10 +74,10 @@ const PromptContext = ({ formData, updateFormData }: PromptContextProps) => {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="companySite">{t('agents.companyWebsite')}</Label>
+        <Label htmlFor="companySite">Company Website</Label>
         <Input
           id="companySite"
-          placeholder={t('agents.companyWebsitePlaceholder')}
+          placeholder="https://www.example.com"
           value={formData.companySite}
           onChange={(e) => updateFormData({ companySite: e.target.value })}
           required
@@ -88,10 +85,10 @@ const PromptContext = ({ formData, updateFormData }: PromptContextProps) => {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="companyDescription">{t('agents.companyDescription')}</Label>
+        <Label htmlFor="companyDescription">Company Description</Label>
         <Textarea
           id="companyDescription"
-          placeholder={t('agents.companyDescriptionPlaceholder')}
+          placeholder="Acme Inc. is a leading provider of innovative solutions for..."
           value={formData.companyDescription}
           onChange={(e) => updateFormData({ companyDescription: e.target.value })}
           required
@@ -99,10 +96,10 @@ const PromptContext = ({ formData, updateFormData }: PromptContextProps) => {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="companySector">{t('agents.companySector')}</Label>
+        <Label htmlFor="companySector">Company Sector</Label>
         <Input
           id="companySector"
-          placeholder={t('agents.companySectorPlaceholder')}
+          placeholder="Technology, Healthcare, Education, etc."
           value={formData.companySector}
           onChange={(e) => updateFormData({ companySector: e.target.value })}
           required

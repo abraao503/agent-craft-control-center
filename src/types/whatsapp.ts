@@ -1,4 +1,3 @@
-
 export interface WhatsAppIntegration {
   id: string;
   name: string;
@@ -17,7 +16,4 @@ export interface WhatsAppFormData {
   provider: string;
   phoneNumber: string;
   agentId: string;
-  instanceApi?: string;
-  token?: string;
-  webhookUrl?: string;
 }

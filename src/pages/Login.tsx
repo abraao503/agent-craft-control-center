@@ -2,12 +2,9 @@
 import LoginForm from '@/components/auth/LoginForm';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
-import { useLanguage } from '@/contexts/LanguageContext';
-import LanguageSwitcher from '@/components/ui/language-switcher';
 
 const Login = () => {
   const { user, isLoading } = useAuth();
-  const { t } = useLanguage();
   
   if (isLoading) {
     return (
@@ -23,10 +20,6 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-4">
-      <div className="absolute top-4 right-4">
-        <LanguageSwitcher />
-      </div>
-      
       <div className="w-full max-w-md mb-8 text-center">
         <div className="flex items-center justify-center space-x-2 mb-4">
           <div className="w-10 h-10 bg-primary rounded-md flex items-center justify-center">
@@ -34,18 +27,18 @@ const Login = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714a2.25 2.25 0 01-.659 1.591L9.5 14.5M9.5 14.5v-2.25m5-4.143v5.714a2.25 2.25 0 01-.659 1.591L9.5 14.5m0-2.25v-5.068a2.25 2.25 0 010-4.5" />
             </svg>
           </div>
-          <span className="text-2xl font-bold">{t('app.name')}</span>
+          <span className="text-2xl font-bold">AgentCraft</span>
         </div>
-        <h1 className="text-3xl font-bold">{t('auth.welcomeTo')}</h1>
+        <h1 className="text-3xl font-bold">Welcome to AgentCraft</h1>
         <p className="text-muted-foreground mt-2">
-          {t('auth.loginDescription')}
+          Create, manage, and deploy intelligent agents tailored to your business needs.
         </p>
       </div>
       
       <LoginForm />
       
       <p className="mt-8 text-sm text-muted-foreground">
-        {t('auth.demoLogin')}
+        For demo purposes, you can login with any email address
       </p>
     </div>
   );

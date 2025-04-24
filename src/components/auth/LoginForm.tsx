@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { useLanguage } from '@/contexts/LanguageContext';
 
 const LoginForm = () => {
   const [email, setEmail] = useState('');
@@ -14,7 +13,6 @@ const LoginForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
-  const { t } = useLanguage();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,19 +31,19 @@ const LoginForm = () => {
   return (
     <Card className="w-full max-w-md">
       <CardHeader>
-        <CardTitle className="text-2xl font-bold text-center">{t('auth.welcomeBack')}</CardTitle>
+        <CardTitle className="text-2xl font-bold text-center">Welcome Back</CardTitle>
         <CardDescription className="text-center">
-          {t('auth.loginToAccount')}
+          Login to your account to manage your AI agents
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">{t('common.email')}</Label>
+            <Label htmlFor="email">Email</Label>
             <Input
               id="email"
               type="email"
-              placeholder={t('auth.emailPlaceholder')}
+              placeholder="youremail@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -54,15 +52,15 @@ const LoginForm = () => {
           
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label htmlFor="password">{t('common.password')}</Label>
+              <Label htmlFor="password">Password</Label>
               <Link to="/forgot-password" className="text-sm text-primary hover:underline">
-                {t('auth.forgotPassword')}
+                Forgot password?
               </Link>
             </div>
             <Input
               id="password"
               type="password"
-              placeholder={t('auth.passwordPlaceholder')}
+              placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -80,19 +78,19 @@ const LoginForm = () => {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                {t('auth.loggingIn')}
+                Logging in...
               </span>
             ) : (
-              t('auth.login')
+              'Login'
             )}
           </Button>
         </form>
       </CardContent>
       <CardFooter className="justify-center">
         <p className="text-sm text-muted-foreground">
-          {t('auth.dontHaveAccount')}{' '}
+          Don't have an account?{' '}
           <Link to="/signup" className="text-primary font-medium hover:underline">
-            {t('auth.signup')}
+            Sign up
           </Link>
         </p>
       </CardFooter>
