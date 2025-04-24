@@ -2,9 +2,12 @@
 import SignupForm from '@/components/auth/SignupForm';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
+import { useLanguage } from '@/contexts/LanguageContext';
+import LanguageSwitcher from '@/components/ui/language-switcher';
 
 const Signup = () => {
   const { user, isLoading } = useAuth();
+  const { t } = useLanguage();
   
   if (isLoading) {
     return (
@@ -20,6 +23,10 @@ const Signup = () => {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-4">
+      <div className="absolute top-4 right-4">
+        <LanguageSwitcher />
+      </div>
+      
       <div className="w-full max-w-md mb-8 text-center">
         <div className="flex items-center justify-center space-x-2 mb-4">
           <div className="w-10 h-10 bg-primary rounded-md flex items-center justify-center">
@@ -27,11 +34,11 @@ const Signup = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714a2.25 2.25 0 01-.659 1.591L9.5 14.5M9.5 14.5v-2.25m5-4.143v5.714a2.25 2.25 0 01-.659 1.591L9.5 14.5m0-2.25v-5.068a2.25 2.25 0 010-4.5" />
             </svg>
           </div>
-          <span className="text-2xl font-bold">AgentCraft</span>
+          <span className="text-2xl font-bold">{t('app.name')}</span>
         </div>
-        <h1 className="text-3xl font-bold">Create Your Account</h1>
+        <h1 className="text-3xl font-bold">{t('auth.createAccount')}</h1>
         <p className="text-muted-foreground mt-2">
-          Join AgentCraft to start building your own intelligent agents.
+          {t('auth.createYourAccount')}
         </p>
       </div>
       

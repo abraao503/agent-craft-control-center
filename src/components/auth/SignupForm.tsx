@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 const SignupForm = () => {
   const [name, setName] = useState('');
@@ -16,13 +17,14 @@ const SignupForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { signup } = useAuth();
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Validate passwords
     if (password !== confirmPassword) {
-      setError('Passwords do not match');
+      setError(t('auth.passwordsDoNotMatch'));
       return;
     }
     
@@ -34,7 +36,7 @@ const SignupForm = () => {
       navigate('/');
     } catch (error) {
       console.error('Signup error:', error);
-      setError(error instanceof Error ? error.message : 'An error occurred');
+      setError(error instanceof Error ? error.message : t('common.error'));
     } finally {
       setIsSubmitting(false);
     }
@@ -43,9 +45,9 @@ const SignupForm = () => {
   return (
     <Card className="w-full max-w-md">
       <CardHeader>
-        <CardTitle className="text-2xl font-bold text-center">Create Account</CardTitle>
+        <CardTitle className="text-2xl font-bold text-center">{t('auth.createAccount')}</CardTitle>
         <CardDescription className="text-center">
-          Join AgentCraft to create and manage your AI agents
+          {t('auth.createYourAccount')}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -57,7 +59,7 @@ const SignupForm = () => {
           )}
           
           <div className="space-y-2">
-            <Label htmlFor="name">Full Name</Label>
+            <Label htmlFor="name">{t('auth.fullName')}</Label>
             <Input
               id="name"
               placeholder="John Doe"
@@ -68,11 +70,11 @@ const SignupForm = () => {
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">{t('common.email')}</Label>
             <Input
               id="email"
               type="email"
-              placeholder="youremail@example.com"
+              placeholder={t('auth.emailPlaceholder')}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -80,11 +82,11 @@ const SignupForm = () => {
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password">{t('common.password')}</Label>
             <Input
               id="password"
               type="password"
-              placeholder="••••••••"
+              placeholder={t('auth.passwordPlaceholder')}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -93,11 +95,11 @@ const SignupForm = () => {
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="confirmPassword">Confirm Password</Label>
+            <Label htmlFor="confirmPassword">{t('common.confirmPassword')}</Label>
             <Input
               id="confirmPassword"
               type="password"
-              placeholder="••••••••"
+              placeholder={t('auth.passwordPlaceholder')}
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
@@ -115,19 +117,19 @@ const SignupForm = () => {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                Creating account...
+                {t('auth.creatingAccount')}
               </span>
             ) : (
-              'Create Account'
+              t('auth.createAccount')
             )}
           </Button>
         </form>
       </CardContent>
       <CardFooter className="justify-center">
         <p className="text-sm text-muted-foreground">
-          Already have an account?{' '}
+          {t('auth.alreadyHaveAccount')}{' '}
           <Link to="/login" className="text-primary font-medium hover:underline">
-            Login
+            {t('auth.login')}
           </Link>
         </p>
       </CardFooter>
