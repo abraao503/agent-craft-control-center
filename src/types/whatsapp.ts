@@ -1,19 +1,28 @@
+
 export interface WhatsAppIntegration {
   id: string;
   name: string;
-  agentId: string;
   phoneNumber: string;
-  apiKey: string;
-  createdAt: Date;
-  webhookUrl: string;
-  status: "active" | "inactive" | "pending";
-  provider: "twilio" | "zapi" | "other";
-  instanceApi: string;
+  agentId?: string;
+  apiKey?: string;
+  createdAt?: Date;
+  webhookUrl?: string;
+  status?: 'active' | 'inactive';
+  instanceApi?: string;
+  token?: string;
 }
 
 export interface WhatsAppFormData {
-  name?: string;
-  provider: string;
+  name: string;
   phoneNumber: string;
-  agentId: string;
+  agentId?: string;
+  apiKey?: string;
+  webhookUrl?: string;
+  instanceApi?: string;
+  token?: string;
+}
+
+export interface WhatsAppFilterOption {
+  value: string;
+  label: string;
 }

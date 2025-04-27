@@ -58,7 +58,7 @@ const RecentAgents = () => {
                 </div>
                 <div className="flex items-center space-x-3">
                   <Badge variant="outline">
-                    {agent.iaModelId}
+                    {agent.iaModelName}
                   </Badge>
                   <Link to={`/agents/${agent.id}`}>
                     <Button variant="ghost" size="sm">

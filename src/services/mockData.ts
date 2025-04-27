@@ -1,7 +1,6 @@
 import { Agent, AgentStatus } from "@/types/agent";
 import { Content } from "@/types/content";
 import { WhatsAppIntegration } from "@/types/whatsapp";
-import { IaModel } from "@/types/iaModel";
 import { UploadDocumentResponse } from "@/types/file";
 import { Conversation } from "@/types/conversation";
 
@@ -16,7 +15,7 @@ export const AGENT_STATUSES = [
   },
 ];
 
-export const IA_MODELS: IaModel[] = [
+export const IA_MODELS = [
   {
     id: "ia-model-1",
     name: "GPT-3",
@@ -27,6 +26,23 @@ export const IA_MODELS: IaModel[] = [
   },
 ];
 
+export const AI_MODELS = IA_MODELS;
+
+export const LANGUAGES = [
+  { code: "en-US", name: "English (US)" },
+  { code: "es-ES", name: "Spanish (ES)" },
+  { code: "pt-BR", name: "Portuguese (BR)" },
+];
+
+export const TIME_ZONES = [
+  { value: "America/New_York", label: "Eastern Time (ET)" },
+  { value: "America/Chicago", label: "Central Time (CT)" },
+  { value: "America/Denver", label: "Mountain Time (MT)" },
+  { value: "America/Los_Angeles", label: "Pacific Time (PT)" },
+  { value: "America/Sao_Paulo", label: "Brasilia Time (BRT)" },
+  { value: "Europe/London", label: "Greenwich Mean Time (GMT)" },
+];
+
 export const AGENTS: Agent[] = [
   {
     id: "agent-001",
@@ -34,6 +50,26 @@ export const AGENTS: Agent[] = [
     status: AgentStatus.ACTIVE,
     language: "pt-BR",
     iaModel: IA_MODELS[0],
+    iaModelId: "ia-model-1",
+    iaModelName: "GPT-3",
+    avatar: null,
+    createdAt: new Date("2023-01-15"),
+    updatedAt: new Date("2023-01-15"),
+    internalName: "health-bot",
+    description: "A bot for healthcare information",
+    timeZone: "America/New_York",
+    initialMessage: "Hello! How can I assist with your health questions?",
+    prompt: {
+      description: "Healthcare assistant",
+      goal: "Provide health information",
+      habilities: "Medical knowledge, empathy",
+      companyName: "HealthCo",
+      companySite: "https://healthco.example",
+      companyDescription: "Healthcare provider",
+      companySector: "Healthcare",
+    },
+    contentsIds: [],
+    customFields: [],
     uploadDocuments: [],
   },
   {
@@ -42,6 +78,26 @@ export const AGENTS: Agent[] = [
     status: AgentStatus.INACTIVE,
     language: "en-US",
     iaModel: IA_MODELS[1],
+    iaModelId: "ia-model-2",
+    iaModelName: "GPT-4",
+    avatar: null,
+    createdAt: new Date("2023-02-20"),
+    updatedAt: new Date("2023-02-20"),
+    internalName: "tech-support",
+    description: "Technical support assistant",
+    timeZone: "America/Los_Angeles",
+    initialMessage: "Need tech help? I'm here!",
+    prompt: {
+      description: "Tech support assistant",
+      goal: "Solve technical problems",
+      habilities: "Troubleshooting, patience",
+      companyName: "TechCo",
+      companySite: "https://techco.example",
+      companyDescription: "Tech company",
+      companySector: "Technology",
+    },
+    contentsIds: [],
+    customFields: [],
     uploadDocuments: [],
   },
   {
@@ -50,6 +106,26 @@ export const AGENTS: Agent[] = [
     status: AgentStatus.ACTIVE,
     language: "es-ES",
     iaModel: IA_MODELS[0],
+    iaModelId: "ia-model-1",
+    iaModelName: "GPT-3",
+    avatar: null,
+    createdAt: new Date("2023-03-10"),
+    updatedAt: new Date("2023-03-10"),
+    internalName: "sales-bot",
+    description: "Sales assistant",
+    timeZone: "Europe/London",
+    initialMessage: "¡Hola! ¿Cómo puedo ayudarte hoy?",
+    prompt: {
+      description: "Sales assistant",
+      goal: "Increase sales",
+      habilities: "Persuasion, product knowledge",
+      companyName: "SalesCo",
+      companySite: "https://salesco.example",
+      companyDescription: "Sales company",
+      companySector: "Sales",
+    },
+    contentsIds: [],
+    customFields: [],
     uploadDocuments: [],
   },
   {
@@ -58,50 +134,89 @@ export const AGENTS: Agent[] = [
     status: AgentStatus.ACTIVE,
     language: "pt-BR",
     iaModel: IA_MODELS[0],
+    iaModelId: "ia-model-1",
+    iaModelName: "GPT-3",
+    avatar: null,
+    createdAt: new Date("2023-04-05"),
+    updatedAt: new Date("2023-04-05"),
+    internalName: "customer-service",
+    description: "Customer support assistant",
+    timeZone: "America/Sao_Paulo",
+    initialMessage: "Olá! Como posso ajudar você hoje?",
+    prompt: {
+      description: "Customer service assistant",
+      goal: "Provide excellent support",
+      habilities: "Empathy, communication",
+      companyName: "ServiceCo",
+      companySite: "https://serviceco.example",
+      companyDescription: "Service company",
+      companySector: "Customer Service",
+    },
+    contentsIds: [],
+    customFields: [],
     uploadDocuments: [],
   },
 ];
 
-export const CONTENT: Content[] = [
+export const CONTENT = [
   {
     id: "content-001",
-    title: "Como fazer um bom café",
-    content:
-      "Para fazer um bom café, você precisa de água quente, café de qualidade e um filtro.",
+    name: "Brewing Coffee Guide",
+    type: "file",
+    content: "To make a good coffee, you need hot water, quality coffee, and a filter.",
+    createdAt: new Date("2023-01-10"),
+    updatedAt: new Date("2023-01-10"),
   },
   {
     id: "content-002",
-    title: "Como fazer um bolo de chocolate",
-    content:
-      "Para fazer um bolo de chocolate, você precisa de farinha, açúcar, chocolate em pó, ovos, leite e fermento.",
+    name: "Chocolate Cake Recipe",
+    type: "file",
+    content: "To make a chocolate cake, you need flour, sugar, cocoa powder, eggs, milk, and baking powder.",
+    createdAt: new Date("2023-01-15"),
+    updatedAt: new Date("2023-01-15"),
   },
 ];
+
+export const CONTENTS = CONTENT;
 
 export const WHATSAPP_INTEGRATIONS: WhatsAppIntegration[] = [
   {
     id: "whatsapp-1",
-    name: "WhatsApp da empresa",
+    name: "Company WhatsApp",
     phoneNumber: "+5511999999999",
+    agentId: "agent-001",
+    apiKey: "api-key-1",
+    createdAt: new Date("2023-01-15"),
+    webhookUrl: "https://example.com/webhook/1",
+    status: "active",
+    instanceApi: "instance-1",
+    token: "token-1",
   },
   {
     id: "whatsapp-2",
-    name: "Suporte ao cliente",
+    name: "Customer Support",
     phoneNumber: "+5511999999998",
+    agentId: "agent-002",
+    apiKey: "api-key-2",
+    createdAt: new Date("2023-02-20"),
+    webhookUrl: "https://example.com/webhook/2",
+    status: "active",
+    instanceApi: "instance-2",
+    token: "token-2",
   },
 ];
 
 export const FILES: UploadDocumentResponse[] = [
   {
     id: "file-1",
-    name: "Manual do produto.pdf",
+    name: "Product Manual.pdf",
   },
   {
     id: "file-2",
-    name: "Termos de uso.pdf",
+    name: "Terms of Use.pdf",
   },
 ];
 
-// Mock conversations data
 export const CONVERSATIONS: Conversation[] = [
   {
     id: "conv-001",
@@ -380,6 +495,8 @@ export const CONVERSATIONS: Conversation[] = [
 export const addAgent = (agent: Omit<Agent, "id">): Agent => {
   const newAgent: Agent = {
     id: `agent-${AGENTS.length + 1}`,
+    createdAt: new Date(),
+    updatedAt: new Date(),
     ...agent,
   };
   AGENTS.push(newAgent);
@@ -389,7 +506,7 @@ export const addAgent = (agent: Omit<Agent, "id">): Agent => {
 export const updateAgent = (id: string, updates: Partial<Agent>): Agent | undefined => {
   const agentIndex = AGENTS.findIndex((agent) => agent.id === id);
   if (agentIndex !== -1) {
-    AGENTS[agentIndex] = { ...AGENTS[agentIndex], ...updates };
+    AGENTS[agentIndex] = { ...AGENTS[agentIndex], ...updates, updatedAt: new Date() };
     return AGENTS[agentIndex];
   }
   return undefined;
@@ -405,6 +522,8 @@ export const deleteAgent = (id: string): void => {
 export const addContent = (content: Omit<Content, "id">): Content => {
   const newContent: Content = {
     id: `content-${CONTENT.length + 1}`,
+    createdAt: new Date(),
+    updatedAt: new Date(),
     ...content,
   };
   CONTENT.push(newContent);
@@ -414,13 +533,12 @@ export const addContent = (content: Omit<Content, "id">): Content => {
 export const updateContent = (id: string, updates: Partial<Content>): Content | undefined => {
   const contentIndex = CONTENT.findIndex((content) => content.id === id);
   if (contentIndex !== -1) {
-    CONTENT[contentIndex] = { ...CONTENT[contentIndex], ...updates };
+    CONTENT[contentIndex] = { ...CONTENT[contentIndex], ...updates, updatedAt: new Date() };
     return CONTENT[contentIndex];
   }
   return undefined;
 };
 
-// Function to add a WhatsApp integration
 export const addWhatsAppIntegration = (
   integration: Omit<WhatsAppIntegration, "id">
 ): WhatsAppIntegration => {
@@ -432,7 +550,13 @@ export const addWhatsAppIntegration = (
   return newIntegration;
 };
 
-// Function to delete a content
+export const deleteWhatsAppIntegration = (id: string): void => {
+  const index = WHATSAPP_INTEGRATIONS.findIndex((integration) => integration.id === id);
+  if (index !== -1) {
+    WHATSAPP_INTEGRATIONS.splice(index, 1);
+  }
+};
+
 export const deleteContent = (id: string): void => {
   const index = CONTENT.findIndex((content) => content.id === id);
   if (index !== -1) {

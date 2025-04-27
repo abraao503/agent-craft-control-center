@@ -1,8 +1,8 @@
-
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { 
+import { useState } from "react";
+import { Link } from "react-router-dom";
+import MainLayout from "@/components/layout/MainLayout";
+import { Button } from "@/components/ui/button";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -11,13 +11,12 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import MainLayout from '@/components/layout/MainLayout';
-import WhatsAppIntegrationCard from '@/components/whatsapp/WhatsAppIntegrationCard';
-import { WHATSAPP_INTEGRATIONS, deleteWhatsAppIntegration } from '@/services/mockData';
-import { WhatsAppIntegration } from '@/types/whatsapp';
-import { Plus } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { PlusCircle, Trash } from "lucide-react";
+import WhatsAppIntegrationCard from "@/components/whatsapp/WhatsAppIntegrationCard";
+import { WHATSAPP_INTEGRATIONS, deleteWhatsAppIntegration } from "@/services/mockData";
+import { useToast } from "@/hooks/use-toast";
 
 const WhatsAppIntegrationsPage = () => {
   const [integrations, setIntegrations] = useState<WhatsAppIntegration[]>(WHATSAPP_INTEGRATIONS);
@@ -52,7 +51,7 @@ const WhatsAppIntegrationsPage = () => {
           </div>
           <Link to="/integrations/new">
             <Button className="flex items-center">
-              <Plus className="mr-2 h-5 w-5" />
+              <PlusCircle className="mr-2 h-5 w-5" />
               New Integration
             </Button>
           </Link>

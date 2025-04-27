@@ -1,7 +1,9 @@
+
 export type Content = {
   id: string;
   name: string;
   type: "file" | "answersQuestions";
+  content?: string;
   createdAt: Date;
   updatedAt: Date;
 };
