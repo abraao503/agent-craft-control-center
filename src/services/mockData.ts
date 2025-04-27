@@ -89,23 +89,23 @@ export let CONTENTS: Content[] = [
   {
     id: "content-1",
     name: "Product Catalog",
-    fileId: "product-catalog.pdf",
-    fileType: "pdf",
-    uploadedAt: new Date("2024-01-10T08:00:00.000Z"),
+    type: "file",
+    createdAt: new Date("2024-01-10T08:00:00.000Z"),
+    updatedAt: new Date("2024-01-10T08:00:00.000Z"),
   },
   {
     id: "content-2",
     name: "Troubleshooting Guide",
-    fileId: "troubleshooting-guide.txt",
-    fileType: "txt",
-    uploadedAt: new Date("2024-01-15T14:00:00.000Z"),
+    type: "file",
+    createdAt: new Date("2024-01-10T08:00:00.000Z"),
+    updatedAt: new Date("2024-01-10T08:00:00.000Z"),
   },
   {
     id: "content-3",
     name: "Sales Playbook",
-    fileId: "sales-playbook.pdf",
-    fileType: "pdf",
-    uploadedAt: new Date("2024-05-10T09:00:00.000Z"),
+    type: "file",
+    createdAt: new Date("2024-01-10T08:00:00.000Z"),
+    updatedAt: new Date("2024-01-10T08:00:00.000Z"),
   },
 ];
 
@@ -174,9 +174,9 @@ export const addContent = (
   const newContent: Content = {
     id: `content-${CONTENTS.length + 1}`,
     name,
-    fileId,
-    fileType,
-    uploadedAt: new Date(),
+    type: "file",
+    createdAt: new Date(),
+    updatedAt: new Date(),
   };
   CONTENTS.push(newContent);
   return newContent;

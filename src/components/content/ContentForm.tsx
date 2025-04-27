@@ -13,7 +13,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { CONTENTS, addContent } from "@/services/mockData";
+import { api } from "@/services/api";
+import { UploadDocumentResponse } from "@/types/file";
+import { Content, CreateContentRequest } from "@/types/content";
 
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -23,22 +25,18 @@ type FormData = z.infer<typeof formSchema>;
 
 interface ContentFormProps {
   contentId?: string | null;
-  onComplete: () => void;
+  onComplete: (newContent: Content) => void;
 }
 
 const ContentForm = ({ contentId, onComplete }: ContentFormProps) => {
   const { toast } = useToast();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const existingContent = contentId
-    ? CONTENTS.find((c) => c.id === contentId)
-    : null;
+  const existingContent = null;
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: existingContent?.name || "",
-    },
   });
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -59,7 +57,39 @@ const ContentForm = ({ contentId, onComplete }: ContentFormProps) => {
     setSelectedFile(file);
   };
 
-  const onSubmit = (data: FormData) => {
+  const addContent = async (contentName: string): Promise<boolean> => {
+    try {
+      const formData = new FormData();
+
+      formData.append("file", selectedFile);
+
+      const { data: file } = await api.post<UploadDocumentResponse>(
+        "file/document/upload",
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      const contentDataRequest: CreateContentRequest = {
+        fileId: file.id,
+        name: contentName,
+        type: "file",
+      };
+
+      await api.post("/content", contentDataRequest);
+
+      return true;
+    } catch (error) {
+      console.error("Erro no addContent", error);
+
+      return false;
+    }
+  };
+
+  const onSubmit = async (data: FormData) => {
     if (!selectedFile && !existingContent) {
       toast({
         title: "File required",
@@ -69,26 +99,36 @@ const ContentForm = ({ contentId, onComplete }: ContentFormProps) => {
       return;
     }
 
-    const fileType = (
-      selectedFile?.name.toLowerCase().endsWith(".pdf") ? "pdf" : "txt"
-    ) as "pdf" | "txt";
+    setIsLoading(true);
 
-    // In a real app, we would upload the file to storage here
-    // For now, we'll just create the content with a mock fileId
-    const newContent = addContent(
-      data.name,
-      selectedFile ? `file-${selectedFile.name}` : existingContent!.fileId,
-      fileType
-    );
+    const success = await addContent(data.name);
 
-    toast({
-      title: contentId ? "Content updated" : "Content created",
-      description: `${newContent.name} has been ${
-        contentId ? "updated" : "saved"
-      } successfully`,
-    });
+    setIsLoading(false);
 
-    onComplete();
+    if (success) {
+      toast({
+        title: contentId ? "Content updated" : "Content created",
+        description: `${data.name} has been ${
+          contentId ? "updated" : "saved"
+        } successfully`,
+      });
+
+      const newContent: Content = {
+        id: contentId || "",
+        name: data.name,
+        type: "file",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      onComplete(newContent);
+    } else {
+      toast({
+        title: "Error uploading file",
+        description: "There was an error uploading the file",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -124,7 +164,7 @@ const ContentForm = ({ contentId, onComplete }: ContentFormProps) => {
         </FormItem>
 
         <div className="flex justify-end gap-4">
-          <Button type="submit">
+          <Button type="submit" isLoading={form.formState.isSubmitting}>
             {contentId ? "Save Changes" : "Create Content"}
           </Button>
         </div>

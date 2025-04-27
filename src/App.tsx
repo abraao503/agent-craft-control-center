@@ -1,12 +1,11 @@
-
-import React from 'react';
+import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
-import { AuthProvider } from "./contexts/AuthContext";
+import { AuthProvider } from "./contexts/auth/provider";
 import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -38,8 +37,14 @@ const App = () => (
               <Route path="/agents/new" element={<CreateAgentPage />} />
               <Route path="/agents/edit/:id" element={<EditAgentPage />} />
               <Route path="/agents/:id" element={<AgentDetailsPage />} />
-              <Route path="/integrations" element={<WhatsAppIntegrationsPage />} />
-              <Route path="/integrations/new" element={<CreateWhatsAppIntegrationPage />} />
+              <Route
+                path="/integrations"
+                element={<WhatsAppIntegrationsPage />}
+              />
+              <Route
+                path="/integrations/new"
+                element={<CreateWhatsAppIntegrationPage />}
+              />
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="/contents" element={<ContentManagementPage />} />
               <Route path="*" element={<NotFound />} />

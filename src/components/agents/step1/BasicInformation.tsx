@@ -1,19 +1,49 @@
-
-import { useState } from 'react';
-import { AgentFormData } from '@/types/agent';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { AI_MODELS, LANGUAGES, TIME_ZONES } from '@/services/mockData';
+import { useEffect, useState } from "react";
+import { AgentFormData, AgentLanguage } from "@/types/agent";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { BRAZILIAN_TIMEZONES } from "@/constants/timezones";
+import { LANGUAGES } from "@/constants/languages";
+import { listIaModels } from "@/services/iaModel/listIaModel";
+import { IaModel } from "@/types/iaModel";
+import { useQuery } from "@tanstack/react-query";
 
 interface BasicInformationProps {
   formData: AgentFormData;
   updateFormData: (data: Partial<AgentFormData>) => void;
 }
 
-const BasicInformation = ({ formData, updateFormData }: BasicInformationProps) => {
-  const [avatarPreview, setAvatarPreview] = useState<string | undefined>(formData.avatarUrl);
+const BasicInformation = ({
+  formData,
+  updateFormData,
+}: BasicInformationProps) => {
+  const [avatarPreview, setAvatarPreview] = useState<string | undefined>(
+    formData.avatarUrl
+  );
+  const [iaModels, setIaModel] = useState<IaModel[]>([]);
+
+  const {
+    isLoading,
+    data: iaModelData,
+    error,
+  } = useQuery({
+    queryKey: ["listIaModels"],
+    queryFn: listIaModels,
+  });
+
+  useEffect(() => {
+    if (iaModelData) {
+      setIaModel(iaModelData.iaModels);
+    }
+  }, [iaModelData]);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -23,6 +53,10 @@ const BasicInformation = ({ formData, updateFormData }: BasicInformationProps) =
       setAvatarPreview(previewUrl);
       updateFormData({ avatarUrl: previewUrl });
     }
+  };
+
+  const handleUpdateLanguage = (value: AgentLanguage) => {
+    updateFormData({ language: value });
   };
 
   return (
@@ -36,7 +70,9 @@ const BasicInformation = ({ formData, updateFormData }: BasicInformationProps) =
           onChange={(e) => updateFormData({ name: e.target.value })}
           required
         />
-        <p className="text-sm text-muted-foreground">This is the name that users will see when interacting with your agent.</p>
+        <p className="text-sm text-muted-foreground">
+          This is the name that users will see when interacting with your agent.
+        </p>
       </div>
 
       <div className="space-y-2">
@@ -48,7 +84,9 @@ const BasicInformation = ({ formData, updateFormData }: BasicInformationProps) =
           onChange={(e) => updateFormData({ internalName: e.target.value })}
           required
         />
-        <p className="text-sm text-muted-foreground">For your reference only. Used in analytics and logs.</p>
+        <p className="text-sm text-muted-foreground">
+          For your reference only. Used in analytics and logs.
+        </p>
       </div>
 
       <div className="space-y-2">
@@ -68,10 +106,14 @@ const BasicInformation = ({ formData, updateFormData }: BasicInformationProps) =
         <div className="flex items-center space-x-4">
           {avatarPreview && (
             <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
-              <img src={avatarPreview} alt="Avatar preview" className="w-full h-full object-cover" />
+              <img
+                src={avatarPreview}
+                alt="Avatar preview"
+                className="w-full h-full object-cover"
+              />
             </div>
           )}
-          
+
           <Input
             id="avatar"
             type="file"
@@ -92,9 +134,9 @@ const BasicInformation = ({ formData, updateFormData }: BasicInformationProps) =
             <SelectValue placeholder="Select a time zone" />
           </SelectTrigger>
           <SelectContent>
-            {TIME_ZONES.map((tz) => (
-              <SelectItem key={tz.value} value={tz.value}>
-                {tz.label}
+            {BRAZILIAN_TIMEZONES.map((tz) => (
+              <SelectItem key={tz.timezone} value={tz.timezone}>
+                {tz.description}
               </SelectItem>
             ))}
           </SelectContent>
@@ -105,7 +147,7 @@ const BasicInformation = ({ formData, updateFormData }: BasicInformationProps) =
         <Label htmlFor="language">Language</Label>
         <Select
           value={formData.language}
-          onValueChange={(value) => updateFormData({ language: value })}
+          onValueChange={(value: AgentLanguage) => handleUpdateLanguage(value)}
         >
           <SelectTrigger className="w-full">
             <SelectValue placeholder="Select a language" />
@@ -129,7 +171,9 @@ const BasicInformation = ({ formData, updateFormData }: BasicInformationProps) =
           onChange={(e) => updateFormData({ initialMessage: e.target.value })}
           required
         />
-        <p className="text-sm text-muted-foreground">The first message your agent will send when starting a conversation.</p>
+        <p className="text-sm text-muted-foreground">
+          The first message your agent will send when starting a conversation.
+        </p>
       </div>
 
       <div className="space-y-2">
@@ -142,14 +186,16 @@ const BasicInformation = ({ formData, updateFormData }: BasicInformationProps) =
             <SelectValue placeholder="Select an AI model" />
           </SelectTrigger>
           <SelectContent>
-            {AI_MODELS.map((model) => (
+            {iaModels.map((model) => (
               <SelectItem key={model.id} value={model.id}>
-                {model.name} ({model.provider})
+                {model.name}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
-        <p className="text-sm text-muted-foreground">Different models have different capabilities and pricing.</p>
+        <p className="text-sm text-muted-foreground">
+          Different models have different capabilities and pricing.
+        </p>
       </div>
     </div>
   );

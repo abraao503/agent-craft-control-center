@@ -1,9 +1,8 @@
-
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { 
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -12,33 +11,47 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import MainLayout from '@/components/layout/MainLayout';
-import AgentCard from '@/components/agents/AgentCard';
-import { AGENTS, deleteAgent } from '@/services/mockData';
-import { Agent } from '@/types/agent';
-import { Plus, Search } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
+} from "@/components/ui/alert-dialog";
+import MainLayout from "@/components/layout/MainLayout";
+import AgentCard from "@/components/agents/AgentCard";
+import { deleteAgent } from "@/services/mockData";
+import { Agent } from "@/types/agent";
+import { Plus, Search } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
+import { useQuery } from "@tanstack/react-query";
+import { listAgent } from "@/services/agent/listAgent";
+import { Skeleton } from "@/components/ui/skeleton";
+import AgentCardSkeleton from "@/components/agents/AgentCardSkeleton";
 
 const AgentsPage = () => {
-  const [agents, setAgents] = useState<Agent[]>(AGENTS);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [agents, setAgents] = useState<Agent[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const [agentToDelete, setAgentToDelete] = useState<string | null>(null);
   const { toast } = useToast();
+
+  const { isLoading, data, error } = useQuery({
+    queryKey: ["listAgent"],
+    queryFn: listAgent,
+  });
+
+  useEffect(() => {
+    if (data) {
+      setAgents(data.agents);
+    }
+  }, [data]);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value.toLowerCase();
     setSearchQuery(query);
-    
-    if (query.trim() === '') {
-      setAgents(AGENTS);
-    } else {
-      const filteredAgents = AGENTS.filter(agent => 
-        agent.name.toLowerCase().includes(query) || 
-        agent.description.toLowerCase().includes(query)
-      );
-      setAgents(filteredAgents);
-    }
+
+    // if (query.trim() === "") {
+    //   setAgents(AGENTS);
+    // } else {
+    //   const filteredAgents = AGENTS.filter((agent) =>
+    //     agent.name.toLowerCase().includes(query)
+    //   );
+    //   setAgents(filteredAgents);
+    // }
   };
 
   const handleDeleteClick = (id: string) => {
@@ -48,7 +61,7 @@ const AgentsPage = () => {
   const confirmDelete = () => {
     if (agentToDelete) {
       deleteAgent(agentToDelete);
-      setAgents(AGENTS);
+      // setAgents(AGENTS);
       toast({
         title: "Agent deleted",
         description: "The agent has been successfully deleted.",
@@ -85,13 +98,16 @@ const AgentsPage = () => {
           />
         </div>
 
-        {agents.length === 0 ? (
+        {isLoading ? (
+          <AgentCardSkeleton />
+        ) : agents.length === 0 ? (
           <div className="text-center py-12 border rounded-lg">
             {searchQuery ? (
               <>
                 <h3 className="font-medium text-lg">No agents found</h3>
                 <p className="text-muted-foreground">
-                  No agents match your search query. Try using different keywords.
+                  No agents match your search query. Try using different
+                  keywords.
                 </p>
               </>
             ) : (
@@ -108,10 +124,10 @@ const AgentsPage = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {agents.map(agent => (
-              <AgentCard 
-                key={agent.id} 
-                agent={agent} 
+            {agents.map((agent) => (
+              <AgentCard
+                key={agent.id}
+                agent={agent}
                 onDelete={handleDeleteClick}
               />
             ))}
@@ -119,18 +135,24 @@ const AgentsPage = () => {
         )}
       </div>
 
-      <AlertDialog open={!!agentToDelete} onOpenChange={() => setAgentToDelete(null)}>
+      <AlertDialog
+        open={!!agentToDelete}
+        onOpenChange={() => setAgentToDelete(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the agent
-              and any associated WhatsApp integrations.
+              This action cannot be undone. This will permanently delete the
+              agent and any associated WhatsApp integrations.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-red-500 hover:bg-red-600">
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-red-500 hover:bg-red-600"
+            >
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>

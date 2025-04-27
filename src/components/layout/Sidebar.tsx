@@ -1,6 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import {
   Bot,
@@ -11,6 +10,7 @@ import {
   Database,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
+import { useAuth } from "@/contexts/auth/hooks";
 
 const Sidebar = () => {
   const location = useLocation();

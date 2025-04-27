@@ -1,17 +1,22 @@
-
-import MainLayout from '@/components/layout/MainLayout';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { useAuth } from '@/contexts/AuthContext';
-import { useState } from 'react';
-import { useToast } from '@/components/ui/use-toast';
+import MainLayout from "@/components/layout/MainLayout";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useState } from "react";
+import { useToast } from "@/components/ui/use-toast";
+import { useAuth } from "@/contexts/auth/hooks";
 
 const SettingsPage = () => {
   const { user } = useAuth();
-  const [name, setName] = useState(user?.name || '');
-  const [email, setEmail] = useState(user?.email || '');
+  const [name, setName] = useState(user?.name || "");
+  const [email, setEmail] = useState(user?.email || "");
   const { toast } = useToast();
 
   const handleSaveProfile = () => {
@@ -70,8 +75,9 @@ const SettingsPage = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-muted-foreground">
-                API key management coming soon. You'll be able to store and manage
-                keys for services like OpenAI, Anthropic, Twilio, and Z-API.
+                API key management coming soon. You'll be able to store and
+                manage keys for services like OpenAI, Anthropic, Twilio, and
+                Z-API.
               </p>
               <Button disabled>Add API Key</Button>
             </CardContent>

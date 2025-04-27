@@ -1,39 +1,45 @@
-
-import { Agent } from '@/types/agent';
+import { FullAgent } from "@/types/agent";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { LANGUAGES, TIME_ZONES, AI_MODELS } from '@/services/mockData';
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { LANGUAGES, TIME_ZONES, AI_MODELS } from "@/services/mockData";
 
 interface AgentDetailsCardProps {
-  agent: Agent;
+  agent: FullAgent;
 }
 
 const AgentDetailsCard = ({ agent }: AgentDetailsCardProps) => {
-  // Get language and timezone display names
-  const language = LANGUAGES.find(l => l.code === agent.language)?.name || agent.language;
-  const timezone = TIME_ZONES.find(tz => tz.value === agent.timeZone)?.label || agent.timeZone;
-  const aiModel = AI_MODELS.find(m => m.id === agent.iaModelId)?.name || agent.iaModelId;
-  
+  console.log(agent);
+
+  const language =
+    LANGUAGES.find((l) => l.code === agent.language)?.name || agent.language;
+  const timezone =
+    TIME_ZONES.find((tz) => tz.value === agent.timeZone)?.label ||
+    agent.timeZone;
+  const aiModel =
+    AI_MODELS.find((m) => m.id === agent.iaModel.id)?.name || agent.iaModel.id;
+
   return (
     <Card>
       <CardHeader>
         <div className="flex justify-between items-start">
           <div>
             <CardTitle className="text-2xl">{agent.name}</CardTitle>
-            <CardDescription className="mt-2">{agent.description}</CardDescription>
+            <CardDescription className="mt-2">
+              {agent.description}
+            </CardDescription>
           </div>
           <div className="flex items-center justify-center w-16 h-16 bg-primary/10 rounded-full overflow-hidden">
-            {agent.avatarUrl ? (
-              <img 
-                src={agent.avatarUrl} 
-                alt={agent.name} 
+            {agent.avatar ? (
+              <img
+                src={agent.avatar.url}
+                alt={agent.name}
                 className="w-full h-full object-cover"
               />
             ) : (
@@ -67,18 +73,18 @@ const AgentDetailsCard = ({ agent }: AgentDetailsCardProps) => {
               </div>
             </div>
           </div>
-          
+
           <Separator />
-          
+
           <div>
             <h3 className="text-lg font-medium mb-2">Initial Message</h3>
             <div className="p-4 bg-muted/50 rounded-lg">
               <p className="italic">"{agent.initialMessage}"</p>
             </div>
           </div>
-          
+
           <Separator />
-          
+
           <div>
             <h3 className="text-lg font-medium mb-2">Prompt & Context</h3>
             <div className="space-y-4">
@@ -86,19 +92,21 @@ const AgentDetailsCard = ({ agent }: AgentDetailsCardProps) => {
                 <p className="text-sm text-muted-foreground">Description</p>
                 <p>{agent.prompt.description}</p>
               </div>
-              
+
               <div>
                 <p className="text-sm text-muted-foreground">Goal</p>
                 <p>{agent.prompt.goal}</p>
               </div>
-              
+
               <div>
                 <p className="text-sm text-muted-foreground">Skills</p>
                 <p>{agent.prompt.habilities}</p>
               </div>
-              
+
               <div className="pt-2">
-                <p className="text-sm text-muted-foreground mb-1">Company Information</p>
+                <p className="text-sm text-muted-foreground mb-1">
+                  Company Information
+                </p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
                     <p className="text-xs text-muted-foreground">Name</p>
@@ -111,9 +119,9 @@ const AgentDetailsCard = ({ agent }: AgentDetailsCardProps) => {
                   <div className="md:col-span-2">
                     <p className="text-xs text-muted-foreground">Website</p>
                     <p className="font-medium">
-                      <a 
-                        href={agent.prompt.companySite} 
-                        target="_blank" 
+                      <a
+                        href={agent.prompt.companySite}
+                        target="_blank"
                         rel="noopener noreferrer"
                         className="text-primary hover:underline"
                       >
@@ -129,39 +137,49 @@ const AgentDetailsCard = ({ agent }: AgentDetailsCardProps) => {
               </div>
             </div>
           </div>
-          
+
           <Separator />
-          
+
           <div>
             <h3 className="text-lg font-medium mb-2">Knowledge Content</h3>
-            {agent.contentsIds.length === 0 ? (
+            {agent.contents.length === 0 ? (
               <p className="text-sm text-muted-foreground">No content added</p>
             ) : (
               <div className="flex flex-wrap gap-2">
-                {agent.contentsIds.map((content, i) => (
-                  <Badge key={i} variant="secondary">
-                    {content}
+                {agent.contents.map((content) => (
+                  <Badge key={content.id} variant="secondary">
+                    {content.name}
                   </Badge>
                 ))}
               </div>
             )}
           </div>
-          
+
           <Separator />
-          
-          <div>
+
+          {/* <div>
             <h3 className="text-lg font-medium mb-2">Custom Fields</h3>
             {agent.customFields.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No custom fields defined</p>
+              <p className="text-sm text-muted-foreground">
+                No custom fields defined
+              </p>
             ) : (
               <div className="border rounded-md overflow-hidden">
                 <table className="w-full">
                   <thead className="bg-muted/50">
                     <tr>
-                      <th className="text-left p-2 text-sm font-medium">Name</th>
-                      <th className="text-left p-2 text-sm font-medium">Label</th>
-                      <th className="text-left p-2 text-sm font-medium">Type</th>
-                      <th className="text-left p-2 text-sm font-medium">Required</th>
+                      <th className="text-left p-2 text-sm font-medium">
+                        Name
+                      </th>
+                      <th className="text-left p-2 text-sm font-medium">
+                        Label
+                      </th>
+                      <th className="text-left p-2 text-sm font-medium">
+                        Type
+                      </th>
+                      <th className="text-left p-2 text-sm font-medium">
+                        Required
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -174,9 +192,7 @@ const AgentDetailsCard = ({ agent }: AgentDetailsCardProps) => {
                         </td>
                         <td className="p-2">{field.label}</td>
                         <td className="p-2">
-                          <Badge variant="outline">
-                            {field.type}
-                          </Badge>
+                          <Badge variant="outline">{field.type}</Badge>
                         </td>
                         <td className="p-2">
                           {field.required ? (
@@ -184,9 +200,7 @@ const AgentDetailsCard = ({ agent }: AgentDetailsCardProps) => {
                               Required
                             </Badge>
                           ) : (
-                            <Badge variant="outline">
-                              Optional
-                            </Badge>
+                            <Badge variant="outline">Optional</Badge>
                           )}
                         </td>
                       </tr>
@@ -195,7 +209,7 @@ const AgentDetailsCard = ({ agent }: AgentDetailsCardProps) => {
                 </table>
               </div>
             )}
-          </div>
+          </div> */}
         </div>
       </CardContent>
     </Card>

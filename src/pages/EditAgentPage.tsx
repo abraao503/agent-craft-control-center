@@ -1,22 +1,29 @@
-
-import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import MainLayout from '@/components/layout/MainLayout';
-import AgentStepIndicator from '@/components/agents/AgentStepIndicator';
-import BasicInformation from '@/components/agents/step1/BasicInformation';
-import PromptContext from '@/components/agents/step2/PromptContext';
-import KnowledgeContent from '@/components/agents/step3/KnowledgeContent';
-import CustomFields from '@/components/agents/step4/CustomFields';
-import { AgentFormData } from '@/types/agent';
-import { AGENTS, updateAgent } from '@/services/mockData';
-import { useToast } from '@/hooks/use-toast';
+import { useState, useEffect, useRef } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import MainLayout from "@/components/layout/MainLayout";
+import AgentStepIndicator from "@/components/agents/AgentStepIndicator";
+import BasicInformation from "@/components/agents/step1/BasicInformation";
+import PromptContext from "@/components/agents/step2/PromptContext";
+import KnowledgeContent from "@/components/agents/step3/KnowledgeContent";
+import CustomFields from "@/components/agents/step4/CustomFields";
+import {
+  AgentFormData,
+  AssistantContent,
+  FullAgent,
+  UpdateAgentResquest,
+  UpdateAssistantCustomField,
+} from "@/types/agent";
+import { useToast } from "@/hooks/use-toast";
+import { getAgent } from "@/services/agent/getAgent";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { updateAgent } from "@/services/agent/updateAgent";
 
 const STEPS = [
-  'Basic Information',
-  'Prompt & Context',
-  'Knowledge Content',
-  'Custom Fields',
+  "Basic Information",
+  "Prompt & Context",
+  "Knowledge Content",
+  "Custom Fields",
 ];
 
 const EditAgentPage = () => {
@@ -24,83 +31,121 @@ const EditAgentPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
-  const [isLoading, setIsLoading] = useState(true);
   const [formData, setFormData] = useState<AgentFormData | null>(null);
+  const [agent, setAgent] = useState<FullAgent | null>(null);
+  const [contentsToUpdate, setContentsToUpdate] = useState<AssistantContent[]>(
+    []
+  );
+  const [customFieldsToUpdate, setCustomFieldsToUpdate] = useState<
+    UpdateAssistantCustomField[]
+  >([]);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const agent = AGENTS.find(a => a.id === id);
-    if (!agent) {
-      toast({
-        title: "Agent not found",
-        description: "The requested agent could not be found.",
-        variant: "destructive"
-      });
-      navigate('/agents');
-      return;
+    if (containerRef.current) {
+      containerRef.current.scrollTo({ top: 0, behavior: "instant" });
     }
+  }, [currentStep]);
 
-    setFormData({
-      name: agent.name,
-      internalName: agent.internalName,
-      description: agent.description,
-      avatarUrl: agent.avatarUrl,
-      timeZone: agent.timeZone,
-      language: agent.language,
-      initialMessage: agent.initialMessage,
-      iaModelId: agent.iaModelId,
-      promptDescription: agent.prompt.description,
-      goal: agent.prompt.goal,
-      habilities: agent.prompt.habilities,
-      companyName: agent.prompt.companyName,
-      companySite: agent.prompt.companySite,
-      companyDescription: agent.prompt.companyDescription,
-      companySector: agent.prompt.companySector,
-      contentsIds: agent.contentsIds,
-      customFields: agent.customFields,
+  const { isLoading, data, error } = useQuery({
+    queryKey: ["getAgent", id],
+    queryFn: () => getAgent(id),
+  });
+
+  const { mutateAsync: updateAgentMutation, isPending: isDeleting } =
+    useMutation({
+      mutationFn: ({
+        agentId,
+        agentData,
+      }: {
+        agentId: string;
+        agentData: UpdateAgentResquest;
+      }) => updateAgent(agentId, agentData),
+      onSuccess: () => {
+        toast({
+          title: "Agent updated successfully",
+          description: `${agent?.name} has been updated.`,
+        });
+        navigate(`/agents/${id}`);
+      },
+      onError: (error) => {
+        toast({
+          title: "Error updating agent",
+          description: error.message,
+          variant: "destructive",
+        });
+      },
     });
-    setIsLoading(false);
-  }, [id, navigate, toast]);
+
+  useEffect(() => {
+    if (data) {
+      setAgent(data);
+
+      setFormData({
+        name: data.name,
+        internalName: data.internalName,
+        description: data.description,
+        avatarUrl: data.avatar ? data.avatar.url : null,
+        timeZone: data.timeZone,
+        language: data.language,
+        initialMessage: data.initialMessage,
+        iaModelId: data.iaModel.id,
+        promptDescription: data.prompt.description,
+        goal: data.prompt.goal,
+        habilities: data.prompt.habilities,
+        companyName: data.prompt.companyName,
+        companySite: data.prompt.companySite,
+        companyDescription: data.prompt.companyDescription,
+        companySector: data.prompt.companySector,
+        contents: data.contents,
+        customFields: data.customFields,
+      });
+    }
+  }, [data]);
 
   const updateFormData = (data: Partial<AgentFormData>) => {
-    setFormData(prev => prev ? { ...prev, ...data } : null);
+    setFormData((prev) => (prev ? { ...prev, ...data } : null));
   };
 
   const nextStep = () => {
-    setCurrentStep(prev => Math.min(prev + 1, STEPS.length));
+    setCurrentStep((prev) => Math.min(prev + 1, STEPS.length));
   };
 
   const prevStep = () => {
-    setCurrentStep(prev => Math.max(prev - 1, 1));
+    setCurrentStep((prev) => Math.max(prev - 1, 1));
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!formData || !id) return;
 
-    const updatedAgent = updateAgent(id, {
-      name: formData.name,
-      internalName: formData.internalName,
-      description: formData.description,
-      avatarUrl: formData.avatarUrl,
-      timeZone: formData.timeZone,
-      language: formData.language,
-      initialMessage: formData.initialMessage,
-      iaModelId: formData.iaModelId,
-      prompt: {
-        description: formData.promptDescription,
-        goal: formData.goal,
-        habilities: formData.habilities,
-        companyName: formData.companyName,
-        companySite: formData.companySite,
-        companyDescription: formData.companyDescription,
-        companySector: formData.companySector,
+    await updateAgentMutation({
+      agentId: id,
+      agentData: {
+        avatarFileId: null,
+        name: formData.name,
+        internalName: formData.internalName,
+        description: formData.description,
+        timeZone: formData.timeZone,
+        prompt: {
+          description: formData.promptDescription,
+          goal: formData.goal,
+          habilities: formData.habilities,
+          companyName: formData.companyName,
+          companySite: formData.companySite,
+          companyDescription: formData.companyDescription,
+          companySector: formData.companySector,
+        },
+        contents: contentsToUpdate,
+        customFields: customFieldsToUpdate,
+        initialMessage: formData.initialMessage,
+        language: formData.language,
+        iaModelId: formData.iaModelId,
       },
-      contentsIds: formData.contentsIds,
-      customFields: formData.customFields,
     });
 
     toast({
       title: "Agent updated successfully",
-      description: `${updatedAgent.name} has been updated.`,
+      description: `${formData.name} has been updated.`,
     });
 
     navigate(`/agents/${id}`);
@@ -111,13 +156,32 @@ const EditAgentPage = () => {
 
     switch (currentStep) {
       case 1:
-        return <BasicInformation formData={formData} updateFormData={updateFormData} />;
+        return (
+          <BasicInformation
+            formData={formData}
+            updateFormData={updateFormData}
+          />
+        );
       case 2:
-        return <PromptContext formData={formData} updateFormData={updateFormData} />;
+        return (
+          <PromptContext formData={formData} updateFormData={updateFormData} />
+        );
       case 3:
-        return <KnowledgeContent formData={formData} updateFormData={updateFormData} />;
+        return (
+          <KnowledgeContent
+            formData={formData}
+            updateFormData={updateFormData}
+            setContentsToUpdate={setContentsToUpdate}
+          />
+        );
       case 4:
-        return <CustomFields formData={formData} updateFormData={updateFormData} />;
+        return (
+          <CustomFields
+            formData={formData}
+            updateFormData={updateFormData}
+            setCustomFieldsToUpdate={setCustomFieldsToUpdate}
+          />
+        );
       default:
         return null;
     }
@@ -125,10 +189,12 @@ const EditAgentPage = () => {
 
   const isStepValid = () => {
     if (!formData) return false;
-    
+
     switch (currentStep) {
       case 1:
-        return !!formData.name && !!formData.internalName && !!formData.description;
+        return (
+          !!formData.name && !!formData.internalName && !!formData.description
+        );
       case 2:
         return !!formData.promptDescription && !!formData.goal;
       case 3:
@@ -154,7 +220,7 @@ const EditAgentPage = () => {
   }
 
   return (
-    <MainLayout>
+    <MainLayout forwardRef={containerRef}>
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Edit Agent</h1>
@@ -167,28 +233,22 @@ const EditAgentPage = () => {
 
         <div className="bg-white rounded-lg shadow-sm border">
           {renderStepContent()}
-          
+
           <div className="p-6 border-t flex justify-between">
-            <Button 
-              variant="outline" 
-              onClick={prevStep}
-              disabled={currentStep === 1}
-            >
-              Previous Step
-            </Button>
-            
+            {currentStep !== 1 ? (
+              <Button variant="outline" onClick={prevStep}>
+                Previous Step
+              </Button>
+            ) : (
+              <div></div>
+            )}
+
             {currentStep < STEPS.length ? (
-              <Button 
-                onClick={nextStep}
-                disabled={!isStepValid()}
-              >
+              <Button onClick={nextStep} disabled={!isStepValid()}>
                 Next Step
               </Button>
             ) : (
-              <Button 
-                onClick={handleSubmit}
-                disabled={!isStepValid()}
-              >
+              <Button onClick={handleSubmit} disabled={!isStepValid()}>
                 Save Changes
               </Button>
             )}

@@ -1,4 +1,3 @@
-
 export interface User {
   id: string;
   name: string;
@@ -12,3 +11,8 @@ export interface AuthContextType {
   signup: (name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
 }
+
+export type UserLoginResponse = {
+  user: User;
+  token: string;
+};
