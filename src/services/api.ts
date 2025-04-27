@@ -1,6 +1,8 @@
 import axios from "axios";
 
-const baseURL = import.meta.env.VITE_API_URL;
+const baseURL =
+  import.meta.env.VITE_API_URL ||
+  "https://cooing-quintina-abraaos-cb124017.koyeb.app";
 
 export const api = axios.create({
   baseURL,
