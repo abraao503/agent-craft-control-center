@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -18,6 +19,7 @@ import CreateWhatsAppIntegrationPage from "./pages/CreateWhatsAppIntegrationPage
 import SettingsPage from "./pages/SettingsPage";
 import NotFound from "./pages/NotFound";
 import ContentManagementPage from "./pages/ContentManagementPage";
+import ConversationsPage from "./pages/ConversationsPage";
 
 const queryClient = new QueryClient();
 
@@ -47,6 +49,7 @@ const App = () => (
               />
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="/contents" element={<ContentManagementPage />} />
+              <Route path="/conversations" element={<ConversationsPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
