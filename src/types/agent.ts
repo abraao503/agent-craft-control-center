@@ -1,10 +1,4 @@
-
 export type AgentLanguage = "en-US" | "es-ES" | "pt-BR";
-
-export enum AgentStatus {
-  ACTIVE = "active",
-  INACTIVE = "inactive"
-}
 
 type CreateOrUpdateCustomField = {
   action: "createOrUpdate";
@@ -121,24 +115,6 @@ export type Agent = {
   language: string;
   createdAt: Date;
   updatedAt: Date;
-  status: AgentStatus;
-  internalName: string;
-  description: string;
-  timeZone: string;
-  initialMessage: string;
-  iaModelId: string;
-  prompt: {
-    description: string;
-    goal: string;
-    habilities: string;
-    companyName: string;
-    companySite: string;
-    companyDescription: string;
-    companySector: string;
-  };
-  contentsIds: string[];
-  customFields: CustomField[];
-  uploadDocuments: any[];
 };
 
 export type ListAgentResponse = {

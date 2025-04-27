@@ -8,7 +8,7 @@ import BasicInformation from '@/components/agents/step1/BasicInformation';
 import PromptContext from '@/components/agents/step2/PromptContext';
 import KnowledgeContent from '@/components/agents/step3/KnowledgeContent';
 import CustomFields from '@/components/agents/step4/CustomFields';
-import { AgentFormData, AgentLanguage, UpdateAssistantCustomField, AssistantContent } from '@/types/agent';
+import { AgentFormData } from '@/types/agent';
 import { addAgent } from '@/services/mockData';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -25,7 +25,7 @@ const defaultFormData: AgentFormData = {
   description: '',
   avatarUrl: '',
   timeZone: 'America/New_York',
-  language: 'en-US',
+  language: 'en',
   initialMessage: 'Hello! How can I assist you today?',
   iaModelId: 'gpt-4o',
   
@@ -37,7 +37,7 @@ const defaultFormData: AgentFormData = {
   companyDescription: '',
   companySector: '',
   
-  contents: [],
+  contentsIds: [],
   
   customFields: [],
 };
@@ -45,8 +45,6 @@ const defaultFormData: AgentFormData = {
 const CreateAgentPage = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<AgentFormData>(defaultFormData);
-  const [contentsToUpdate, setContentsToUpdate] = useState<AssistantContent[]>([]);
-  const [customFieldsToUpdate, setCustomFieldsToUpdate] = useState<UpdateAssistantCustomField[]>([]);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -68,13 +66,11 @@ const CreateAgentPage = () => {
       name: formData.name,
       internalName: formData.internalName,
       description: formData.description,
-      avatar: formData.avatarUrl || null,
+      avatarUrl: formData.avatarUrl,
       timeZone: formData.timeZone,
       language: formData.language,
       initialMessage: formData.initialMessage,
       iaModelId: formData.iaModelId,
-      iaModelName: formData.iaModelId === "ia-model-1" ? "GPT-3" : "GPT-4",
-      status: "active",
       prompt: {
         description: formData.promptDescription,
         goal: formData.goal,
@@ -84,9 +80,8 @@ const CreateAgentPage = () => {
         companyDescription: formData.companyDescription,
         companySector: formData.companySector,
       },
-      contentsIds: formData.contents.map(c => c.id),
+      contentsIds: formData.contentsIds,
       customFields: formData.customFields,
-      uploadDocuments: [],
     });
 
     toast({
@@ -105,21 +100,9 @@ const CreateAgentPage = () => {
       case 2:
         return <PromptContext formData={formData} updateFormData={updateFormData} />;
       case 3:
-        return (
-          <KnowledgeContent 
-            formData={formData} 
-            updateFormData={updateFormData} 
-            setContentsToUpdate={setContentsToUpdate} 
-          />
-        );
+        return <KnowledgeContent formData={formData} updateFormData={updateFormData} />;
       case 4:
-        return (
-          <CustomFields 
-            formData={formData} 
-            updateFormData={updateFormData} 
-            setCustomFieldsToUpdate={setCustomFieldsToUpdate} 
-          />
-        );
+        return <CustomFields formData={formData} updateFormData={updateFormData} />;
       default:
         return null;
     }

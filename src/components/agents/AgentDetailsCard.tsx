@@ -23,7 +23,7 @@ const AgentDetailsCard = ({ agent }: AgentDetailsCardProps) => {
     TIME_ZONES.find((tz) => tz.value === agent.timeZone)?.label ||
     agent.timeZone;
   const aiModel =
-    AI_MODELS.find((m) => m.id === agent.iaModel.id)?.name || agent.iaModel.name;
+    AI_MODELS.find((m) => m.id === agent.iaModel.id)?.name || agent.iaModel.id;
 
   return (
     <Card>
