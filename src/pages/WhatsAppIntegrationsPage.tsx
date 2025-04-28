@@ -1,8 +1,7 @@
-
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { 
+import { useState } from "react";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -11,17 +10,21 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import MainLayout from '@/components/layout/MainLayout';
-import WhatsAppIntegrationCard from '@/components/whatsapp/WhatsAppIntegrationCard';
-import { WHATSAPP_INTEGRATIONS, deleteWhatsAppIntegration } from '@/services/mockData';
-import { WhatsAppIntegration } from '@/types/whatsapp';
-import { Plus } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
+} from "@/components/ui/alert-dialog";
+import MainLayout from "@/components/layout/MainLayout";
+import WhatsAppIntegrationCard from "@/components/whatsapp/WhatsAppIntegrationCard";
+import { WHATSAPP_INTEGRATIONS } from "@/services/mockData";
+import { WhatsAppIntegration } from "@/types/whatsapp";
+import { Plus } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 
 const WhatsAppIntegrationsPage = () => {
-  const [integrations, setIntegrations] = useState<WhatsAppIntegration[]>(WHATSAPP_INTEGRATIONS);
-  const [integrationToDelete, setIntegrationToDelete] = useState<string | null>(null);
+  const [integrations, setIntegrations] = useState<WhatsAppIntegration[]>(
+    WHATSAPP_INTEGRATIONS
+  );
+  const [integrationToDelete, setIntegrationToDelete] = useState<string | null>(
+    null
+  );
   const { toast } = useToast();
 
   const handleDeleteClick = (id: string) => {
@@ -30,7 +33,7 @@ const WhatsAppIntegrationsPage = () => {
 
   const confirmDelete = () => {
     if (integrationToDelete) {
-      deleteWhatsAppIntegration(integrationToDelete);
+      // deleteWhatsAppIntegration(integrationToDelete);
       setIntegrations(WHATSAPP_INTEGRATIONS);
       toast({
         title: "Integration deleted",
@@ -45,7 +48,9 @@ const WhatsAppIntegrationsPage = () => {
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">WhatsApp Integrations</h1>
+            <h1 className="text-3xl font-bold tracking-tight">
+              WhatsApp Integrations
+            </h1>
             <p className="text-muted-foreground">
               Connect your AI agents to WhatsApp
             </p>
@@ -60,7 +65,9 @@ const WhatsAppIntegrationsPage = () => {
 
         {integrations.length === 0 ? (
           <div className="text-center py-12 border rounded-lg">
-            <h3 className="font-medium text-lg">No WhatsApp integrations yet</h3>
+            <h3 className="font-medium text-lg">
+              No WhatsApp integrations yet
+            </h3>
             <p className="text-muted-foreground mb-4">
               Connect your AI agents to WhatsApp to start interacting with users
             </p>
@@ -70,10 +77,10 @@ const WhatsAppIntegrationsPage = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {integrations.map(integration => (
-              <WhatsAppIntegrationCard 
-                key={integration.id} 
-                integration={integration} 
+            {integrations.map((integration) => (
+              <WhatsAppIntegrationCard
+                key={integration.id}
+                integration={integration}
                 onDelete={handleDeleteClick}
               />
             ))}
@@ -81,18 +88,24 @@ const WhatsAppIntegrationsPage = () => {
         )}
       </div>
 
-      <AlertDialog open={!!integrationToDelete} onOpenChange={() => setIntegrationToDelete(null)}>
+      <AlertDialog
+        open={!!integrationToDelete}
+        onOpenChange={() => setIntegrationToDelete(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the WhatsApp integration
-              and disconnect it from your agent.
+              This action cannot be undone. This will permanently delete the
+              WhatsApp integration and disconnect it from your agent.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-red-500 hover:bg-red-600">
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-red-500 hover:bg-red-600"
+            >
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>

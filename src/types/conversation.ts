@@ -1,5 +1,4 @@
-
-import { AgentLanguage } from "./agent";
+import { Pagination } from "./pagination";
 
 export type ConversationParticipant = "agent" | "customer" | "human-attendant";
 
@@ -12,24 +11,27 @@ export type ConversationMessage = {
 
 export type Conversation = {
   id: string;
-  agentId: string;
-  agentName: string;
-  customerName: string;
-  lastInteractionAt: string;
-  messages: ConversationMessage[];
-  handledBy: "ai" | "human";
+  lastInteraction: Date | null;
+  customer: {
+    id: string;
+    phone: string;
+  };
+  agent: {
+    id: string;
+    name: string;
+  };
+  totalMessages: number;
 };
 
-export type ConversationsResponse = {
-  conversations: Conversation[];
-  total: number;
-};
+export type ConversationsResponse = Pagination<Conversation>;
 
 export type ConversationsFilters = {
   search?: string;
   agentId?: string;
-  startDate?: Date | null;
-  endDate?: Date | null;
   page: number;
-  pageSize: number;
+  limit: number;
+  sortBy: "createdAt" | "updatedAt";
+  sortOrder: "asc" | "desc";
+  initialDate?: Date;
+  finalDate?: Date;
 };

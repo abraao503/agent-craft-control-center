@@ -6,9 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { X, Upload, FileText } from "lucide-react";
-import { CONTENTS, addContent } from "@/services/mockData";
 import { format } from "date-fns";
 import { useToast } from "@/components/ui/use-toast";
+import { CONTENTS } from "@/services/mockData";
 
 interface KnowledgeContentProps {
   formData: AgentFormData;

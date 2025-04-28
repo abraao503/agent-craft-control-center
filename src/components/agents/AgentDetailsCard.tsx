@@ -8,23 +8,12 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { LANGUAGES, TIME_ZONES, AI_MODELS } from "@/services/mockData";
 
 interface AgentDetailsCardProps {
   agent: FullAgent;
 }
 
 const AgentDetailsCard = ({ agent }: AgentDetailsCardProps) => {
-  console.log(agent);
-
-  const language =
-    LANGUAGES.find((l) => l.code === agent.language)?.name || agent.language;
-  const timezone =
-    TIME_ZONES.find((tz) => tz.value === agent.timeZone)?.label ||
-    agent.timeZone;
-  const aiModel =
-    AI_MODELS.find((m) => m.id === agent.iaModel.id)?.name || agent.iaModel.id;
-
   return (
     <Card>
       <CardHeader>
@@ -61,15 +50,15 @@ const AgentDetailsCard = ({ agent }: AgentDetailsCardProps) => {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">AI Model</p>
-                <p className="font-medium">{aiModel}</p>
+                <p className="font-medium">{agent.iaModel.name}</p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Language</p>
-                <p className="font-medium">{language}</p>
+                <p className="font-medium">{agent.language}</p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Time Zone</p>
-                <p className="font-medium">{timezone}</p>
+                <p className="font-medium">{agent.timeZone}</p>
               </div>
             </div>
           </div>

@@ -8,6 +8,7 @@ import {
   LogOut,
   LayoutDashboard,
   Database,
+  MessagesSquare,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { useAuth } from "@/contexts/auth/hooks";
@@ -63,6 +64,19 @@ const Sidebar = () => {
           >
             <Bot className="mr-2 h-5 w-5" />
             Agents
+          </Button>
+        </Link>
+
+        <Link to="/conversations">
+          <Button
+            variant="ghost"
+            className={cn(
+              "w-full justify-start",
+              isActive("/agents") && "bg-accent text-primary"
+            )}
+          >
+            <MessagesSquare className="mr-2 h-5 w-5" />
+            Conversas
           </Button>
         </Link>
 

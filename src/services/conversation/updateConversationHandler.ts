@@ -1,10 +1,9 @@
-
 import { api } from "@/services/api";
 import { Conversation } from "@/types/conversation";
 import { CONVERSATIONS } from "@/services/mockData";
 
 export const updateConversationHandler = async (
-  conversationId: string, 
+  conversationId: string,
   handledBy: "ai" | "human"
 ): Promise<Conversation> => {
   try {
@@ -13,14 +12,16 @@ export const updateConversationHandler = async (
     // return response.data;
 
     // For now, update the mock data
-    const conversation = CONVERSATIONS.find((conv) => conv.id === conversationId);
-    
+    const conversation = CONVERSATIONS.find(
+      (conv) => conv.id === conversationId
+    );
+
     if (!conversation) {
       throw new Error("Conversation not found");
     }
-    
-    conversation.handledBy = handledBy;
-    
+
+    // conversation.handledBy = handledBy;
+
     return { ...conversation };
   } catch (error) {
     console.error("Error updating conversation handler:", error);
