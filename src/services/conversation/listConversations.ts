@@ -17,6 +17,7 @@ type ApiResponse = Pagination<{
     name: string;
   };
   totalMessages: number;
+  handledBy: "assistant" | "human";
 }>;
 
 export const listConversations = async (
@@ -33,6 +34,7 @@ export const listConversations = async (
     items: data.items.map((conversation) => ({
       ...conversation,
       agent: conversation.assistant,
+      handledBy: conversation.handledBy === "assistant" ? "ai" : "human",
     })),
     total: data.total,
     page: data.page,

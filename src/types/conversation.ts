@@ -21,6 +21,7 @@ export type Conversation = {
     name: string;
   };
   totalMessages: number;
+  handledBy: "ai" | "human";
 };
 
 export type ConversationsResponse = Pagination<Conversation>;

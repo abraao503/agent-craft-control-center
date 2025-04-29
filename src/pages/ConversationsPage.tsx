@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { Loader2, Search } from "lucide-react";
@@ -20,8 +20,6 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -47,6 +45,7 @@ import { Conversation, ConversationsFilters } from "@/types/conversation";
 import { AGENTS } from "@/services/mockData";
 
 const ConversationsPage = () => {
+  const [conversations, setConversations] = useState<Conversation[]>([]);
   const [filters, setFilters] = useState<ConversationsFilters>({
     page: 1,
     limit: 10,
@@ -104,9 +103,34 @@ const ConversationsPage = () => {
     refetch(); // Refresh data in case handler was changed
   };
 
+  useEffect(() => {
+    if (data) {
+      setConversations(data.items);
+    }
+  }, [data]);
+
   // Format date for display
   const formatDate = (dateString: string) => {
     return format(new Date(dateString), "dd/MM/yyyy HH:mm");
+  };
+
+  const updateConversation = (conversation: Conversation) => {
+    setConversations((prev) => {
+      const updatedConversations = [...prev];
+
+      const index = updatedConversations.findIndex(
+        (c) => c.id === conversation.id
+      );
+
+      if (index !== -1) {
+        updatedConversations[index] = {
+          ...updatedConversations[index],
+          ...conversation,
+        };
+      }
+
+      return updatedConversations;
+    });
   };
 
   return (
@@ -212,8 +236,8 @@ const ConversationsPage = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {data.items.length > 0 ? (
-                        data.items.map((conversation) => (
+                      {conversations.length > 0 ? (
+                        conversations.map((conversation) => (
                           <TableRow
                             key={conversation.id}
                             onClick={() => handleRowClick(conversation)}
@@ -232,17 +256,15 @@ const ConversationsPage = () => {
                             <TableCell>{conversation.totalMessages}</TableCell>
                             <TableCell>
                               <Badge
-                                // variant={
-                                //   conversation.handledBy === "ai"
-                                //     ? "default"
-                                //     : "outline"
-                                // }
-                                variant="default"
+                                variant={
+                                  conversation.handledBy === "ai"
+                                    ? "default"
+                                    : "outline"
+                                }
                               >
-                                {/* {conversation.handledBy === "ai"
+                                {conversation.handledBy === "ai"
                                   ? "IA"
-                                  : "Humano"} */}
-                                IA
+                                  : "Humano"}
                               </Badge>
                             </TableCell>
                           </TableRow>
@@ -326,6 +348,7 @@ const ConversationsPage = () => {
       {selectedConversation && (
         <ConversationModal
           conversation={selectedConversation}
+          updateConversation={updateConversation}
           onClose={handleModalClose}
           isOpen={!!selectedConversation}
         />

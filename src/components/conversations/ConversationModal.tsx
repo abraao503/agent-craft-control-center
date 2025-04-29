@@ -1,6 +1,5 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { format } from "date-fns";
-import { CheckCircle2, Loader2 } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 
 import {
@@ -16,27 +15,35 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
+import { MessageSkeleton } from "./MessageSkeleton";
 
-import { Conversation, ConversationMessage } from "@/types/conversation";
+import { Conversation } from "@/types/conversation";
 import { updateConversationHandler } from "@/services/conversation/updateConversationHandler";
 import { listMessages } from "@/services/conversation/listMessages";
 import { Message } from "@/types/message";
 
 type ConversationModalProps = {
   conversation: Conversation;
+  updateConversation: (conversation: Conversation) => void;
   onClose: () => void;
   isOpen: boolean;
 };
 
 export const ConversationModal: React.FC<ConversationModalProps> = ({
   conversation,
+  updateConversation,
   onClose,
   isOpen,
 }) => {
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [localConversation, setLocalConversation] = useState(conversation);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [alreadyScrolled, setAlreadyScrolled] = useState(false);
+  const lastScrollTop = useRef(0);
 
   const { mutate, isPending } = useMutation({
     mutationFn: ({
@@ -46,15 +53,23 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
       id: string;
       handledBy: "ai" | "human";
     }) => updateConversationHandler(id, handledBy),
-    onSuccess: (updatedConversation) => {
-      setLocalConversation(updatedConversation);
+    onSuccess: (handledBy) => {
       setShowConfirmation(false);
+
+      const newConversation = {
+        ...localConversation,
+        handledBy: (handledBy === "ai" ? "ai" : "human") as "ai" | "human",
+      };
+
+      setLocalConversation(newConversation);
+
+      updateConversation(newConversation);
+
       toast({
         title: "Atendimento alterado com sucesso",
-        // description: `A conversa agora está sendo atendida por ${
-        //   updatedConversation.handledBy === "ai" ? "IA" : "humano"
-        // }.`,
-        description: "A conversa agora está sendo atendida por IA",
+        description: `A conversa agora está sendo atendida por ${
+          handledBy === "ai" ? "IA" : "humano"
+        }.`,
       });
     },
     onError: (error) => {
@@ -70,24 +85,74 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
 
   const listMessageFilters = {
     chatId: conversation.id,
-    page: 1,
+    page: currentPage,
   };
 
   const {
     data: listMessagesData,
-    isLoading,
+    isFetching: listMessagesIsFetching,
     isError,
     refetch,
   } = useQuery({
     queryKey: ["listMessages", listMessageFilters],
     queryFn: () => listMessages(listMessageFilters),
+    staleTime: 0,
+    refetchOnWindowFocus: false,
   });
 
   useEffect(() => {
     if (listMessagesData) {
-      setMessages(listMessagesData.items);
+      if (currentPage === 1) {
+        setMessages(listMessagesData.items);
+      } else {
+        setMessages((prev) => [...listMessagesData.items, ...prev]);
+      }
+
+      // Verifica se há mais páginas para carregar
+      setHasMore(currentPage < listMessagesData.totalPages);
     }
-  }, [listMessagesData]);
+  }, [listMessagesData, currentPage]);
+
+  const handleScroll = (event: React.UIEvent<HTMLDivElement>) => {
+    const target = event.target as HTMLDivElement;
+
+    if (listMessagesIsFetching || !hasMore) return;
+
+    const currentScrollTop = target.scrollTop;
+
+    // Scroll para cima → carrega mais
+    if (currentScrollTop < lastScrollTop.current && currentScrollTop <= 140) {
+      setCurrentPage((prev) => prev + 1);
+    }
+
+    // Atualiza o último scrollTop
+    lastScrollTop.current = currentScrollTop;
+  };
+
+  // Scroll to bottom when modal opens
+  useEffect(() => {
+    if (
+      !isOpen ||
+      alreadyScrolled ||
+      !messages.length ||
+      !scrollAreaRef.current ||
+      listMessagesIsFetching
+    )
+      return;
+
+    const scrollToBottom = () => {
+      const el = scrollAreaRef.current;
+      if (el) {
+        el.scrollTo({
+          top: el.scrollHeight,
+          behavior: "smooth",
+        });
+      }
+    };
+
+    scrollToBottom();
+    setAlreadyScrolled(true);
+  }, [isOpen, messages.length, listMessagesIsFetching, alreadyScrolled]);
 
   const handleClose = () => {
     onClose();
@@ -98,8 +163,8 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
   };
 
   const confirmHandlerChange = () => {
-    // const newHandler = localConversation.handledBy === "ai" ? "human" : "ai";
-    // mutate({ id: localConversation.id, handledBy: newHandler });
+    const newHandler = localConversation.handledBy === "ai" ? "human" : "ai";
+    mutate({ id: localConversation.id, handledBy: newHandler });
   };
 
   const cancelHandlerChange = () => {
@@ -110,7 +175,6 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
     return format(new Date(dateString), "dd/MM/yyyy HH:mm");
   };
 
-  // Render message bubble based on sender
   const renderMessage = (message: Message) => {
     const isCustomer = message.sender === "customer";
 
@@ -160,9 +224,30 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
           </DialogDescription>
         </DialogHeader>
 
-        {/* Conversation content */}
-        <ScrollArea className="flex-1 px-2 py-4 my-4 border rounded-md">
+        <ScrollArea
+          ref={scrollAreaRef}
+          className="flex-1 px-2 py-4 my-4 border rounded-md"
+          onScroll={handleScroll}
+        >
+          {listMessagesIsFetching && currentPage > 1 && (
+            <div className="py-4">
+              <div className="space-y-4">
+                <MessageSkeleton isCustomer={true} />
+                <MessageSkeleton isCustomer={false} />
+              </div>
+            </div>
+          )}
+
           {messages.map(renderMessage)}
+
+          {listMessagesIsFetching && currentPage === 1 && (
+            <div className="space-y-4">
+              <MessageSkeleton isCustomer={true} />
+              <MessageSkeleton isCustomer={false} />
+              <MessageSkeleton isCustomer={true} />
+              <MessageSkeleton isCustomer={false} />
+            </div>
+          )}
         </ScrollArea>
 
         {/* Confirmation alert */}
@@ -171,7 +256,7 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
             <AlertDescription>
               Tem certeza que deseja alterar o tipo de atendimento para
               <strong>
-                {/* {localConversation.handledBy === "ai" ? " humano" : " IA"} */}
+                {localConversation.handledBy === "ai" ? " humano" : " IA"}
               </strong>
               ?
               <div className="flex justify-end gap-2 mt-2">
@@ -200,8 +285,7 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
           <div className="flex items-center gap-2">
             <span>Atendimento por IA</span>
             <Switch
-              // checked={localConversation.handledBy === "ai"}
-              checked={true}
+              checked={localConversation.handledBy === "ai"}
               onCheckedChange={handleHandlerToggle}
               disabled={isPending || showConfirmation}
             />

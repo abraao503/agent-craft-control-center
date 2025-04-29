@@ -72,7 +72,7 @@ const Sidebar = () => {
             variant="ghost"
             className={cn(
               "w-full justify-start",
-              isActive("/agents") && "bg-accent text-primary"
+              isActive("/conversations") && "bg-accent text-primary"
             )}
           >
             <MessagesSquare className="mr-2 h-5 w-5" />
