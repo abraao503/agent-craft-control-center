@@ -20,15 +20,24 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+const removeUserData = () => {
+  localStorage.removeItem("token");
+  localStorage.removeItem("user");
+};
+
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Aqui sim pega os erros da API (400, 401, 500, etc)
     if (error.response) {
       console.error(
         "Erro da API:",
         error.response.data.message || "Erro desconhecido"
       );
+
+      if (error.response.status === 401) {
+        removeUserData();
+        window.location.href = "/";
+      }
     } else if (error.request) {
       console.error("Sem resposta do servidor");
     } else {
