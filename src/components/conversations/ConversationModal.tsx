@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { format } from "date-fns";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { Send } from "lucide-react";
 
 import {
   Dialog,
@@ -16,11 +17,14 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { MessageSkeleton } from "./MessageSkeleton";
+import { Input } from "@/components/ui/input";
 
 import { Conversation } from "@/types/conversation";
 import { updateConversationHandler } from "@/services/conversation/updateConversationHandler";
 import { listMessages } from "@/services/conversation/listMessages";
-import { Message } from "@/types/message";
+import { sendMessage } from "@/services/conversation/sendMessage";
+import { Message, MessageEvent, SendMessageParams } from "@/types/message";
+import { connectSocket, getSocket } from "@/lib/socket";
 
 type ConversationModalProps = {
   conversation: Conversation;
@@ -44,6 +48,8 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
   const [hasMore, setHasMore] = useState(true);
   const [alreadyScrolled, setAlreadyScrolled] = useState(false);
   const lastScrollTop = useRef(0);
+  const [newMessage, setNewMessage] = useState("");
+  const [isSending, setIsSending] = useState(false);
 
   const { mutate, isPending } = useMutation({
     mutationFn: ({
@@ -83,6 +89,32 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
     },
   });
 
+  const sendMessageMutation = useMutation({
+    mutationFn: (params: SendMessageParams) => sendMessage(params),
+    onSuccess: (data) => {
+      setMessages((prev) => [...prev, data]);
+      setNewMessage("");
+
+      // Scroll to bottom after sending
+      if (scrollAreaRef.current) {
+        scrollAreaRef.current.scrollTo({
+          top: scrollAreaRef.current.scrollHeight,
+          behavior: "smooth",
+        });
+      }
+    },
+    onError: (error) => {
+      toast({
+        title: "Erro ao enviar mensagem",
+        description: "Não foi possível enviar a mensagem. Tente novamente.",
+        variant: "destructive",
+      });
+    },
+    onSettled: () => {
+      setIsSending(false);
+    },
+  });
+
   const listMessageFilters = {
     chatId: conversation.id,
     page: currentPage,
@@ -101,17 +133,58 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
   });
 
   useEffect(() => {
+    const token = localStorage.getItem("token");
+    const socket = connectSocket(token);
+
+    socket.on("connect", () => {
+      console.log("Conectado ao socket");
+      const room = `chat:${conversation.id}`;
+      socket.emit("join", { room });
+    });
+
+    socket.on("joined", (data) => {
+      console.log("Entrou na sala:", data);
+    });
+
+    socket.on("message:sent", (message: MessageEvent) => {
+      console.log("Mensagem recebida:", message);
+      const formattedMessage: Message = {
+        id: message.messageId,
+        sender: message.sender,
+        content: message.content,
+        createdAt: message.createdAt,
+        chatId: message.chatId,
+      };
+
+      setMessages((prev) => [...prev, formattedMessage]);
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
+
+  useEffect(() => {
     if (listMessagesData) {
       if (currentPage === 1) {
-        setMessages(listMessagesData.items);
+        setUniqueMessages(listMessagesData.items);
       } else {
-        setMessages((prev) => [...listMessagesData.items, ...prev]);
+        setUniqueMessages(listMessagesData.items);
       }
 
       // Verifica se há mais páginas para carregar
       setHasMore(currentPage < listMessagesData.totalPages);
     }
   }, [listMessagesData, currentPage]);
+
+  const setUniqueMessages = (messages: Message[]) => {
+    setMessages((prevMessages) => {
+      const newUniqueMessages = messages.filter(
+        (msg) => !prevMessages.some((existingMsg) => existingMsg.id === msg.id)
+      );
+      return [...newUniqueMessages, ...prevMessages];
+    });
+  };
 
   const handleScroll = (event: React.UIEvent<HTMLDivElement>) => {
     const target = event.target as HTMLDivElement;
@@ -154,6 +227,11 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
     setAlreadyScrolled(true);
   }, [isOpen, messages.length, listMessagesIsFetching, alreadyScrolled]);
 
+  useEffect(() => {
+    scrollToBottomIfNearEnd();
+    console.log("messages", messages);
+  }, [messages]);
+
   const handleClose = () => {
     onClose();
   };
@@ -175,6 +253,35 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
     return format(new Date(dateString), "dd/MM/yyyy HH:mm");
   };
 
+  const formatWhatsAppMessage = (text: string) => {
+    // Substitui quebras de linha por <br />
+    let formattedText = text.replace(/\n/g, "<br />");
+
+    // Processa negrito (*texto*)
+    formattedText = formattedText.replace(/\*(.*?)\*/g, "<strong>$1</strong>");
+
+    // Processa itálico (_texto_)
+    formattedText = formattedText.replace(/_(.*?)_/g, "<em>$1</em>");
+
+    // Processa tachado (~texto~)
+    formattedText = formattedText.replace(/~(.*?)~/g, "<del>$1</del>");
+
+    return formattedText;
+  };
+
+  const scrollToBottomIfNearEnd = () => {
+    const chat = scrollAreaRef.current;
+    if (!chat) return;
+
+    const threshold = 600; // distância máxima do final para considerar "no fim"
+    const isNearBottom =
+      chat.scrollHeight - chat.scrollTop - chat.clientHeight < threshold;
+
+    if (isNearBottom) {
+      chat.scrollTop = chat.scrollHeight; // rola para o final
+    }
+  };
+
   const renderMessage = (message: Message) => {
     const isCustomer = message.sender === "customer";
 
@@ -188,7 +295,7 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
             isCustomer
               ? "bg-primary text-primary-foreground"
               : message.sender === "human_assistant"
-              ? "bg-yellow-100 border border-yellow-300 text-yellow-800"
+              ? "bg-yellow-100 border  text-yellow-900"
               : "bg-muted"
           }`}
         >
@@ -196,16 +303,39 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
             {isCustomer
               ? "Cliente"
               : message.sender === "human_assistant"
-              ? "Atendente Humano"
+              ? "Atendente"
               : "Agente IA"}
             <span className="text-xs font-normal ml-2 opacity-75">
               {formatDate(message.createdAt)}
             </span>
           </div>
-          <p className="mt-1">{message.content}</p>
+          <p
+            className="mt-1 whitespace-pre-wrap"
+            dangerouslySetInnerHTML={{
+              __html: formatWhatsAppMessage(message.content),
+            }}
+          />
         </div>
       </div>
     );
+  };
+
+  const handleSendMessage = () => {
+    if (!newMessage.trim()) return;
+
+    setIsSending(true);
+    sendMessageMutation.mutate({
+      agentId: localConversation.agent.id,
+      chatId: localConversation.id,
+      message: newMessage,
+    });
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
   };
 
   return (
@@ -279,6 +409,27 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
               </div>
             </AlertDescription>
           </Alert>
+        )}
+
+        {localConversation.handledBy === "human" && !showConfirmation && (
+          <div className="flex gap-2 mt-4">
+            <Input
+              placeholder="Digite sua mensagem..."
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              onKeyDown={handleKeyPress}
+              disabled={isSending}
+              className="flex-1"
+            />
+            <Button
+              onClick={handleSendMessage}
+              disabled={isSending || !newMessage.trim()}
+              isLoading={isSending}
+            >
+              <Send className="h-4 w-4" />
+              <span className="sr-only">Enviar mensagem</span>
+            </Button>
+          </div>
         )}
 
         <DialogFooter className="flex flex-col sm:flex-row gap-4 items-center">
