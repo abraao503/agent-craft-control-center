@@ -5,29 +5,48 @@ import WhatsAppForm from "@/components/whatsapp/WhatsAppForm";
 import { WhatsAppFormData } from "@/types/whatsapp";
 import { ArrowLeft } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { createWhatsAppIntegration } from "@/services/whatsapp";
 
 const CreateWhatsAppIntegrationPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const agentId = searchParams.get("agentId");
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  const initialData: WhatsAppFormData = {
-    name: "",
-    provider: "twilio",
-    phoneNumber: "",
+  const initialData: Partial<WhatsAppFormData> = {
     agentId: agentId || "",
+    externalToken: "",
+    externalClientToken: "",
+    postbackUrl: "",
+    whatsappIntegrationId: "",
   };
 
+  const createMutation = useMutation({
+    mutationFn: (data: WhatsAppFormData) => createWhatsAppIntegration(data),
+    onSuccess: () => {
+      toast({
+        title: "Integration created",
+        description: "Your WhatsApp integration has been created successfully.",
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["company-whatsapp-integrations"],
+      });
+      navigate("/integrations");
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to create the WhatsApp integration.",
+        variant: "destructive",
+      });
+      console.error("Error creating WhatsApp integration:", error);
+    },
+  });
+
   const handleSubmit = (data: WhatsAppFormData) => {
-    // const newIntegration = addWhatsAppIntegration(data);
-
-    toast({
-      title: "Integration created",
-      description: "Your WhatsApp integration has been created successfully.",
-    });
-
-    navigate("/integrations");
+    createMutation.mutate(data);
   };
 
   return (
@@ -47,7 +66,7 @@ const CreateWhatsAppIntegrationPage = () => {
           </h1>
         </div>
         <p className="text-muted-foreground">
-          Connect your AI agent to WhatsApp using third-party services
+          Connect your AI agent to WhatsApp
         </p>
 
         <WhatsAppForm onSubmit={handleSubmit} initialData={initialData} />

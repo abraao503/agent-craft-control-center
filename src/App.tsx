@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -16,6 +15,7 @@ import EditAgentPage from "./pages/EditAgentPage";
 import AgentDetailsPage from "./pages/AgentDetailsPage";
 import WhatsAppIntegrationsPage from "./pages/WhatsAppIntegrationsPage";
 import CreateWhatsAppIntegrationPage from "./pages/CreateWhatsAppIntegrationPage";
+import EditWhatsAppIntegrationPage from "./pages/EditWhatsAppIntegrationPage";
 import SettingsPage from "./pages/SettingsPage";
 import NotFound from "./pages/NotFound";
 import ContentManagementPage from "./pages/ContentManagementPage";
@@ -46,6 +46,10 @@ const App = () => (
               <Route
                 path="/integrations/new"
                 element={<CreateWhatsAppIntegrationPage />}
+              />
+              <Route
+                path="/integrations/edit/:id"
+                element={<EditWhatsAppIntegrationPage />}
               />
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="/contents" element={<ContentManagementPage />} />

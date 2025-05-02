@@ -20,7 +20,6 @@ import { Plus, Search } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { listAgent } from "@/services/agent/listAgent";
-import { Skeleton } from "@/components/ui/skeleton";
 import AgentCardSkeleton from "@/components/agents/AgentCardSkeleton";
 
 const AgentsPage = () => {
@@ -43,15 +42,6 @@ const AgentsPage = () => {
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value.toLowerCase();
     setSearchQuery(query);
-
-    // if (query.trim() === "") {
-    //   setAgents(AGENTS);
-    // } else {
-    //   const filteredAgents = AGENTS.filter((agent) =>
-    //     agent.name.toLowerCase().includes(query)
-    //   );
-    //   setAgents(filteredAgents);
-    // }
   };
 
   const handleDeleteClick = (id: string) => {

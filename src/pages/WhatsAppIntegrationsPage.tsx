@@ -13,19 +13,47 @@ import {
 } from "@/components/ui/alert-dialog";
 import MainLayout from "@/components/layout/MainLayout";
 import WhatsAppIntegrationCard from "@/components/whatsapp/WhatsAppIntegrationCard";
-import { WHATSAPP_INTEGRATIONS } from "@/services/mockData";
-import { WhatsAppIntegration } from "@/types/whatsapp";
 import { Plus } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  listCompanyWhatsAppIntegrations,
+  deleteWhatsAppIntegration,
+} from "@/services/whatsapp";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const WhatsAppIntegrationsPage = () => {
-  const [integrations, setIntegrations] = useState<WhatsAppIntegration[]>(
-    WHATSAPP_INTEGRATIONS
-  );
   const [integrationToDelete, setIntegrationToDelete] = useState<string | null>(
     null
   );
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const { data: integrations = [], isLoading } = useQuery({
+    queryKey: ["company-whatsapp-integrations"],
+    queryFn: listCompanyWhatsAppIntegrations,
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => deleteWhatsAppIntegration(id),
+    onSuccess: () => {
+      toast({
+        title: "Integration deleted",
+        description: "The WhatsApp integration has been successfully deleted.",
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["company-whatsapp-integrations"],
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to delete the WhatsApp integration.",
+        variant: "destructive",
+      });
+      console.error("Error deleting WhatsApp integration:", error);
+    },
+  });
 
   const handleDeleteClick = (id: string) => {
     setIntegrationToDelete(id);
@@ -33,15 +61,25 @@ const WhatsAppIntegrationsPage = () => {
 
   const confirmDelete = () => {
     if (integrationToDelete) {
-      // deleteWhatsAppIntegration(integrationToDelete);
-      setIntegrations(WHATSAPP_INTEGRATIONS);
-      toast({
-        title: "Integration deleted",
-        description: "The WhatsApp integration has been successfully deleted.",
-      });
+      deleteMutation.mutate(integrationToDelete);
       setIntegrationToDelete(null);
     }
   };
+
+  const IntegrationSkeletons = () => (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {Array.from({ length: 3 }, (_, index) => (
+        <div key={index} className="border rounded-lg p-4 space-y-4">
+          <Skeleton className="h-6 w-2/3" />
+          <Skeleton className="h-4 w-1/2" />
+          <div className="flex justify-between items-center mt-4">
+            <Skeleton className="h-10 w-24" />
+            <Skeleton className="h-10 w-10 rounded-full" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 
   return (
     <MainLayout>
@@ -63,7 +101,9 @@ const WhatsAppIntegrationsPage = () => {
           </Link>
         </div>
 
-        {integrations.length === 0 ? (
+        {isLoading ? (
+          <IntegrationSkeletons />
+        ) : integrations.length === 0 ? (
           <div className="text-center py-12 border rounded-lg">
             <h3 className="font-medium text-lg">
               No WhatsApp integrations yet
