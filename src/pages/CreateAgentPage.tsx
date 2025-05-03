@@ -23,7 +23,6 @@ const STEPS = [
 
 const defaultFormData: AgentFormData = {
   name: "",
-  internalName: "",
   description: "",
   avatarUrl: "",
   timeZone: "America/New_York",

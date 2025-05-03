@@ -32,7 +32,6 @@ export interface FullAgent {
   id: string;
   companyId: string;
   name: string;
-  internalName: string;
   description: string;
   avatar: {
     id: string;
@@ -64,7 +63,6 @@ export interface FullAgent {
 export interface AgentFormData {
   // Step 1: Basic Information
   name: string;
-  internalName: string;
   description: string;
   avatarUrl?: string;
   timeZone: string;

@@ -41,20 +41,6 @@ const PromptContext = ({ formData, updateFormData }: PromptContextProps) => {
         </p>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="habilities">Skills</Label>
-        <Textarea
-          id="habilities"
-          placeholder="Product knowledge, troubleshooting, empathy, clear communication..."
-          value={formData.habilities}
-          onChange={(e) => updateFormData({ habilities: e.target.value })}
-          required
-        />
-        <p className="text-sm text-muted-foreground">
-          List the skills and abilities your agent should demonstrate.
-        </p>
-      </div>
-
       <div className="py-2 my-4 border-t border-b">
         <h3 className="text-lg font-medium mb-2">Company Information</h3>
         <p className="text-sm text-muted-foreground mb-4">

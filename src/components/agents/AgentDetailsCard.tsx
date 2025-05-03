@@ -45,10 +45,6 @@ const AgentDetailsCard = ({ agent }: AgentDetailsCardProps) => {
             <h3 className="text-lg font-medium mb-2">Basic Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <p className="text-sm text-muted-foreground">Internal Name</p>
-                <p className="font-medium">{agent.internalName}</p>
-              </div>
-              <div>
                 <p className="text-sm text-muted-foreground">AI Model</p>
                 <p className="font-medium">{agent.iaModel.name}</p>
               </div>

@@ -83,7 +83,6 @@ const EditAgentPage = () => {
 
       setFormData({
         name: data.name,
-        internalName: data.internalName,
         description: data.description,
         avatarUrl: data.avatar ? data.avatar.url : null,
         timeZone: data.timeZone,
@@ -189,9 +188,7 @@ const EditAgentPage = () => {
 
     switch (currentStep) {
       case 1:
-        return (
-          !!formData.name && !!formData.internalName && !!formData.description
-        );
+        return !!formData.name && !!formData.description;
       case 2:
         return !!formData.promptDescription && !!formData.goal;
       case 3:
