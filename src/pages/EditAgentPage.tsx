@@ -5,8 +5,7 @@ import MainLayout from "@/components/layout/MainLayout";
 import AgentStepIndicator from "@/components/agents/AgentStepIndicator";
 import BasicInformation from "@/components/agents/step1/BasicInformation";
 import PromptContext from "@/components/agents/step2/PromptContext";
-import KnowledgeContent from "@/components/agents/step3/KnowledgeContent";
-import CustomFields from "@/components/agents/step4/CustomFields";
+import CustomFields from "@/components/agents/step4/EditCustomFields";
 import {
   AgentFormData,
   AssistantContent,
@@ -18,6 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { getAgent } from "@/services/agent/getAgent";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { updateAgent } from "@/services/agent/updateAgent";
+import EditKnowledgeContent from "@/components/agents/step3/EditKnowledgeContent";
 
 const STEPS = [
   "Basic Information",
@@ -92,7 +92,6 @@ const EditAgentPage = () => {
         iaModelId: data.iaModel.id,
         promptDescription: data.prompt.description,
         goal: data.prompt.goal,
-        habilities: data.prompt.habilities,
         companyName: data.prompt.companyName,
         companySite: data.prompt.companySite,
         companyDescription: data.prompt.companyDescription,
@@ -123,13 +122,11 @@ const EditAgentPage = () => {
       agentData: {
         avatarFileId: null,
         name: formData.name,
-        internalName: formData.internalName,
         description: formData.description,
         timeZone: formData.timeZone,
         prompt: {
           description: formData.promptDescription,
           goal: formData.goal,
-          habilities: formData.habilities,
           companyName: formData.companyName,
           companySite: formData.companySite,
           companyDescription: formData.companyDescription,
@@ -168,7 +165,7 @@ const EditAgentPage = () => {
         );
       case 3:
         return (
-          <KnowledgeContent
+          <EditKnowledgeContent
             formData={formData}
             updateFormData={updateFormData}
             setContentsToUpdate={setContentsToUpdate}

@@ -51,7 +51,6 @@ const AgentsPage = () => {
   const confirmDelete = () => {
     if (agentToDelete) {
       deleteAgent(agentToDelete);
-      // setAgents(AGENTS);
       toast({
         title: "Agent deleted",
         description: "The agent has been successfully deleted.",
@@ -113,7 +112,7 @@ const AgentsPage = () => {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
             {agents.map((agent) => (
               <AgentCard
                 key={agent.id}

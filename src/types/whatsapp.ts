@@ -7,8 +7,11 @@ export interface WhatsAppIntegration {
 export interface CompanyWhatsAppIntegration {
   id: string;
   postbackUrl: string;
-  agentName: string;
   whatsappIntegrationName: string;
+  agent: {
+    id: string;
+    name: string;
+  };
 }
 
 export interface CompanyWhatsAppIntegrationFull {

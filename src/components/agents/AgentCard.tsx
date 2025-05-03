@@ -18,15 +18,13 @@ interface AgentCardProps {
 }
 
 const AgentCard = ({ agent, onDelete }: AgentCardProps) => {
-  const hasWhatsApp = true;
-
   return (
     <Card className="h-full flex flex-col min-w-[380px]">
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start">
           <CardTitle className="text-xl">{agent.name}</CardTitle>
           <div className="flex space-x-1">
-            {hasWhatsApp && (
+            {agent.hasWhatsappIntegration && (
               <Badge
                 variant="outline"
                 className="bg-green-50 text-green-600 border-green-200"

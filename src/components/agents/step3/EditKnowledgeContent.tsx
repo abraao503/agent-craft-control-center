@@ -6,20 +6,23 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { X, Upload, FileText } from "lucide-react";
-import { format, set } from "date-fns";
+import { format } from "date-fns";
 import { useToast } from "@/components/ui/use-toast";
 import { CONTENTS } from "@/services/mockData";
 
-type Content = AgentFormData["contents"][0];
-interface KnowledgeContentProps {
+interface EditKnowledgeContentProps {
   formData: AgentFormData;
   updateFormData: (data: Partial<AgentFormData>) => void;
+  setContentsToUpdate: React.Dispatch<React.SetStateAction<AssistantContent[]>>;
 }
 
-const KnowledgeContent = ({
+type Content = AgentFormData["contents"][0];
+
+const EditKnowledgeContent = ({
   formData,
   updateFormData,
-}: KnowledgeContentProps) => {
+  setContentsToUpdate,
+}: EditKnowledgeContentProps) => {
   const [newContentName, setNewContentName] = useState("");
   const { toast } = useToast();
 
@@ -37,16 +40,44 @@ const KnowledgeContent = ({
 
   const removeContent = (content: Content) => {
     const updatedContents = formData.contents.filter(
-      (c) => c.id !== content.id
+      (content) => content.id !== content.id
     );
 
-    updateFormData({
-      contents: updatedContents,
+    setContentsToUpdate((prev) => {
+      const contentIndex = prev.findIndex((c) => c.contentId === content.id);
+
+      if (contentIndex !== -1) {
+        prev[contentIndex] = {
+          action: "delete",
+          contentId: content.id,
+        };
+
+        return prev;
+      } else {
+        return [...prev, { contentId: content.id, action: "delete" }];
+      }
     });
+
+    updateFormData({ contents: updatedContents });
   };
 
   const addContent = (content: Content) => {
     const updatedContents = [...formData.contents, content];
+
+    setContentsToUpdate((prev) => {
+      const contentIndex = prev.findIndex((c) => c.contentId === content.id);
+
+      if (contentIndex !== -1) {
+        prev[contentIndex] = {
+          action: "create",
+          contentId: content.id,
+        };
+
+        return prev;
+      } else {
+        return [...prev, { contentId: content.id, action: "create" }];
+      }
+    });
 
     updateFormData({ contents: updatedContents });
   };
@@ -224,4 +255,4 @@ const KnowledgeContent = ({
   );
 };
 
-export default KnowledgeContent;
+export default EditKnowledgeContent;

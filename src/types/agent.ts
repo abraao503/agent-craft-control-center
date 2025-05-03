@@ -75,7 +75,6 @@ export interface AgentFormData {
   // Step 2: Prompt & Context
   promptDescription: string;
   goal: string;
-  habilities: string;
   companyName: string;
   companySite: string;
   companyDescription: string;
@@ -109,6 +108,7 @@ export interface TimeZone {
 
 export type Agent = {
   id: string;
+  hasWhatsappIntegration: boolean;
   avatar: string | null;
   name: string;
   iaModelName: string;
@@ -125,7 +125,6 @@ export type GetAgentResponse = FullAgent;
 
 export type UpdateAgentResquest = {
   name: string;
-  internalName: string;
   description: string;
   avatarFileId: string | null;
   timeZone: string;
@@ -135,22 +134,19 @@ export type UpdateAgentResquest = {
   prompt: {
     description: string;
     goal: string;
-    habilities: string;
     companyName: string;
-    companySite: string;
-    companyDescription: string;
-    companySector: string;
+    companySite?: string;
+    companyDescription?: string;
+    companySector?: string;
   };
   contents: AssistantContent[];
   customFields: UpdateAssistantCustomField[];
 };
 
 export type CreateAgentRequest = {
-  userId: string;
   name: string;
-  internalName: string;
   description: string;
-  avatarId: string | null;
+  avatarFileId: string | null;
   timeZone: string;
   language: string;
   initialMessage: string;
@@ -158,12 +154,11 @@ export type CreateAgentRequest = {
   prompt: {
     description: string;
     goal: string;
-    habilities: string;
     companyName: string;
-    companySite: string;
-    companyDescription: string;
-    companySector: string;
+    companySite?: string;
+    companyDescription?: string;
+    companySector?: string;
   };
   contentsIds: string[];
-  customFields: CustomField[];
+  customFields: Omit<CustomField, "id">[];
 };

@@ -20,6 +20,8 @@ import SettingsPage from "./pages/SettingsPage";
 import NotFound from "./pages/NotFound";
 import ContentManagementPage from "./pages/ContentManagementPage";
 import ConversationsPage from "./pages/ConversationsPage";
+import CustomersPage from "./pages/CustomersPage";
+import CustomerDetailsPage from "./pages/CustomerDetailsPage";
 
 const queryClient = new QueryClient();
 
@@ -54,6 +56,8 @@ const App = () => (
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="/contents" element={<ContentManagementPage />} />
               <Route path="/conversations" element={<ConversationsPage />} />
+              <Route path="/customers" element={<CustomersPage />} />
+              <Route path="/customers/:id" element={<CustomerDetailsPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

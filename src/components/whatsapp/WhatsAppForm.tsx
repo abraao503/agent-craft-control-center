@@ -22,6 +22,8 @@ import { useQuery } from "@tanstack/react-query";
 import { listWhatsAppIntegrations } from "@/services/whatsapp";
 import { listAgent } from "@/services/agent/listAgent";
 import { useNavigate } from "react-router-dom";
+import { Copy } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 
 interface WhatsAppFormProps {
   onSubmit: (data: WhatsAppFormData) => void;
@@ -47,7 +49,10 @@ const WhatsAppForm = ({
     ...initialData,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showWebhookPreview, setShowWebhookPreview] = useState(false);
+  const [webhookUrl, setWebhookUrl] = useState("");
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   const { data: whatsappIntegrations = [], isLoading: isLoadingIntegrations } =
     useQuery({
@@ -60,8 +65,51 @@ const WhatsAppForm = ({
     queryFn: listAgent,
   });
 
+  // Get selected WhatsApp integration name
+  const selectedIntegration = whatsappIntegrations.find(
+    (integration) => integration.id === formData.whatsappIntegrationId
+  );
+
+  // Get company ID from localStorage
+  const getUserCompanyId = () => {
+    const userJson = localStorage.getItem("user");
+    if (!userJson) return "";
+    try {
+      const user = JSON.parse(userJson);
+      return user.companyId || "";
+    } catch (e) {
+      console.error("Failed to parse user data from localStorage", e);
+      return "";
+    }
+  };
+
+  // Generate webhook URL when needed values change
+  useEffect(() => {
+    if (formData.whatsappIntegrationId && formData.agentId) {
+      const frontendUrl =
+        import.meta.env.VITE_FRONTEND_URL || window.location.origin;
+      const companyId = getUserCompanyId();
+      const integrationName = selectedIntegration?.name || "unknown";
+
+      // Convert integration name to kebab-case for the URL
+      const formattedIntegrationName = integrationName
+        .toLowerCase()
+        .replace(/\s+/g, "-");
+
+      setWebhookUrl(
+        `${frontendUrl}/webhook/${formattedIntegrationName}/${companyId}/${formData.agentId}`
+      );
+    }
+  }, [formData.whatsappIntegrationId, formData.agentId, selectedIntegration]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!showWebhookPreview) {
+      setShowWebhookPreview(true);
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -79,6 +127,32 @@ const WhatsAppForm = ({
 
   const handleBackToIntegrations = () => {
     navigate("/integrations");
+  };
+
+  const copyWebhookToClipboard = () => {
+    navigator.clipboard.writeText(webhookUrl);
+    toast({
+      description: "Webhook URL copied to clipboard",
+    });
+  };
+
+  // Reset the webhook preview when the user changes important form data
+  useEffect(() => {
+    if (showWebhookPreview) {
+      setShowWebhookPreview(false);
+    }
+  }, [formData.whatsappIntegrationId, formData.agentId]);
+
+  const getButtonText = () => {
+    if (isSubmitting) {
+      return "Saving...";
+    }
+
+    if (showWebhookPreview) {
+      return isEditMode ? "Update Integration" : "Create Integration";
+    }
+
+    return "Continue";
   };
 
   return (
@@ -193,9 +267,47 @@ const WhatsAppForm = ({
               onChange={(e) => updateFormData({ postbackUrl: e.target.value })}
             />
             <p className="text-sm text-muted-foreground">
-              The URL WhatsApp will send messages to (optional).
+              The URL WhatsApp will send messages to.
             </p>
           </div>
+
+          {showWebhookPreview && (
+            <div className="mt-8 p-6 border rounded-md bg-muted">
+              <h3 className="font-medium text-lg mb-3">
+                Webhook URL for External Platform
+              </h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Copy this webhook URL and use it in your WhatsApp platform
+                settings before creating the integration.
+              </p>
+              <div className="flex items-center space-x-2">
+                <div className="flex-1 relative">
+                  <Input
+                    value={webhookUrl}
+                    readOnly
+                    className="font-mono text-sm pr-10 bg-background"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-1 top-1/2 transform -translate-y-1/2"
+                    onClick={copyWebhookToClipboard}
+                  >
+                    <Copy className="h-4 w-4" />
+                    <span className="sr-only">Copy</span>
+                  </Button>
+                </div>
+                {/* <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={copyWebhookToClipboard}
+                >
+                  Copy
+                </Button> */}
+              </div>
+            </div>
+          )}
         </form>
       </CardContent>
       <CardFooter className="flex justify-between">
@@ -213,14 +325,11 @@ const WhatsAppForm = ({
             !formData.externalToken ||
             !formData.externalClientToken ||
             !formData.agentId ||
-            !formData.whatsappIntegrationId
+            !formData.whatsappIntegrationId ||
+            !formData.postbackUrl
           }
         >
-          {isSubmitting
-            ? "Saving..."
-            : isEditMode
-            ? "Update Integration"
-            : "Create Integration"}
+          {getButtonText()}
         </Button>
       </CardFooter>
     </Card>

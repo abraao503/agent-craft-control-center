@@ -4,8 +4,11 @@ import { api } from "../api";
 type ApiResponse = {
   id: string;
   postbackUrl: string;
-  assistantName: string;
   whatsappIntegrationName: string;
+  assistant: {
+    id: string;
+    name: string;
+  };
 }[];
 
 export const listCompanyWhatsAppIntegrations = async (): Promise<
@@ -16,7 +19,7 @@ export const listCompanyWhatsAppIntegrations = async (): Promise<
   );
   return response.data.map((item) => ({
     ...item,
-    agentName: item.assistantName,
     whatsappIntegrationName: item.whatsappIntegrationName,
+    agent: item.assistant,
   }));
 };

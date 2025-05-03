@@ -76,20 +76,6 @@ const BasicInformation = ({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="internalName">Internal Name</Label>
-        <Input
-          id="internalName"
-          placeholder="support-agent"
-          value={formData.internalName}
-          onChange={(e) => updateFormData({ internalName: e.target.value })}
-          required
-        />
-        <p className="text-sm text-muted-foreground">
-          For your reference only. Used in analytics and logs.
-        </p>
-      </div>
-
-      <div className="space-y-2">
         <Label htmlFor="description">Description</Label>
         <Textarea
           id="description"
@@ -99,29 +85,6 @@ const BasicInformation = ({
           required
           className="min-h-[100px]"
         />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="avatar">Avatar Image (Optional)</Label>
-        <div className="flex items-center space-x-4">
-          {avatarPreview && (
-            <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
-              <img
-                src={avatarPreview}
-                alt="Avatar preview"
-                className="w-full h-full object-cover"
-              />
-            </div>
-          )}
-
-          <Input
-            id="avatar"
-            type="file"
-            accept="image/*"
-            onChange={handleAvatarChange}
-            className="max-w-sm"
-          />
-        </div>
       </div>
 
       <div className="space-y-2">

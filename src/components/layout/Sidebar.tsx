@@ -9,6 +9,7 @@ import {
   LayoutDashboard,
   Database,
   MessagesSquare,
+  Users,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { useAuth } from "@/contexts/auth/hooks";
@@ -77,6 +78,19 @@ const Sidebar = () => {
           >
             <MessagesSquare className="mr-2 h-5 w-5" />
             Conversas
+          </Button>
+        </Link>
+
+        <Link to="/customers">
+          <Button
+            variant="ghost"
+            className={cn(
+              "w-full justify-start",
+              isActive("/customers") && "bg-accent text-primary"
+            )}
+          >
+            <Users className="mr-2 h-5 w-5" />
+            Customers
           </Button>
         </Link>
 

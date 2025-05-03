@@ -39,15 +39,40 @@ const WhatsAppIntegrationCard = ({
   });
 
   const copyPostbackUrlToClipboard = () => {
-    if (integration.postbackUrl) {
-      navigator.clipboard.writeText(integration.postbackUrl);
-      setCopied(true);
-      toast({
-        title: "Copied to clipboard",
-        description: "The postback URL has been copied to your clipboard.",
-      });
-      setTimeout(() => setCopied(false), 2000);
+    const webhook = getWebhookUrl();
+
+    navigator.clipboard.writeText(webhook);
+    setCopied(true);
+    toast({
+      title: "Copied to clipboard",
+      description: "The postback URL has been copied to your clipboard.",
+    });
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const getUserCompanyId = () => {
+    const userJson = localStorage.getItem("user");
+    if (!userJson) return "";
+    try {
+      const user = JSON.parse(userJson);
+      return user.companyId || "";
+    } catch (e) {
+      console.error("Failed to parse user data from localStorage", e);
+      return "";
     }
+  };
+
+  const getWebhookUrl = () => {
+    const frontendUrl =
+      import.meta.env.VITE_FRONTEND_URL || window.location.origin;
+    const companyId = getUserCompanyId();
+    const integrationName = integration.whatsappIntegrationName || "unknown";
+
+    const formattedIntegrationName = integrationName
+      .toLowerCase()
+      .replace(/\s+/g, "-");
+
+    return `${frontendUrl}/webhook/${formattedIntegrationName}/${companyId}/${integration.agent.id}`;
   };
 
   return (
@@ -58,7 +83,9 @@ const WhatsAppIntegrationCard = ({
             {integration.whatsappIntegrationName}
           </CardTitle>
         </div>
-        <CardDescription>Connected to: {integration.agentName}</CardDescription>
+        <CardDescription>
+          Connected to: {integration.agent.name}
+        </CardDescription>
       </CardHeader>
       <CardContent className="pb-2 flex-grow">
         <div className="space-y-2 text-sm text-muted-foreground">
@@ -66,28 +93,24 @@ const WhatsAppIntegrationCard = ({
             <span className="font-medium text-foreground">Integration ID:</span>{" "}
             {integration.id.substring(0, 8)}...
           </p>
-          {integration.postbackUrl && (
-            <div className="pt-2">
-              <div className="flex items-center gap-1 mb-1">
-                <span className="font-medium text-foreground">
-                  Postback URL:
-                </span>
-              </div>
-              <div className="flex items-center gap-1">
-                <div className="truncate text-xs font-mono bg-gray-50 p-1 rounded border flex-grow">
-                  {integration.postbackUrl}
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex-shrink-0 h-6 w-6 p-0"
-                  onClick={copyPostbackUrlToClipboard}
-                >
-                  <Copy className="h-3 w-3" />
-                </Button>
-              </div>
+          <div className="pt-2">
+            <div className="flex items-center gap-1 mb-1">
+              <span className="font-medium text-foreground">Webhook URL:</span>
             </div>
-          )}
+            <div className="flex items-center gap-1">
+              <div className="truncate text-xs font-mono bg-gray-50 p-1 rounded border flex-grow">
+                {getWebhookUrl()}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-shrink-0 h-6 w-6 p-0"
+                onClick={copyPostbackUrlToClipboard}
+              >
+                <Copy className="h-3 w-3" />
+              </Button>
+            </div>
+          </div>
         </div>
       </CardContent>
       <CardFooter className="pt-2 flex justify-end">
