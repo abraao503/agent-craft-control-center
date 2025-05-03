@@ -87,7 +87,7 @@ const WhatsAppForm = ({
   useEffect(() => {
     if (formData.whatsappIntegrationId && formData.agentId) {
       const frontendUrl =
-        import.meta.env.VITE_FRONTEND_URL || window.location.origin;
+        import.meta.env.VITE_API_URL || window.location.origin;
       const companyId = getUserCompanyId();
       const integrationName = selectedIntegration?.name || "unknown";
 

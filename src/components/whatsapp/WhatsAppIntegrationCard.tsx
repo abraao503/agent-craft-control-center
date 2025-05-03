@@ -63,8 +63,7 @@ const WhatsAppIntegrationCard = ({
   };
 
   const getWebhookUrl = () => {
-    const frontendUrl =
-      import.meta.env.VITE_FRONTEND_URL || window.location.origin;
+    const frontendUrl = import.meta.env.VITE_API_URL || window.location.origin;
     const companyId = getUserCompanyId();
     const integrationName = integration.whatsappIntegrationName || "unknown";
 
