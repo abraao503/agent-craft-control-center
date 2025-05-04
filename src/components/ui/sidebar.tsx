@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { VariantProps, cva } from "class-variance-authority";
-import { PanelLeft } from "lucide-react";
+import { PanelLeft, ChevronRight, ChevronLeft } from "lucide-react";
 
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
@@ -20,7 +20,7 @@ import {
 const SIDEBAR_COOKIE_NAME = "sidebar:state";
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
 const SIDEBAR_WIDTH = "16rem";
-const SIDEBAR_WIDTH_MOBILE = "18rem";
+const SIDEBAR_WIDTH_MOBILE = "14rem";
 const SIDEBAR_WIDTH_ICON = "5rem";
 const SIDEBAR_KEYBOARD_SHORTCUT = "b";
 
@@ -66,7 +66,7 @@ const SidebarProvider = React.forwardRef<
     ref
   ) => {
     const isMobile = useIsMobile();
-    const [openMobile, setOpenMobile] = React.useState(false);
+    const [openMobile, setOpenMobile] = React.useState(true);
 
     // This is the internal state of the sidebar.
     // We use openProp and setOpenProp for control from outside the component.
@@ -112,7 +112,7 @@ const SidebarProvider = React.forwardRef<
 
     // We add a state so that we can do data-state="expanded" or "collapsed".
     // This makes it easier to style the sidebar with Tailwind classes.
-    const state = open ? "expanded" : "collapsed";
+    const state = isMobile ? (openMobile ? "expanded" : "collapsed") : (open ? "expanded" : "collapsed");
 
     const contextValue = React.useMemo<SidebarContext>(
       () => ({
@@ -187,22 +187,73 @@ const Sidebar = React.forwardRef<
     }
 
     if (isMobile) {
+      // Nova implementação para dispositivos móveis
+      // Sidebar fixa por cima da página principal com fundo totalmente opaco 
+      // Usamos as variáveis CSS específicas para garantir que não haja transparência
       return (
-        <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
-          <SheetContent
-            data-sidebar="sidebar"
-            data-mobile="true"
-            className="w-[--sidebar-width] bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
-            style={
-              {
-                "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
-              } as React.CSSProperties
-            }
-            side={side}
+        <div
+          ref={ref}
+          className={cn(
+            "fixed inset-y-0 left-0 z-30 flex h-svh flex-col transition-transform duration-200 shadow-xl border-r",
+            state === "collapsed" ? "translate-x-[-80%]" : "translate-x-0",
+            className
+          )}
+          style={
+            {
+              "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
+              width: SIDEBAR_WIDTH_MOBILE,
+              backgroundColor: "var(--sidebar-solid-bg)",
+              color: "var(--sidebar-solid-text)", 
+              backgroundImage: "none",
+              backdropFilter: "none",
+              opacity: 1,
+              isolation: "isolate",
+              borderColor: "var(--sidebar-solid-border)",
+            } as React.CSSProperties
+          }
+          {...props}
+        >
+          <div 
+            className="flex h-full w-full flex-col" 
+            data-sidebar="mobile-container"
+            style={{ 
+              backgroundColor: "var(--sidebar-solid-bg)",
+              backgroundImage: "none",
+              backdropFilter: "none",
+              opacity: 1
+            }}
           >
-            <div className="flex h-full w-full flex-col">{children}</div>
-          </SheetContent>
-        </Sheet>
+            <div 
+              className="flex h-full w-full flex-col"
+              style={{ 
+                backgroundColor: "var(--sidebar-solid-bg)",
+                color: "var(--sidebar-solid-text)",
+                backgroundImage: "none",
+                backdropFilter: "none",
+                opacity: 1
+              }}
+            >
+              {children}
+            </div>
+          </div>
+          {/* Botão para fechar/abrir no canto superior direito */}
+          <Button
+            variant="outline"
+            size="icon"
+            className="absolute right-[-18px] top-4 h-7 w-7 rounded-full border shadow-md"
+            style={{
+              backgroundColor: "var(--sidebar-solid-bg)",
+              borderColor: "var(--sidebar-solid-border)",
+            }}
+            onClick={() => setOpenMobile(!openMobile)}
+          >
+            {state === "collapsed" ? (
+              <ChevronRight className="h-3 w-3" />
+            ) : (
+              <ChevronLeft className="h-3 w-3" />
+            )}
+          </Button>
+        </div>
       );
     }
 

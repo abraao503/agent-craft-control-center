@@ -65,6 +65,49 @@ const AppLayout = () => {
   const [pageTransitioning, setPageTransitioning] = useState(false);
   const mainContainerRef = useRef<HTMLDivElement>(null);
 
+  // Detectar tema e definir variáveis CSS apenas para a sidebar
+  useEffect(() => {
+    // Função para definir as variáveis de acordo com o tema
+    const updateSidebarColors = () => {
+      const isDarkMode = document.documentElement.classList.contains('dark');
+      
+      // Cores sólidas para a sidebar (sem transparência)
+      if (isDarkMode) {
+        document.documentElement.style.setProperty('--sidebar-solid-bg', '#1e1e2e');
+        document.documentElement.style.setProperty('--sidebar-solid-text', '#e0e0e0');
+        document.documentElement.style.setProperty('--sidebar-solid-border', '#2a2a3a');
+      } else {
+        document.documentElement.style.setProperty('--sidebar-solid-bg', '#ffffff');
+        document.documentElement.style.setProperty('--sidebar-solid-text', '#0f0f0f');
+        document.documentElement.style.setProperty('--sidebar-solid-border', '#e0e0e0');
+      }
+    };
+    
+    // Executar imediatamente
+    updateSidebarColors();
+    
+    // Observar mudanças na classe 'dark' do documento
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (
+          mutation.type === 'attributes' && 
+          mutation.attributeName === 'class'
+        ) {
+          updateSidebarColors();
+        }
+      });
+    });
+    
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class'],
+    });
+    
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
   useEffect(() => {
     // Efeito de fade suave para a troca de páginas
     setPageTransitioning(true);
@@ -82,7 +125,7 @@ const AppLayout = () => {
   return (
     <SidebarProvider defaultOpen={initialState}>
       <MainContainerRefContext.Provider value={mainContainerRef}>
-        <div className="flex h-screen">
+        <div className="flex h-screen overflow-hidden bg-background">
           <Sidebar />
           <main
             ref={mainContainerRef}
