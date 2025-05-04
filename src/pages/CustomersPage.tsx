@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import MainLayout from "@/components/layout/MainLayout";
 import { useQuery } from "@tanstack/react-query";
 import { Search, Users, ChevronUp, ChevronDown } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
@@ -101,7 +100,7 @@ const CustomersPage = () => {
   };
 
   return (
-    <MainLayout>
+    <div>
       <div className="container mx-auto py-6 w-100">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
@@ -271,7 +270,7 @@ const CustomersPage = () => {
           </>
         )}
       </div>
-    </MainLayout>
+    </div>
   );
 };
 

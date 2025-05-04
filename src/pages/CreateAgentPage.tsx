@@ -1,18 +1,18 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import MainLayout from "@/components/layout/MainLayout";
 import AgentStepIndicator from "@/components/agents/AgentStepIndicator";
 import BasicInformation from "@/components/agents/step1/BasicInformation";
 import PromptContext from "@/components/agents/step2/PromptContext";
 import KnowledgeContent from "@/components/agents/step3/KnowledgeContent";
 import { AgentFormData, CreateAgentRequest } from "@/types/agent";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { listAgent } from "@/services/agent/listAgent";
 import { createAgent } from "@/services/agent/createAgent";
 import EditCustomFields from "@/components/agents/step4/CustomFields";
 import CustomFields from "@/components/agents/step4/CustomFields";
+import { useMainContainerRef } from "@/contexts/mainContainer";
 
 const STEPS = [
   "Basic Information",
@@ -24,11 +24,11 @@ const STEPS = [
 const defaultFormData: AgentFormData = {
   name: "",
   description: "",
-  avatarUrl: "",
-  timeZone: "America/New_York",
-  language: "en-US",
-  initialMessage: "Hello! How can I assist you today?",
-  iaModelId: "gpt-4o",
+  avatarUrl: null,
+  iaModelId: "",
+  initialMessage: "",
+  timeZone: "America/Sao_Paulo",
+  language: "pt-BR",
   promptDescription: "",
   goal: "",
   companyName: "",
@@ -42,7 +42,7 @@ const defaultFormData: AgentFormData = {
 const CreateAgentPage = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<AgentFormData>(defaultFormData);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const containerRef = useMainContainerRef();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -50,7 +50,7 @@ const CreateAgentPage = () => {
     if (containerRef.current) {
       containerRef.current.scrollTo({ top: 0, behavior: "instant" });
     }
-  }, [currentStep]);
+  }, [currentStep, containerRef]);
 
   const {
     isLoading,
@@ -156,7 +156,7 @@ const CreateAgentPage = () => {
   };
 
   return (
-    <MainLayout forwardRef={containerRef}>
+    <div>
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
@@ -192,7 +192,7 @@ const CreateAgentPage = () => {
           </div>
         </div>
       </div>
-    </MainLayout>
+    </div>
   );
 };
 

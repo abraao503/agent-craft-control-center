@@ -11,7 +11,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import MainLayout from "@/components/layout/MainLayout";
 import WhatsAppIntegrationCard from "@/components/whatsapp/WhatsAppIntegrationCard";
 import { Plus } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
@@ -82,7 +81,7 @@ const WhatsAppIntegrationsPage = () => {
   );
 
   return (
-    <MainLayout>
+    <div>
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
@@ -151,7 +150,7 @@ const WhatsAppIntegrationsPage = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </MainLayout>
+    </div>
   );
 };
 

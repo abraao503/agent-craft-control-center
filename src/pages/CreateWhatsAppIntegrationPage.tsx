@@ -1,6 +1,5 @@
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import MainLayout from "@/components/layout/MainLayout";
 import WhatsAppForm from "@/components/whatsapp/WhatsAppForm";
 import { WhatsAppFormData } from "@/types/whatsapp";
 import { ArrowLeft } from "lucide-react";
@@ -50,7 +49,7 @@ const CreateWhatsAppIntegrationPage = () => {
   };
 
   return (
-    <MainLayout>
+    <div>
       <div className="space-y-6">
         <div className="flex items-center gap-2 mb-1">
           <Button
@@ -71,7 +70,7 @@ const CreateWhatsAppIntegrationPage = () => {
 
         <WhatsAppForm onSubmit={handleSubmit} initialData={initialData} />
       </div>
-    </MainLayout>
+    </div>
   );
 };
 

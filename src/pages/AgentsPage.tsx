@@ -12,7 +12,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import MainLayout from "@/components/layout/MainLayout";
 import AgentCard from "@/components/agents/AgentCard";
 import { deleteAgent } from "@/services/mockData";
 import { Agent } from "@/types/agent";
@@ -60,7 +59,7 @@ const AgentsPage = () => {
   };
 
   return (
-    <MainLayout>
+    <div>
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
@@ -147,7 +146,7 @@ const AgentsPage = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </MainLayout>
+    </div>
   );
 };
 

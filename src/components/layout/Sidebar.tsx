@@ -221,18 +221,31 @@ const ToggleButton = () => {
 const Sidebar = () => {
   const { user } = useAuth();
   const [mounted, setMounted] = useState(false);
+  const location = useLocation();
+  const { state, setOpen } = useSidebar();
+  const isCollapsed = state === "collapsed";
 
+  // Efeito simplificado para manter o estado da sidebar durante navegação
   useEffect(() => {
-    setMounted(true);
-  }, []);
+    // O efeito aqui é mínimo apenas para garantir que o estado seja preservado
+    if (isCollapsed) {
+      // Aplicar o estado colapsado sem setTimeout para evitar o flash
+      setOpen(false);
+    }
+
+    if (!mounted) {
+      setMounted(true);
+    }
+  }, [location.pathname, isCollapsed, setOpen, mounted]);
 
   if (!user) {
     return null;
   }
 
   if (!mounted) {
+    // Renderizar uma versão "vazia" consistente com o estado atual
     return (
-      <div className="w-64 bg-background border-r border-border h-screen" />
+      <div className={cn("h-screen border-r border-border transition-all")} />
     );
   }
 

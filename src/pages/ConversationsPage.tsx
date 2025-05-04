@@ -3,7 +3,6 @@ import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { Loader2, Search } from "lucide-react";
 
-import MainLayout from "@/components/layout/MainLayout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -134,7 +133,7 @@ const ConversationsPage = () => {
   };
 
   return (
-    <MainLayout>
+    <div>
       <div className="container mx-auto py-6">
         <Card>
           <CardHeader>
@@ -353,7 +352,7 @@ const ConversationsPage = () => {
           isOpen={!!selectedConversation}
         />
       )}
-    </MainLayout>
+    </div>
   );
 };
 

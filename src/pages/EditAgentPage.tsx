@@ -1,7 +1,6 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import MainLayout from "@/components/layout/MainLayout";
 import AgentStepIndicator from "@/components/agents/AgentStepIndicator";
 import BasicInformation from "@/components/agents/step1/BasicInformation";
 import PromptContext from "@/components/agents/step2/PromptContext";
@@ -18,6 +17,7 @@ import { getAgent } from "@/services/agent/getAgent";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { updateAgent } from "@/services/agent/updateAgent";
 import EditKnowledgeContent from "@/components/agents/step3/EditKnowledgeContent";
+import { useMainContainerRef } from "@/contexts/mainContainer";
 
 const STEPS = [
   "Basic Information",
@@ -39,13 +39,13 @@ const EditAgentPage = () => {
   const [customFieldsToUpdate, setCustomFieldsToUpdate] = useState<
     UpdateAssistantCustomField[]
   >([]);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const containerRef = useMainContainerRef();
 
   useEffect(() => {
     if (containerRef.current) {
       containerRef.current.scrollTo({ top: 0, behavior: "instant" });
     }
-  }, [currentStep]);
+  }, [currentStep, containerRef]);
 
   const { isLoading, data, error } = useQuery({
     queryKey: ["getAgent", id],
@@ -202,19 +202,19 @@ const EditAgentPage = () => {
 
   if (isLoading) {
     return (
-      <MainLayout>
+      <div>
         <div className="flex items-center justify-center h-[60vh]">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4" />
             <p className="text-muted-foreground">Loading agent data...</p>
           </div>
         </div>
-      </MainLayout>
+      </div>
     );
   }
 
   return (
-    <MainLayout forwardRef={containerRef}>
+    <div>
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Edit Agent</h1>
@@ -249,7 +249,7 @@ const EditAgentPage = () => {
           </div>
         </div>
       </div>
-    </MainLayout>
+    </div>
   );
 };
 

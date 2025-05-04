@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import MainLayout from "@/components/layout/MainLayout";
 import ContentForm from "@/components/content/ContentForm";
 import ContentTable from "@/components/content/ContentTable";
 import { Plus } from "lucide-react";
@@ -69,7 +68,7 @@ const ContentManagementPage = () => {
   };
 
   return (
-    <MainLayout>
+    <div>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -110,7 +109,7 @@ const ContentManagementPage = () => {
           </DialogContent>
         </Dialog>
       </div>
-    </MainLayout>
+    </div>
   );
 };
 

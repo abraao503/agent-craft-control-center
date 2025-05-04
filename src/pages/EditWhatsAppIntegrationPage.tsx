@@ -1,6 +1,5 @@
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import MainLayout from "@/components/layout/MainLayout";
 import WhatsAppForm from "@/components/whatsapp/WhatsAppForm";
 import { WhatsAppFormData } from "@/types/whatsapp";
 import { ArrowLeft } from "lucide-react";
@@ -58,17 +57,17 @@ const EditWhatsAppIntegrationPage = () => {
 
   if (isLoading) {
     return (
-      <MainLayout>
+      <div>
         <div className="text-center py-12">
           <p>Loading integration...</p>
         </div>
-      </MainLayout>
+      </div>
     );
   }
 
   if (!integration) {
     return (
-      <MainLayout>
+      <div>
         <div className="text-center py-12">
           <h2 className="text-2xl font-bold">Integration not found</h2>
           <p className="text-muted-foreground">
@@ -78,12 +77,12 @@ const EditWhatsAppIntegrationPage = () => {
             Back to Integrations
           </Button>
         </div>
-      </MainLayout>
+      </div>
     );
   }
 
   return (
-    <MainLayout>
+    <div>
       <div className="space-y-6">
         <div className="flex items-center gap-2 mb-1">
           <Button
@@ -108,7 +107,7 @@ const EditWhatsAppIntegrationPage = () => {
           isEditMode={true}
         />
       </div>
-    </MainLayout>
+    </div>
   );
 };
 

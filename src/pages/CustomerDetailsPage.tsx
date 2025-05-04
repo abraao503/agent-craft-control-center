@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import MainLayout from "@/components/layout/MainLayout";
 import { getCustomerById } from "@/services/customer";
 import { useToast } from "@/components/ui/use-toast";
 import { ArrowLeft, Phone } from "lucide-react";
@@ -62,7 +61,7 @@ const CustomerDetailsPage = () => {
   };
 
   return (
-    <MainLayout>
+    <div>
       <div className="space-y-6">
         <div className="flex items-center gap-2">
           <Button
@@ -144,7 +143,7 @@ const CustomerDetailsPage = () => {
           </div>
         )}
       </div>
-    </MainLayout>
+    </div>
   );
 };
 
