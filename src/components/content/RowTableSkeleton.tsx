@@ -3,7 +3,7 @@ import { TableCell, TableRow } from "../ui/table";
 
 const RowTableSkeleton = () => {
   return Array.from({ length: 3 }).map((_, index) => (
-    <TableRow>
+    <TableRow key={index} className="animate-pulse">
       <TableCell>
         <Skeleton className="h-7 w-24 bg-gray-200" />
       </TableCell>
