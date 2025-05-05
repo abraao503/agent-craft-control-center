@@ -3,6 +3,7 @@ import { api } from "@/services/api";
 import { ReactNode, useEffect, useState } from "react";
 import { AuthContext } from "./context";
 import { User, UserLoginResponse } from "./types";
+import { SessionRecorder } from "@/components/SessionRecorder";
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -93,6 +94,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <AuthContext.Provider value={{ user, isLoading, login, signup, logout }}>
+      {user && (
+        <SessionRecorder
+          userId={user.id}
+          userData={{
+            name: user.name,
+            email: user.email,
+            companyId: user.companyId,
+          }}
+        />
+      )}
       {children}
     </AuthContext.Provider>
   );

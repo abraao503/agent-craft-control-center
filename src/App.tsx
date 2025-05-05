@@ -38,6 +38,7 @@ import Sidebar from "./components/layout/Sidebar";
 import { SidebarProvider } from "./components/ui/sidebar";
 import { cn } from "./lib/utils";
 import { MainContainerRefContext } from "./contexts/mainContainer";
+import { PageViewTracker } from "./components/PageViewTracker";
 
 const queryClient = new QueryClient();
 
@@ -125,6 +126,7 @@ const AppLayout = () => {
   return (
     <SidebarProvider defaultOpen={initialState}>
       <MainContainerRefContext.Provider value={mainContainerRef}>
+        <PageViewTracker />
         <div className="flex h-screen overflow-hidden bg-background">
           <Sidebar />
           <main
