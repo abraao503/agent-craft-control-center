@@ -185,7 +185,11 @@ const CreateAgentPage = () => {
                 Next Step
               </Button>
             ) : (
-              <Button onClick={handleSubmit} disabled={!isStepValid()}>
+              <Button 
+                onClick={handleSubmit} 
+                disabled={!isStepValid() || isPending}
+                isLoading={isPending}
+              >
                 Create Agent
               </Button>
             )}

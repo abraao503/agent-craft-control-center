@@ -28,10 +28,19 @@ const CustomFields = ({ formData, updateFormData }: CustomFieldsProps) => {
     required: true,
   });
 
+  const removeAllSpaces = (str: string) => {
+    return str.replace(/\s+/g, "");
+  };
+
   const addField = () => {
     if (newField.name.trim() === "" || newField.label.trim() === "") return;
+    const fieldName = removeAllSpaces(newField.name);
+    const formattedNewField = {
+      ...newField,
+      name: fieldName,
+    };
 
-    const updatedFields = [...formData.customFields, { ...newField }];
+    const updatedFields = [...formData.customFields, { ...formattedNewField }];
 
     updateFormData({ customFields: updatedFields });
 
@@ -68,10 +77,13 @@ const CustomFields = ({ formData, updateFormData }: CustomFieldsProps) => {
               <Label htmlFor="fieldName">Internal Name</Label>
               <Input
                 id="fieldName"
-                placeholder="email"
+                placeholder="email, cpf, idade, etc"
                 value={newField.name}
                 onChange={(e) =>
-                  setNewField({ ...newField, name: e.target.value })
+                  setNewField({
+                    ...newField,
+                    name: removeAllSpaces(e.target.value),
+                  })
                 }
               />
               <p className="text-xs text-muted-foreground">

@@ -40,23 +40,32 @@ const EditCustomFields = ({
     required: false,
   });
 
+  const removeAllSpaces = (str: string) => {
+    return str.replace(/\s+/g, "");
+  };
+
   const addField = () => {
     if (newField.name.trim() === "" || newField.label.trim() === "") return;
+    const fieldName = removeAllSpaces(newField.name);
+    const formattedNewField = {
+      ...newField,
+      name: fieldName,
+    };
 
-    const updatedFields = [...formData.customFields, { ...newField }];
+    const updatedFields = [...formData.customFields, { ...formattedNewField }];
 
     updateFormData({ customFields: updatedFields });
 
     setCustomFieldsToUpdate((prev) => {
       const fieldIndex = prev.findIndex(
-        (field) => field.fieldName === newField.name
+        (field) => field.fieldName === fieldName
       );
 
       if (fieldIndex !== -1) {
         prev[fieldIndex] = {
           action: "createOrUpdate",
-          fieldName: newField.name,
-          field: { ...newField },
+          fieldName: fieldName,
+          field: { ...formattedNewField },
         };
 
         return prev;
@@ -65,8 +74,8 @@ const EditCustomFields = ({
           ...prev,
           {
             action: "createOrUpdate",
-            fieldName: newField.name,
-            field: { ...newField },
+            fieldName: fieldName,
+            field: { ...formattedNewField },
           },
         ];
       }
@@ -76,7 +85,7 @@ const EditCustomFields = ({
       name: "",
       label: "",
       type: "text",
-      required: false,
+      required: true,
     });
   };
 
@@ -130,10 +139,13 @@ const EditCustomFields = ({
               <Label htmlFor="fieldName">Internal Name</Label>
               <Input
                 id="fieldName"
-                placeholder="email"
+                placeholder="email, cpf, idade, etc"
                 value={newField.name}
                 onChange={(e) =>
-                  setNewField({ ...newField, name: e.target.value })
+                  setNewField({
+                    ...newField,
+                    name: removeAllSpaces(e.target.value),
+                  })
                 }
               />
               <p className="text-xs text-muted-foreground">
@@ -215,9 +227,6 @@ const EditCustomFields = ({
                   <th className="text-left p-3 text-sm font-medium">Name</th>
                   <th className="text-left p-3 text-sm font-medium">Label</th>
                   <th className="text-left p-3 text-sm font-medium">Type</th>
-                  <th className="text-left p-3 text-sm font-medium">
-                    Required
-                  </th>
                   <th className="p-3 w-12"></th>
                 </tr>
               </thead>
@@ -232,15 +241,6 @@ const EditCustomFields = ({
                     <td className="p-3">{field.label}</td>
                     <td className="p-3">
                       <Badge variant="outline">{field.type}</Badge>
-                    </td>
-                    <td className="p-3">
-                      {field.required ? (
-                        <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
-                          Required
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline">Optional</Badge>
-                      )}
                     </td>
                     <td className="p-3">
                       <Button

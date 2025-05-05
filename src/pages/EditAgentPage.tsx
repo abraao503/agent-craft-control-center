@@ -52,7 +52,7 @@ const EditAgentPage = () => {
     queryFn: () => getAgent(id),
   });
 
-  const { mutateAsync: updateAgentMutation, isPending: isDeleting } =
+  const { mutateAsync: updateAgentMutation, isPending: isUpdating } =
     useMutation({
       mutationFn: ({
         agentId,
@@ -242,7 +242,11 @@ const EditAgentPage = () => {
                 Next Step
               </Button>
             ) : (
-              <Button onClick={handleSubmit} disabled={!isStepValid()}>
+              <Button 
+                onClick={handleSubmit} 
+                disabled={!isStepValid() || isUpdating}
+                isLoading={isUpdating}
+              >
                 Save Changes
               </Button>
             )}
