@@ -59,6 +59,7 @@ This project is built with:
 - React
 - shadcn-ui
 - Tailwind CSS
+- Highlight.run for error monitoring and session replay
 
 ## How can I deploy this project?
 
@@ -71,3 +72,16 @@ Yes, you can!
 To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+
+## Monitoring and Error Tracking
+
+This project uses Highlight.run for session replay and error tracking. The integration:
+
+- Captures front-end errors and reports them to the Highlight dashboard
+- Records user sessions for debugging issues in production
+- Only runs in production environments (controlled by VITE_HIGHLIGHT_ENABLED)
+- Includes a custom error boundary for React errors
+
+To access the Highlight dashboard, visit [app.highlight.io](https://app.highlight.io) and use the project ID: `mem5yojg`.
+
+For local development, Highlight is disabled by default. You can enable it by setting `VITE_HIGHLIGHT_ENABLED=true` in your `.env.development` file.
