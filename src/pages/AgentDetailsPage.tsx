@@ -12,12 +12,12 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import AgentDetailsCard from "@/components/agents/AgentDetailsCard";
-import { AGENTS, deleteAgent } from "@/services/mockData";
-import { Agent, FullAgent } from "@/types/agent";
-import { ArrowLeft, Edit, MessageSquare, Trash2 } from "lucide-react";
+import { FullAgent } from "@/types/agent";
+import { ArrowLeft, Edit, MessageSquare, Trash2, Loader } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { getAgent } from "@/services/agent/getAgent";
+import { deleteAgent } from "@/services/agent/deleteAgent";
 
 const AgentDetailsPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -28,7 +28,28 @@ const AgentDetailsPage = () => {
 
   const { isLoading, data, error } = useQuery({
     queryKey: ["getAgent", id],
-    queryFn: () => getAgent(id),
+    queryFn: () => getAgent(id!),
+    enabled: !!id,
+  });
+
+  const { mutate: deleteAgentMutation, isPending: isDeleting } = useMutation({
+    mutationFn: deleteAgent,
+    onSuccess: () => {
+      toast({
+        title: "Agent deleted",
+        description: "The agent has been successfully deleted.",
+      });
+      navigate("/agents");
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to delete the agent. Please try again.",
+        variant: "destructive",
+      });
+      console.error("Error deleting agent:", error);
+      setConfirmDelete(false);
+    },
   });
 
   useEffect(() => {
@@ -39,16 +60,11 @@ const AgentDetailsPage = () => {
 
   const handleDelete = () => {
     if (id) {
-      deleteAgent(id);
-      toast({
-        title: "Agent deleted",
-        description: "The agent has been successfully deleted.",
-      });
-      navigate("/agents");
+      deleteAgentMutation(id);
     }
   };
 
-  if (!agent) {
+  if (isLoading || !agent) {
     return (
       <div>
         <div className="flex items-center justify-center min-h-[60vh]">
@@ -112,12 +128,20 @@ const AgentDetailsPage = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               className="bg-red-500 hover:bg-red-600"
+              disabled={isDeleting}
             >
-              Delete
+              {isDeleting ? (
+                <>
+                  <Loader className="h-4 w-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

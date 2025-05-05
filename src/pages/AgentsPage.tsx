@@ -13,12 +13,12 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import AgentCard from "@/components/agents/AgentCard";
-import { deleteAgent } from "@/services/mockData";
 import { Agent } from "@/types/agent";
 import { Plus, Search } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { listAgent } from "@/services/agent/listAgent";
+import { deleteAgent } from "@/services/agent/deleteAgent";
 import AgentCardSkeleton from "@/components/agents/AgentCardSkeleton";
 
 const AgentsPage = () => {
@@ -26,10 +26,31 @@ const AgentsPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [agentToDelete, setAgentToDelete] = useState<string | null>(null);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { isLoading, data, error } = useQuery({
     queryKey: ["listAgent"],
     queryFn: listAgent,
+  });
+
+  const { mutate: deleteAgentMutation, isPending: isDeleting } = useMutation({
+    mutationFn: deleteAgent,
+    onSuccess: () => {
+      toast({
+        title: "Agent deleted",
+        description: "The agent has been successfully deleted.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["listAgent"] });
+      setAgentToDelete(null);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to delete the agent. Please try again.",
+        variant: "destructive",
+      });
+      console.error("Error deleting agent:", error);
+    },
   });
 
   useEffect(() => {
@@ -49,12 +70,7 @@ const AgentsPage = () => {
 
   const confirmDelete = () => {
     if (agentToDelete) {
-      deleteAgent(agentToDelete);
-      toast({
-        title: "Agent deleted",
-        description: "The agent has been successfully deleted.",
-      });
-      setAgentToDelete(null);
+      deleteAgentMutation(agentToDelete);
     }
   };
 
@@ -136,12 +152,13 @@ const AgentsPage = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDelete}
               className="bg-red-500 hover:bg-red-600"
+              disabled={isDeleting}
             >
-              Delete
+              {isDeleting ? "Deleting..." : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
