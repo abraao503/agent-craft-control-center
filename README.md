@@ -81,6 +81,31 @@ This project uses Highlight.run for session replay and error tracking. The integ
 - Records user sessions for debugging issues in production
 - Only runs in production environments (controlled by VITE_HIGHLIGHT_ENABLED)
 - Includes a custom error boundary for React errors
+- Tracks form validation errors with detailed context information
+
+### Form Error Tracking
+
+The app includes a specialized form error tracking system that:
+
+- Captures validation errors in real-time as users interact with forms
+- Reports which fields failed validation and why
+- Includes contextual information about the form and page where the error occurred
+- Helps identify problematic forms that users struggle with
+
+To add error tracking to a form, wrap it with the `FormErrorTracker` component:
+
+```tsx
+<FormErrorTracker 
+  form={form}
+  formId="your-form-id" 
+  formName="Human Readable Form Name"
+  contextInfo={{ /* additional context */ }}
+>
+  <Form {...form}>
+    {/* Your form fields */}
+  </Form>
+</FormErrorTracker>
+```
 
 To access the Highlight dashboard, visit [app.highlight.io](https://app.highlight.io) and use the project ID: `mem5yojg`.
 

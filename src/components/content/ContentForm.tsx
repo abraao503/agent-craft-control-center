@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { api } from "@/services/api";
 import { UploadDocumentResponse } from "@/types/file";
 import { Content, CreateContentRequest } from "@/types/content";
+import { FormErrorTracker } from "@/components/ui/form-error-tracker";
 
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -132,44 +133,54 @@ const ContentForm = ({ contentId, onComplete }: ContentFormProps) => {
   };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Name</FormLabel>
-              <FormControl>
-                <Input placeholder="Enter content name" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+    <FormErrorTracker 
+      form={form} 
+      formId="content-form" 
+      formName="Content Upload Form"
+      contextInfo={{
+        contentId: contentId || "new",
+        pageType: "content-management"
+      }}
+    >
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Name</FormLabel>
+                <FormControl>
+                  <Input placeholder="Enter content name" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        <FormItem>
-          <FormLabel>File</FormLabel>
-          <FormControl>
-            <Input
-              type="file"
-              accept=".pdf,.txt"
-              onChange={handleFileChange}
-              className="file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground hover:file:bg-primary/90 pb-10"
-            />
-          </FormControl>
-          <p className="text-sm text-muted-foreground">
-            Only PDF and TXT files are supported
-          </p>
-        </FormItem>
+          <FormItem>
+            <FormLabel>File</FormLabel>
+            <FormControl>
+              <Input
+                type="file"
+                accept=".pdf,.txt"
+                onChange={handleFileChange}
+                className="file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground hover:file:bg-primary/90 pb-10"
+              />
+            </FormControl>
+            <p className="text-sm text-muted-foreground">
+              Only PDF and TXT files are supported
+            </p>
+          </FormItem>
 
-        <div className="flex justify-end gap-4">
-          <Button type="submit" isLoading={form.formState.isSubmitting}>
-            {contentId ? "Save Changes" : "Create Content"}
-          </Button>
-        </div>
-      </form>
-    </Form>
+          <div className="flex justify-end gap-4">
+            <Button type="submit" isLoading={form.formState.isSubmitting}>
+              {contentId ? "Save Changes" : "Create Content"}
+            </Button>
+          </div>
+        </form>
+      </Form>
+    </FormErrorTracker>
   );
 };
 

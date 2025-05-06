@@ -139,7 +139,9 @@ const CreateAgentPage = () => {
   const isStepValid = () => {
     switch (currentStep) {
       case 1:
-        return !!formData.name && !!formData.description;
+        return (
+          !!formData.name && !!formData.description && !!formData.iaModelId
+        );
       case 2:
         return (
           !!formData.promptDescription &&
@@ -185,8 +187,8 @@ const CreateAgentPage = () => {
                 Next Step
               </Button>
             ) : (
-              <Button 
-                onClick={handleSubmit} 
+              <Button
+                onClick={handleSubmit}
                 disabled={!isStepValid() || isPending}
                 isLoading={isPending}
               >

@@ -46,6 +46,51 @@ export const HighlightService = {
   },
 
   /**
+   * Report a form validation error to Highlight with detailed context
+   * @param formId The ID of the form with validation errors
+   * @param formName A descriptive name for the form
+   * @param errors Object containing the validation errors
+   * @param formContext Additional context about the form and its usage
+   */
+  reportFormError: (
+    formId: string,
+    formName: string,
+    errors: Record<string, { message?: string }>,
+    formContext?: Record<string, string>
+  ) => {
+    if (import.meta.env.VITE_HIGHLIGHT_ENABLED === "true") {
+      const errorFields = Object.keys(errors);
+      
+      // Extract error messages
+      const errorMessages = errorFields.map(field => {
+        return `${field}: ${errors[field]?.message || "Invalid"}`;
+      }).join("; ");
+      
+      // Create custom error for reporting
+      const error = new Error(`Form validation error in ${formName}`);
+      
+      // Track both as error and event for different visualization options
+      H.consumeError(error, `Form validation error: ${formName}`, {
+        formId,
+        formName,
+        errorCount: String(errorFields.length),
+        errorFields: errorFields.join(", "),
+        errorMessages,
+        ...formContext
+      });
+      
+      // Also track as event for custom metrics
+      H.track(`form_validation_error`, {
+        formId,
+        formName,
+        errorCount: errorFields.length,
+        errorFields: errorFields.join(", "),
+        ...formContext
+      });
+    }
+  },
+
+  /**
    * Get the Highlight session URL
    * @returns Promise with session URL and timestamp URL
    */

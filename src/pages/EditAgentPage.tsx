@@ -188,7 +188,9 @@ const EditAgentPage = () => {
 
     switch (currentStep) {
       case 1:
-        return !!formData.name && !!formData.description;
+        return (
+          !!formData.name && !!formData.description && !!formData.iaModelId
+        );
       case 2:
         return !!formData.promptDescription && !!formData.goal;
       case 3:
@@ -242,8 +244,8 @@ const EditAgentPage = () => {
                 Next Step
               </Button>
             ) : (
-              <Button 
-                onClick={handleSubmit} 
+              <Button
+                onClick={handleSubmit}
                 disabled={!isStepValid() || isUpdating}
                 isLoading={isUpdating}
               >
