@@ -13,6 +13,7 @@ import { createAgent } from "@/services/agent/createAgent";
 import EditCustomFields from "@/components/agents/step4/CustomFields";
 import CustomFields from "@/components/agents/step4/CustomFields";
 import { useMainContainerRef } from "@/contexts/mainContainer";
+import { convertHtmlStringToText } from "@/lib/utils";
 
 const STEPS = [
   "Basic Information",
@@ -93,6 +94,10 @@ const CreateAgentPage = () => {
   };
 
   const handleSubmit = async () => {
+    const formattedInstructions = convertHtmlStringToText(
+      formData.instructions
+    );
+
     await createAgentMutation({
       ...formData,
       avatarFileId: null,
@@ -102,7 +107,7 @@ const CreateAgentPage = () => {
         identity: formData.identity,
         function: formData.function,
         style: formData.style,
-        instructions: formData.instructions,
+        instructions: formattedInstructions,
         blacklist: formData.blacklist,
         links: formData.links,
       },

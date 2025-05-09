@@ -1,0 +1,13 @@
+.tiptap:first-child {
+  margin-top: 0;
+}
+
+.tiptap .mention {
+  background-color: #623ca5;
+  border-radius: 0.4rem;
+  box-decoration-break: clone;
+  color: var(--purple);
+  padding: 0.1rem 0.3rem;
+  color: white;
+  border-radius: 0.2rem;
+}

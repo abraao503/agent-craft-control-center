@@ -18,6 +18,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { updateAgent } from "@/services/agent/updateAgent";
 import EditKnowledgeContent from "@/components/agents/step3/EditKnowledgeContent";
 import { useMainContainerRef } from "@/contexts/mainContainer";
+import { convertHtmlStringToText } from "@/lib/utils";
 
 const STEPS = [
   "Basic Information",
@@ -119,6 +120,10 @@ const EditAgentPage = () => {
   const handleSubmit = async () => {
     if (!formData || !id) return;
 
+    const formattedInstructions = convertHtmlStringToText(
+      formData.instructions
+    );
+
     await updateAgentMutation({
       agentId: id,
       agentData: {
@@ -131,7 +136,7 @@ const EditAgentPage = () => {
           function: formData.function,
           goal: formData.goal,
           style: formData.style,
-          instructions: formData.instructions,
+          instructions: formattedInstructions,
           blacklist: formData.blacklist,
           links: formData.links,
         },

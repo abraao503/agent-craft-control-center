@@ -1,10 +1,11 @@
-
-import { AgentFormData } from '@/types/agent';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
-import { PlusCircle, X } from 'lucide-react';
+import { AgentFormData } from "@/types/agent";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { PlusCircle, X } from "lucide-react";
+import { TipTapEditor } from "@/components/ui/tiptap-mentions";
+import { convertTextToHtmlString } from "@/lib/utils";
 
 interface PromptContextProps {
   formData: AgentFormData;
@@ -15,7 +16,7 @@ const PromptContext = ({ formData, updateFormData }: PromptContextProps) => {
   const handleAddLink = () => {
     const currentLinks = formData.links || [];
     updateFormData({
-      links: [...currentLinks, { name: '', url: '' }]
+      links: [...currentLinks, { name: "", url: "" }],
     });
   };
 
@@ -25,7 +26,11 @@ const PromptContext = ({ formData, updateFormData }: PromptContextProps) => {
     updateFormData({ links: newLinks });
   };
 
-  const handleLinkChange = (index: number, field: 'name' | 'url', value: string) => {
+  const handleLinkChange = (
+    index: number,
+    field: "name" | "url",
+    value: string
+  ) => {
     const newLinks = [...(formData.links || [])];
     newLinks[index] = { ...newLinks[index], [field]: value };
     updateFormData({ links: newLinks });
@@ -38,7 +43,7 @@ const PromptContext = ({ formData, updateFormData }: PromptContextProps) => {
         <Input
           id="identity"
           placeholder="Support Assistant"
-          value={formData.identity || ''}
+          value={formData.identity || ""}
           onChange={(e) => updateFormData({ identity: e.target.value })}
           required
         />
@@ -52,7 +57,7 @@ const PromptContext = ({ formData, updateFormData }: PromptContextProps) => {
         <Textarea
           id="function"
           placeholder="Handles customer support inquiries and provides product information"
-          value={formData.function || ''}
+          value={formData.function || ""}
           onChange={(e) => updateFormData({ function: e.target.value })}
           required
           className="min-h-[100px]"
@@ -67,7 +72,7 @@ const PromptContext = ({ formData, updateFormData }: PromptContextProps) => {
         <Textarea
           id="goal"
           placeholder="Help users find the right product for their needs and resolve any issues"
-          value={formData.goal || ''}
+          value={formData.goal || ""}
           onChange={(e) => updateFormData({ goal: e.target.value })}
           required
           className="min-h-[100px]"
@@ -82,7 +87,7 @@ const PromptContext = ({ formData, updateFormData }: PromptContextProps) => {
         <Textarea
           id="style"
           placeholder="Professional and friendly tone, concise responses"
-          value={formData.style || ''}
+          value={formData.style || ""}
           onChange={(e) => updateFormData({ style: e.target.value })}
           required
           className="min-h-[100px]"
@@ -94,16 +99,19 @@ const PromptContext = ({ formData, updateFormData }: PromptContextProps) => {
 
       <div className="space-y-2">
         <Label htmlFor="instructions">Instructions</Label>
-        <Textarea
-          id="instructions"
+        <TipTapEditor
+          value={convertTextToHtmlString(formData.instructions || "")}
+          onChange={(newValue) => updateFormData({ instructions: newValue })}
           placeholder="Always be helpful and professional. Provide clear and concise answers..."
-          value={formData.instructions || ''}
-          onChange={(e) => updateFormData({ instructions: e.target.value })}
-          required
           className="min-h-[150px]"
+          mentionItems={formData.customFields.map((field) => ({
+            id: field.name,
+            label: field.name,
+          }))}
         />
         <p className="text-sm text-muted-foreground">
-          Specific instructions for your agent's behavior
+          Instruções específicas para o comportamento do seu agente. Digite
+          &quot;&#123;&quot; para inserir variáveis.
         </p>
       </div>
 
@@ -112,7 +120,7 @@ const PromptContext = ({ formData, updateFormData }: PromptContextProps) => {
         <Textarea
           id="blacklist"
           placeholder="List of topics or keywords to avoid discussing"
-          value={formData.blacklist || ''}
+          value={formData.blacklist || ""}
           onChange={(e) => updateFormData({ blacklist: e.target.value })}
           className="min-h-[100px]"
         />
@@ -134,26 +142,43 @@ const PromptContext = ({ formData, updateFormData }: PromptContextProps) => {
             Add Link
           </Button>
         </div>
-        
+
         <div className="space-y-3">
           {(formData.links || []).map((link, index) => (
-            <div key={index} className="flex gap-3 items-center border p-3 rounded-md">
+            <div
+              key={index}
+              className="flex gap-3 items-center border p-3 rounded-md"
+            >
               <div className="flex-1">
-                <Label htmlFor={`link-name-${index}`} className="text-xs mb-1 block">Name</Label>
+                <Label
+                  htmlFor={`link-name-${index}`}
+                  className="text-xs mb-1 block"
+                >
+                  Name
+                </Label>
                 <Input
                   id={`link-name-${index}`}
                   placeholder="Documentation"
                   value={link.name}
-                  onChange={(e) => handleLinkChange(index, 'name', e.target.value)}
+                  onChange={(e) =>
+                    handleLinkChange(index, "name", e.target.value)
+                  }
                 />
               </div>
               <div className="flex-1">
-                <Label htmlFor={`link-url-${index}`} className="text-xs mb-1 block">URL</Label>
+                <Label
+                  htmlFor={`link-url-${index}`}
+                  className="text-xs mb-1 block"
+                >
+                  URL
+                </Label>
                 <Input
                   id={`link-url-${index}`}
                   placeholder="https://example.com/docs"
                   value={link.url}
-                  onChange={(e) => handleLinkChange(index, 'url', e.target.value)}
+                  onChange={(e) =>
+                    handleLinkChange(index, "url", e.target.value)
+                  }
                 />
               </div>
               <Button
@@ -168,7 +193,8 @@ const PromptContext = ({ formData, updateFormData }: PromptContextProps) => {
           ))}
           {(formData.links || []).length === 0 && (
             <p className="text-sm text-muted-foreground italic">
-              No links added. Click "Add Link" to add a reference link for your agent.
+              No links added. Click "Add Link" to add a reference link for your
+              agent.
             </p>
           )}
         </div>
