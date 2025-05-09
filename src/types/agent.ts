@@ -1,5 +1,15 @@
 export type AgentLanguage = "en-US" | "es-ES" | "pt-BR";
 
+type Prompt = {
+  identity: string;
+  function: string;
+  goal: string;
+  style: string;
+  instructions: string;
+  blacklist: string | null;
+  links: Link[] | null;
+};
+
 type CreateOrUpdateCustomField = {
   action: "createOrUpdate";
   fieldName: string;
@@ -45,19 +55,24 @@ export interface FullAgent {
     name: string;
   };
   prompt: {
-    description: string;
+    identity: string;
+    function: string;
     goal: string;
-    habilities: string;
-    companyName: string;
-    companySite: string;
-    companyDescription: string;
-    companySector: string;
+    style: string;
+    instructions: string;
+    blacklist: string | null;
+    links: Link[] | null;
   };
   contents: {
     id: string;
     name: string;
   }[];
   customFields: CustomField[];
+}
+
+export interface Link {
+  name: string;
+  url: string;
 }
 
 export interface AgentFormData {
@@ -71,12 +86,13 @@ export interface AgentFormData {
   iaModelId: string;
 
   // Step 2: Prompt & Context
-  promptDescription: string;
+  identity: string;
+  function: string;
   goal: string;
-  companyName: string;
-  companySite: string;
-  companyDescription: string;
-  companySector: string;
+  style: string;
+  instructions: string;
+  blacklist: string | null;
+  links: Link[] | null;
 
   // Step 3: Knowledge Content
   contents: {
@@ -129,14 +145,7 @@ export type UpdateAgentResquest = {
   language: string;
   initialMessage: string;
   iaModelId: string;
-  prompt: {
-    description: string;
-    goal: string;
-    companyName: string;
-    companySite?: string;
-    companyDescription?: string;
-    companySector?: string;
-  };
+  prompt: Prompt;
   contents: AssistantContent[];
   customFields: UpdateAssistantCustomField[];
 };
@@ -149,14 +158,7 @@ export type CreateAgentRequest = {
   language: string;
   initialMessage: string;
   iaModelId: string;
-  prompt: {
-    description: string;
-    goal: string;
-    companyName: string;
-    companySite?: string;
-    companyDescription?: string;
-    companySector?: string;
-  };
+  prompt: Prompt;
   contentsIds: string[];
   customFields: Omit<CustomField, "id">[];
 };

@@ -89,12 +89,15 @@ const EditAgentPage = () => {
         language: data.language,
         initialMessage: data.initialMessage,
         iaModelId: data.iaModel.id,
-        promptDescription: data.prompt.description,
+
+        identity: data.prompt.identity,
+        function: data.prompt.function,
         goal: data.prompt.goal,
-        companyName: data.prompt.companyName,
-        companySite: data.prompt.companySite,
-        companyDescription: data.prompt.companyDescription,
-        companySector: data.prompt.companySector,
+        style: data.prompt.style,
+        instructions: data.prompt.instructions,
+        blacklist: data.prompt.blacklist,
+        links: data.prompt.links,
+
         contents: data.contents,
         customFields: data.customFields,
       });
@@ -124,12 +127,13 @@ const EditAgentPage = () => {
         description: formData.description,
         timeZone: formData.timeZone,
         prompt: {
-          description: formData.promptDescription,
+          identity: formData.identity,
+          function: formData.function,
           goal: formData.goal,
-          companyName: formData.companyName,
-          companySite: formData.companySite,
-          companyDescription: formData.companyDescription,
-          companySector: formData.companySector,
+          style: formData.style,
+          instructions: formData.instructions,
+          blacklist: formData.blacklist,
+          links: formData.links,
         },
         contents: contentsToUpdate,
         customFields: customFieldsToUpdate,
@@ -192,7 +196,13 @@ const EditAgentPage = () => {
           !!formData.name && !!formData.description && !!formData.iaModelId
         );
       case 2:
-        return !!formData.promptDescription && !!formData.goal;
+        return (
+          !!formData.identity &&
+          !!formData.function &&
+          !!formData.goal &&
+          !!formData.style &&
+          !!formData.instructions
+        );
       case 3:
         return true; // Knowledge content is optional
       case 4:

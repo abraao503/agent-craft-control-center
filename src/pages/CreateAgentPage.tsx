@@ -29,14 +29,15 @@ const defaultFormData: AgentFormData = {
   initialMessage: "",
   timeZone: "America/Sao_Paulo",
   language: "pt-BR",
-  promptDescription: "",
   goal: "",
-  companyName: "",
-  companySite: "",
-  companyDescription: "",
-  companySector: "",
   contents: [],
   customFields: [],
+  identity: "",
+  function: "",
+  style: "",
+  instructions: "",
+  blacklist: null,
+  links: null,
 };
 
 const CreateAgentPage = () => {
@@ -97,12 +98,13 @@ const CreateAgentPage = () => {
       avatarFileId: null,
       contentsIds: formData.contents.map((content) => content.id),
       prompt: {
-        description: formData.promptDescription,
         goal: formData.goal,
-        companyName: formData.companyName,
-        companyDescription: formData.companyDescription,
-        companySector: formData.companySector,
-        companySite: formData.companySite,
+        identity: formData.identity,
+        function: formData.function,
+        style: formData.style,
+        instructions: formData.instructions,
+        blacklist: formData.blacklist,
+        links: formData.links,
       },
     });
   };
@@ -144,9 +146,11 @@ const CreateAgentPage = () => {
         );
       case 2:
         return (
-          !!formData.promptDescription &&
+          !!formData.identity &&
+          !!formData.function &&
           !!formData.goal &&
-          !!formData.companyName
+          !!formData.style &&
+          !!formData.instructions
         );
       case 3:
         return true; // Knowledge content is optional
