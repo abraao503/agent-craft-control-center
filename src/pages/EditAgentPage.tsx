@@ -3,8 +3,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import AgentStepIndicator from "@/components/agents/AgentStepIndicator";
 import BasicInformation from "@/components/agents/step1/BasicInformation";
-import PromptContext from "@/components/agents/step2/PromptContext";
-import CustomFields from "@/components/agents/step4/EditCustomFields";
+import PromptContext from "@/components/agents/step3/PromptContext";
+import CustomFields from "@/components/agents/step2/EditCustomFields";
 import {
   AgentFormData,
   AssistantContent,
@@ -16,15 +16,15 @@ import { useToast } from "@/hooks/use-toast";
 import { getAgent } from "@/services/agent/getAgent";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { updateAgent } from "@/services/agent/updateAgent";
-import EditKnowledgeContent from "@/components/agents/step3/EditKnowledgeContent";
+import EditKnowledgeContent from "@/components/agents/step4/EditKnowledgeContent";
 import { useMainContainerRef } from "@/contexts/mainContainer";
 import { convertHtmlStringToText } from "@/lib/utils";
 
 const STEPS = [
   "Basic Information",
+  "Custom Fields",
   "Prompt & Context",
   "Knowledge Content",
-  "Custom Fields",
 ];
 
 const EditAgentPage = () => {
@@ -169,22 +169,22 @@ const EditAgentPage = () => {
         );
       case 2:
         return (
-          <PromptContext formData={formData} updateFormData={updateFormData} />
+          <CustomFields
+            formData={formData}
+            updateFormData={updateFormData}
+            setCustomFieldsToUpdate={setCustomFieldsToUpdate}
+          />
         );
       case 3:
+        return (
+          <PromptContext formData={formData} updateFormData={updateFormData} />
+        );
+      case 4:
         return (
           <EditKnowledgeContent
             formData={formData}
             updateFormData={updateFormData}
             setContentsToUpdate={setContentsToUpdate}
-          />
-        );
-      case 4:
-        return (
-          <CustomFields
-            formData={formData}
-            updateFormData={updateFormData}
-            setCustomFieldsToUpdate={setCustomFieldsToUpdate}
           />
         );
       default:
@@ -201,6 +201,8 @@ const EditAgentPage = () => {
           !!formData.name && !!formData.description && !!formData.iaModelId
         );
       case 2:
+        return true; // Custom fields are optional
+      case 3:
         return (
           !!formData.identity &&
           !!formData.function &&
@@ -208,10 +210,8 @@ const EditAgentPage = () => {
           !!formData.style &&
           !!formData.instructions
         );
-      case 3:
-        return true; // Knowledge content is optional
       case 4:
-        return true; // Custom fields are optional
+        return true; // Knowledge content is optional
       default:
         return false;
     }

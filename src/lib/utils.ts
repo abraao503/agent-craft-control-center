@@ -21,3 +21,7 @@ export function convertTextToHtmlString(text: string) {
       `<span data-type="mention" data-id="${nomeCampo}" data-label="${nomeCampo}" class="mention">${nomeCampo}</span>`
   );
 }
+
+export function removeAllSpacesAndSpecialChars(str: string) {
+  return str.replace(/[^\w]/g, "");
+}

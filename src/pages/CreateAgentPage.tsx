@@ -3,23 +3,23 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import AgentStepIndicator from "@/components/agents/AgentStepIndicator";
 import BasicInformation from "@/components/agents/step1/BasicInformation";
-import PromptContext from "@/components/agents/step2/PromptContext";
-import KnowledgeContent from "@/components/agents/step3/KnowledgeContent";
+import PromptContext from "@/components/agents/step3/PromptContext";
+import KnowledgeContent from "@/components/agents/step4/KnowledgeContent";
 import { AgentFormData, CreateAgentRequest } from "@/types/agent";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { listAgent } from "@/services/agent/listAgent";
 import { createAgent } from "@/services/agent/createAgent";
-import EditCustomFields from "@/components/agents/step4/CustomFields";
-import CustomFields from "@/components/agents/step4/CustomFields";
+import EditCustomFields from "@/components/agents/step2/CustomFields";
+import CustomFields from "@/components/agents/step2/CustomFields";
 import { useMainContainerRef } from "@/contexts/mainContainer";
 import { convertHtmlStringToText } from "@/lib/utils";
 
 const STEPS = [
   "Basic Information",
+  "Custom Fields",
   "Prompt & Context",
   "Knowledge Content",
-  "Custom Fields",
 ];
 
 const defaultFormData: AgentFormData = {
@@ -125,18 +125,18 @@ const CreateAgentPage = () => {
         );
       case 2:
         return (
-          <PromptContext formData={formData} updateFormData={updateFormData} />
+          <CustomFields formData={formData} updateFormData={updateFormData} />
         );
       case 3:
+        return (
+          <PromptContext formData={formData} updateFormData={updateFormData} />
+        );
+      case 4:
         return (
           <KnowledgeContent
             formData={formData}
             updateFormData={updateFormData}
           />
-        );
-      case 4:
-        return (
-          <CustomFields formData={formData} updateFormData={updateFormData} />
         );
       default:
         return null;
@@ -150,6 +150,8 @@ const CreateAgentPage = () => {
           !!formData.name && !!formData.description && !!formData.iaModelId
         );
       case 2:
+        return true; // Custom fields are optional
+      case 3:
         return (
           !!formData.identity &&
           !!formData.function &&
@@ -157,10 +159,8 @@ const CreateAgentPage = () => {
           !!formData.style &&
           !!formData.instructions
         );
-      case 3:
-        return true; // Knowledge content is optional
       case 4:
-        return true; // Custom fields are optional
+        return true; // Knowledge content is optional
       default:
         return false;
     }

@@ -1,13 +1,8 @@
 import { useState } from "react";
-import {
-  AgentFormData,
-  CustomField,
-  UpdateAssistantCustomField,
-} from "@/types/agent";
+import { AgentFormData, CustomField } from "@/types/agent";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -17,36 +12,26 @@ import {
 } from "@/components/ui/select";
 import { X, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { removeAllSpacesAndSpecialChars } from "@/lib/utils";
 
-interface EditCustomFieldsProps {
+interface CustomFieldsProps {
   formData: AgentFormData;
   updateFormData: (data: Partial<AgentFormData>) => void;
-  setCustomFieldsToUpdate: React.Dispatch<
-    React.SetStateAction<UpdateAssistantCustomField[]>
-  >;
 }
 
 type CreateCustomField = Omit<CustomField, "id">;
 
-const EditCustomFields = ({
-  formData,
-  updateFormData,
-  setCustomFieldsToUpdate,
-}: EditCustomFieldsProps) => {
+const CustomFields = ({ formData, updateFormData }: CustomFieldsProps) => {
   const [newField, setNewField] = useState<CreateCustomField>({
     name: "",
     label: "",
     type: "text",
-    required: false,
+    required: true,
   });
-
-  const removeAllSpaces = (str: string) => {
-    return str.replace(/\s+/g, "");
-  };
 
   const addField = () => {
     if (newField.name.trim() === "" || newField.label.trim() === "") return;
-    const fieldName = removeAllSpaces(newField.name);
+    const fieldName = removeAllSpacesAndSpecialChars(newField.name);
     const formattedNewField = {
       ...newField,
       name: fieldName,
@@ -55,31 +40,6 @@ const EditCustomFields = ({
     const updatedFields = [...formData.customFields, { ...formattedNewField }];
 
     updateFormData({ customFields: updatedFields });
-
-    setCustomFieldsToUpdate((prev) => {
-      const fieldIndex = prev.findIndex(
-        (field) => field.fieldName === fieldName
-      );
-
-      if (fieldIndex !== -1) {
-        prev[fieldIndex] = {
-          action: "createOrUpdate",
-          fieldName: fieldName,
-          field: { ...formattedNewField },
-        };
-
-        return prev;
-      } else {
-        return [
-          ...prev,
-          {
-            action: "createOrUpdate",
-            fieldName: fieldName,
-            field: { ...formattedNewField },
-          },
-        ];
-      }
-    });
 
     setNewField({
       name: "",
@@ -90,35 +50,10 @@ const EditCustomFields = ({
   };
 
   const removeField = (index: number) => {
-    const fieldToRemove = formData.customFields[index];
-
     const updatedFields = [...formData.customFields];
     updatedFields.splice(index, 1);
 
     updateFormData({ customFields: updatedFields });
-
-    setCustomFieldsToUpdate((prev) => {
-      const fieldIndex = prev.findIndex(
-        (field) => field.fieldName === newField.name
-      );
-
-      if (fieldIndex !== -1) {
-        prev[fieldIndex] = {
-          action: "delete",
-          fieldName: fieldToRemove.name,
-        };
-
-        return prev;
-      } else {
-        return [
-          ...prev,
-          {
-            action: "delete",
-            fieldName: fieldToRemove.name,
-          },
-        ];
-      }
-    });
   };
 
   return (
@@ -139,12 +74,12 @@ const EditCustomFields = ({
               <Label htmlFor="fieldName">Internal Name</Label>
               <Input
                 id="fieldName"
-                placeholder="email, cpf, idade, etc"
+                placeholder="email"
                 value={newField.name}
                 onChange={(e) =>
                   setNewField({
                     ...newField,
-                    name: removeAllSpaces(e.target.value),
+                    name: removeAllSpacesAndSpecialChars(e.target.value),
                   })
                 }
               />
@@ -189,7 +124,7 @@ const EditCustomFields = ({
               </Select>
             </div>
 
-            <div className="flex items-center space-x-4 mt-8">
+            {/* <div className="flex items-center space-x-4 mt-8">
               <Switch
                 id="fieldRequired"
                 checked={newField.required}
@@ -198,7 +133,7 @@ const EditCustomFields = ({
                 }
               />
               <Label htmlFor="fieldRequired">Required field</Label>
-            </div>
+            </div> */}
           </div>
 
           <Button
@@ -264,4 +199,4 @@ const EditCustomFields = ({
   );
 };
 
-export default EditCustomFields;
+export default CustomFields;
