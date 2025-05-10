@@ -109,8 +109,24 @@ const EditAgentPage = () => {
     setFormData((prev) => (prev ? { ...prev, ...data } : null));
   };
 
+  const handleStepChange = (targetStep: number) => {
+    // Verificar se o passo atual é válido antes de permitir a navegação
+    if (!isStepValid()) {
+      toast({
+        title: "Campos inválidos",
+        description: "Preencha todos os campos obrigatórios antes de continuar.",
+        variant: "destructive",
+      });
+      return false;
+    }
+    
+    // Se for válido, navegar para o passo desejado
+    setCurrentStep(targetStep);
+    return true;
+  };
+
   const nextStep = () => {
-    setCurrentStep((prev) => Math.min(prev + 1, STEPS.length));
+    handleStepChange(currentStep + 1);
   };
 
   const prevStep = () => {
@@ -240,7 +256,19 @@ const EditAgentPage = () => {
           </p>
         </div>
 
-        <AgentStepIndicator currentStep={currentStep} steps={STEPS} />
+        <AgentStepIndicator 
+          currentStep={currentStep} 
+          steps={STEPS} 
+          onStepClick={(step) => {
+            // Não permitir navegar para passos futuros sem validar o atual
+            if (step > currentStep) {
+              handleStepChange(step);
+            } else {
+              // Para passos anteriores ou o atual, permitir navegação direta
+              setCurrentStep(step);
+            }
+          }}
+        />
 
         <div className="bg-background rounded-lg shadow-sm border">
           {renderStepContent()}
