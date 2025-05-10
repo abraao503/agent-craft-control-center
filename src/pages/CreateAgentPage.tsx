@@ -8,9 +8,7 @@ import KnowledgeContent from "@/components/agents/step4/KnowledgeContent";
 import { AgentFormData, CreateAgentRequest } from "@/types/agent";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { listAgent } from "@/services/agent/listAgent";
 import { createAgent } from "@/services/agent/createAgent";
-import EditCustomFields from "@/components/agents/step2/CustomFields";
 import CustomFields from "@/components/agents/step2/CustomFields";
 import { useMainContainerRef } from "@/contexts/mainContainer";
 import { convertHtmlStringToText } from "@/lib/utils";
@@ -53,15 +51,6 @@ const CreateAgentPage = () => {
       containerRef.current.scrollTo({ top: 0, behavior: "instant" });
     }
   }, [currentStep, containerRef]);
-
-  const {
-    isLoading,
-    data: agents,
-    error,
-  } = useQuery({
-    queryKey: ["listAgent"],
-    queryFn: listAgent,
-  });
 
   const { mutateAsync: createAgentMutation, isPending } = useMutation({
     mutationFn: (data: CreateAgentRequest) => createAgent(data),
