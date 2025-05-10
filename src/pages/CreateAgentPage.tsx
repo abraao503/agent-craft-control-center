@@ -180,7 +180,7 @@ const CreateAgentPage = () => {
 
         <AgentStepIndicator currentStep={currentStep} steps={STEPS} />
 
-        <div className="bg-white rounded-lg shadow-sm border">
+        <div className="bg-background rounded-lg shadow-sm border">
           {renderStepContent()}
           <div className="p-6 border-t flex justify-between">
             <Button
