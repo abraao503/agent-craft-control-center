@@ -6,7 +6,15 @@ type ApiResponse = {
 };
 
 export const listAgent = async (): Promise<ListAgentResponse> => {
-  const response = await api.get<ApiResponse>("/assistant/list");
+  const selectedWorkspace = JSON.parse(
+    localStorage.getItem("selectedWorkspace") || "{}"
+  ) as { id: string };
+
+  const response = await api.get<ApiResponse>("/assistant/list", {
+    params: {
+      workspaceId: selectedWorkspace.id,
+    },
+  });
   return {
     agents: response.data.assistants,
   };

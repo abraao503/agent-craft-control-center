@@ -12,6 +12,7 @@ import {
   Users,
   ChevronLeft,
   ChevronRight,
+  Building2,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { useAuth } from "@/contexts/auth/hooks";
@@ -26,12 +27,133 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { listWorkspaces } from "@/services/workspace/listWorkspaces";
+import { Workspace } from "@/types/workspace";
+
+const useWorkspace = () => {
+  const [selectedWorkspace, setSelectedWorkspace] = useState<Workspace | null>(
+    () => {
+      const savedWorkspace = localStorage.getItem("selectedWorkspace");
+      return savedWorkspace ? JSON.parse(savedWorkspace) : null;
+    }
+  );
+
+  const {
+    data: workspaces,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["workspaces"],
+    queryFn: listWorkspaces,
+  });
+
+  useEffect(() => {
+    if (workspaces?.length > 0 && !selectedWorkspace) {
+      const defaultWorkspace =
+        workspaces.find((w) => w.isDefault) || workspaces[0];
+      setSelectedWorkspace(defaultWorkspace);
+      localStorage.setItem(
+        "selectedWorkspace",
+        JSON.stringify(defaultWorkspace)
+      );
+    } else if (workspaces?.length > 0 && selectedWorkspace) {
+      // Verifica se o workspace selecionado ainda existe na lista
+      const workspaceExists = workspaces.some(
+        (w) => w.id === selectedWorkspace.id
+      );
+      if (!workspaceExists) {
+        const defaultWorkspace =
+          workspaces.find((w) => w.isDefault) || workspaces[0];
+        setSelectedWorkspace(defaultWorkspace);
+        localStorage.setItem(
+          "selectedWorkspace",
+          JSON.stringify(defaultWorkspace)
+        );
+      }
+    }
+  }, [workspaces, selectedWorkspace]);
+
+  // Atualiza o workspace selecionado e salva no localStorage
+  const selectWorkspace = (workspaceId: string) => {
+    const workspace = workspaces.find((w) => w.id === workspaceId);
+    if (workspace) {
+      setSelectedWorkspace(workspace);
+      localStorage.setItem("selectedWorkspace", JSON.stringify(workspace));
+    }
+  };
+
+  return {
+    workspaces,
+    selectedWorkspace,
+    selectWorkspace,
+    isLoading,
+    error,
+  };
+};
+
+// Componente de seleção de workspace
+const WorkspaceSelector = ({ isCollapsed }: { isCollapsed: boolean }) => {
+  const { workspaces, selectedWorkspace, selectWorkspace, isLoading } =
+    useWorkspace();
+
+  if (isCollapsed) {
+    return (
+      <Tooltip delayDuration={0}>
+        <TooltipTrigger asChild>
+          <div className="flex justify-center items-center py-2">
+            <Building2 className="h-5 w-5 text-muted-foreground" />
+          </div>
+        </TooltipTrigger>
+        <TooltipContent side="right" className="border-border">
+          {selectedWorkspace?.name || "Carregando..."}
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
+
+  return (
+    <div className="px-4 py-2 border-b border-border">
+      <p className="text-sm text-muted-foreground mb-1">Workspace</p>
+      {isLoading ? (
+        <div className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm flex items-center text-muted-foreground">
+          Carregando...
+        </div>
+      ) : (
+        <Select
+          value={selectedWorkspace?.id}
+          onValueChange={(value) => selectWorkspace(value)}
+          disabled={isLoading || workspaces.length === 0}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Selecione um workspace" />
+          </SelectTrigger>
+          <SelectContent>
+            {workspaces.map((workspace) => (
+              <SelectItem key={workspace.id} value={workspace.id}>
+                {workspace.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
+    </div>
+  );
+};
 
 const SidebarMenuContent = () => {
   const location = useLocation();
   const { user, logout } = useAuth();
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
+  const { isLoading: isWorkspaceLoading } = useWorkspace();
 
   const isActive = (path: string) => {
     return location.pathname === path;
@@ -76,17 +198,22 @@ const SidebarMenuContent = () => {
     label: string;
     icon: JSX.Element;
   }) => {
+    // Verifica se o item deve estar desativado (quando workspaces estão carregando e não é a página atual)
+    const isDisabled = isWorkspaceLoading && !isActive(item.path);
+    
     if (isCollapsed) {
       return (
         <Tooltip key={item.path} delayDuration={0}>
           <TooltipTrigger asChild>
-            <Link to={item.path}>
+            <Link to={item.path} tabIndex={isDisabled ? -1 : undefined}>
               <Button
                 variant="ghost"
                 size="icon"
+                disabled={isDisabled}
                 className={cn(
                   "h-10 w-10",
-                  isActive(item.path) && "bg-accent text-primary"
+                  isActive(item.path) && "bg-accent text-primary",
+                  isDisabled && "opacity-50 cursor-not-allowed pointer-events-none"
                 )}
               >
                 {item.icon}
@@ -102,12 +229,14 @@ const SidebarMenuContent = () => {
     }
 
     return (
-      <Link to={item.path} key={item.path}>
+      <Link to={item.path} key={item.path} tabIndex={isDisabled ? -1 : undefined}>
         <Button
           variant="ghost"
+          disabled={isDisabled}
           className={cn(
             "w-full justify-start",
-            isActive(item.path) && "bg-accent text-primary"
+            isActive(item.path) && "bg-accent text-primary",
+            isDisabled && "opacity-50 cursor-not-allowed pointer-events-none"
           )}
         >
           <span className="mr-2">{item.icon}</span>
@@ -141,15 +270,7 @@ const SidebarMenuContent = () => {
         </Link>
       </div>
 
-      {!isCollapsed && (
-        <div className="p-4 flex justify-between items-center border-b border-border">
-          <div>
-            <p className="text-sm text-muted-foreground mb-1">Logged in as</p>
-            <p className="font-medium truncate">{user?.name}</p>
-          </div>
-          <ThemeToggle />
-        </div>
-      )}
+      <WorkspaceSelector isCollapsed={isCollapsed} />
 
       <nav
         className={cn(

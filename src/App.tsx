@@ -35,6 +35,7 @@ import ConversationsPage from "./pages/ConversationsPage";
 import CustomersPage from "./pages/CustomersPage";
 import CustomerDetailsPage from "./pages/CustomerDetailsPage";
 import Sidebar from "./components/layout/Sidebar";
+import Header from "./components/layout/Header";
 import { SidebarProvider } from "./components/ui/sidebar";
 import { cn } from "./lib/utils";
 import { MainContainerRefContext } from "./contexts/mainContainer";
@@ -127,17 +128,20 @@ const AppLayout = () => {
     <SidebarProvider defaultOpen={initialState}>
       <MainContainerRefContext.Provider value={mainContainerRef}>
         <PageViewTracker />
-        <div className="flex h-screen overflow-hidden bg-background">
-          <Sidebar />
-          <main
-            ref={mainContainerRef}
-            className={cn(
-              "flex-1 p-6 bg-background overflow-y-auto dark:text-gray-200 transition-opacity",
-              pageTransitioning ? "opacity-95" : "opacity-100"
-            )}
-          >
-            <Outlet />
-          </main>
+        <div className="flex flex-col h-screen overflow-hidden bg-background">
+          <Header />
+          <div className="flex flex-1 overflow-hidden">
+            <Sidebar />
+            <main
+              ref={mainContainerRef}
+              className={cn(
+                "flex-1 p-6 bg-background overflow-y-auto dark:text-gray-200 transition-opacity",
+                pageTransitioning ? "opacity-95" : "opacity-100"
+              )}
+            >
+              <Outlet />
+            </main>
+          </div>
         </div>
       </MainContainerRefContext.Provider>
     </SidebarProvider>

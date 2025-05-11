@@ -5,5 +5,13 @@ export const updateAgent = async (
   agentId: string,
   agentData: UpdateAgentResquest
 ): Promise<void> => {
-  await api.put(`/assistant/${agentId}`, agentData);
+  const selectedWorkspace = JSON.parse(
+    localStorage.getItem("selectedWorkspace") || "{}"
+  ) as { id: string };
+
+  await api.put(`/assistant/${agentId}`, agentData, {
+    params: {
+      workspaceId: selectedWorkspace.id,
+    },
+  });
 };
