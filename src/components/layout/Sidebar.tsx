@@ -200,7 +200,7 @@ const SidebarMenuContent = () => {
   }) => {
     // Verifica se o item deve estar desativado (quando workspaces estão carregando e não é a página atual)
     const isDisabled = isWorkspaceLoading && !isActive(item.path);
-    
+
     if (isCollapsed) {
       return (
         <Tooltip key={item.path} delayDuration={0}>
@@ -213,7 +213,8 @@ const SidebarMenuContent = () => {
                 className={cn(
                   "h-10 w-10",
                   isActive(item.path) && "bg-accent text-primary",
-                  isDisabled && "opacity-50 cursor-not-allowed pointer-events-none"
+                  isDisabled &&
+                    "opacity-50 cursor-not-allowed pointer-events-none"
                 )}
               >
                 {item.icon}
@@ -229,7 +230,11 @@ const SidebarMenuContent = () => {
     }
 
     return (
-      <Link to={item.path} key={item.path} tabIndex={isDisabled ? -1 : undefined}>
+      <Link
+        to={item.path}
+        key={item.path}
+        tabIndex={isDisabled ? -1 : undefined}
+      >
         <Button
           variant="ghost"
           disabled={isDisabled}

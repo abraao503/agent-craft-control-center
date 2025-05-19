@@ -1,8 +1,4 @@
-import React, {
-  useState,
-  useEffect,
-  useRef,
-} from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -40,6 +36,7 @@ import { SidebarProvider } from "./components/ui/sidebar";
 import { cn } from "./lib/utils";
 import { MainContainerRefContext } from "./contexts/mainContainer";
 import { PageViewTracker } from "./components/PageViewTracker";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const queryClient = new QueryClient();
 
@@ -62,6 +59,7 @@ const getInitialSidebarState = (): boolean => {
 // Componente de layout persistente
 const AppLayout = () => {
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   const location = useLocation();
   const initialState = getInitialSidebarState();
   const [pageTransitioning, setPageTransitioning] = useState(false);
@@ -71,40 +69,58 @@ const AppLayout = () => {
   useEffect(() => {
     // Função para definir as variáveis de acordo com o tema
     const updateSidebarColors = () => {
-      const isDarkMode = document.documentElement.classList.contains('dark');
-      
+      const isDarkMode = document.documentElement.classList.contains("dark");
+
       // Cores sólidas para a sidebar (sem transparência)
       if (isDarkMode) {
-        document.documentElement.style.setProperty('--sidebar-solid-bg', '#1e1e2e');
-        document.documentElement.style.setProperty('--sidebar-solid-text', '#e0e0e0');
-        document.documentElement.style.setProperty('--sidebar-solid-border', '#2a2a3a');
+        document.documentElement.style.setProperty(
+          "--sidebar-solid-bg",
+          "#1e1e2e"
+        );
+        document.documentElement.style.setProperty(
+          "--sidebar-solid-text",
+          "#e0e0e0"
+        );
+        document.documentElement.style.setProperty(
+          "--sidebar-solid-border",
+          "#2a2a3a"
+        );
       } else {
-        document.documentElement.style.setProperty('--sidebar-solid-bg', '#ffffff');
-        document.documentElement.style.setProperty('--sidebar-solid-text', '#0f0f0f');
-        document.documentElement.style.setProperty('--sidebar-solid-border', '#e0e0e0');
+        document.documentElement.style.setProperty(
+          "--sidebar-solid-bg",
+          "#ffffff"
+        );
+        document.documentElement.style.setProperty(
+          "--sidebar-solid-text",
+          "#0f0f0f"
+        );
+        document.documentElement.style.setProperty(
+          "--sidebar-solid-border",
+          "#e0e0e0"
+        );
       }
     };
-    
+
     // Executar imediatamente
     updateSidebarColors();
-    
+
     // Observar mudanças na classe 'dark' do documento
     const observer = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
         if (
-          mutation.type === 'attributes' && 
-          mutation.attributeName === 'class'
+          mutation.type === "attributes" &&
+          mutation.attributeName === "class"
         ) {
           updateSidebarColors();
         }
       });
     });
-    
+
     observer.observe(document.documentElement, {
       attributes: true,
-      attributeFilter: ['class'],
+      attributeFilter: ["class"],
     });
-    
+
     return () => {
       observer.disconnect();
     };
@@ -136,7 +152,8 @@ const AppLayout = () => {
               ref={mainContainerRef}
               className={cn(
                 "flex-1 p-6 bg-background overflow-y-auto dark:text-gray-200 transition-opacity",
-                pageTransitioning ? "opacity-95" : "opacity-100"
+                pageTransitioning ? "opacity-95" : "opacity-100",
+                isMobile ? "pl-[60px]" : ""
               )}
             >
               <Outlet />

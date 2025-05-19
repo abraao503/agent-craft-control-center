@@ -112,7 +112,13 @@ const SidebarProvider = React.forwardRef<
 
     // We add a state so that we can do data-state="expanded" or "collapsed".
     // This makes it easier to style the sidebar with Tailwind classes.
-    const state = isMobile ? (openMobile ? "expanded" : "collapsed") : (open ? "expanded" : "collapsed");
+    const state = isMobile
+      ? openMobile
+        ? "expanded"
+        : "collapsed"
+      : open
+      ? "expanded"
+      : "collapsed";
 
     const contextValue = React.useMemo<SidebarContext>(
       () => ({
@@ -188,7 +194,7 @@ const Sidebar = React.forwardRef<
 
     if (isMobile) {
       // Nova implementação para dispositivos móveis
-      // Sidebar fixa por cima da página principal com fundo totalmente opaco 
+      // Sidebar fixa por cima da página principal com fundo totalmente opaco
       // Usamos as variáveis CSS específicas para garantir que não haja transparência
       return (
         <div
@@ -203,7 +209,7 @@ const Sidebar = React.forwardRef<
               "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
               width: SIDEBAR_WIDTH_MOBILE,
               backgroundColor: "var(--sidebar-solid-bg)",
-              color: "var(--sidebar-solid-text)", 
+              color: "var(--sidebar-solid-text)",
               backgroundImage: "none",
               backdropFilter: "none",
               opacity: 1,
@@ -213,46 +219,29 @@ const Sidebar = React.forwardRef<
           }
           {...props}
         >
-          <div 
-            className="flex h-full w-full flex-col" 
+          <div
+            className="flex h-full w-full flex-col"
             data-sidebar="mobile-container"
-            style={{ 
+            style={{
               backgroundColor: "var(--sidebar-solid-bg)",
               backgroundImage: "none",
               backdropFilter: "none",
-              opacity: 1
+              opacity: 1,
             }}
           >
-            <div 
+            <div
               className="flex h-full w-full flex-col"
-              style={{ 
+              style={{
                 backgroundColor: "var(--sidebar-solid-bg)",
                 color: "var(--sidebar-solid-text)",
                 backgroundImage: "none",
                 backdropFilter: "none",
-                opacity: 1
+                opacity: 1,
               }}
             >
               {children}
             </div>
           </div>
-          {/* Botão para fechar/abrir no canto superior direito */}
-          <Button
-            variant="outline"
-            size="icon"
-            className="absolute right-[-18px] top-4 h-7 w-7 rounded-full border shadow-md"
-            style={{
-              backgroundColor: "var(--sidebar-solid-bg)",
-              borderColor: "var(--sidebar-solid-border)",
-            }}
-            onClick={() => setOpenMobile(!openMobile)}
-          >
-            {state === "collapsed" ? (
-              <ChevronRight className="h-3 w-3" />
-            ) : (
-              <ChevronLeft className="h-3 w-3" />
-            )}
-          </Button>
         </div>
       );
     }
