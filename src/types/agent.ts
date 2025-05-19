@@ -68,12 +68,50 @@ export interface FullAgent {
     name: string;
   }[];
   customFields: CustomField[];
+  followUps: FollowUp[];
 }
 
 export interface Link {
   name: string;
   url: string;
 }
+
+export interface FollowUp {
+  id?: string;
+  name: string;
+  description: string;
+  delaySeconds: number;
+  // Campos para UI apenas, não enviados para o backend
+  days?: number;
+  hours?: number;
+  minutes?: number;
+}
+
+export type CreateFollowUp = {
+  action: 'create';
+  followUp: {
+    name: string;
+    description: string;
+    delaySeconds: number;
+  };
+};
+
+export type UpdateFollowUp = {
+  action: 'update';
+  followUpId: string;
+  followUp: {
+    name: string;
+    description: string;
+    delaySeconds: number;
+  };
+};
+
+export type DeleteFollowUp = {
+  action: 'delete';
+  followUpId: string;
+};
+
+export type UpdateFollowUpAction = CreateFollowUp | UpdateFollowUp | DeleteFollowUp;
 
 export interface AgentFormData {
   // Step 1: Basic Information
@@ -102,6 +140,9 @@ export interface AgentFormData {
 
   // Step 4: Custom Fields
   customFields: (CustomField | Omit<CustomField, "id">)[];
+
+  // Step 5: Follow Ups
+  followUps: FollowUp[];
 }
 
 export interface AIModel {
@@ -148,6 +189,7 @@ export type UpdateAgentResquest = {
   prompt: Prompt;
   contents: AssistantContent[];
   customFields: UpdateAssistantCustomField[];
+  followUps: UpdateFollowUpAction[];
 };
 
 export type CreateAgentRequest = {
@@ -161,4 +203,6 @@ export type CreateAgentRequest = {
   prompt: Prompt;
   contentsIds: string[];
   customFields: Omit<CustomField, "id">[];
+  followUps: FollowUp[];
+  workspaceId: string;
 };

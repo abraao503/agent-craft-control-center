@@ -5,12 +5,18 @@ import AgentStepIndicator from "@/components/agents/AgentStepIndicator";
 import BasicInformation from "@/components/agents/step1/BasicInformation";
 import PromptContext from "@/components/agents/step3/PromptContext";
 import CustomFields from "@/components/agents/step2/EditCustomFields";
+import FollowUps from "@/components/agents/step5/FollowUps";
 import {
   AgentFormData,
   AssistantContent,
   FullAgent,
   UpdateAgentResquest,
   UpdateAssistantCustomField,
+  UpdateFollowUpAction,
+  CreateFollowUp,
+  UpdateFollowUp,
+  DeleteFollowUp,
+  FollowUp,
 } from "@/types/agent";
 import { useToast } from "@/hooks/use-toast";
 import { getAgent } from "@/services/agent/getAgent";
@@ -25,9 +31,61 @@ const STEPS = [
   "Custom Fields",
   "Prompt & Context",
   "Knowledge Content",
+  "Follow Ups",
 ];
 
 const EditAgentPage = () => {
+  // Função para processar os follow ups para o formato esperado pelo backend
+  const processFollowUpsForUpdate = (
+    currentFollowUps: Array<FollowUp>,
+    originalFollowUps: Array<FollowUp>
+  ): UpdateFollowUpAction[] => {
+    const result: UpdateFollowUpAction[] = [];
+
+    // Identifica follow ups a serem criados ou atualizados
+    currentFollowUps.forEach((followUp) => {
+      // Se tem ID, é uma atualização
+      if (followUp.id) {
+        const updateAction: UpdateFollowUp = {
+          action: "update",
+          followUpId: followUp.id,
+          followUp: {
+            name: followUp.name,
+            description: followUp.description,
+            delaySeconds: followUp.delaySeconds,
+          },
+        };
+        result.push(updateAction);
+      } else {
+        // Se não tem ID, é uma criação
+        const createAction: CreateFollowUp = {
+          action: "create",
+          followUp: {
+            name: followUp.name,
+            description: followUp.description,
+            delaySeconds: followUp.delaySeconds,
+          },
+        };
+        result.push(createAction);
+      }
+    });
+
+    // Identifica follow ups a serem excluídos (estavam no original mas não estão mais no atual)
+    originalFollowUps.forEach((originalFollowUp) => {
+      const stillExists = currentFollowUps.some(
+        (current) => current.id === originalFollowUp.id
+      );
+      if (!stillExists && originalFollowUp.id) {
+        const deleteAction: DeleteFollowUp = {
+          action: "delete",
+          followUpId: originalFollowUp.id,
+        };
+        result.push(deleteAction);
+      }
+    });
+
+    return result;
+  };
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -39,6 +97,9 @@ const EditAgentPage = () => {
   );
   const [customFieldsToUpdate, setCustomFieldsToUpdate] = useState<
     UpdateAssistantCustomField[]
+  >([]);
+  const [followUpsToUpdate, setFollowUpsToUpdate] = useState<
+    UpdateFollowUpAction[]
   >([]);
   const containerRef = useMainContainerRef();
 
@@ -101,6 +162,7 @@ const EditAgentPage = () => {
 
         contents: data.contents,
         customFields: data.customFields,
+        followUps: data.followUps || [],
       });
     }
   }, [data]);
@@ -114,12 +176,13 @@ const EditAgentPage = () => {
     if (!isStepValid()) {
       toast({
         title: "Campos inválidos",
-        description: "Preencha todos os campos obrigatórios antes de continuar.",
+        description:
+          "Preencha todos os campos obrigatórios antes de continuar.",
         variant: "destructive",
       });
       return false;
     }
-    
+
     // Se for válido, navegar para o passo desejado
     setCurrentStep(targetStep);
     return true;
@@ -140,17 +203,23 @@ const EditAgentPage = () => {
       formData.instructions
     );
 
+    // Processa os follow ups para o formato esperado pelo backend
+    const processedFollowUps =
+      followUpsToUpdate.length > 0
+        ? followUpsToUpdate
+        : processFollowUpsForUpdate(formData.followUps, agent?.followUps || []);
+
     await updateAgentMutation({
       agentId: id,
       agentData: {
-        avatarFileId: null,
         name: formData.name,
         description: formData.description,
+        avatarFileId: null,
         timeZone: formData.timeZone,
         prompt: {
+          goal: formData.goal,
           identity: formData.identity,
           function: formData.function,
-          goal: formData.goal,
           style: formData.style,
           instructions: formattedInstructions,
           blacklist: formData.blacklist,
@@ -161,6 +230,7 @@ const EditAgentPage = () => {
         initialMessage: formData.initialMessage,
         language: formData.language,
         iaModelId: formData.iaModelId,
+        followUps: processedFollowUps,
       },
     });
 
@@ -203,6 +273,14 @@ const EditAgentPage = () => {
             setContentsToUpdate={setContentsToUpdate}
           />
         );
+      case 5:
+        return (
+          <FollowUps
+            formData={formData}
+            updateFormData={updateFormData}
+            setFollowUpsToUpdate={setFollowUpsToUpdate}
+          />
+        );
       default:
         return null;
     }
@@ -228,6 +306,8 @@ const EditAgentPage = () => {
         );
       case 4:
         return true; // Knowledge content is optional
+      case 5:
+        return true; // Follow ups are optional
       default:
         return false;
     }
@@ -256,9 +336,9 @@ const EditAgentPage = () => {
           </p>
         </div>
 
-        <AgentStepIndicator 
-          currentStep={currentStep} 
-          steps={STEPS} 
+        <AgentStepIndicator
+          currentStep={currentStep}
+          steps={STEPS}
           onStepClick={(step) => {
             // Não permitir navegar para passos futuros sem validar o atual
             if (step > currentStep) {
