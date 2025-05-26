@@ -36,7 +36,7 @@ const defaultFormData: WhatsAppFormData = {
   externalClientToken: "",
   postbackUrl: "",
   agentId: "",
-  whatsappIntegrationId: "",
+  whatsappIntegrationName: "z-api" as "z-api" | "evolux",
 };
 
 const WhatsAppForm = ({
@@ -47,6 +47,7 @@ const WhatsAppForm = ({
   const [formData, setFormData] = useState<WhatsAppFormData>({
     ...defaultFormData,
     ...initialData,
+    whatsappIntegrationName: initialData.whatsappIntegrationName || "z-api",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showWebhookPreview, setShowWebhookPreview] = useState(false);
@@ -67,7 +68,7 @@ const WhatsAppForm = ({
 
   // Get selected WhatsApp integration name
   const selectedIntegration = whatsappIntegrations.find(
-    (integration) => integration.id === formData.whatsappIntegrationId
+    (integration) => integration.name === formData.whatsappIntegrationName
   );
 
   // Get company ID from localStorage
@@ -85,11 +86,11 @@ const WhatsAppForm = ({
 
   // Generate webhook URL when needed values change
   useEffect(() => {
-    if (formData.whatsappIntegrationId && formData.agentId) {
+    if (formData.whatsappIntegrationName && formData.agentId) {
       const frontendUrl =
         import.meta.env.VITE_API_URL || window.location.origin;
       const companyId = getUserCompanyId();
-      const integrationName = selectedIntegration?.name || "unknown";
+      const integrationName = formData.whatsappIntegrationName;
 
       // Convert integration name to kebab-case for the URL
       const formattedIntegrationName = integrationName
@@ -100,12 +101,12 @@ const WhatsAppForm = ({
         `${frontendUrl}/webhook/${formattedIntegrationName}/${companyId}/${formData.agentId}`
       );
     }
-  }, [formData.whatsappIntegrationId, formData.agentId, selectedIntegration]);
+  }, [formData.whatsappIntegrationName, formData.agentId]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!showWebhookPreview) {
+    if (formData.whatsappIntegrationName !== "evolux" && !showWebhookPreview) {
       setShowWebhookPreview(true);
       return;
     }
@@ -141,18 +142,33 @@ const WhatsAppForm = ({
     if (showWebhookPreview) {
       setShowWebhookPreview(false);
     }
-  }, [formData.whatsappIntegrationId, formData.agentId]);
+  }, [formData.whatsappIntegrationName, formData.agentId]);
 
   const getButtonText = () => {
     if (isSubmitting) {
       return "Saving...";
     }
 
-    if (showWebhookPreview) {
+    if (showWebhookPreview || formData.whatsappIntegrationName === "evolux") {
       return isEditMode ? "Update Integration" : "Create Integration";
     }
 
     return "Continue";
+  };
+
+  const disableButton = () => {
+    if (formData.whatsappIntegrationName === "evolux") {
+      return isSubmitting || !formData.agentId;
+    }
+
+    return (
+      isSubmitting ||
+      !formData.externalToken ||
+      !formData.externalClientToken ||
+      !formData.agentId ||
+      !formData.whatsappIntegrationName ||
+      !formData.postbackUrl
+    );
   };
 
   return (
@@ -168,38 +184,28 @@ const WhatsAppForm = ({
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="whatsappIntegrationId">WhatsApp Integration</Label>
+            <Label htmlFor="whatsappIntegrationName">Type of Integration</Label>
             <Select
-              value={formData.whatsappIntegrationId}
+              value={formData.whatsappIntegrationName}
               onValueChange={(value) =>
-                updateFormData({ whatsappIntegrationId: value })
+                updateFormData({
+                  whatsappIntegrationName: value as "z-api" | "evolux",
+                })
               }
               disabled={isEditMode}
             >
-              <SelectTrigger id="whatsappIntegrationId">
-                <SelectValue placeholder="Select a WhatsApp integration" />
+              <SelectTrigger id="whatsappIntegrationName">
+                <SelectValue placeholder="Select WhatsApp integration" />
               </SelectTrigger>
               <SelectContent>
-                {isLoadingIntegrations ? (
-                  <SelectItem value="loading" disabled>
-                    Loading...
-                  </SelectItem>
-                ) : (
-                  whatsappIntegrations.map((integration) => (
-                    <SelectItem key={integration.id} value={integration.id}>
-                      {integration.name}
-                    </SelectItem>
-                  ))
-                )}
+                <SelectItem value="z-api">Z-API</SelectItem>
+                <SelectItem value="evolux">Evolux</SelectItem>
               </SelectContent>
             </Select>
-            <p className="text-sm text-muted-foreground">
-              The WhatsApp integration to use
-            </p>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="agentId">Select Agent</Label>
+            <Label htmlFor="agentId">Agent</Label>
             <Select
               value={formData.agentId}
               onValueChange={(value) => updateFormData({ agentId: value })}
@@ -213,7 +219,7 @@ const WhatsAppForm = ({
                     Loading...
                   </SelectItem>
                 ) : (
-                  agentsData?.agents.map((agent) => (
+                  agentsData?.agents?.map((agent) => (
                     <SelectItem key={agent.id} value={agent.id}>
                       {agent.name}
                     </SelectItem>
@@ -222,54 +228,61 @@ const WhatsAppForm = ({
               </SelectContent>
             </Select>
             <p className="text-sm text-muted-foreground">
-              The AI agent that will respond to WhatsApp messages.
+              The AI agent to connect to WhatsApp
             </p>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="externalToken">External Token</Label>
-            <Input
-              id="externalToken"
-              placeholder="Enter external token"
-              value={formData.externalToken}
-              onChange={(e) =>
-                updateFormData({ externalToken: e.target.value })
-              }
-              required
-            />
-            <p className="text-sm text-muted-foreground">
-              The token to authenticate with WhatsApp.
-            </p>
-          </div>
+          {formData.whatsappIntegrationName === "z-api" && (
+            <div className="space-y-2">
+              <Label htmlFor="externalToken">External Token</Label>
+              <Input
+                id="externalToken"
+                value={formData.externalToken}
+                onChange={(e) =>
+                  updateFormData({ externalToken: e.target.value })
+                }
+                placeholder="Enter your external token"
+              />
+              <p className="text-sm text-muted-foreground">
+                Token provided by your WhatsApp provider
+              </p>
+            </div>
+          )}
 
-          <div className="space-y-2">
-            <Label htmlFor="externalClientToken">External Client Token</Label>
-            <Input
-              id="externalClientToken"
-              placeholder="Enter external client token"
-              value={formData.externalClientToken}
-              onChange={(e) =>
-                updateFormData({ externalClientToken: e.target.value })
-              }
-              required
-            />
-            <p className="text-sm text-muted-foreground">
-              The client token to authenticate with WhatsApp.
-            </p>
-          </div>
+          {formData.whatsappIntegrationName === "z-api" && (
+            <div className="space-y-2">
+              <Label htmlFor="externalClientToken">Client Token</Label>
+              <Input
+                id="externalClientToken"
+                value={formData.externalClientToken}
+                onChange={(e) =>
+                  updateFormData({ externalClientToken: e.target.value })
+                }
+                placeholder="Enter your client token"
+              />
+              <p className="text-sm text-muted-foreground">
+                Client token provided by your WhatsApp provider
+              </p>
+            </div>
+          )}
 
-          <div className="space-y-2">
-            <Label htmlFor="postbackUrl">Postback URL</Label>
-            <Input
-              id="postbackUrl"
-              placeholder="https://example.com/webhook"
-              value={formData.postbackUrl}
-              onChange={(e) => updateFormData({ postbackUrl: e.target.value })}
-            />
-            <p className="text-sm text-muted-foreground">
-              The URL WhatsApp will send messages to.
-            </p>
-          </div>
+          {formData.whatsappIntegrationName === "z-api" && (
+            <div className="space-y-2">
+              <Label htmlFor="postbackUrl">Postback URL</Label>
+              <Input
+                id="postbackUrl"
+                value={formData.postbackUrl}
+                onChange={(e) =>
+                  updateFormData({ postbackUrl: e.target.value })
+                }
+                placeholder="Enter postback URL"
+                disabled={showWebhookPreview}
+              />
+              <p className="text-sm text-muted-foreground">
+                The URL where WhatsApp will send incoming messages
+              </p>
+            </div>
+          )}
 
           {showWebhookPreview && (
             <div className="mt-8 p-6 border rounded-md bg-muted">
@@ -298,39 +311,24 @@ const WhatsAppForm = ({
                     <span className="sr-only">Copy</span>
                   </Button>
                 </div>
-                {/* <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={copyWebhookToClipboard}
-                >
-                  Copy
-                </Button> */}
               </div>
             </div>
           )}
         </form>
       </CardContent>
-      <CardFooter className="flex justify-between">
-        <Button
-          variant="outline"
-          type="button"
-          onClick={handleBackToIntegrations}
-        >
-          Cancel
-        </Button>
-        <Button
-          onClick={handleSubmit}
-          disabled={
-            isSubmitting ||
-            !formData.externalToken ||
-            !formData.externalClientToken ||
-            !formData.agentId ||
-            !formData.whatsappIntegrationId ||
-            !formData.postbackUrl
-          }
-        >
-          {getButtonText()}
-        </Button>
+      <CardFooter className="pt-2 flex justify-end">
+        <div className="flex space-x-2">
+          <Button variant="ghost" size="sm" onClick={handleBackToIntegrations}>
+            Back
+          </Button>
+          <Button
+            type="submit"
+            onClick={handleSubmit}
+            disabled={disableButton()}
+          >
+            {getButtonText()}
+          </Button>
+        </div>
       </CardFooter>
     </Card>
   );

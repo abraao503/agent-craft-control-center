@@ -8,6 +8,7 @@ type ApiResponse = {
   externalToken: string;
   externalClientToken: string;
   whatsappIntegrationId: string;
+  whatsappIntegrationName: string;
 };
 
 export const getCompanyWhatsAppIntegration = async (
@@ -24,5 +25,6 @@ export const getCompanyWhatsAppIntegration = async (
     externalToken: data.externalToken,
     externalClientToken: data.externalClientToken,
     whatsappIntegrationId: data.whatsappIntegrationId,
+    whatsappIntegrationName: data.whatsappIntegrationName as "z-api" | "evolux",
   };
 };

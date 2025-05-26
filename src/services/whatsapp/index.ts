@@ -4,3 +4,4 @@ export { listCompanyWhatsAppIntegrations } from "./listCompanyWhatsAppIntegratio
 export { deleteWhatsAppIntegration } from "./deleteWhatsAppIntegration";
 export { listWhatsAppIntegrations } from "./listWhatsAppIntegrations";
 export { getCompanyWhatsAppIntegration } from "./getCompanyWhatsAppIntegration";
+export { generateQrCode } from "./generateQrCode";

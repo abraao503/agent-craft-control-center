@@ -6,7 +6,7 @@ export interface UpdateWhatsAppIntegrationParams {
   externalClientToken: string;
   postbackUrl: string;
   agentId: string;
-  whatsappIntegrationId: string;
+  whatsappIntegrationName: string;
 }
 
 export const updateWhatsAppIntegration = async (

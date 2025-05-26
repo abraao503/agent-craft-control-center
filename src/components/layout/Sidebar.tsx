@@ -240,7 +240,7 @@ const SidebarMenuContent = () => {
           disabled={isDisabled}
           className={cn(
             "w-full justify-start",
-            isActive(item.path) && "bg-accent text-primary",
+            isActive(item.path) && "bg-accent",
             isDisabled && "opacity-50 cursor-not-allowed pointer-events-none"
           )}
         >

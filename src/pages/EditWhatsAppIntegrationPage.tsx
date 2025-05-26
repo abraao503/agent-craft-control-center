@@ -9,6 +9,7 @@ import {
   getCompanyWhatsAppIntegration,
   updateWhatsAppIntegration,
 } from "@/services/whatsapp";
+import { useEffect } from "react";
 
 const EditWhatsAppIntegrationPage = () => {
   const navigate = useNavigate();
@@ -21,6 +22,10 @@ const EditWhatsAppIntegrationPage = () => {
     queryFn: () => getCompanyWhatsAppIntegration(id),
   });
 
+  useEffect(() => {
+    console.log("Integration data:", integration); // Debugging line to check the data in the cons
+  }, [integration]);
+
   const updateMutation = useMutation({
     mutationFn: (data: WhatsAppFormData) =>
       updateWhatsAppIntegration(id!, {
@@ -29,7 +34,7 @@ const EditWhatsAppIntegrationPage = () => {
         externalClientToken: data.externalClientToken,
         postbackUrl: data.postbackUrl,
         agentId: data.agentId,
-        whatsappIntegrationId: data.whatsappIntegrationId,
+        whatsappIntegrationName: data.whatsappIntegrationName,
       }),
     onSuccess: () => {
       toast({

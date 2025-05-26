@@ -5,7 +5,7 @@ export interface CreateWhatsAppIntegrationParams {
   externalClientToken: string;
   postbackUrl: string;
   agentId: string;
-  whatsappIntegrationId: string;
+  whatsappIntegrationName: "z-api" | "evolux";
 }
 
 export const createWhatsAppIntegration = async (
@@ -14,5 +14,6 @@ export const createWhatsAppIntegration = async (
   return api.post("/company-whatsapp-integration", {
     ...data,
     assistantId: data.agentId,
+    whatsappIntegrationName: data.whatsappIntegrationName,
   });
 };

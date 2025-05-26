@@ -1,4 +1,7 @@
-import { CompanyWhatsAppIntegration } from "@/types/whatsapp";
+import {
+  CompanyWhatsAppIntegration,
+  InstanceStatusEvent,
+} from "@/types/whatsapp";
 import {
   Card,
   CardContent,
@@ -8,13 +11,23 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2, Copy } from "lucide-react";
-import { useState } from "react";
+import { Edit, Trash2, Copy, QrCode } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { listWhatsAppIntegrations } from "@/services/whatsapp";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { listWhatsAppIntegrations, generateQrCode } from "@/services/whatsapp";
 import { listAgent } from "@/services/agent/listAgent";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { connectSocket } from "@/lib/socket";
+import { useAuth } from "@/contexts/auth/hooks";
 
 interface WhatsAppIntegrationCardProps {
   integration: CompanyWhatsAppIntegration;
@@ -26,7 +39,13 @@ const WhatsAppIntegrationCard = ({
   onDelete,
 }: WhatsAppIntegrationCardProps) => {
   const [copied, setCopied] = useState(false);
+  const [qrCodeOpen, setQrCodeOpen] = useState(false);
+  const [qrCodeData, setQrCodeData] = useState<string>("");
+  const [connectionStatus, setConnectionStatus] = useState<
+    "close" | "open" | "connecting"
+  >(integration.status || "close");
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const { data: whatsappIntegrations } = useQuery({
     queryKey: ["whatsapp-integrations"],
@@ -37,6 +56,62 @@ const WhatsAppIntegrationCard = ({
     queryKey: ["agents"],
     queryFn: listAgent,
   });
+
+  const qrCodeMutation = useMutation({
+    mutationFn: () => generateQrCode(integration.id),
+    onSuccess: (data) => {
+      setQrCodeData(data.qrCode);
+      setQrCodeOpen(true);
+    },
+    onError: (error) => {
+      toast({
+        title: "Erro",
+        description: "Falha ao gerar o QR code. Tente novamente.",
+        variant: "destructive",
+      });
+      console.error("Erro ao gerar QR code:", error);
+    },
+  });
+
+  // Efeito para fechar o modal de QR code quando o status mudar para "open"
+  useEffect(() => {
+    if (connectionStatus === "open" && qrCodeOpen) {
+      setQrCodeOpen(false);
+    }
+  }, [connectionStatus, qrCodeOpen]);
+
+  useEffect(() => {
+    if (integration.whatsappIntegrationName !== "evolux") return;
+
+    const token = localStorage.getItem("token");
+    const socket = connectSocket(token);
+
+    socket.on("connect", () => {
+      const room = `company:${user.companyId}`;
+      socket.emit("join", { room });
+    });
+
+    socket.on("instance:status", (event: InstanceStatusEvent) => {
+      if (event.companyWhatsappIntegrationId === integration.id) {
+        setConnectionStatus(event.status);
+      }
+    });
+
+    socket.on("qr:generated", (event) => {
+      if (event.companyWhatsappIntegrationId === integration.id) {
+        console.log("QR Code gerado:", event.qrCode);
+        setQrCodeData(event.qrCode);
+        setQrCodeOpen(true);
+      }
+    });
+
+    // Solicitar status inicial
+    socket.emit("get:instance:status", { integrationId: integration.id });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [integration.id, integration.whatsappIntegrationName, user.companyId]);
 
   const copyPostbackUrlToClipboard = () => {
     const webhook = getWebhookUrl();
@@ -74,6 +149,36 @@ const WhatsAppIntegrationCard = ({
     return `${frontendUrl}/webhook/${formattedIntegrationName}/${companyId}/${integration.agent.id}`;
   };
 
+  const handleGenerateQrCode = () => {
+    qrCodeMutation.mutate();
+  };
+
+  const getStatusColor = () => {
+    switch (connectionStatus) {
+      case "open":
+        return "bg-green-500";
+      case "connecting":
+        return "bg-yellow-500";
+      case "close":
+        return "bg-red-500";
+      default:
+        return "bg-gray-500";
+    }
+  };
+
+  const getStatusText = () => {
+    switch (connectionStatus) {
+      case "open":
+        return "Conectado";
+      case "connecting":
+        return "Conectando";
+      case "close":
+        return "Desconectado";
+      default:
+        return "Desconhecido";
+    }
+  };
+
   return (
     <Card className="h-full flex flex-col">
       <CardHeader className="pb-2">
@@ -81,6 +186,14 @@ const WhatsAppIntegrationCard = ({
           <CardTitle className="text-xl">
             {integration.whatsappIntegrationName}
           </CardTitle>
+          {integration.whatsappIntegrationName === "evolux" && (
+            <Badge variant="outline" className="ml-2 flex items-center gap-1">
+              <span
+                className={`h-2 w-2 rounded-full ${getStatusColor()}`}
+              ></span>
+              {getStatusText()}
+            </Badge>
+          )}
         </div>
         <CardDescription>
           Connected to: {integration.agent.name}
@@ -92,28 +205,44 @@ const WhatsAppIntegrationCard = ({
             <span className="font-medium text-foreground">Integration ID:</span>{" "}
             {integration.id.substring(0, 8)}...
           </p>
-          <div className="pt-2">
-            <div className="flex items-center gap-1 mb-1">
-              <span className="font-medium text-foreground">Webhook URL:</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="truncate text-xs font-mono bg-gray-50 p-1 rounded border flex-grow">
-                {getWebhookUrl()}
+          {integration.whatsappIntegrationName !== "evolux" && (
+            <div className="pt-2">
+              <div className="flex items-center gap-1 mb-1">
+                <span className="font-medium text-foreground">
+                  Webhook URL:
+                </span>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex-shrink-0 h-6 w-6 p-0"
-                onClick={copyPostbackUrlToClipboard}
-              >
-                <Copy className="h-3 w-3" />
-              </Button>
+              <div className="flex items-center gap-1">
+                <div className="truncate text-xs font-mono bg-gray-50 p-1 rounded border flex-grow">
+                  {getWebhookUrl()}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-shrink-0 h-6 w-6 p-0"
+                  onClick={copyPostbackUrlToClipboard}
+                >
+                  <Copy className="h-3 w-3" />
+                </Button>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </CardContent>
       <CardFooter className="pt-2 flex justify-end">
-        <div className="flex space-x-2">
+        <div className="flex flex-wrap gap-x-2">
+          {integration.whatsappIntegrationName === "evolux" &&
+            connectionStatus !== "open" && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleGenerateQrCode}
+                disabled={qrCodeMutation.isPending}
+              >
+                <QrCode className="w-4 h-4 mr-1" />
+                {qrCodeMutation.isPending ? "Gerando..." : "Gerar QR Code"}
+              </Button>
+            )}
           <Link to={`/integrations/edit/${integration.id}`}>
             <Button variant="outline" size="sm">
               <Edit className="w-4 h-4 mr-1" />
@@ -131,6 +260,27 @@ const WhatsAppIntegrationCard = ({
           </Button>
         </div>
       </CardFooter>
+
+      <Dialog open={qrCodeOpen} onOpenChange={setQrCodeOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Escaneie o QR Code</DialogTitle>
+            <DialogDescription>
+              Abra o WhatsApp no seu celular e escaneie este QR Code para
+              conectar.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center justify-center p-4">
+            {qrCodeData ? (
+              <img src={qrCodeData} alt="QR Code" className="w-96 h-96" />
+            ) : (
+              <div className="w-64 h-64 flex items-center justify-center bg-gray-100 rounded-lg">
+                <p className="text-gray-500">Carregando QR Code...</p>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };
