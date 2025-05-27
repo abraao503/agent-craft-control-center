@@ -19,10 +19,10 @@ const CreateWhatsAppIntegrationPage = () => {
     externalToken: "",
     externalClientToken: "",
     postbackUrl: "",
-    whatsappIntegrationId: "",
+    whatsappIntegrationName: "z-api",
   };
 
-  const createMutation = useMutation({
+  const { mutate: createMutation, isPending } = useMutation({
     mutationFn: (data: WhatsAppFormData) => createWhatsAppIntegration(data),
     onSuccess: () => {
       toast({
@@ -45,7 +45,7 @@ const CreateWhatsAppIntegrationPage = () => {
   });
 
   const handleSubmit = (data: WhatsAppFormData) => {
-    createMutation.mutate(data);
+    createMutation(data);
   };
 
   return (
@@ -68,7 +68,11 @@ const CreateWhatsAppIntegrationPage = () => {
           Connect your AI agent to WhatsApp
         </p>
 
-        <WhatsAppForm onSubmit={handleSubmit} initialData={initialData} />
+        <WhatsAppForm
+          onSubmit={handleSubmit}
+          initialData={initialData}
+          isLoading={isPending}
+        />
       </div>
     </div>
   );

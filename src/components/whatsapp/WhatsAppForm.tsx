@@ -24,11 +24,13 @@ import { listAgent } from "@/services/agent/listAgent";
 import { useNavigate } from "react-router-dom";
 import { Copy } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { useWorkspaceManager } from "@/hooks/useWorkspaceManager";
 
 interface WhatsAppFormProps {
   onSubmit: (data: WhatsAppFormData) => void;
   initialData?: Partial<WhatsAppFormData>;
   isEditMode?: boolean;
+  isLoading: boolean;
 }
 
 const defaultFormData: WhatsAppFormData = {
@@ -43,6 +45,7 @@ const WhatsAppForm = ({
   onSubmit,
   initialData = {},
   isEditMode = false,
+  isLoading,
 }: WhatsAppFormProps) => {
   const [formData, setFormData] = useState<WhatsAppFormData>({
     ...defaultFormData,
@@ -55,6 +58,8 @@ const WhatsAppForm = ({
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  const { workspaceId } = useWorkspaceManager();
+
   const { data: whatsappIntegrations = [], isLoading: isLoadingIntegrations } =
     useQuery({
       queryKey: ["list-whatsapp-integrations"],
@@ -62,8 +67,8 @@ const WhatsAppForm = ({
     });
 
   const { data: agentsData, isLoading: isLoadingAgents } = useQuery({
-    queryKey: ["agents"],
-    queryFn: listAgent,
+    queryKey: ["agents", workspaceId],
+    queryFn: () => listAgent(workspaceId),
   });
 
   // Get selected WhatsApp integration name
@@ -325,6 +330,7 @@ const WhatsAppForm = ({
             type="submit"
             onClick={handleSubmit}
             disabled={disableButton()}
+            isLoading={isLoading}
           >
             {getButtonText()}
           </Button>
