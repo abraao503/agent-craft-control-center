@@ -42,6 +42,7 @@ import { ConversationModal } from "@/components/conversations/ConversationModal"
 import { listConversations } from "@/services/conversation/listConversations";
 import { Conversation, ConversationsFilters } from "@/types/conversation";
 import { AGENTS } from "@/services/mockData";
+import { useWorkspaceManager } from "@/hooks/useWorkspaceManager";
 
 const ConversationsPage = () => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -56,14 +57,21 @@ const ConversationsPage = () => {
     sortOrder: "desc",
   });
 
+  // Usar o hook de gerenciamento de workspace
+  const { workspaceId, isChangingWorkspace } = useWorkspaceManager({
+    queryKeys: ["conversations"],
+    autoRefetch: true,
+    trackLoadingState: true,
+  });
+
   // Selected conversation for the modal
   const [selectedConversation, setSelectedConversation] =
     useState<Conversation | null>(null);
 
   // Query to fetch conversations
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ["conversations", filters],
-    queryFn: () => listConversations(filters),
+    queryKey: ["conversations", filters, workspaceId],
+    queryFn: () => listConversations(filters, workspaceId),
   });
 
   // Handle search input change
@@ -204,7 +212,7 @@ const ConversationsPage = () => {
             </div>
 
             {/* Loading state */}
-            {isLoading && (
+            {(isLoading || isChangingWorkspace) && (
               <div className="flex justify-center items-center py-8">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>

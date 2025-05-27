@@ -25,6 +25,7 @@ import { updateAgent } from "@/services/agent/updateAgent";
 import EditKnowledgeContent from "@/components/agents/step4/EditKnowledgeContent";
 import { useMainContainerRef } from "@/contexts/mainContainer";
 import { convertHtmlStringToText } from "@/lib/utils";
+import { useWorkspaceManager } from "@/hooks/useWorkspaceManager";
 
 const STEPS = [
   "Basic Information",
@@ -109,9 +110,11 @@ const EditAgentPage = () => {
     }
   }, [currentStep, containerRef]);
 
+  const { workspaceId } = useWorkspaceManager();
+
   const { isLoading, data, error } = useQuery({
-    queryKey: ["getAgent", id],
-    queryFn: () => getAgent(id),
+    queryKey: ["getAgent", id, workspaceId],
+    queryFn: () => getAgent(id, workspaceId),
   });
 
   const { mutateAsync: updateAgentMutation, isPending: isUpdating } =
@@ -119,10 +122,12 @@ const EditAgentPage = () => {
       mutationFn: ({
         agentId,
         agentData,
+        workspaceId,
       }: {
         agentId: string;
         agentData: UpdateAgentResquest;
-      }) => updateAgent(agentId, agentData),
+        workspaceId: string;
+      }) => updateAgent(agentId, agentData, workspaceId),
       onSuccess: () => {
         toast({
           title: "Agent updated successfully",
@@ -232,6 +237,7 @@ const EditAgentPage = () => {
         iaModelId: formData.iaModelId,
         followUps: processedFollowUps,
       },
+      workspaceId,
     });
 
     toast({

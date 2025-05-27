@@ -24,6 +24,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import { useWorkspaceManager } from "@/hooks/useWorkspaceManager";
 
 const CustomersPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -36,9 +37,15 @@ const CustomersPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  const { workspaceId, isChangingWorkspace } = useWorkspaceManager({
+    queryKeys: ["listCustomers"],
+    autoRefetch: true,
+    trackLoadingState: true,
+  });
+
   const { isLoading, data, error, refetch } = useQuery({
-    queryKey: ["listCustomers", queryParams],
-    queryFn: () => listCustomers(queryParams),
+    queryKey: ["listCustomers", queryParams, workspaceId],
+    queryFn: () => listCustomers(queryParams, workspaceId),
   });
 
   useEffect(() => {
@@ -121,7 +128,7 @@ const CustomersPage = () => {
           />
         </div>
 
-        {isLoading ? (
+        {isLoading || isChangingWorkspace ? (
           <div className="space-y-3">
             {[...Array(3)].map((_, index) => (
               <div

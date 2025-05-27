@@ -21,19 +21,9 @@ export const api = axios.create({
 // Add request interceptor to track API calls
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
-  const selectedWorkspace = JSON.parse(
-    localStorage.getItem("selectedWorkspace") || "{}"
-  ) as { id: string };
 
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
-  }
-
-  if (selectedWorkspace && selectedWorkspace.id) {
-    config.params = {
-      ...config.params,
-      workspaceId: selectedWorkspace.id,
-    };
   }
 
   // Track API request in Highlight if enabled

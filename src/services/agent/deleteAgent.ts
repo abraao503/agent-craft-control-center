@@ -1,13 +1,12 @@
 import { api } from "../api";
 
-export const deleteAgent = async (assistantId: string): Promise<void> => {
-  const selectedWorkspace = JSON.parse(
-    localStorage.getItem("selectedWorkspace") || "{}"
-  ) as { id: string };
-
+export const deleteAgent = async (
+  assistantId: string,
+  workspaceId: string
+): Promise<void> => {
   await api.delete(`/assistant/${assistantId}`, {
     params: {
-      workspaceId: selectedWorkspace.id,
+      workspaceId,
     },
   });
 };

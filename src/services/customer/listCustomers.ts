@@ -1,34 +1,47 @@
-import { Customer, CustomerListParams, CustomerResponse } from "@/types/customer";
+import {
+  Customer,
+  CustomerListParams,
+  CustomerResponse,
+} from "@/types/customer";
 import { api } from "../api";
 
-export const listCustomers = async (params?: CustomerListParams): Promise<CustomerResponse> => {
+export const listCustomers = async (
+  params: CustomerListParams,
+  workspaceId: string
+): Promise<CustomerResponse> => {
   const queryParams = new URLSearchParams();
-  
+
   if (params?.page) {
-    queryParams.append('page', params.page.toString());
-  }
-  
-  if (params?.limit) {
-    queryParams.append('limit', params.limit.toString());
-  }
-  
-  if (params?.orderBy) {
-    queryParams.append('orderBy', params.orderBy);
-  }
-  
-  if (params?.order) {
-    queryParams.append('order', params.order);
+    queryParams.append("page", params.page.toString());
   }
 
-  const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
-  const response = await api.get<CustomerResponse>(`/customer/list${queryString}`);
-  
+  if (params?.limit) {
+    queryParams.append("limit", params.limit.toString());
+  }
+
+  if (params?.orderBy) {
+    queryParams.append("orderBy", params.orderBy);
+  }
+
+  if (params?.order) {
+    queryParams.append("order", params.order);
+  }
+
+  queryParams.append("workspaceId", workspaceId);
+
+  const queryString = queryParams.toString()
+    ? `?${queryParams.toString()}`
+    : "";
+  const response = await api.get<CustomerResponse>(
+    `/customer/list${queryString}`
+  );
+
   return {
     ...response.data,
-    items: response.data.items.map(customer => ({
+    items: response.data.items.map((customer) => ({
       ...customer,
       createdAt: new Date(customer.createdAt),
-      updatedAt: new Date(customer.updatedAt)
-    }))
+      updatedAt: new Date(customer.updatedAt),
+    })),
   };
-}; 
+};

@@ -13,6 +13,7 @@ import { Content } from "@/types/content";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { listContent } from "@/services/content/listContent";
+import { useWorkspaceManager } from "@/hooks/useWorkspaceManager";
 
 const ContentManagementPage = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -20,9 +21,15 @@ const ContentManagementPage = () => {
   const [contents, setContents] = useState<Content[]>([]);
   const { toast } = useToast();
 
+  const { workspaceId, isChangingWorkspace } = useWorkspaceManager({
+    queryKeys: ["listContent"],
+    autoRefetch: true,
+    trackLoadingState: true,
+  });
+
   const { isLoading, data, error } = useQuery({
-    queryKey: ["listContent"],
-    queryFn: listContent,
+    queryKey: ["listContent", workspaceId],
+    queryFn: () => listContent(workspaceId),
   });
 
   useEffect(() => {
@@ -92,7 +99,7 @@ const ContentManagementPage = () => {
           }}
           contents={contents}
           onDeleted={onDeletedContent}
-          isLoading={isLoading}
+          isLoading={isLoading || isChangingWorkspace}
         />
 
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

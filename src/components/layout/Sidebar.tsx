@@ -13,8 +13,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Building2,
+  Plus,
 } from "lucide-react";
-import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { useAuth } from "@/contexts/auth/hooks";
 import {
   Sidebar as SidebarComponent,
@@ -28,6 +28,15 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -36,15 +45,18 @@ import {
 } from "@/components/ui/select";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { listWorkspaces } from "@/services/workspace/listWorkspaces";
+import {
+  createWorkspace,
+  CreateWorkspaceParams,
+} from "@/services/workspace/createWorkspace";
 import { Workspace } from "@/types/workspace";
+import { useToast } from "@/hooks/use-toast";
+import { useWorkspaceContext } from "@/contexts/workspace/WorkspaceContext";
+import { AxiosError } from "axios";
 
 const useWorkspace = () => {
-  const [selectedWorkspace, setSelectedWorkspace] = useState<Workspace | null>(
-    () => {
-      const savedWorkspace = localStorage.getItem("selectedWorkspace");
-      return savedWorkspace ? JSON.parse(savedWorkspace) : null;
-    }
-  );
+  const queryClient = useQueryClient();
+  const { currentWorkspace, setCurrentWorkspace } = useWorkspaceContext();
 
   const {
     data: workspaces,
@@ -55,73 +67,232 @@ const useWorkspace = () => {
     queryFn: listWorkspaces,
   });
 
+  // Mutation para criar um novo workspace
+  const createWorkspaceMutation = useMutation({
+    mutationFn: createWorkspace,
+    onSuccess: () => {
+      // Invalidar a query para recarregar a lista de workspaces
+      queryClient.invalidateQueries({ queryKey: ["workspaces"] });
+    },
+  });
+
   useEffect(() => {
-    if (workspaces?.length > 0 && !selectedWorkspace) {
+    if (workspaces?.length > 0 && !currentWorkspace) {
       const defaultWorkspace =
         workspaces.find((w) => w.isDefault) || workspaces[0];
-      setSelectedWorkspace(defaultWorkspace);
-      localStorage.setItem(
-        "selectedWorkspace",
-        JSON.stringify(defaultWorkspace)
-      );
-    } else if (workspaces?.length > 0 && selectedWorkspace) {
+      setCurrentWorkspace(defaultWorkspace);
+    } else if (workspaces?.length > 0 && currentWorkspace) {
       // Verifica se o workspace selecionado ainda existe na lista
       const workspaceExists = workspaces.some(
-        (w) => w.id === selectedWorkspace.id
+        (w) => w.id === currentWorkspace.id
       );
       if (!workspaceExists) {
         const defaultWorkspace =
           workspaces.find((w) => w.isDefault) || workspaces[0];
-        setSelectedWorkspace(defaultWorkspace);
-        localStorage.setItem(
-          "selectedWorkspace",
-          JSON.stringify(defaultWorkspace)
-        );
+        setCurrentWorkspace(defaultWorkspace);
       }
     }
-  }, [workspaces, selectedWorkspace]);
+  }, [workspaces, currentWorkspace, setCurrentWorkspace]);
 
-  // Atualiza o workspace selecionado e salva no localStorage
+  // Atualiza o workspace selecionado
   const selectWorkspace = (workspaceId: string) => {
     const workspace = workspaces.find((w) => w.id === workspaceId);
     if (workspace) {
-      setSelectedWorkspace(workspace);
-      localStorage.setItem("selectedWorkspace", JSON.stringify(workspace));
+      setCurrentWorkspace(workspace);
     }
+  };
+
+  // Função para adicionar um novo workspace
+  const addWorkspace = async (params: CreateWorkspaceParams) => {
+    const newWorkspace = await createWorkspaceMutation.mutateAsync(params);
+    return newWorkspace;
   };
 
   return {
     workspaces,
-    selectedWorkspace,
+    selectedWorkspace: currentWorkspace,
     selectWorkspace,
+    addWorkspace,
     isLoading,
+    isCreating: createWorkspaceMutation.isPending,
     error,
   };
 };
 
+// Componente de diálogo para criar novo workspace
+interface WorkspaceDialogProps {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  workspaceName: string;
+  onWorkspaceNameChange: (name: string) => void;
+  onCreateWorkspace: () => void;
+  isCreating: boolean;
+}
+
+const WorkspaceDialog = ({
+  isOpen,
+  onOpenChange,
+  workspaceName,
+  onWorkspaceNameChange,
+  onCreateWorkspace,
+  isCreating,
+}: WorkspaceDialogProps) => {
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Criar novo workspace</DialogTitle>
+        </DialogHeader>
+        <div className="py-4">
+          <Label htmlFor="workspace-name">Nome do workspace</Label>
+          <Input
+            id="workspace-name"
+            value={workspaceName}
+            onChange={(e) => onWorkspaceNameChange(e.target.value)}
+            placeholder="Digite o nome do workspace"
+            className="mt-2"
+            autoFocus
+          />
+        </div>
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isCreating}
+          >
+            Cancelar
+          </Button>
+          <Button
+            onClick={onCreateWorkspace}
+            disabled={!workspaceName.trim() || isCreating}
+          >
+            {isCreating ? "Criando..." : "Criar"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 // Componente de seleção de workspace
 const WorkspaceSelector = ({ isCollapsed }: { isCollapsed: boolean }) => {
-  const { workspaces, selectedWorkspace, selectWorkspace, isLoading } =
-    useWorkspace();
+  const {
+    workspaces,
+    selectedWorkspace,
+    selectWorkspace,
+    addWorkspace,
+    isLoading,
+    isCreating,
+  } = useWorkspace();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [newWorkspaceName, setNewWorkspaceName] = useState("");
+  const { toast } = useToast();
+
+  const handleCreateWorkspace = async () => {
+    if (!newWorkspaceName.trim()) return;
+
+    try {
+      // Criar o novo workspace e obter o resultado
+      const newWorkspace = await addWorkspace({
+        name: newWorkspaceName.trim(),
+      });
+
+      // Selecionar o novo workspace
+      if (newWorkspace?.id) {
+        selectWorkspace(newWorkspace.id);
+      }
+
+      // Mostrar toast de sucesso
+      toast({
+        title: "Sucesso",
+        description: `Workspace "${newWorkspaceName.trim()}" criado com sucesso!`,
+        variant: "default",
+      });
+
+      // Limpar o formulário e fechar o diálogo
+      setNewWorkspaceName("");
+      setIsDialogOpen(false);
+    } catch (error: unknown) {
+      console.error("Erro ao criar workspace:", error);
+
+      // Verificar se é erro de nome duplicado
+      if (error instanceof AxiosError) {
+        if (
+          error?.response?.data?.message === "Workspace name already exists"
+        ) {
+          toast({
+            title: "Erro",
+            description:
+              "Este nome de workspace já existe. Por favor, escolha outro nome.",
+            variant: "destructive",
+          });
+        }
+
+        return;
+      }
+
+      toast({
+        title: "Erro",
+        description: "Ocorreu um erro ao criar o workspace. Tente novamente.",
+        variant: "destructive",
+      });
+    }
+  };
 
   if (isCollapsed) {
     return (
-      <Tooltip delayDuration={0}>
-        <TooltipTrigger asChild>
-          <div className="flex justify-center items-center py-2">
-            <Building2 className="h-5 w-5 text-muted-foreground" />
-          </div>
-        </TooltipTrigger>
-        <TooltipContent side="right" className="border-border">
-          {selectedWorkspace?.name || "Carregando..."}
-        </TooltipContent>
-      </Tooltip>
+      <>
+        <Tooltip delayDuration={0}>
+          <TooltipTrigger asChild>
+            <div className="flex justify-center items-center py-2">
+              <Building2 className="h-5 w-5 text-muted-foreground" />
+            </div>
+          </TooltipTrigger>
+          <TooltipContent side="right" className="border-border">
+            {selectedWorkspace?.name || "Carregando..."}
+          </TooltipContent>
+        </Tooltip>
+        <Tooltip delayDuration={0}>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="w-full h-8 flex justify-center"
+              onClick={() => setIsDialogOpen(true)}
+            >
+              <Plus className="h-4 w-4 text-muted-foreground" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="right" className="border-border">
+            Criar novo workspace
+          </TooltipContent>
+        </Tooltip>
+
+        <WorkspaceDialog
+          isOpen={isDialogOpen}
+          onOpenChange={setIsDialogOpen}
+          workspaceName={newWorkspaceName}
+          onWorkspaceNameChange={setNewWorkspaceName}
+          onCreateWorkspace={handleCreateWorkspace}
+          isCreating={isCreating}
+        />
+      </>
     );
   }
 
   return (
     <div className="px-4 py-2 border-b border-border">
-      <p className="text-sm text-muted-foreground mb-1">Workspace</p>
+      <div className="flex justify-between items-center mb-1">
+        <p className="text-sm text-muted-foreground">Workspace</p>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-5 w-5"
+          onClick={() => setIsDialogOpen(true)}
+        >
+          <Plus className="h-4 w-4 text-muted-foreground" />
+        </Button>
+      </div>
       {isLoading ? (
         <div className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm flex items-center text-muted-foreground">
           Carregando...
@@ -144,6 +315,15 @@ const WorkspaceSelector = ({ isCollapsed }: { isCollapsed: boolean }) => {
           </SelectContent>
         </Select>
       )}
+
+      <WorkspaceDialog
+        isOpen={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        workspaceName={newWorkspaceName}
+        onWorkspaceNameChange={setNewWorkspaceName}
+        onCreateWorkspace={handleCreateWorkspace}
+        isCreating={isCreating}
+      />
     </div>
   );
 };

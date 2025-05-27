@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,6 +20,7 @@ import {
   deleteWhatsAppIntegration,
 } from "@/services/whatsapp";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useWorkspaceManager } from "@/hooks/useWorkspaceManager";
 
 const WhatsAppIntegrationsPage = () => {
   const [integrationToDelete, setIntegrationToDelete] = useState<string | null>(
@@ -28,9 +29,16 @@ const WhatsAppIntegrationsPage = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Usar o hook de gerenciamento de workspace
+  const { workspaceId, isChangingWorkspace } = useWorkspaceManager({
+    queryKeys: ["company-whatsapp-integrations"],
+    autoRefetch: true,
+    trackLoadingState: true,
+  });
+
   const { data: integrations = [], isLoading } = useQuery({
-    queryKey: ["company-whatsapp-integrations"],
-    queryFn: listCompanyWhatsAppIntegrations,
+    queryKey: ["company-whatsapp-integrations", workspaceId],
+    queryFn: () => listCompanyWhatsAppIntegrations(workspaceId),
   });
 
   const deleteMutation = useMutation({
@@ -100,7 +108,7 @@ const WhatsAppIntegrationsPage = () => {
           </Link>
         </div>
 
-        {isLoading ? (
+        {isLoading || isChangingWorkspace ? (
           <IntegrationSkeletons />
         ) : integrations.length === 0 ? (
           <div className="text-center py-12 border rounded-lg">

@@ -37,6 +37,7 @@ import { cn } from "./lib/utils";
 import { MainContainerRefContext } from "./contexts/mainContainer";
 import { PageViewTracker } from "./components/PageViewTracker";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { WorkspaceProvider } from "./contexts/workspace/WorkspaceContext";
 
 const queryClient = new QueryClient();
 
@@ -185,49 +186,51 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider defaultTheme="light" attribute="class">
       <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/login" element={<Login />} />
-              <Route path="/signup" element={<Signup />} />
+        <WorkspaceProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/login" element={<Login />} />
+                <Route path="/signup" element={<Signup />} />
 
-              {/* Rotas autenticadas com layout persistente */}
-              <Route element={<AppLayout />}>
-                <Route path="/" element={<DashboardPage />} />
-                <Route path="/agents" element={<AgentsListPage />} />
-                <Route path="/agents/new" element={<AgentCreatePage />} />
-                <Route path="/agents/edit/:id" element={<AgentEditPage />} />
-                <Route path="/agents/:id" element={<AgentDetailsViewPage />} />
-                <Route
-                  path="/integrations"
-                  element={<IntegrationsListPage />}
-                />
-                <Route
-                  path="/integrations/new"
-                  element={<IntegrationsCreatePage />}
-                />
-                <Route
-                  path="/integrations/edit/:id"
-                  element={<IntegrationsEditPage />}
-                />
-                <Route path="/settings" element={<SettingsConfigPage />} />
-                <Route path="/contents" element={<ContentsPage />} />
-                <Route
-                  path="/conversations"
-                  element={<ConversationsListPage />}
-                />
-                <Route path="/customers" element={<CustomersListPage />} />
-                <Route
-                  path="/customers/:id"
-                  element={<CustomerDetailsViewPage />}
-                />
-                <Route path="*" element={<NotFoundPage />} />
-              </Route>
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
+                {/* Rotas autenticadas com layout persistente */}
+                <Route element={<AppLayout />}>
+                  <Route path="/" element={<DashboardPage />} />
+                  <Route path="/agents" element={<AgentsListPage />} />
+                  <Route path="/agents/new" element={<AgentCreatePage />} />
+                  <Route path="/agents/edit/:id" element={<AgentEditPage />} />
+                  <Route path="/agents/:id" element={<AgentDetailsViewPage />} />
+                  <Route
+                    path="/integrations"
+                    element={<IntegrationsListPage />}
+                  />
+                  <Route
+                    path="/integrations/new"
+                    element={<IntegrationsCreatePage />}
+                  />
+                  <Route
+                    path="/integrations/edit/:id"
+                    element={<IntegrationsEditPage />}
+                  />
+                  <Route path="/settings" element={<SettingsConfigPage />} />
+                  <Route path="/contents" element={<ContentsPage />} />
+                  <Route
+                    path="/conversations"
+                    element={<ConversationsListPage />}
+                  />
+                  <Route path="/customers" element={<CustomersListPage />} />
+                  <Route
+                    path="/customers/:id"
+                    element={<CustomerDetailsViewPage />}
+                  />
+                  <Route path="*" element={<NotFoundPage />} />
+                </Route>
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </WorkspaceProvider>
       </AuthProvider>
     </ThemeProvider>
   </QueryClientProvider>

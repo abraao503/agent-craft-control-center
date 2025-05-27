@@ -21,12 +21,14 @@ type ApiResponse = Pagination<{
 }>;
 
 export const listConversations = async (
-  filters: ConversationsFilters
+  filters: ConversationsFilters,
+  workspaceId: string
 ): Promise<ConversationsResponse> => {
   const { data } = await api.get<ApiResponse>("/chat/list", {
     params: {
       ...filters,
       assistantId: filters.agentId,
+      workspaceId,
     },
   });
 

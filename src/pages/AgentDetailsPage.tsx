@@ -18,6 +18,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { getAgent } from "@/services/agent/getAgent";
 import { deleteAgent } from "@/services/agent/deleteAgent";
+import { useWorkspaceManager } from "@/hooks/useWorkspaceManager";
 
 const AgentDetailsPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -26,14 +27,22 @@ const AgentDetailsPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  const { workspaceId } = useWorkspaceManager();
+
   const { isLoading, data, error } = useQuery({
-    queryKey: ["getAgent", id],
-    queryFn: () => getAgent(id!),
+    queryKey: ["getAgent", id, workspaceId],
+    queryFn: () => getAgent(id, workspaceId),
     enabled: !!id,
   });
 
   const { mutate: deleteAgentMutation, isPending: isDeleting } = useMutation({
-    mutationFn: deleteAgent,
+    mutationFn: ({
+      agentId,
+      workspaceId,
+    }: {
+      agentId: string;
+      workspaceId: string;
+    }) => deleteAgent(agentId, workspaceId),
     onSuccess: () => {
       toast({
         title: "Agent deleted",
@@ -60,7 +69,10 @@ const AgentDetailsPage = () => {
 
   const handleDelete = () => {
     if (id) {
-      deleteAgentMutation(id);
+      deleteAgentMutation({
+        agentId: id,
+        workspaceId,
+      });
     }
   };
 

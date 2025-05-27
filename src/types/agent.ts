@@ -88,7 +88,7 @@ export interface FollowUp {
 }
 
 export type CreateFollowUp = {
-  action: 'create';
+  action: "create";
   followUp: {
     name: string;
     description: string;
@@ -97,7 +97,7 @@ export type CreateFollowUp = {
 };
 
 export type UpdateFollowUp = {
-  action: 'update';
+  action: "update";
   followUpId: string;
   followUp: {
     name: string;
@@ -107,11 +107,14 @@ export type UpdateFollowUp = {
 };
 
 export type DeleteFollowUp = {
-  action: 'delete';
+  action: "delete";
   followUpId: string;
 };
 
-export type UpdateFollowUpAction = CreateFollowUp | UpdateFollowUp | DeleteFollowUp;
+export type UpdateFollowUpAction =
+  | CreateFollowUp
+  | UpdateFollowUp
+  | DeleteFollowUp;
 
 export interface AgentFormData {
   // Step 1: Basic Information

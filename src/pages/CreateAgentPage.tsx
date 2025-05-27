@@ -13,6 +13,7 @@ import { createAgent } from "@/services/agent/createAgent";
 import CustomFields from "@/components/agents/step2/CustomFields";
 import { useMainContainerRef } from "@/contexts/mainContainer";
 import { convertHtmlStringToText } from "@/lib/utils";
+import { useWorkspaceManager } from "@/hooks/useWorkspaceManager";
 
 const STEPS = [
   "Basic Information",
@@ -55,6 +56,8 @@ const CreateAgentPage = () => {
     }
   }, [currentStep, containerRef]);
 
+  const { workspaceId } = useWorkspaceManager();
+
   const { mutateAsync: createAgentMutation, isPending } = useMutation({
     mutationFn: (data: CreateAgentRequest) => createAgent(data),
     onSuccess: (agent) => {
@@ -90,19 +93,6 @@ const CreateAgentPage = () => {
       formData.instructions
     );
 
-    const selectedWorkspace = JSON.parse(
-      localStorage.getItem("selectedWorkspace") || "{}"
-    ) as { id: string };
-
-    if (!selectedWorkspace.id) {
-      toast({
-        title: "Erro ao criar agente",
-        description: "Nenhum workspace selecionado.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     await createAgentMutation({
       ...formData,
       avatarFileId: null,
@@ -117,7 +107,7 @@ const CreateAgentPage = () => {
         links: formData.links,
       },
       followUps: formData.followUps,
-      workspaceId: selectedWorkspace.id,
+      workspaceId: workspaceId,
     });
   };
 

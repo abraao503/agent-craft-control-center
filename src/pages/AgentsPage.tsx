@@ -20,6 +20,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { listAgent } from "@/services/agent/listAgent";
 import { deleteAgent } from "@/services/agent/deleteAgent";
 import AgentCardSkeleton from "@/components/agents/AgentCardSkeleton";
+import { useWorkspaceManager } from "@/hooks/useWorkspaceManager";
 
 const AgentsPage = () => {
   const [agents, setAgents] = useState<Agent[]>([]);
@@ -28,13 +29,26 @@ const AgentsPage = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Usar o hook de gerenciamento de workspace
+  const { workspaceId, isChangingWorkspace } = useWorkspaceManager({
+    queryKeys: ["listAgent"],
+    autoRefetch: true,
+    trackLoadingState: true,
+  });
+
   const { isLoading, data, error } = useQuery({
-    queryKey: ["listAgent"],
-    queryFn: listAgent,
+    queryKey: ["listAgent", workspaceId],
+    queryFn: () => listAgent(workspaceId),
   });
 
   const { mutate: deleteAgentMutation, isPending: isDeleting } = useMutation({
-    mutationFn: deleteAgent,
+    mutationFn: ({
+      agentId,
+      workspaceId,
+    }: {
+      agentId: string;
+      workspaceId: string;
+    }) => deleteAgent(agentId, workspaceId),
     onSuccess: () => {
       toast({
         title: "Agent deleted",
@@ -70,7 +84,10 @@ const AgentsPage = () => {
 
   const confirmDelete = () => {
     if (agentToDelete) {
-      deleteAgentMutation(agentToDelete);
+      deleteAgentMutation({
+        agentId: agentToDelete,
+        workspaceId,
+      });
     }
   };
 
@@ -102,7 +119,7 @@ const AgentsPage = () => {
           />
         </div>
 
-        {isLoading ? (
+        {isLoading || isChangingWorkspace ? (
           <AgentCardSkeleton />
         ) : agents.length === 0 ? (
           <div className="text-center py-12 border rounded-lg">

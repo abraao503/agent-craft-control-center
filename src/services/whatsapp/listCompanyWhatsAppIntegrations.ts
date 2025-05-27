@@ -9,17 +9,23 @@ type ApiResponse = {
     id: string;
     name: string;
   };
+  status: "close" | "open" | "connecting";
 }[];
 
-export const listCompanyWhatsAppIntegrations = async (): Promise<
-  CompanyWhatsAppIntegration[]
-> => {
+export const listCompanyWhatsAppIntegrations = async (
+  workspaceId: string
+): Promise<CompanyWhatsAppIntegration[]> => {
   const response = await api.get<ApiResponse>(
-    "/company-whatsapp-integration/list"
+    "/company-whatsapp-integration/list",
+    {
+      params: { workspaceId },
+    }
   );
+
   return response.data.map((item) => ({
     ...item,
     whatsappIntegrationName: item.whatsappIntegrationName as "z-api" | "evolux",
     agent: item.assistant,
+    status: item.status,
   }));
 };
