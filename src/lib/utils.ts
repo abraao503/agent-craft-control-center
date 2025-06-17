@@ -18,8 +18,6 @@ export function convertHtmlStringToText(htmlString: string) {
 
 export function convertTextToHtmlString(text: string) {
   // Primeiro substitui os campos personalizados
-  console.log("convertTextToHtmlString", text);
-
   const withSpans = text.replace(
     /\{get_([a-zA-Z0-9_]+)\(\)\}/g,
     (_, nomeCampo) =>
@@ -31,8 +29,6 @@ export function convertTextToHtmlString(text: string) {
     .split("\n")
     .map((line) => (line.trim() === "" ? "<p></p>" : `<p>${line}</p>`))
     .join("");
-
-  console.log("convertTextToHtmlString result", paragraphs);
 
   return paragraphs;
 }
