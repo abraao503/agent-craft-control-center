@@ -204,9 +204,13 @@ const EditAgentPage = () => {
   const handleSubmit = async () => {
     if (!formData || !id) return;
 
+    console.log("formData.instructions", formData.instructions);
+
     const formattedInstructions = convertHtmlStringToText(
       formData.instructions
     );
+
+    console.log("formattedInstructions", formattedInstructions);
 
     // Processa os follow ups para o formato esperado pelo backend
     const processedFollowUps =

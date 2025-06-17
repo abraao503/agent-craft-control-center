@@ -14,6 +14,7 @@ import { UploadDocumentResponse } from "@/types/file";
 import { useQuery } from "@tanstack/react-query";
 import { listContent } from "@/services/content/listContent";
 import { createContent } from "@/services/content/createContent";
+import { useWorkspaceManager } from "@/hooks/useWorkspaceManager";
 
 interface EditKnowledgeContentProps {
   formData: AgentFormData;
@@ -34,14 +35,16 @@ const EditKnowledgeContent = ({
   const [localContents, setLocalContents] = useState<Content[]>([]);
   const { toast } = useToast();
 
+  const { workspaceId } = useWorkspaceManager();
+
   // Fetch available contents using React Query
   const {
     isLoading,
     data: contentData,
     error,
   } = useQuery({
-    queryKey: ["listContent"],
-    queryFn: listContent,
+    queryKey: ["listContent", workspaceId],
+    queryFn: () => listContent(workspaceId),
   });
 
   // Atualizar a lista local quando os dados da API forem carregados

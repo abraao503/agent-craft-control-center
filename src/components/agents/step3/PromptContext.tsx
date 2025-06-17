@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { PlusCircle, X } from "lucide-react";
 import { TipTapEditor } from "@/components/ui/tiptap-mentions";
 import { convertTextToHtmlString } from "@/lib/utils";
+import { useEffect, useState } from "react";
 
 interface PromptContextProps {
   formData: AgentFormData;
@@ -13,6 +14,13 @@ interface PromptContextProps {
 }
 
 const PromptContext = ({ formData, updateFormData }: PromptContextProps) => {
+  const [editorValue, setEditorValue] = useState<string>("");
+
+  useEffect(() => {
+    const initialValue = convertTextToHtmlString(formData.instructions || "");
+    setEditorValue(initialValue);
+  }, []);
+
   const handleAddLink = () => {
     const currentLinks = formData.links || [];
     updateFormData({
@@ -100,8 +108,11 @@ const PromptContext = ({ formData, updateFormData }: PromptContextProps) => {
       <div className="space-y-2">
         <Label htmlFor="instructions">Instructions</Label>
         <TipTapEditor
-          value={convertTextToHtmlString(formData.instructions || "")}
-          onChange={(newValue) => updateFormData({ instructions: newValue })}
+          value={editorValue}
+          onChange={(newValue) => {
+            setEditorValue(newValue);
+            updateFormData({ instructions: newValue });
+          }}
           placeholder="Always be helpful and professional. Provide clear and concise answers..."
           className="min-h-[150px]"
           mentionItems={formData.customFields.map((field) => ({
