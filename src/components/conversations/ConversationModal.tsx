@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { format } from "date-fns";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Send } from "lucide-react";
+import { Send, Trash2 } from "lucide-react";
 
 import {
   Dialog,
@@ -23,6 +23,7 @@ import { Conversation } from "@/types/conversation";
 import { updateConversationHandler } from "@/services/conversation/updateConversationHandler";
 import { listMessages } from "@/services/conversation/listMessages";
 import { sendMessage } from "@/services/conversation/sendMessage";
+import { clearConversationExternalId } from "@/services/conversation/clearConversationExternalId";
 import { Message, MessageEvent, SendMessageParams } from "@/types/message";
 import { connectSocket, getSocket } from "@/lib/socket";
 
@@ -50,6 +51,7 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
   const lastScrollTop = useRef(0);
   const [newMessage, setNewMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
 
   const { mutate, isPending } = useMutation({
     mutationFn: ({
@@ -86,6 +88,26 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
         variant: "destructive",
       });
       setShowConfirmation(false);
+    },
+  });
+
+  const clearExternalIdMutation = useMutation({
+    mutationFn: () => clearConversationExternalId(conversation.id),
+    onSuccess: () => {
+      toast({
+        title: "Registro limpo com sucesso",
+        description: "O registro externo desta conversa foi limpo.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Erro ao limpar registro",
+        description: "Não foi possível limpar o registro externo. Tente novamente.",
+        variant: "destructive",
+      });
+    },
+    onSettled: () => {
+      setIsClearing(false);
     },
   });
 
@@ -338,6 +360,11 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
     }
   };
 
+  const handleClearExternalId = () => {
+    setIsClearing(true);
+    clearExternalIdMutation.mutate();
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent
@@ -442,9 +469,21 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
             />
             <span>Atendimento humano</span>
           </div>
-          <Button variant="outline" onClick={handleClose}>
-            Fechar
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={handleClearExternalId} 
+              disabled={isClearing}
+              isLoading={isClearing}
+              className="flex gap-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              Limpar registro
+            </Button>
+            <Button variant="outline" onClick={handleClose}>
+              Fechar
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
