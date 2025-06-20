@@ -1,4 +1,5 @@
 import { Pagination } from "./pagination";
+import { Tag } from "./tag";
 
 export type ConversationParticipant = "agent" | "customer" | "human-attendant";
 
@@ -22,6 +23,7 @@ export type Conversation = {
   };
   totalMessages: number;
   handledBy: "ai" | "human";
+  tags?: Tag[];
 };
 
 export type ConversationsResponse = Pagination<Conversation>;
@@ -29,6 +31,7 @@ export type ConversationsResponse = Pagination<Conversation>;
 export type ConversationsFilters = {
   search?: string;
   agentId?: string;
+  tagId?: string;
   page: number;
   limit: number;
   sortBy: "createdAt" | "updatedAt";

@@ -1,7 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { Loader2, Search } from "lucide-react";
+import {
+  Loader2,
+  Search,
+  Tag as TagIcon,
+  Calendar as CalendarIcon,
+} from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -43,6 +48,8 @@ import { listConversations } from "@/services/conversation/listConversations";
 import { Conversation, ConversationsFilters } from "@/types/conversation";
 import { AGENTS } from "@/services/mockData";
 import { useWorkspaceManager } from "@/hooks/useWorkspaceManager";
+import { TagManager } from "@/components/tags/TagManager";
+import { listTags } from "@/services/tag/listTags";
 
 const ConversationsPage = () => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -51,11 +58,14 @@ const ConversationsPage = () => {
     limit: 10,
     search: "",
     agentId: undefined,
+    tagId: undefined,
     initialDate: null,
     finalDate: null,
     sortBy: "createdAt",
     sortOrder: "desc",
   });
+
+  const [showTagManager, setShowTagManager] = useState(false);
 
   // Usar o hook de gerenciamento de workspace
   const { workspaceId, isChangingWorkspace } = useWorkspaceManager({
@@ -74,6 +84,13 @@ const ConversationsPage = () => {
     queryFn: () => listConversations(filters, workspaceId),
   });
 
+  // Query to fetch tags
+  const { data: tags = [] } = useQuery({
+    queryKey: ["tags", workspaceId],
+    queryFn: () => listTags(workspaceId),
+    enabled: !!workspaceId,
+  });
+
   // Handle search input change
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFilters((prev) => ({ ...prev, search: e.target.value, page: 1 }));
@@ -81,7 +98,20 @@ const ConversationsPage = () => {
 
   // Handle agent filter change
   const handleAgentChange = (value: string) => {
-    setFilters((prev) => ({ ...prev, agentId: value || undefined, page: 1 }));
+    setFilters((prev) => ({
+      ...prev,
+      agentId: value === "all_agents" ? undefined : value,
+      page: 1
+    }));
+  };
+
+  // Handle tag filter change
+  const handleTagChange = (value: string) => {
+    setFilters((prev) => ({
+      ...prev,
+      tagId: value === "all_tags" ? undefined : value,
+      page: 1
+    }));
   };
 
   // Handle start date change
@@ -149,66 +179,124 @@ const ConversationsPage = () => {
           </CardHeader>
           <CardContent>
             {/* Filters */}
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
-              <div className="relative">
-                <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
-                <Input
-                  placeholder="Buscar por cliente ou conteúdo"
-                  value={filters.search}
-                  onChange={handleSearchChange}
-                  className="pl-8"
-                />
+            <div className="flex flex-col md:flex-row gap-4 mb-6">
+              <div className="flex-1">
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="search"
+                    placeholder="Buscar conversas..."
+                    className="pl-8"
+                    value={filters.search}
+                    onChange={handleSearchChange}
+                  />
+                </div>
               </div>
 
-              <Select value={filters.agentId} onValueChange={handleAgentChange}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Filtrar por agente" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={undefined}>Todos os agentes</SelectItem>{" "}
-                  {AGENTS.map((agent) => (
-                    <SelectItem key={agent.id} value={agent.id}>
-                      {agent.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex flex-col md:flex-row gap-4">
+                <div className="w-full md:w-[180px]">
+                  <Select
+                    value={filters.agentId || "all_agents"}
+                    onValueChange={handleAgentChange}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Todos os agentes" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all_agents">Todos os agentes</SelectItem>
+                      {AGENTS.map((agent) => (
+                        <SelectItem key={agent.id} value={agent.id}>
+                          {agent.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="justify-start text-left">
-                    {filters.initialDate
-                      ? format(filters.initialDate, "dd/MM/yyyy")
-                      : "Data inicial"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={filters.initialDate}
-                    onSelect={handleStartDateChange}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
+                <div className="w-full md:w-[180px]">
+                  <Select
+                    value={filters.tagId || "all_tags"}
+                    onValueChange={handleTagChange}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Todas as tags" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all_tags">Todas as tags</SelectItem>
+                      {tags.map((tag) => (
+                        <SelectItem key={tag.id} value={tag.id}>
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="w-3 h-3 rounded-full"
+                              style={{ backgroundColor: tag.color }}
+                            />
+                            {tag.name}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="justify-start text-left">
-                    {filters.finalDate
-                      ? format(filters.finalDate, "dd/MM/yyyy")
-                      : "Data final"}
+                <div className="flex gap-2">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="w-full justify-start text-left font-normal md:w-[180px]"
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {filters.initialDate ? (
+                          format(filters.initialDate, "dd/MM/yyyy")
+                        ) : (
+                          <span>Data inicial</span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={filters.initialDate || undefined}
+                        onSelect={handleStartDateChange}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="w-full justify-start text-left font-normal md:w-[180px]"
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {filters.finalDate ? (
+                          format(filters.finalDate, "dd/MM/yyyy")
+                        ) : (
+                          <span>Data final</span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={filters.finalDate || undefined}
+                        onSelect={handleEndDateChange}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+
+                  <Button
+                    variant="outline"
+                    className="flex items-center gap-2"
+                    onClick={() => setShowTagManager(!showTagManager)}
+                  >
+                    <TagIcon className="h-4 w-4" />
+                    {showTagManager ? "Ocultar gerenciador" : "Gerenciar tags"}
                   </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={filters.finalDate}
-                    onSelect={handleEndDateChange}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
+                </div>
+              </div>
             </div>
 
             {/* Loading state */}
@@ -231,6 +319,12 @@ const ConversationsPage = () => {
             {/* Table */}
             {!isLoading && !isError && data && (
               <>
+                {showTagManager && (
+                  <div className="mb-6 p-4 border rounded-md">
+                    <TagManager workspaceId={workspaceId} />
+                  </div>
+                )}
+
                 <div className="rounded-md border">
                   <Table>
                     <TableHeader>
@@ -240,6 +334,7 @@ const ConversationsPage = () => {
                         <TableHead>Cliente</TableHead>
                         <TableHead>Interações</TableHead>
                         <TableHead>Atendimento</TableHead>
+                        <TableHead>Tags</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -274,11 +369,24 @@ const ConversationsPage = () => {
                                   : "Humano"}
                               </Badge>
                             </TableCell>
+                            <TableCell>
+                              <div className="flex flex-wrap gap-1">
+                                {conversation.tags?.map((tag) => (
+                                  <Badge
+                                    key={tag.id}
+                                    style={{ backgroundColor: tag.color }}
+                                    className="text-xs"
+                                  >
+                                    {tag.name}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </TableCell>
                           </TableRow>
                         ))
                       ) : (
                         <TableRow>
-                          <TableCell colSpan={5} className="h-24 text-center">
+                          <TableCell colSpan={6} className="h-24 text-center">
                             Nenhuma conversa encontrada.
                           </TableCell>
                         </TableRow>

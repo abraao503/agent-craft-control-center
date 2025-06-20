@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { format } from "date-fns";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Send, Trash2 } from "lucide-react";
+import { Send, Trash2, Tag as TagIcon } from "lucide-react";
 
 import {
   Dialog,
@@ -26,6 +26,8 @@ import { sendMessage } from "@/services/conversation/sendMessage";
 import { clearConversationExternalId } from "@/services/conversation/clearConversationExternalId";
 import { Message, MessageEvent, SendMessageParams } from "@/types/message";
 import { connectSocket, getSocket } from "@/lib/socket";
+import { ChatTagManager } from "@/components/tags/ChatTagManager";
+import { Tag } from "@/types/tag";
 
 type ConversationModalProps = {
   conversation: Conversation;
@@ -52,6 +54,7 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
   const [newMessage, setNewMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
+  const [showTagsSection, setShowTagsSection] = useState(false);
 
   const { mutate, isPending } = useMutation({
     mutationFn: ({
@@ -164,27 +167,13 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
       socket.emit("join", { room });
     });
 
-    socket.on("joined", (data) => {
-      console.log("Entrou na sala:", data);
-    });
-
-    socket.on("message:sent", (message: MessageEvent) => {
-      console.log("Mensagem recebida:", message);
-      const formattedMessage: Message = {
-        id: message.messageId,
-        sender: message.sender,
-        content: message.content,
-        createdAt: message.createdAt,
-        chatId: message.chatId,
-      };
-
-      setMessages((prev) => [...prev, formattedMessage]);
-    });
 
     return () => {
-      socket.disconnect();
+      if (socket) {
+        socket.off("message");
+      }
     };
-  }, []);
+  }, [conversation.id]);
 
   useEffect(() => {
     if (listMessagesData) {
@@ -408,6 +397,26 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
         </ScrollArea>
 
         {/* Confirmation alert */}
+        {showTagsSection && (
+          <div className="mb-4 p-4 border rounded-md">
+            <ChatTagManager
+              chatId={localConversation.id}
+              workspaceId={localConversation.agent.id.split('-')[0]}
+              chatTags={localConversation.tags || []}
+              onTagsChange={(tags) => {
+                setLocalConversation(prev => ({
+                  ...prev,
+                  tags
+                }));
+                updateConversation({
+                  ...localConversation,
+                  tags
+                });
+              }}
+            />
+          </div>
+        )}
+
         {showConfirmation && (
           <Alert className="mb-4">
             <AlertDescription>
@@ -470,6 +479,14 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
             <span>Atendimento humano</span>
           </div>
           <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowTagsSection(!showTagsSection)}
+              className="flex gap-2"
+            >
+              <TagIcon className="h-4 w-4" />
+              {showTagsSection ? "Ocultar tags" : "Gerenciar tags"}
+            </Button>
             <Button 
               variant="outline" 
               onClick={handleClearExternalId} 
