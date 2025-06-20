@@ -401,7 +401,6 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
           <div className="mb-4 p-4 border rounded-md">
             <ChatTagManager
               chatId={localConversation.id}
-              workspaceId={localConversation.agent.id.split('-')[0]}
               chatTags={localConversation.tags || []}
               onTagsChange={(tags) => {
                 setLocalConversation(prev => ({

@@ -17,23 +17,23 @@ import { Tag as TagType } from "@/types/tag";
 import { listTags } from "@/services/tag/listTags";
 import { linkTagToChat } from "@/services/tag/linkTagToChat";
 import { unlinkTagFromChat } from "@/services/tag/unlinkTagFromChat";
+import { useWorkspaceManager } from "@/hooks/useWorkspaceManager";
 
 type ChatTagManagerProps = {
   chatId: string;
-  workspaceId: string;
   chatTags: TagType[];
   onTagsChange: (tags: TagType[]) => void;
 };
 
 export const ChatTagManager: React.FC<ChatTagManagerProps> = ({
   chatId,
-  workspaceId,
   chatTags,
   onTagsChange,
 }) => {
   const { toast } = useToast();
-  const queryClient = useQueryClient();
   const [selectedTagId, setSelectedTagId] = useState<string>("");
+
+  const { workspaceId } = useWorkspaceManager();
 
   const { data: allTags = [] } = useQuery({
     queryKey: ["tags", workspaceId],
