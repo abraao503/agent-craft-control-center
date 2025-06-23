@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,16 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Table,
   TableBody,
@@ -27,6 +37,7 @@ import { listTags } from "@/services/tag/listTags";
 import { createTag } from "@/services/tag/createTag";
 import { updateTag } from "@/services/tag/updateTag";
 import { deleteTag } from "@/services/tag/deleteTag";
+import { isColorDark } from "@/lib/utils";
 
 type TagManagerProps = {
   workspaceId: string;
@@ -39,6 +50,7 @@ export const TagManager: React.FC<TagManagerProps> = ({ workspaceId }) => {
   const [editingTag, setEditingTag] = useState<Tag | null>(null);
   const [tagName, setTagName] = useState("");
   const [tagColor, setTagColor] = useState("#000000");
+  const [deletingTag, setDeletingTag] = useState<Tag | null>(null);
 
   const { data: tags = [], isLoading } = useQuery({
     queryKey: ["tags", workspaceId],
@@ -157,9 +169,13 @@ export const TagManager: React.FC<TagManagerProps> = ({ workspaceId }) => {
     }
   };
 
-  const handleDeleteTag = (id: string) => {
-    if (confirm("Tem certeza que deseja excluir esta tag?")) {
-      deleteTagMutation.mutate(id);
+  const handleDeleteTag = (tag: Tag) => {
+    setDeletingTag(tag);
+  };
+
+  const confirmDelete = () => {
+    if (deletingTag) {
+      deleteTagMutation.mutate(deletingTag.id);
     }
   };
 
@@ -191,7 +207,12 @@ export const TagManager: React.FC<TagManagerProps> = ({ workspaceId }) => {
             {tags.map((tag) => (
               <TableRow key={tag.id}>
                 <TableCell>
-                  <Badge style={{ backgroundColor: tag.color }}>{tag.name}</Badge>
+                  <Badge style={{ 
+                    backgroundColor: tag.color,
+                    color: isColorDark(tag.color) ? "white" : "black"
+                  }}>
+                    {tag.name}
+                  </Badge>
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
@@ -214,7 +235,7 @@ export const TagManager: React.FC<TagManagerProps> = ({ workspaceId }) => {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => handleDeleteTag(tag.id)}
+                      onClick={() => handleDeleteTag(tag)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -284,6 +305,36 @@ export const TagManager: React.FC<TagManagerProps> = ({ workspaceId }) => {
           </form>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!deletingTag} onOpenChange={(open) => !open && setDeletingTag(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. Isso excluirá permanentemente
+              {deletingTag && ` "${deletingTag.name}" `}
+              e a removerá de todos os agentes que a utilizam.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeletingTag(null)}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-red-500 hover:bg-red-600"
+            >
+              {deleteTagMutation.isPending ? (
+                <>
+                  <Loader className="h-4 w-4 animate-spin" />
+                </>
+              ) : (
+                "Excluir"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

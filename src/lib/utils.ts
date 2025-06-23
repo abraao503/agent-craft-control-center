@@ -33,6 +33,30 @@ export function convertTextToHtmlString(text: string) {
   return paragraphs;
 }
 
+/**
+ * Remove all spaces and special characters from a given string.
+ * 
+ * @param {string} str - The string to be processed.
+ * @returns {string} - The string with all spaces and special characters removed.
+ */
 export function removeAllSpacesAndSpecialChars(str: string) {
   return str.replace(/[^\w]/g, "");
 }
+
+
+export function isColorDark(hexColor: string): boolean {
+  // Remove o # se existir
+  const hex = hexColor.replace('#', '');
+  
+  // Converte hex para RGB
+  const r = parseInt(hex.substring(0, 2), 16);
+  const g = parseInt(hex.substring(2, 4), 16);
+  const b = parseInt(hex.substring(4, 6), 16);
+  
+  // Calcula a luminosidade (fórmula YIQ)
+  // Esta fórmula leva em conta a percepção humana de luminosidade
+  const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+  
+  // YIQ < 128 é considerado escuro
+  return yiq < 128;
+};

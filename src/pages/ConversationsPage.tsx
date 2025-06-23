@@ -50,6 +50,7 @@ import { AGENTS } from "@/services/mockData";
 import { useWorkspaceManager } from "@/hooks/useWorkspaceManager";
 import { TagManager } from "@/components/tags/TagManager";
 import { listTags } from "@/services/tag/listTags";
+import { isColorDark } from "@/lib/utils";
 
 const ConversationsPage = () => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -101,7 +102,7 @@ const ConversationsPage = () => {
     setFilters((prev) => ({
       ...prev,
       agentId: value === "all_agents" ? undefined : value,
-      page: 1
+      page: 1,
     }));
   };
 
@@ -110,7 +111,7 @@ const ConversationsPage = () => {
     setFilters((prev) => ({
       ...prev,
       tagId: value === "all_tags" ? undefined : value,
-      page: 1
+      page: 1,
     }));
   };
 
@@ -193,7 +194,7 @@ const ConversationsPage = () => {
                 </div>
               </div>
 
-              <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex flex-wrap gap-4">
                 <div className="w-full md:w-[180px]">
                   <Select
                     value={filters.agentId || "all_agents"}
@@ -203,7 +204,9 @@ const ConversationsPage = () => {
                       <SelectValue placeholder="Todos os agentes" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all_agents">Todos os agentes</SelectItem>
+                      <SelectItem value="all_agents">
+                        Todos os agentes
+                      </SelectItem>
                       {AGENTS.map((agent) => (
                         <SelectItem key={agent.id} value={agent.id}>
                           {agent.name}
@@ -238,7 +241,7 @@ const ConversationsPage = () => {
                   </Select>
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
@@ -374,7 +377,12 @@ const ConversationsPage = () => {
                                 {conversation.tags?.map((tag) => (
                                   <Badge
                                     key={tag.id}
-                                    style={{ backgroundColor: tag.color }}
+                                    style={{
+                                      backgroundColor: tag.color,
+                                      color: isColorDark(tag.color)
+                                        ? "white"
+                                        : "black",
+                                    }}
                                     className="text-xs"
                                   >
                                     {tag.name}
