@@ -105,7 +105,8 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
     onError: (error) => {
       toast({
         title: "Erro ao limpar registro",
-        description: "Não foi possível limpar o registro externo. Tente novamente.",
+        description:
+          "Não foi possível limpar o registro externo. Tente novamente.",
         variant: "destructive",
       });
     },
@@ -166,7 +167,6 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
       const room = `chat:${conversation.id}`;
       socket.emit("join", { room });
     });
-
 
     return () => {
       if (socket) {
@@ -401,15 +401,14 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
           <div className="mb-4 p-4 border rounded-md">
             <ChatTagManager
               chatId={localConversation.id}
-              chatTags={localConversation.tags || []}
               onTagsChange={(tags) => {
-                setLocalConversation(prev => ({
+                setLocalConversation((prev) => ({
                   ...prev,
-                  tags
+                  tags,
                 }));
                 updateConversation({
                   ...localConversation,
-                  tags
+                  tags,
                 });
               }}
             />
@@ -478,17 +477,17 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
             <span>Atendimento humano</span>
           </div>
           <div className="flex gap-2">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setShowTagsSection(!showTagsSection)}
               className="flex gap-2"
             >
               <TagIcon className="h-4 w-4" />
               {showTagsSection ? "Ocultar tags" : "Gerenciar tags"}
             </Button>
-            <Button 
-              variant="outline" 
-              onClick={handleClearExternalId} 
+            <Button
+              variant="outline"
+              onClick={handleClearExternalId}
               disabled={isClearing}
               isLoading={isClearing}
               className="flex gap-2"
