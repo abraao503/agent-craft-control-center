@@ -156,6 +156,7 @@ const EditAgentPage = () => {
         language: data.language,
         initialMessage: data.initialMessage,
         iaModelId: data.iaModel.id,
+        iaProviderApiKey: "",
 
         identity: data.prompt.identity,
         function: data.prompt.function,
@@ -239,6 +240,7 @@ const EditAgentPage = () => {
         initialMessage: formData.initialMessage,
         language: formData.language,
         iaModelId: formData.iaModelId,
+        iaProviderApiKey: formData.iaProviderApiKey,
         followUps: processedFollowUps,
       },
       workspaceId,

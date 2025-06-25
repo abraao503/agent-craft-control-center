@@ -125,6 +125,7 @@ export interface AgentFormData {
   language: AgentLanguage;
   initialMessage: string;
   iaModelId: string;
+  iaProviderApiKey: string;
 
   // Step 2: Prompt & Context
   identity: string;
@@ -189,6 +190,7 @@ export type UpdateAgentResquest = {
   language: string;
   initialMessage: string;
   iaModelId: string;
+  iaProviderApiKey: string;
   prompt: Prompt;
   contents: AssistantContent[];
   customFields: UpdateAssistantCustomField[];
@@ -203,6 +205,7 @@ export type CreateAgentRequest = {
   language: string;
   initialMessage: string;
   iaModelId: string;
+  iaProviderApiKey: string;
   prompt: Prompt;
   contentsIds: string[];
   customFields: Omit<CustomField, "id">[];

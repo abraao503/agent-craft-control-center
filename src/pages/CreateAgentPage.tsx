@@ -28,6 +28,7 @@ const defaultFormData: AgentFormData = {
   description: "",
   avatarUrl: null,
   iaModelId: "",
+  iaProviderApiKey: "",
   initialMessage: "",
   timeZone: "America/Sao_Paulo",
   language: "pt-BR",
@@ -106,6 +107,7 @@ const CreateAgentPage = () => {
         blacklist: formData.blacklist,
         links: formData.links,
       },
+      iaProviderApiKey: formData.iaProviderApiKey,
       followUps: formData.followUps,
       workspaceId: workspaceId,
     });
@@ -148,7 +150,10 @@ const CreateAgentPage = () => {
     switch (currentStep) {
       case 1:
         return (
-          !!formData.name && !!formData.description && !!formData.iaModelId
+          !!formData.name &&
+          !!formData.description &&
+          !!formData.iaModelId &&
+          !!formData.iaProviderApiKey
         );
       case 2:
         return true; // Custom fields are optional

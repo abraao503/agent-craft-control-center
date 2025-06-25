@@ -160,6 +160,21 @@ const BasicInformation = ({
           Different models have different capabilities and pricing.
         </p>
       </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="iaProviderApiKey">API Key do Provedor</Label>
+        <Input
+          id="iaProviderApiKey"
+          type="password"
+          placeholder="sk-..."
+          value={formData.iaProviderApiKey}
+          onChange={(e) => updateFormData({ iaProviderApiKey: e.target.value })}
+          required
+        />
+        <p className="text-sm text-muted-foreground">
+          Chave de API do provedor do modelo de IA selecionado.
+        </p>
+      </div>
     </div>
   );
 };
