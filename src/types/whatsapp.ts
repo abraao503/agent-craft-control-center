@@ -9,6 +9,7 @@ export interface CompanyWhatsAppIntegration {
   postbackUrl: string;
   whatsappIntegrationName: string;
   status: "close" | "open" | "connecting";
+  active: boolean;
   agent: {
     id: string;
     name: string;
@@ -23,6 +24,7 @@ export interface CompanyWhatsAppIntegrationFull {
   agentId: string;
   whatsappIntegrationId: string;
   whatsappIntegrationName: "z-api" | "evolux";
+  active: boolean;
 }
 
 export interface WhatsAppFormData {

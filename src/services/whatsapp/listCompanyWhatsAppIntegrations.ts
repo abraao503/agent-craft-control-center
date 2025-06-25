@@ -10,6 +10,7 @@ type ApiResponse = {
     name: string;
   };
   status: "close" | "open" | "connecting";
+  active: boolean;
 }[];
 
 export const listCompanyWhatsAppIntegrations = async (
@@ -27,5 +28,6 @@ export const listCompanyWhatsAppIntegrations = async (
     whatsappIntegrationName: item.whatsappIntegrationName as "z-api" | "evolux",
     agent: item.assistant,
     status: item.status,
+    active: item.active,
   }));
 };

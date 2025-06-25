@@ -15,8 +15,13 @@ import { Edit, Trash2, Copy, QrCode } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { Link } from "react-router-dom";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { listWhatsAppIntegrations, generateQrCode } from "@/services/whatsapp";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  listWhatsAppIntegrations,
+  generateQrCode,
+  activateCompanyWhatsAppIntegration,
+  deactivateCompanyWhatsAppIntegration,
+} from "@/services/whatsapp";
 import { listAgent } from "@/services/agent/listAgent";
 import {
   Dialog,
@@ -26,6 +31,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { connectSocket } from "@/lib/socket";
 import { useAuth } from "@/contexts/auth/hooks";
 
@@ -44,8 +50,10 @@ const WhatsAppIntegrationCard = ({
   const [connectionStatus, setConnectionStatus] = useState<
     "close" | "open" | "connecting"
   >(integration.status || "close");
+  const [isActive, setIsActive] = useState<boolean>(integration.active);
   const { toast } = useToast();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
 
   const { data: whatsappIntegrations } = useQuery({
     queryKey: ["whatsapp-integrations"],
@@ -53,8 +61,51 @@ const WhatsAppIntegrationCard = ({
   });
 
   const { data: agentsData } = useQuery({
-    queryKey: ["agents"],
-    queryFn: listAgent,
+    queryKey: ["agents", user?.companyId],
+    queryFn: () => listAgent(user?.companyId || ""),
+    enabled: !!user?.companyId,
+  });
+
+  const activateMutation = useMutation({
+    mutationFn: () => activateCompanyWhatsAppIntegration(integration.id),
+    onSuccess: () => {
+      toast({
+        title: "Integração ativada",
+        description: "A integração do WhatsApp foi ativada com sucesso.",
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["company-whatsapp-integrations"],
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Erro",
+        description: "Falha ao ativar a integração do WhatsApp.",
+        variant: "destructive",
+      });
+      console.error("Erro ao ativar integração do WhatsApp:", error);
+    },
+  });
+
+  const deactivateMutation = useMutation({
+    mutationFn: () => deactivateCompanyWhatsAppIntegration(integration.id),
+    onSuccess: () => {
+      toast({
+        title: "Integração desativada",
+        description: "A integração do WhatsApp foi desativada com sucesso.",
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["company-whatsapp-integrations"],
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Erro",
+        description: "Falha ao desativar a integração do WhatsApp.",
+        variant: "destructive",
+      });
+      console.error("Erro ao desativar integração do WhatsApp:", error);
+    },
   });
 
   const qrCodeMutation = useMutation({
@@ -79,6 +130,11 @@ const WhatsAppIntegrationCard = ({
       setQrCodeOpen(false);
     }
   }, [connectionStatus, qrCodeOpen]);
+
+  // Atualiza o estado local quando a integração mudar
+  useEffect(() => {
+    setIsActive(integration.active);
+  }, [integration.active]);
 
   useEffect(() => {
     if (integration.whatsappIntegrationName !== "evolux") return;
@@ -186,14 +242,35 @@ const WhatsAppIntegrationCard = ({
           <CardTitle className="text-xl">
             {integration.whatsappIntegrationName}
           </CardTitle>
-          {integration.whatsappIntegrationName === "evolux" && (
-            <Badge variant="outline" className="ml-2 flex items-center gap-1">
-              <span
-                className={`h-2 w-2 rounded-full ${getStatusColor()}`}
-              ></span>
-              {getStatusText()}
-            </Badge>
-          )}
+          <div className="flex items-center gap-2">
+            {integration.whatsappIntegrationName === "evolux" && (
+              <Badge variant="outline" className="flex items-center gap-1">
+                <span
+                  className={`h-2 w-2 rounded-full ${getStatusColor()}`}
+                ></span>
+                {getStatusText()}
+              </Badge>
+            )}
+            <div className="flex items-center gap-1">
+              <Switch
+                checked={isActive}
+                onCheckedChange={(checked) => {
+                  setIsActive(checked);
+                  if (checked) {
+                    activateMutation.mutate();
+                  } else {
+                    deactivateMutation.mutate();
+                  }
+                }}
+                disabled={
+                  activateMutation.isPending || deactivateMutation.isPending
+                }
+              />
+              <span className="text-xs text-muted-foreground">
+                {isActive ? "Ativo" : "Inativo"}
+              </span>
+            </div>
+          </div>
         </div>
         <CardDescription>
           Connected to: {integration.agent.name}
