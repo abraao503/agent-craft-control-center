@@ -130,6 +130,11 @@ const ConversationsPage = () => {
     setFilters((prev) => ({ ...prev, page }));
   };
 
+  // Handle limit change
+  const handleLimitChange = (limit: string) => {
+    setFilters((prev) => ({ ...prev, limit: parseInt(limit), page: 1 }));
+  };
+
   // Handle row click to open the modal
   const handleRowClick = (conversation: Conversation) => {
     setSelectedConversation(conversation);
@@ -403,26 +408,49 @@ const ConversationsPage = () => {
                   </Table>
                 </div>
 
-                {/* Pagination */}
+                {/* Pagination and Results per page */}
                 {data.total > 0 && (
-                  <Pagination className="mt-4">
-                    <PaginationContent>
-                      <PaginationItem>
-                        <PaginationPrevious
-                          onClick={() =>
-                            filters.page > 1 &&
-                            handlePageChange(filters.page - 1)
-                          }
-                          className={
-                            filters.page <= 1
-                              ? "pointer-events-none opacity-50"
-                              : ""
-                          }
-                        />
-                      </PaginationItem>
+                  <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mt-4">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground">
+                        Resultados por página:
+                      </span>
+                      <Select
+                        value={String(filters.limit)}
+                        onValueChange={handleLimitChange}
+                      >
+                        <SelectTrigger className="w-[80px]">
+                          <SelectValue placeholder="10" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="5">5</SelectItem>
+                          <SelectItem value="10">10</SelectItem>
+                          <SelectItem value="25">25</SelectItem>
+                          <SelectItem value="50">50</SelectItem>
+                          <SelectItem value="100">100</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-                      {Array.from({ length: Math.min(data.totalPages, 5) }).map(
-                        (_, i) => {
+                    <Pagination>
+                      <PaginationContent>
+                        <PaginationItem>
+                          <PaginationPrevious
+                            onClick={() =>
+                              filters.page > 1 &&
+                              handlePageChange(filters.page - 1)
+                            }
+                            className={
+                              filters.page <= 1
+                                ? "pointer-events-none opacity-50"
+                                : ""
+                            }
+                          />
+                        </PaginationItem>
+
+                        {Array.from({
+                          length: Math.min(data.totalPages, 5),
+                        }).map((_, i) => {
                           const page =
                             data.totalPages <= 5
                               ? i + 1
@@ -442,24 +470,24 @@ const ConversationsPage = () => {
                               </PaginationLink>
                             </PaginationItem>
                           );
-                        }
-                      )}
+                        })}
 
-                      <PaginationItem>
-                        <PaginationNext
-                          onClick={() =>
-                            filters.page < data.totalPages &&
-                            handlePageChange(filters.page + 1)
-                          }
-                          className={
-                            filters.page >= data.totalPages
-                              ? "pointer-events-none opacity-50"
-                              : ""
-                          }
-                        />
-                      </PaginationItem>
-                    </PaginationContent>
-                  </Pagination>
+                        <PaginationItem>
+                          <PaginationNext
+                            onClick={() =>
+                              filters.page < data.totalPages &&
+                              handlePageChange(filters.page + 1)
+                            }
+                            className={
+                              filters.page >= data.totalPages
+                                ? "pointer-events-none opacity-50"
+                                : ""
+                            }
+                          />
+                        </PaginationItem>
+                      </PaginationContent>
+                    </Pagination>
+                  </div>
                 )}
               </>
             )}
