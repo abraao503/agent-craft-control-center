@@ -52,11 +52,31 @@ import { TagManager } from "@/components/tags/TagManager";
 import { listTags } from "@/services/tag/listTags";
 import { isColorDark } from "@/lib/utils";
 
+// Function to calculate page numbers for pagination
+const getPageNumbers = (currentPage: number, totalPages: number) => {
+  // Maximum number of page links to show
+  const maxPageLinks = 5;
+  
+  if (totalPages <= maxPageLinks) {
+    // If we have 5 or fewer pages, show all of them
+    return Array.from({ length: totalPages }, (_, i) => i + 1);
+  } else if (currentPage <= 3) {
+    // If we're on pages 1-3, show pages 1-5
+    return Array.from({ length: maxPageLinks }, (_, i) => i + 1);
+  } else if (currentPage >= totalPages - 2) {
+    // If we're on the last 3 pages, show the last 5 pages
+    return Array.from({ length: maxPageLinks }, (_, i) => totalPages - maxPageLinks + i + 1);
+  } else {
+    // Otherwise show current page with 2 pages before and after
+    return Array.from({ length: maxPageLinks }, (_, i) => currentPage - 2 + i);
+  }
+};
+
 const ConversationsPage = () => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [filters, setFilters] = useState<ConversationsFilters>({
     page: 1,
-    limit: 10,
+    limit: 30,
     search: "",
     agentId: undefined,
     tagId: undefined,
@@ -423,9 +443,9 @@ const ConversationsPage = () => {
                           <SelectValue placeholder="10" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="5">5</SelectItem>
                           <SelectItem value="10">10</SelectItem>
-                          <SelectItem value="25">25</SelectItem>
+                          <SelectItem value="20">20</SelectItem>
+                          <SelectItem value="30">30</SelectItem>
                           <SelectItem value="50">50</SelectItem>
                           <SelectItem value="100">100</SelectItem>
                         </SelectContent>
@@ -448,19 +468,24 @@ const ConversationsPage = () => {
                           />
                         </PaginationItem>
 
-                        {Array.from({
-                          length: Math.min(data.totalPages, 5),
-                        }).map((_, i) => {
-                          const page =
-                            data.totalPages <= 5
-                              ? i + 1
-                              : filters.page <= 3
-                              ? i + 1
-                              : filters.page >= data.totalPages - 2
-                              ? data.totalPages - 4 + i
-                              : filters.page - 2 + i;
+                        {/* Show first page and ellipsis if not already showing */}
+                        {data.totalPages > 5 && !getPageNumbers(filters.page, data.totalPages).includes(1) && (
+                          <>
+                            <PaginationItem key={1}>
+                              <PaginationLink
+                                onClick={() => handlePageChange(1)}
+                              >
+                                1
+                              </PaginationLink>
+                            </PaginationItem>
+                            <PaginationItem>
+                              <span className="px-2">...</span>
+                            </PaginationItem>
+                          </>
+                        )}
 
-                          return (
+                        {/* Show current page range */}
+                        {getPageNumbers(filters.page, data.totalPages).map((page) => (
                             <PaginationItem key={page}>
                               <PaginationLink
                                 isActive={page === filters.page}
@@ -469,8 +494,23 @@ const ConversationsPage = () => {
                                 {page}
                               </PaginationLink>
                             </PaginationItem>
-                          );
-                        })}
+                          ))}
+                          
+                        {/* Show ellipsis and last page if not already showing */}
+                        {data.totalPages > 5 && !getPageNumbers(filters.page, data.totalPages).includes(data.totalPages) && (
+                          <>
+                            <PaginationItem>
+                              <span className="px-2">...</span>
+                            </PaginationItem>
+                            <PaginationItem key={data.totalPages}>
+                              <PaginationLink
+                                onClick={() => handlePageChange(data.totalPages)}
+                              >
+                                {data.totalPages}
+                              </PaginationLink>
+                            </PaginationItem>
+                          </>
+                        )}
 
                         <PaginationItem>
                           <PaginationNext
