@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useQuery } from "@tanstack/react-query";
-import { Search, Users, ChevronUp, ChevronDown } from "lucide-react";
+import { Search, Users, ChevronUp, ChevronDown, Download } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { Customer, CustomerListParams } from "@/types/customer";
 import { listCustomers } from "@/services/customer";
@@ -111,18 +111,27 @@ const CustomersPage = () => {
       <div className="container mx-auto py-6 w-100">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Customers</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Clientes</h1>
             <p className="text-muted-foreground">
-              Manage your customer information
+              Gerencie as informações dos seus clientes
             </p>
+          </div>
+          <div>
+            <Button
+              onClick={() => navigate("/customers/export-xlsx")}
+              className="flex items-center gap-2"
+            >
+              <Download className="h-4 w-4" />
+              Exportar XLSX
+            </Button>
           </div>
         </div>
 
-        <div className="relative">
+        <div className="relative mb-4">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
             className="pl-10"
-            placeholder="Search customers by phone..."
+            placeholder="Buscar clientes por telefone..."
             value={searchQuery}
             onChange={handleSearch}
           />

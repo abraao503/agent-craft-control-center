@@ -30,6 +30,7 @@ import ContentManagementPage from "./pages/ContentManagementPage";
 import ConversationsPage from "./pages/ConversationsPage";
 import CustomersPage from "./pages/CustomersPage";
 import CustomerDetailsPage from "./pages/CustomerDetailsPage";
+import CustomersExportXlsxPage from "./pages/CustomersExportXlsxPage";
 import Sidebar from "./components/layout/Sidebar";
 import Header from "./components/layout/Header";
 import { SidebarProvider } from "./components/ui/sidebar";
@@ -180,6 +181,7 @@ const ContentsPage = () => <ContentManagementPage />;
 const ConversationsListPage = () => <ConversationsPage />;
 const CustomersListPage = () => <CustomersPage />;
 const CustomerDetailsViewPage = () => <CustomerDetailsPage />;
+const CustomersExportPage = () => <CustomersExportXlsxPage />;
 const NotFoundPage = () => <NotFound />;
 
 const App = () => (
@@ -224,6 +226,10 @@ const App = () => (
                   <Route
                     path="/customers/:id"
                     element={<CustomerDetailsViewPage />}
+                  />
+                  <Route
+                    path="/customers/export-xlsx"
+                    element={<CustomersExportPage />}
                   />
                   <Route path="*" element={<NotFoundPage />} />
                 </Route>
