@@ -10,6 +10,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { X, Plus } from "lucide-react";
 import { BRAZILIAN_TIMEZONES } from "@/constants/timezones";
 import { LANGUAGES } from "@/constants/languages";
 import { listIaModels } from "@/services/iaModel/listIaModel";
@@ -29,6 +31,7 @@ const BasicInformation = ({
     formData.avatarUrl
   );
   const [iaModels, setIaModel] = useState<IaModel[]>([]);
+  const [newSkipMessage, setNewSkipMessage] = useState<string>("");
 
   const {
     isLoading,
@@ -57,6 +60,30 @@ const BasicInformation = ({
 
   const handleUpdateLanguage = (value: AgentLanguage) => {
     updateFormData({ language: value });
+  };
+
+  const addSkipMessage = () => {
+    if (newSkipMessage.trim() !== "") {
+      const updatedSkipMessages = [
+        ...formData.skipMessages,
+        newSkipMessage.trim(),
+      ];
+      updateFormData({ skipMessages: updatedSkipMessages });
+      setNewSkipMessage("");
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      addSkipMessage();
+    }
+  };
+
+  const removeSkipMessage = (index: number) => {
+    const updatedSkipMessages = [...formData.skipMessages];
+    updatedSkipMessages.splice(index, 1);
+    updateFormData({ skipMessages: updatedSkipMessages });
   };
 
   return (
@@ -173,6 +200,52 @@ const BasicInformation = ({
         />
         <p className="text-sm text-muted-foreground">
           Chave de API do provedor do modelo de IA selecionado.
+        </p>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="skipMessages">Mensagens a Ignorar</Label>
+        <div className="flex gap-2">
+          <Input
+            id="skipMessages"
+            placeholder="Digite uma mensagem a ser ignorada"
+            value={newSkipMessage}
+            onChange={(e) => setNewSkipMessage(e.target.value)}
+            onKeyDown={handleKeyDown}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            onClick={addSkipMessage}
+            className="flex-shrink-0"
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
+        </div>
+        {formData.skipMessages.length > 0 && (
+          <div className="border rounded-md mt-2 divide-y">
+            {formData.skipMessages.map((message, index) => (
+              <div
+                key={index}
+                className="p-2 flex justify-between items-center gap-2 bg-muted/30"
+              >
+                <div className="text-sm break-all">{message}</div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => removeSkipMessage(index)}
+                  className="h-8 w-8 p-0 flex-shrink-0"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+        <p className="text-sm text-muted-foreground">
+          Mensagens que o agente deve ignorar quando recebidas de um humano,
+          evitando que o agente se desative.
         </p>
       </div>
     </div>

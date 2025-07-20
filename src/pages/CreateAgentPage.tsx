@@ -30,6 +30,7 @@ const defaultFormData: AgentFormData = {
   iaModelId: "",
   iaProviderApiKey: "",
   initialMessage: "",
+  skipMessages: [],
   timeZone: "America/Sao_Paulo",
   language: "pt-BR",
   goal: "",
@@ -108,6 +109,7 @@ const CreateAgentPage = () => {
         links: formData.links,
       },
       iaProviderApiKey: formData.iaProviderApiKey,
+      skipMessages: formData.skipMessages,
       followUps: formData.followUps,
       workspaceId: workspaceId,
     });

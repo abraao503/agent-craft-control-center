@@ -155,6 +155,7 @@ const EditAgentPage = () => {
         timeZone: data.timeZone,
         language: data.language,
         initialMessage: data.initialMessage,
+        skipMessages: data.skipMessages || [],
         iaModelId: data.iaModel.id,
         iaProviderApiKey: "",
 
@@ -238,6 +239,7 @@ const EditAgentPage = () => {
         contents: contentsToUpdate,
         customFields: customFieldsToUpdate,
         initialMessage: formData.initialMessage,
+        skipMessages: formData.skipMessages,
         language: formData.language,
         iaModelId: formData.iaModelId,
         iaProviderApiKey: formData.iaProviderApiKey,

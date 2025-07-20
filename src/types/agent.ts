@@ -50,6 +50,7 @@ export interface FullAgent {
   timeZone: string;
   language: AgentLanguage;
   initialMessage: string;
+  skipMessages: string[];
   iaModel: {
     id: string;
     name: string;
@@ -124,6 +125,7 @@ export interface AgentFormData {
   timeZone: string;
   language: AgentLanguage;
   initialMessage: string;
+  skipMessages: string[];
   iaModelId: string;
   iaProviderApiKey: string;
 
@@ -189,6 +191,7 @@ export type UpdateAgentResquest = {
   timeZone: string;
   language: string;
   initialMessage: string;
+  skipMessages: string[];
   iaModelId: string;
   iaProviderApiKey: string;
   prompt: Prompt;
@@ -204,6 +207,7 @@ export type CreateAgentRequest = {
   timeZone: string;
   language: string;
   initialMessage: string;
+  skipMessages: string[];
   iaModelId: string;
   iaProviderApiKey: string;
   prompt: Prompt;
