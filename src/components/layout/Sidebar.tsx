@@ -353,7 +353,7 @@ const SidebarMenuContent = () => {
     },
     {
       path: "/customers",
-      label: "Customers",
+      label: "Clientes",
       icon: <Users className="h-5 w-5" />,
     },
     {
@@ -368,7 +368,7 @@ const SidebarMenuContent = () => {
     },
     {
       path: "/settings",
-      label: "Settings",
+      label: "Configurações",
       icon: <Settings className="h-5 w-5" />,
     },
   ];
