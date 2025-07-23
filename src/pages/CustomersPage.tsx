@@ -173,13 +173,14 @@ const CustomersPage = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Phone</TableHead>
+                    <TableHead>Identificador</TableHead>
+                    <TableHead>Telefone</TableHead>
                     <TableHead>
                       <div
                         className="flex items-center cursor-pointer"
                         onClick={() => handleSort("createdAt")}
                       >
-                        <span>Created At</span>
+                        <span>Criado em</span>
                         {getSortIcon("createdAt")}
                       </div>
                     </TableHead>
@@ -188,11 +189,10 @@ const CustomersPage = () => {
                         className="flex items-center cursor-pointer"
                         onClick={() => handleSort("updatedAt")}
                       >
-                        <span>Updated At</span>
+                        <span>Atualizado em</span>
                         {getSortIcon("updatedAt")}
                       </div>
                     </TableHead>
-                    <TableHead>Custom Fields</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -202,10 +202,10 @@ const CustomersPage = () => {
                       className="cursor-pointer hover:bg-muted/50"
                       onClick={() => handleRowClick(customer)}
                     >
+                      <TableCell>{customer.identifier}</TableCell>
                       <TableCell>{customer.phone}</TableCell>
                       <TableCell>{formatDate(customer.createdAt)}</TableCell>
                       <TableCell>{formatDate(customer.updatedAt)}</TableCell>
-                      <TableCell>{customer.totalCustomFields} fields</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

@@ -8,6 +8,7 @@ export interface Customer {
   id: string;
   companyId: string;
   phone: string;
+  identifier: string;
   createdAt: Date;
   updatedAt: Date;
   totalCustomFields: number;
@@ -17,6 +18,7 @@ export interface CustomerWithFields {
   id: string;
   companyId: string;
   phone: string;
+  identifier: string;
   createdAt: Date;
   updatedAt: Date;
   customFields: CustomField[];

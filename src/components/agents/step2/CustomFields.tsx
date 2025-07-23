@@ -27,6 +27,7 @@ const CustomFields = ({ formData, updateFormData }: CustomFieldsProps) => {
     label: "",
     type: "text",
     required: true,
+    isIdentifier: false,
   });
 
   const addField = () => {
@@ -46,6 +47,7 @@ const CustomFields = ({ formData, updateFormData }: CustomFieldsProps) => {
       label: "",
       type: "text",
       required: true,
+      isIdentifier: false,
     });
   };
 
@@ -124,16 +126,18 @@ const CustomFields = ({ formData, updateFormData }: CustomFieldsProps) => {
               </Select>
             </div>
 
-            {/* <div className="flex items-center space-x-4 mt-8">
-              <Switch
-                id="fieldRequired"
-                checked={newField.required}
-                onCheckedChange={(checked) =>
-                  setNewField({ ...newField, required: checked })
+            <div className="flex items-center space-x-4 mt-8">
+              <input
+                type="checkbox"
+                id="fieldIdentifier"
+                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                checked={newField.isIdentifier}
+                onChange={(e) =>
+                  setNewField({ ...newField, isIdentifier: e.target.checked })
                 }
               />
-              <Label htmlFor="fieldRequired">Required field</Label>
-            </div> */}
+              <Label htmlFor="fieldIdentifier">Campo de identificação</Label>
+            </div>
           </div>
 
           <Button
@@ -162,6 +166,9 @@ const CustomFields = ({ formData, updateFormData }: CustomFieldsProps) => {
                   <th className="text-left p-3 text-sm font-medium">Name</th>
                   <th className="text-left p-3 text-sm font-medium">Label</th>
                   <th className="text-left p-3 text-sm font-medium">Type</th>
+                  <th className="text-left p-3 text-sm font-medium">
+                    Identifier
+                  </th>
                   <th className="p-3 w-12"></th>
                 </tr>
               </thead>
@@ -176,6 +183,9 @@ const CustomFields = ({ formData, updateFormData }: CustomFieldsProps) => {
                     <td className="p-3">{field.label}</td>
                     <td className="p-3">
                       <Badge variant="outline">{field.type}</Badge>
+                    </td>
+                    <td className="p-3">
+                      {field.isIdentifier ? "Sim" : "Não"}
                     </td>
                     <td className="p-3">
                       <Button

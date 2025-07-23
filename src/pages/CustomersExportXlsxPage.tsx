@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { DateTimePicker } from "@/components/ui/date-time-picker";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   exportCustomersXlsx,
   filterCustomersDtoSchema,
@@ -37,6 +38,7 @@ const CustomersExportXlsxPage = () => {
     lastInteractionEndDate: undefined,
     lastInteractionType: undefined,
     keywords: [],
+    chatCreatedAt: undefined,
   });
 
   const { workspaceId } = useWorkspaceManager({
@@ -254,6 +256,36 @@ const CustomersExportXlsxPage = () => {
                       setFilters({
                         ...filters,
                         lastInteractionEndDate: undefined,
+                      })
+                    }
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Data de Criação do Chat</Label>
+              <div className="flex gap-2">
+                <DatePicker
+                  date={filters.chatCreatedAt}
+                  setDate={(date) =>
+                    setFilters({
+                      ...filters,
+                      chatCreatedAt: date,
+                    })
+                  }
+                  placeholder="Selecione a data de criação do chat"
+                />
+                {filters.chatCreatedAt && (
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() =>
+                      setFilters({
+                        ...filters,
+                        chatCreatedAt: undefined,
                       })
                     }
                   >

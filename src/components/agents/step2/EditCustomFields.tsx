@@ -39,6 +39,7 @@ const EditCustomFields = ({
     label: "",
     type: "text",
     required: false,
+    isIdentifier: false,
   });
 
   const addField = () => {
@@ -83,6 +84,7 @@ const EditCustomFields = ({
       label: "",
       type: "text",
       required: true,
+      isIdentifier: false,
     });
   };
 
@@ -188,13 +190,13 @@ const EditCustomFields = ({
 
             <div className="flex items-center space-x-4 mt-8">
               <Switch
-                id="fieldRequired"
-                checked={newField.required}
+                id="fieldIdentifier"
+                checked={newField.isIdentifier}
                 onCheckedChange={(checked) =>
-                  setNewField({ ...newField, required: checked })
+                  setNewField({ ...newField, isIdentifier: checked })
                 }
               />
-              <Label htmlFor="fieldRequired">Required field</Label>
+              <Label htmlFor="fieldIdentifier">Campo de identificação</Label>
             </div>
           </div>
 
@@ -224,6 +226,9 @@ const EditCustomFields = ({
                   <th className="text-left p-3 text-sm font-medium">Name</th>
                   <th className="text-left p-3 text-sm font-medium">Label</th>
                   <th className="text-left p-3 text-sm font-medium">Type</th>
+                  <th className="text-left p-3 text-sm font-medium">
+                    Identifier
+                  </th>
                   <th className="p-3 w-12"></th>
                 </tr>
               </thead>
@@ -238,6 +243,9 @@ const EditCustomFields = ({
                     <td className="p-3">{field.label}</td>
                     <td className="p-3">
                       <Badge variant="outline">{field.type}</Badge>
+                    </td>
+                    <td className="p-3">
+                      {field.isIdentifier ? "Sim" : "Não"}
                     </td>
                     <td className="p-3">
                       <Button

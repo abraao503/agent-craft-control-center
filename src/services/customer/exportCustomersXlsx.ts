@@ -10,6 +10,7 @@ export const filterCustomersDtoSchema = z.object({
     .enum(["customer", "assistant", "human_assistant"])
     .optional(),
   keywords: z.array(z.string()).optional(),
+  chatCreatedAt: z.coerce.date().optional(),
   timezone: z.string(),
 });
 
@@ -18,10 +19,10 @@ export type FilterCustomersDto = z.infer<typeof filterCustomersDtoSchema>;
 export const exportCustomersXlsx = async (
   filters: FilterCustomersDto
 ): Promise<Blob> => {
-  const response = await api.get('/customer/export-xlsx', {
+  const response = await api.get("/customer/export-xlsx", {
     params: filters,
-    responseType: 'blob',
+    responseType: "blob",
   });
-  
+
   return response.data;
 };

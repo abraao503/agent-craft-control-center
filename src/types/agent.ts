@@ -36,6 +36,7 @@ export interface CustomField {
   label: string;
   type: "text" | "number" | "boolean";
   required: boolean;
+  isIdentifier: boolean;
 }
 
 export interface FullAgent {
