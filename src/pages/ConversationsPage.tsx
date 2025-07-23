@@ -56,7 +56,7 @@ import { isColorDark } from "@/lib/utils";
 const getPageNumbers = (currentPage: number, totalPages: number) => {
   // Maximum number of page links to show
   const maxPageLinks = 5;
-  
+
   if (totalPages <= maxPageLinks) {
     // If we have 5 or fewer pages, show all of them
     return Array.from({ length: totalPages }, (_, i) => i + 1);
@@ -65,7 +65,10 @@ const getPageNumbers = (currentPage: number, totalPages: number) => {
     return Array.from({ length: maxPageLinks }, (_, i) => i + 1);
   } else if (currentPage >= totalPages - 2) {
     // If we're on the last 3 pages, show the last 5 pages
-    return Array.from({ length: maxPageLinks }, (_, i) => totalPages - maxPageLinks + i + 1);
+    return Array.from(
+      { length: maxPageLinks },
+      (_, i) => totalPages - maxPageLinks + i + 1
+    );
   } else {
     // Otherwise show current page with 2 pages before and after
     return Array.from({ length: maxPageLinks }, (_, i) => currentPage - 2 + i);
@@ -382,7 +385,20 @@ const ConversationsPage = () => {
                                 : "Sem interações"}
                             </TableCell>
                             <TableCell>{conversation.agent.name}</TableCell>
-                            <TableCell>{conversation.customer.phone}</TableCell>
+                            <TableCell>
+                              {conversation.customer.identifier ? (
+                                <div>
+                                  <div className="font-medium">
+                                    {conversation.customer.identifier}
+                                  </div>
+                                  <div className="text-sm text-muted-foreground">
+                                    {conversation.customer.phone}
+                                  </div>
+                                </div>
+                              ) : (
+                                conversation.customer.phone
+                              )}
+                            </TableCell>
                             <TableCell>{conversation.totalMessages}</TableCell>
                             <TableCell>
                               <Badge
@@ -469,23 +485,28 @@ const ConversationsPage = () => {
                         </PaginationItem>
 
                         {/* Show first page and ellipsis if not already showing */}
-                        {data.totalPages > 5 && !getPageNumbers(filters.page, data.totalPages).includes(1) && (
-                          <>
-                            <PaginationItem key={1}>
-                              <PaginationLink
-                                onClick={() => handlePageChange(1)}
-                              >
-                                1
-                              </PaginationLink>
-                            </PaginationItem>
-                            <PaginationItem>
-                              <span className="px-2">...</span>
-                            </PaginationItem>
-                          </>
-                        )}
+                        {data.totalPages > 5 &&
+                          !getPageNumbers(
+                            filters.page,
+                            data.totalPages
+                          ).includes(1) && (
+                            <>
+                              <PaginationItem key={1}>
+                                <PaginationLink
+                                  onClick={() => handlePageChange(1)}
+                                >
+                                  1
+                                </PaginationLink>
+                              </PaginationItem>
+                              <PaginationItem>
+                                <span className="px-2">...</span>
+                              </PaginationItem>
+                            </>
+                          )}
 
                         {/* Show current page range */}
-                        {getPageNumbers(filters.page, data.totalPages).map((page) => (
+                        {getPageNumbers(filters.page, data.totalPages).map(
+                          (page) => (
                             <PaginationItem key={page}>
                               <PaginationLink
                                 isActive={page === filters.page}
@@ -494,23 +515,30 @@ const ConversationsPage = () => {
                                 {page}
                               </PaginationLink>
                             </PaginationItem>
-                          ))}
-                          
-                        {/* Show ellipsis and last page if not already showing */}
-                        {data.totalPages > 5 && !getPageNumbers(filters.page, data.totalPages).includes(data.totalPages) && (
-                          <>
-                            <PaginationItem>
-                              <span className="px-2">...</span>
-                            </PaginationItem>
-                            <PaginationItem key={data.totalPages}>
-                              <PaginationLink
-                                onClick={() => handlePageChange(data.totalPages)}
-                              >
-                                {data.totalPages}
-                              </PaginationLink>
-                            </PaginationItem>
-                          </>
+                          )
                         )}
+
+                        {/* Show ellipsis and last page if not already showing */}
+                        {data.totalPages > 5 &&
+                          !getPageNumbers(
+                            filters.page,
+                            data.totalPages
+                          ).includes(data.totalPages) && (
+                            <>
+                              <PaginationItem>
+                                <span className="px-2">...</span>
+                              </PaginationItem>
+                              <PaginationItem key={data.totalPages}>
+                                <PaginationLink
+                                  onClick={() =>
+                                    handlePageChange(data.totalPages)
+                                  }
+                                >
+                                  {data.totalPages}
+                                </PaginationLink>
+                              </PaginationItem>
+                            </>
+                          )}
 
                         <PaginationItem>
                           <PaginationNext
