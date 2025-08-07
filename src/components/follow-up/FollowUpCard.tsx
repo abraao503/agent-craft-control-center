@@ -1,5 +1,6 @@
 import React from "react";
 import { format } from "date-fns";
+import { minutesToTimeValue } from "@/lib/time-utils";
 import { ptBR } from "date-fns/locale";
 import {
   Card,
@@ -40,14 +41,18 @@ export function FollowUpCard({
           <CardTitle className="text-lg">{followUp.name}</CardTitle>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0" disabled={disabled}>
+              <Button
+                variant="ghost"
+                className="h-8 w-8 p-0"
+                disabled={disabled}
+              >
                 <span className="sr-only">Abrir menu</span>
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem 
-                onClick={() => onEdit(followUp)} 
+              <DropdownMenuItem
+                onClick={() => onEdit(followUp)}
                 disabled={disabled}
               >
                 <Pencil className="mr-2 h-4 w-4" />
@@ -72,8 +77,34 @@ export function FollowUpCard({
           </p>
           <div className="text-xs text-muted-foreground">
             <span className="font-medium">Tempo de inatividade:</span>{" "}
-            {followUp.inactiveChatTime}{" "}
-            {followUp.inactiveChatTime === 1 ? "minuto" : "minutos"}
+            {(() => {
+              const timeValue = minutesToTimeValue(followUp.inactiveChatTime);
+              const parts = [];
+
+              if (timeValue.days > 0) {
+                parts.push(
+                  `${timeValue.days} ${timeValue.days === 1 ? "dia" : "dias"}`
+                );
+              }
+
+              if (timeValue.hours > 0) {
+                parts.push(
+                  `${timeValue.hours} ${
+                    timeValue.hours === 1 ? "hora" : "horas"
+                  }`
+                );
+              }
+
+              if (timeValue.minutes > 0 || parts.length === 0) {
+                parts.push(
+                  `${timeValue.minutes} ${
+                    timeValue.minutes === 1 ? "minuto" : "minutos"
+                  }`
+                );
+              }
+
+              return parts.join(", ");
+            })()}
           </div>
           <div className="text-xs text-muted-foreground">
             <span className="font-medium">Criado em:</span>{" "}

@@ -3,6 +3,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { minutesToTimeValue } from "@/lib/time-utils";
+import { InactiveChatTimePicker } from "@/components/follow-up/InactiveChatTimePicker";
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import {
@@ -409,16 +411,13 @@ export default function FollowUpDetailPage() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="inactiveChatTime">
-                      Tempo de inatividade (minutos)
+                      Tempo de inatividade
                     </Label>
-                    <Input
-                      id="inactiveChatTime"
-                      type="number"
-                      min="1"
+                    <InactiveChatTimePicker
                       value={editedInactiveChatTime}
-                      onChange={(e) =>
-                        setEditedInactiveChatTime(parseInt(e.target.value) || 1)
-                      }
+                      onChange={setEditedInactiveChatTime}
+                      maxDays={7}
+                      minTotalMinutes={60}
                     />
                   </div>
                 </div>
@@ -439,10 +438,30 @@ export default function FollowUpDetailPage() {
                         Tempo de inatividade
                       </p>
                       <p className="text-sm font-medium">
-                        {followUpData?.inactiveChatTime}{" "}
-                        {followUpData?.inactiveChatTime === 1
-                          ? "minuto"
-                          : "minutos"}
+                        {followUpData && (() => {
+                          const timeValue = minutesToTimeValue(followUpData.inactiveChatTime);
+                          const parts = [];
+
+                          if (timeValue.days > 0) {
+                            parts.push(
+                              `${timeValue.days} ${timeValue.days === 1 ? "dia" : "dias"}`
+                            );
+                          }
+
+                          if (timeValue.hours > 0) {
+                            parts.push(
+                              `${timeValue.hours} ${timeValue.hours === 1 ? "hora" : "horas"}`
+                            );
+                          }
+
+                          if (timeValue.minutes > 0 || parts.length === 0) {
+                            parts.push(
+                              `${timeValue.minutes} ${timeValue.minutes === 1 ? "minuto" : "minutos"}`
+                            );
+                          }
+
+                          return parts.join(", ");
+                        })()}
                       </p>
                     </div>
                   </div>

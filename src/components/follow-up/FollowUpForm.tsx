@@ -27,6 +27,7 @@ import { Tag } from "@/types/tag";
 import { listTags } from "@/services/tag/listTags";
 import { isColorDark } from "@/lib/utils";
 import { MultiSelect } from "@/components/ui/multi-select";
+import { InactiveChatTimePicker } from "./InactiveChatTimePicker";
 
 const formSchema = z.object({
   name: z.string().min(3, {
@@ -166,13 +167,13 @@ export function FollowUpForm({
           name="inactiveChatTime"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Tempo de inatividade (minutos)</FormLabel>
+              <FormLabel>Tempo de inatividade</FormLabel>
               <FormControl>
-                <Input
-                  type="number"
-                  min={1}
-                  placeholder="Tempo em minutos"
-                  {...field}
+                <InactiveChatTimePicker
+                  value={field.value}
+                  onChange={field.onChange}
+                  maxDays={7}
+                  minTotalMinutes={60}
                 />
               </FormControl>
               <FormMessage />
