@@ -1,0 +1,143 @@
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { QueuedMessage } from "@/types/follow-up";
+
+interface QueuedMessagesTableProps {
+  messages: QueuedMessage[];
+}
+
+export function QueuedMessagesTable({ messages }: QueuedMessagesTableProps) {
+  const getStatusBadge = (status: QueuedMessage["status"]) => {
+    switch (status) {
+      case "pending":
+        return (
+          <Badge
+            variant="outline"
+            className="bg-yellow-100 text-yellow-800 border-yellow-300"
+          >
+            Pendente
+          </Badge>
+        );
+      case "sent":
+        return (
+          <Badge
+            variant="outline"
+            className="bg-green-100 text-green-800 border-green-300"
+          >
+            Enviada
+          </Badge>
+        );
+      case "failed":
+        return (
+          <Badge
+            variant="outline"
+            className="bg-red-100 text-red-800 border-red-300"
+          >
+            Falha
+          </Badge>
+        );
+      case "canceled":
+        return (
+          <Badge
+            variant="outline"
+            className="bg-gray-100 text-gray-800 border-gray-300"
+          >
+            Cancelada
+          </Badge>
+        );
+      case "scheduled":
+        return (
+          <Badge
+            variant="outline"
+            className="bg-blue-100 text-blue-800 border-blue-300"
+          >
+            Agendada
+          </Badge>
+        );
+      default:
+        return <Badge variant="outline">Desconhecido</Badge>;
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Cliente</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Criada em</TableHead>
+              <TableHead>Enviada em</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {messages.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={6}
+                  className="text-center py-6 text-muted-foreground"
+                >
+                  <div className="flex flex-col items-center space-y-4">
+                    <div className="flex space-x-2">
+                      <div className="h-3 w-3 bg-primary rounded-full animate-bounce" style={{ animationDelay: "0s", animationDuration: "0.8s" }}></div>
+                      <div className="h-3 w-3 bg-primary rounded-full animate-bounce" style={{ animationDelay: "0.2s", animationDuration: "0.8s" }}></div>
+                      <div className="h-3 w-3 bg-primary rounded-full animate-bounce" style={{ animationDelay: "0.4s", animationDuration: "0.8s" }}></div>
+                    </div>
+                    <div className="text-primary font-medium">
+                      Isso pode levar alguns minutos...
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      O sistema está buscando mensagens de follow-up...
+                    </div>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : (
+              messages.map((message) => (
+                <TableRow key={message.id}>
+                  <TableCell>
+                    {message.customer.identifier ? (
+                      <div>
+                        <div className="font-medium">
+                          {message.customer.identifier}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {message.customer.phone}
+                        </div>
+                      </div>
+                    ) : (
+                      message.customer.phone
+                    )}
+                  </TableCell>
+                  <TableCell>{getStatusBadge(message.status)}</TableCell>
+                  <TableCell>
+                    {format(new Date(message.createdAt), "dd/MM/yyyy HH:mm", {
+                      locale: ptBR,
+                    })}
+                  </TableCell>
+                  <TableCell>
+                    {message.sentAt
+                      ? format(new Date(message.sentAt), "dd/MM/yyyy HH:mm", {
+                          locale: ptBR,
+                        })
+                      : "-"}
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  );
+}

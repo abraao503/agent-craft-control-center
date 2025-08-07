@@ -31,6 +31,9 @@ import ConversationsPage from "./pages/ConversationsPage";
 import CustomersPage from "./pages/CustomersPage";
 import CustomerDetailsPage from "./pages/CustomerDetailsPage";
 import CustomersExportXlsxPage from "./pages/CustomersExportXlsxPage";
+import FollowUpPage from "./pages/FollowUpPage";
+import FollowUpDetailPage from "./pages/FollowUpDetailPage";
+import MessageQueuePage from "./pages/MessageQueuePage";
 import Sidebar from "./components/layout/Sidebar";
 import Header from "./components/layout/Header";
 import { SidebarProvider } from "./components/ui/sidebar";
@@ -182,6 +185,9 @@ const ConversationsListPage = () => <ConversationsPage />;
 const CustomersListPage = () => <CustomersPage />;
 const CustomerDetailsViewPage = () => <CustomerDetailsPage />;
 const CustomersExportPage = () => <CustomersExportXlsxPage />;
+const FollowUpListPage = () => <FollowUpPage />;
+const FollowUpDetailViewPage = () => <FollowUpDetailPage />;
+const MessageQueueListPage = () => <MessageQueuePage />;
 const NotFoundPage = () => <NotFound />;
 
 const App = () => (
@@ -231,6 +237,9 @@ const App = () => (
                     path="/customers/export-xlsx"
                     element={<CustomersExportPage />}
                   />
+                  <Route path="/follow-up" element={<FollowUpListPage />} />
+                  <Route path="/follow-up/:id" element={<FollowUpDetailViewPage />} />
+                  <Route path="/message-queue" element={<MessageQueueListPage />} />
                   <Route path="*" element={<NotFoundPage />} />
                 </Route>
               </Routes>

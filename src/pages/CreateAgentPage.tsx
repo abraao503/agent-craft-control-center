@@ -5,7 +5,6 @@ import AgentStepIndicator from "@/components/agents/AgentStepIndicator";
 import BasicInformation from "@/components/agents/step1/BasicInformation";
 import PromptContext from "@/components/agents/step3/PromptContext";
 import KnowledgeContent from "@/components/agents/step4/KnowledgeContent";
-import FollowUps from "@/components/agents/step5/FollowUps";
 import { AgentFormData, CreateAgentRequest } from "@/types/agent";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -20,7 +19,6 @@ const STEPS = [
   "Custom Fields",
   "Prompt & Context",
   "Knowledge Content",
-  "Follow Ups",
 ];
 
 const defaultFormData: AgentFormData = {
@@ -139,10 +137,6 @@ const CreateAgentPage = () => {
             updateFormData={updateFormData}
           />
         );
-      case 5:
-        return (
-          <FollowUps formData={formData} updateFormData={updateFormData} />
-        );
       default:
         return null;
     }
@@ -169,8 +163,6 @@ const CreateAgentPage = () => {
         );
       case 4:
         return true; // Knowledge content is optional
-      case 5:
-        return true; // Follow ups are optional
       default:
         return false;
     }

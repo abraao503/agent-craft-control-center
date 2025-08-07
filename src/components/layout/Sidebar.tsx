@@ -14,6 +14,8 @@ import {
   ChevronRight,
   Building2,
   Plus,
+  Clock,
+  BellRing,
 } from "lucide-react";
 import { useAuth } from "@/contexts/auth/hooks";
 import {
@@ -360,6 +362,11 @@ const SidebarMenuContent = () => {
       path: "/contents",
       label: "Conteúdos",
       icon: <Database className="h-5 w-5" />,
+    },
+    {
+      path: "/follow-up",
+      label: "Follow-Ups",
+      icon: <BellRing className="h-5 w-5" />,
     },
     {
       path: "/integrations",
