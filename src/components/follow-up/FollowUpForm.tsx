@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { X } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -33,17 +34,30 @@ const formSchema = z.object({
   name: z.string().min(3, {
     message: "Nome deve ter pelo menos 3 caracteres",
   }),
-  message: z.string().min(10, {
-    message: "Mensagem deve ter pelo menos 10 caracteres",
-  }),
+  messages: z
+    .array(
+      z.string().min(10, {
+        message: "Cada mensagem deve ter pelo menos 10 caracteres",
+      })
+    )
+    .min(1, {
+      message: "Configure pelo menos uma mensagem",
+    }),
   inactiveChatTime: z.coerce.number().min(1, {
     message: "Tempo deve ser pelo menos 1 minuto",
   }),
+  maxMessages: z.coerce
+    .number()
+    .min(1, {
+      message: "Número de mensagens deve ser pelo menos 1",
+    })
+    .optional(),
   assistantId: z.string().uuid({
     message: "Assistente inválido",
   }),
   inclusiveTags: z.array(z.string().uuid("Tag ID must be a valid UUID")),
   exclusiveTags: z.array(z.string().uuid("Tag ID must be a valid UUID")),
+  responseTags: z.array(z.string().uuid("Tag ID must be a valid UUID")),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -73,6 +87,7 @@ export function FollowUpForm({
   // Processando as tags para garantir que sejam arrays de IDs
   let inclusiveTagIds: string[] = [];
   let exclusiveTagIds: string[] = [];
+  let responseTagIds: string[] = [];
 
   // Interface para representar tanto string quanto objeto tag
   interface TagLike {
@@ -98,22 +113,33 @@ export function FollowUpForm({
       : [];
   }
 
+  if (initialData?.responseTags) {
+    // Verifica se responseTags é um array de objetos ou um array de strings
+    responseTagIds = Array.isArray(initialData.responseTags)
+      ? initialData.responseTags.map(getTagId)
+      : [];
+  }
+
   const defaultValues = initialData
     ? {
         name: initialData.name,
-        message: initialData.message,
+        messages: initialData.messages || [],
         inactiveChatTime: initialData.inactiveChatTime,
+        maxMessages: initialData.maxMessages || 3, // Default: 3 mensagens
         assistantId: initialData.assistantId,
         inclusiveTags: inclusiveTagIds,
         exclusiveTags: exclusiveTagIds,
+        responseTags: responseTagIds,
       }
     : {
         name: "",
-        message: "",
+        messages: [""],
         inactiveChatTime: 60, // Default: 1 hora
+        maxMessages: 3, // Default: 3 mensagens
         assistantId: "",
         inclusiveTags: [],
         exclusiveTags: [],
+        responseTags: [],
       };
 
   console.log("defaultValues configurados:", defaultValues);
@@ -146,18 +172,62 @@ export function FollowUpForm({
 
         <FormField
           control={form.control}
-          name="message"
+          name="messages"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Mensagem</FormLabel>
+              <FormLabel>Mensagens</FormLabel>
               <FormControl>
-                <Textarea
-                  placeholder="Mensagem que será enviada"
-                  className="min-h-[120px]"
-                  {...field}
-                />
+                <div className="space-y-3">
+                  {field.value.map((message: string, index: number) => (
+                    <div key={index} className="flex gap-2">
+                      <Textarea
+                        placeholder={`Mensagem ${index + 1}`}
+                        className="min-h-[100px] flex-grow"
+                        value={message}
+                        onChange={(e) => {
+                          const newMessages = [...field.value];
+                          newMessages[index] = e.target.value;
+                          field.onChange(newMessages);
+                        }}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => {
+                          if (field.value.length > 1) {
+                            const newMessages = [...field.value];
+                            newMessages.splice(index, 1);
+                            field.onChange(newMessages);
+                          }
+                        }}
+                        disabled={field.value.length <= 1}
+                        className="h-10 w-10 shrink-0"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
               </FormControl>
-              <FormMessage />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => field.onChange([...field.value, ""])}
+                className="w-full mt-2"
+              >
+                + Adicionar mensagem
+              </Button>
+              {form.formState.errors.messages && (
+                <p className="text-sm font-medium text-destructive">
+                  {form.formState.errors.messages.root?.message ||
+                    "Cada mensagem deve ter pelo menos 10 caracteres"}
+                </p>
+              )}
+              <p className="text-xs text-muted-foreground mt-1">
+                As mensagens serão escolhidas aleatoriamente para serem
+                enviadas.
+              </p>
             </FormItem>
           )}
         />
@@ -177,6 +247,27 @@ export function FollowUpForm({
                 />
               </FormControl>
               <FormMessage />
+              <p className="text-sm text-muted-foreground mt-1">
+                Tempo de inatividade do cliente antes de enviar o follow-up.
+              </p>
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="maxMessages"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Número máximo de mensagens</FormLabel>
+              <FormControl>
+                <Input type="number" min="1" placeholder="3" {...field} />
+              </FormControl>
+              <FormMessage />
+              <p className="text-sm text-muted-foreground mt-1">
+                Número máximo de follow-ups que serão enviados caso o cliente
+                não responda.
+              </p>
             </FormItem>
           )}
         />
@@ -315,6 +406,63 @@ export function FollowUpForm({
               <p className="text-sm text-muted-foreground mt-1">
                 O follow-up NÃO será aplicado a clientes que possuem QUALQUER
                 uma destas tags.
+              </p>
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="responseTags"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Tags de Resposta</FormLabel>
+              <FormControl>
+                <MultiSelect
+                  options={tags.map((tag) => ({
+                    value: tag.id,
+                    label: tag.name,
+                    color: tag.color,
+                  }))}
+                  placeholder="Selecione as tags de resposta"
+                  selected={field.value}
+                  onChange={field.onChange}
+                  renderOption={(option) => (
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: option.color }}
+                      />
+                      {option.label}
+                    </div>
+                  )}
+                  renderSelection={(selected) => (
+                    <div className="flex flex-wrap gap-1">
+                      {selected.map((option) => {
+                        const tag = tags.find((t) => t.id === option.value);
+                        if (!tag) return null;
+
+                        return (
+                          <Badge
+                            key={tag.id}
+                            style={{
+                              backgroundColor: tag.color,
+                              color: isColorDark(tag.color) ? "white" : "black",
+                            }}
+                            className="flex items-center gap-1"
+                          >
+                            {tag.name}
+                          </Badge>
+                        );
+                      })}
+                    </div>
+                  )}
+                />
+              </FormControl>
+              <FormMessage />
+              <p className="text-sm text-muted-foreground mt-1">
+                Essas tags serão automaticamente atribuídas ao chat quando o
+                follow-up for respondido pelo cliente.
               </p>
             </FormItem>
           )}

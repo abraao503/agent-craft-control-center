@@ -1,7 +1,7 @@
 export type FollowUp = {
   id: string; // UUID
   name: string;
-  message: string;
+  messages: string[];
   messageQueue: MessageQueue;
   inactiveChatTime: number; // tempo em minutos
   workspaceId: string; // UUID
@@ -9,6 +9,8 @@ export type FollowUp = {
   companyId: string; // UUID
   inclusiveTags?: string[]; // IDs das tags inclusivas
   exclusiveTags?: string[]; // IDs das tags exclusivas
+  responseTags?: string[]; // IDs das tags que serão atribuídas ao chat quando o follow-up for respondido
+  maxMessages?: number; // número máximo de follow-ups a serem enviados
   createdAt: Date;
   updatedAt: Date;
 };

@@ -3,15 +3,19 @@ import { api } from "../api";
 import { FollowUp, QueuedMessage } from "@/types/follow-up";
 
 // Follow-Up Services
-export const createFollowUp = async (data: {
+export type FollowUpData = {
   name: string;
-  message: string;
+  messages: string[];
   inactiveChatTime: number;
+  maxMessages?: number;
   workspaceId: string;
   assistantId: string;
   inclusiveTags?: string[];
   exclusiveTags?: string[];
-}) => {
+  responseTags?: string[];
+};
+
+export const createFollowUp = async (data: FollowUpData) => {
   const response = await api.post("/follow-up", data);
   return response.data;
 };
@@ -29,16 +33,11 @@ export const listFollowUps = async (params: {
   return response.data;
 };
 
+export type FollowUpUpdateData = Partial<Omit<FollowUpData, 'workspaceId'>>;
+
 export const updateFollowUp = async (
   id: string,
-  data: {
-    name?: string;
-    message?: string;
-    inactiveChatTime?: number;
-    assistantId?: string;
-    inclusiveTags?: string[];
-    exclusiveTags?: string[];
-  }
+  data: FollowUpUpdateData
 ) => {
   const response = await api.put(`/follow-up/${id}`, data);
   return response.data;

@@ -54,7 +54,9 @@ export function FollowUpTable({
               <TableRow key={followUp.id}>
                 <TableCell className="font-medium">{followUp.name}</TableCell>
                 <TableCell className="max-w-[300px] truncate">
-                  {followUp.message}
+                  {followUp.messages && followUp.messages.length > 0 
+                    ? followUp.messages[0] + (followUp.messages.length > 1 ? ` (+${followUp.messages.length - 1})` : '') 
+                    : "Sem mensagens configuradas"}
                 </TableCell>
                 <TableCell>
                   {followUp.inactiveChatTime} {followUp.inactiveChatTime === 1 ? "minuto" : "minutos"}

@@ -68,7 +68,7 @@ function QueueSettingsCard({ followUp }: { followUp: FollowUp }) {
       data: { isActive: boolean; delaySeconds: number };
     }) => updateMessageQueue(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["followUp", followUp.id] });
+      queryClient.invalidateQueries({ queryKey: ["followUps", followUp.id] });
       toast({
         title: "Configurações atualizadas",
         description: "As configurações da fila foram atualizadas com sucesso.",
@@ -198,11 +198,13 @@ export default function FollowUpDetailPage() {
 
   // Estado para controle de edição
   const [isEditing, setIsEditing] = useState<boolean>(false);
-  const [editedMessage, setEditedMessage] = useState<string>("");
+  const [editedMessages, setEditedMessages] = useState<string[]>([]);
   const [editedInactiveChatTime, setEditedInactiveChatTime] =
     useState<number>(60);
+  const [editedMaxMessages, setEditedMaxMessages] = useState<number>(3);
   const [editedInclusiveTags, setEditedInclusiveTags] = useState<string[]>([]);
   const [editedExclusiveTags, setEditedExclusiveTags] = useState<string[]>([]);
+  const [editedResponseTags, setEditedResponseTags] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState<boolean>(false);
 
   // Query para buscar detalhes do follow-up
@@ -211,7 +213,7 @@ export default function FollowUpDetailPage() {
     isLoading: isLoadingFollowUp,
     error: followUpError,
   } = useQuery({
-    queryKey: ["followUp", id],
+    queryKey: ["followUps", id],
     queryFn: () => getFollowUpById(id),
     enabled: !!id,
   });
@@ -226,10 +228,12 @@ export default function FollowUpDetailPage() {
   // Atualiza os campos de edição quando os dados do follow-up são carregados
   useEffect(() => {
     if (followUpData) {
-      setEditedMessage(followUpData.message);
+      setEditedMessages(followUpData.messages || []);
       setEditedInactiveChatTime(followUpData.inactiveChatTime);
+      setEditedMaxMessages(followUpData.maxMessages || 3);
       setEditedInclusiveTags(followUpData.inclusiveTags || []);
       setEditedExclusiveTags(followUpData.exclusiveTags || []);
+      setEditedResponseTags(followUpData.responseTags || []);
     }
   }, [followUpData]);
 
@@ -285,14 +289,16 @@ export default function FollowUpDetailPage() {
     }: {
       id: string;
       data: {
-        message: string;
+        messages: string[];
         inactiveChatTime: number;
+        maxMessages?: number;
         inclusiveTags?: string[];
         exclusiveTags?: string[];
+        responseTags?: string[];
       };
     }) => updateFollowUp(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["followUp", id] });
+      queryClient.invalidateQueries({ queryKey: ["followUps", id] });
       toast({
         title: "Follow-up atualizado",
         description: "As alterações foram salvas com sucesso.",
@@ -315,11 +321,17 @@ export default function FollowUpDetailPage() {
   const handleEditClick = () => {
     if (!followUpData) return;
 
-    setEditedMessage(followUpData.message);
+    setEditedMessages(followUpData.messages || []);
     setEditedInactiveChatTime(followUpData.inactiveChatTime);
+    setEditedMaxMessages(followUpData.maxMessages || 3);
     setEditedInclusiveTags(followUpData.inclusiveTags || []);
     setEditedExclusiveTags(followUpData.exclusiveTags || []);
+    setEditedResponseTags(followUpData.responseTags || []);
     setIsEditing(true);
+  };
+
+  const handleCloseEdit = () => {
+    setIsEditing(false);
   };
 
   // Função para salvar as alterações
@@ -330,10 +342,12 @@ export default function FollowUpDetailPage() {
     updateFollowUpMutation.mutate({
       id: followUpData.id,
       data: {
-        message: editedMessage,
+        messages: editedMessages,
         inactiveChatTime: editedInactiveChatTime,
+        maxMessages: editedMaxMessages,
         inclusiveTags: editedInclusiveTags,
         exclusiveTags: editedExclusiveTags,
+        responseTags: editedResponseTags,
       },
     });
   };
@@ -383,13 +397,16 @@ export default function FollowUpDetailPage() {
         <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
       </Button>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Detalhes do Follow-up - Versão simplificada */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-x-0 gap-y-6 lg:gap-6">
         <div className="md:col-span-2 flex">
           <Card className="shadow-sm w-full flex flex-col">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-xl">{followUpData.name}</CardTitle>
-              <Button variant="ghost" size="sm" onClick={handleEditClick}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={isEditing ? handleCloseEdit : handleEditClick}
+              >
                 {isEditing ? (
                   <X className="h-4 w-4" />
                 ) : (
@@ -401,13 +418,50 @@ export default function FollowUpDetailPage() {
               {isEditing ? (
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="message">Mensagem</Label>
-                    <Textarea
-                      id="message"
-                      value={editedMessage}
-                      onChange={(e) => setEditedMessage(e.target.value)}
-                      className="min-h-[150px]"
-                    />
+                    <Label htmlFor="messages">Mensagens</Label>
+                    <div className="space-y-3">
+                      {editedMessages.map((message, index) => (
+                        <div key={index} className="flex gap-2">
+                          <Textarea
+                            id={`message-${index}`}
+                            value={message}
+                            onChange={(e) => {
+                              const newMessages = [...editedMessages];
+                              newMessages[index] = e.target.value;
+                              setEditedMessages(newMessages);
+                            }}
+                            className="min-h-[100px] flex-grow"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            onClick={() => {
+                              if (editedMessages.length > 1) {
+                                const newMessages = [...editedMessages];
+                                newMessages.splice(index, 1);
+                                setEditedMessages(newMessages);
+                              }
+                            }}
+                            disabled={editedMessages.length <= 1}
+                            className="h-10 w-10 shrink-0"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setEditedMessages([...editedMessages, ""])}
+                      className="w-full mt-2"
+                    >
+                      + Adicionar mensagem
+                    </Button>
+                    <p className="text-xs text-muted-foreground">
+                      Configure pelo menos uma mensagem para o follow-up.
+                    </p>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="inactiveChatTime">
@@ -420,12 +474,40 @@ export default function FollowUpDetailPage() {
                       minTotalMinutes={60}
                     />
                   </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="maxMessages">
+                      Número máximo de mensagens
+                    </Label>
+                    <Input
+                      id="maxMessages"
+                      type="number"
+                      min="1"
+                      value={editedMaxMessages}
+                      onChange={(e) =>
+                        setEditedMaxMessages(parseInt(e.target.value) || 1)
+                      }
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Número máximo de follow-ups que serão enviados caso o
+                      cliente não responda.
+                    </p>
+                  </div>
                 </div>
               ) : (
                 <div className="bg-slate-50 p-4 rounded-md border border-slate-100 h-full">
-                  <p className="text-sm leading-relaxed">
-                    {followUpData?.message}
-                  </p>
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-medium">Mensagens configuradas:</h3>
+                    {followUpData?.messages && followUpData.messages.length > 0 ? (
+                      followUpData.messages.map((message, index) => (
+                        <div key={index} className="p-3 bg-white rounded-md border border-slate-200">
+                          <p className="text-sm leading-relaxed">{message}</p>
+                          <p className="text-xs text-muted-foreground mt-1">Mensagem {index + 1}</p>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-muted-foreground">Nenhuma mensagem configurada</p>
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -438,30 +520,39 @@ export default function FollowUpDetailPage() {
                         Tempo de inatividade
                       </p>
                       <p className="text-sm font-medium">
-                        {followUpData && (() => {
-                          const timeValue = minutesToTimeValue(followUpData.inactiveChatTime);
-                          const parts = [];
-
-                          if (timeValue.days > 0) {
-                            parts.push(
-                              `${timeValue.days} ${timeValue.days === 1 ? "dia" : "dias"}`
+                        {followUpData &&
+                          (() => {
+                            const timeValue = minutesToTimeValue(
+                              followUpData.inactiveChatTime
                             );
-                          }
+                            const parts = [];
 
-                          if (timeValue.hours > 0) {
-                            parts.push(
-                              `${timeValue.hours} ${timeValue.hours === 1 ? "hora" : "horas"}`
-                            );
-                          }
+                            if (timeValue.days > 0) {
+                              parts.push(
+                                `${timeValue.days} ${
+                                  timeValue.days === 1 ? "dia" : "dias"
+                                }`
+                              );
+                            }
 
-                          if (timeValue.minutes > 0 || parts.length === 0) {
-                            parts.push(
-                              `${timeValue.minutes} ${timeValue.minutes === 1 ? "minuto" : "minutos"}`
-                            );
-                          }
+                            if (timeValue.hours > 0) {
+                              parts.push(
+                                `${timeValue.hours} ${
+                                  timeValue.hours === 1 ? "hora" : "horas"
+                                }`
+                              );
+                            }
 
-                          return parts.join(", ");
-                        })()}
+                            if (timeValue.minutes > 0 || parts.length === 0) {
+                              parts.push(
+                                `${timeValue.minutes} ${
+                                  timeValue.minutes === 1 ? "minuto" : "minutos"
+                                }`
+                              );
+                            }
+
+                            return parts.join(", ");
+                          })()}
                       </p>
                     </div>
                   </div>
@@ -479,6 +570,19 @@ export default function FollowUpDetailPage() {
                               locale: ptBR,
                             }
                           )}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Número máximo de mensagens */}
+                  <div className="flex items-center">
+                    <MessageSquare className="h-5 w-5 mr-2 text-slate-500" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">
+                        Máximo de mensagens
+                      </p>
+                      <p className="text-sm font-medium">
+                        {followUpData?.maxMessages || 3}
                       </p>
                     </div>
                   </div>
@@ -548,6 +652,39 @@ export default function FollowUpDetailPage() {
                       ) : (
                         <p className="text-sm text-muted-foreground">
                           Nenhuma tag exclusiva
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="flex items-center mt-4">
+                      <TagIcon className="h-5 w-5 mr-2 text-slate-500" />
+                      <p className="text-xs text-muted-foreground">
+                        Tags de Resposta
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {followUpData?.responseTags &&
+                      followUpData.responseTags.length > 0 ? (
+                        followUpData.responseTags.map((tagId) => {
+                          const tag = tags.find((t) => t.id === tagId);
+                          return tag ? (
+                            <Badge
+                              key={tag.id}
+                              style={{
+                                backgroundColor: tag.color,
+                                color: isColorDark(tag.color)
+                                  ? "white"
+                                  : "black",
+                              }}
+                              variant="outline"
+                            >
+                              {tag.name}
+                            </Badge>
+                          ) : null;
+                        })
+                      ) : (
+                        <p className="text-sm text-muted-foreground">
+                          Nenhuma tag de resposta
                         </p>
                       )}
                     </div>
@@ -655,6 +792,57 @@ export default function FollowUpDetailPage() {
                         QUALQUER uma destas tags.
                       </p>
                     </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="responseTags">Tags de Resposta</Label>
+                      <MultiSelect
+                        options={tags.map((tag) => ({
+                          value: tag.id,
+                          label: tag.name,
+                          color: tag.color,
+                        }))}
+                        placeholder="Selecione as tags de resposta"
+                        selected={editedResponseTags}
+                        onChange={setEditedResponseTags}
+                        renderOption={(option) => (
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="w-3 h-3 rounded-full"
+                              style={{ backgroundColor: option.color }}
+                            />
+                            {option.label}
+                          </div>
+                        )}
+                        renderSelection={(selected) => (
+                          <div className="flex flex-wrap gap-1">
+                            {selected.map((option) => {
+                              const tag = tags.find(
+                                (t) => t.id === option.value
+                              );
+                              if (!tag) return null;
+
+                              return (
+                                <Badge
+                                  key={tag.id}
+                                  style={{
+                                    backgroundColor: tag.color,
+                                    color: isColorDark(tag.color)
+                                      ? "white"
+                                      : "black",
+                                  }}
+                                >
+                                  {tag.name}
+                                </Badge>
+                              );
+                            })}
+                          </div>
+                        )}
+                      />
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Essas tags serão automaticamente atribuídas ao chat
+                        quando o follow-up for respondido pelo cliente.
+                      </p>
+                    </div>
                   </>
                 )}
               </div>
@@ -683,7 +871,6 @@ export default function FollowUpDetailPage() {
           </Card>
         </div>
 
-        {/* Card lateral com informações da fila */}
         <div className="flex">
           <QueueSettingsCard followUp={followUpData} />
         </div>

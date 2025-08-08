@@ -73,7 +73,9 @@ export function FollowUpCard({
       <CardContent className="pb-2">
         <div className="space-y-2">
           <p className="text-sm text-muted-foreground line-clamp-2">
-            {followUp.message}
+            {followUp.messages && followUp.messages.length > 0 
+              ? followUp.messages[0] + (followUp.messages.length > 1 ? ` (+${followUp.messages.length - 1})` : '') 
+              : "Sem mensagens configuradas"}
           </p>
           <div className="text-xs text-muted-foreground">
             <span className="font-medium">Tempo de inatividade:</span>{" "}
@@ -120,7 +122,7 @@ export function FollowUpCard({
             variant="outline"
             size="sm"
             className="w-full flex items-center justify-center"
-            onClick={() => navigate(`/follow-up/${followUp.id}`)}
+            onClick={() => navigate(`/follow-ups/${followUp.id}`)}
             disabled={disabled}
           >
             <ExternalLink className="mr-2 h-4 w-4" />

@@ -32,6 +32,8 @@ import CustomersPage from "./pages/CustomersPage";
 import CustomerDetailsPage from "./pages/CustomerDetailsPage";
 import CustomersExportXlsxPage from "./pages/CustomersExportXlsxPage";
 import FollowUpPage from "./pages/FollowUpPage";
+import FollowUpCreatePage from "./pages/FollowUpCreatePage";
+import FollowUpEditPage from "./pages/FollowUpEditPage";
 import FollowUpDetailPage from "./pages/FollowUpDetailPage";
 import MessageQueuePage from "./pages/MessageQueuePage";
 import Sidebar from "./components/layout/Sidebar";
@@ -186,6 +188,8 @@ const CustomersListPage = () => <CustomersPage />;
 const CustomerDetailsViewPage = () => <CustomerDetailsPage />;
 const CustomersExportPage = () => <CustomersExportXlsxPage />;
 const FollowUpListPage = () => <FollowUpPage />;
+const FollowUpCreatePageView = () => <FollowUpCreatePage />;
+const FollowUpEditPageView = () => <FollowUpEditPage />;
 const FollowUpDetailViewPage = () => <FollowUpDetailPage />;
 const MessageQueueListPage = () => <MessageQueuePage />;
 const NotFoundPage = () => <NotFound />;
@@ -237,8 +241,10 @@ const App = () => (
                     path="/customers/export-xlsx"
                     element={<CustomersExportPage />}
                   />
-                  <Route path="/follow-up" element={<FollowUpListPage />} />
-                  <Route path="/follow-up/:id" element={<FollowUpDetailViewPage />} />
+                  <Route path="/follow-ups" element={<FollowUpListPage />} />
+                  <Route path="/follow-ups/create" element={<FollowUpCreatePageView />} />
+                  <Route path="/follow-ups/edit/:id" element={<FollowUpEditPageView />} />
+                  <Route path="/follow-ups/:id" element={<FollowUpDetailViewPage />} />
                   <Route path="/message-queue" element={<MessageQueueListPage />} />
                   <Route path="*" element={<NotFoundPage />} />
                 </Route>

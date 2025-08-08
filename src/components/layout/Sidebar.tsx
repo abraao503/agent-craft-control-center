@@ -364,7 +364,7 @@ const SidebarMenuContent = () => {
       icon: <Database className="h-5 w-5" />,
     },
     {
-      path: "/follow-up",
+      path: "/follow-ups",
       label: "Follow-Ups",
       icon: <BellRing className="h-5 w-5" />,
     },
