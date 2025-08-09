@@ -13,9 +13,15 @@ import { QueuedMessage } from "@/types/follow-up";
 
 interface QueuedMessagesTableProps {
   messages: QueuedMessage[];
+  lastPageLength?: number;
+  isLoading?: boolean;
 }
 
-export function QueuedMessagesTable({ messages }: QueuedMessagesTableProps) {
+export function QueuedMessagesTable({
+  messages,
+  isLoading = false,
+  lastPageLength = 5,
+}: QueuedMessagesTableProps) {
   const getStatusBadge = (status: QueuedMessage["status"]) => {
     switch (status) {
       case "pending":
@@ -69,75 +75,81 @@ export function QueuedMessagesTable({ messages }: QueuedMessagesTableProps) {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Cliente</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Criada em</TableHead>
-              <TableHead>Enviada em</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {messages.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={6}
-                  className="text-center py-6 text-muted-foreground"
-                >
-                  <div className="flex flex-col items-center space-y-4">
-                    <div className="flex space-x-2">
-                      <div className="h-3 w-3 bg-primary rounded-full animate-bounce" style={{ animationDelay: "0s", animationDuration: "0.8s" }}></div>
-                      <div className="h-3 w-3 bg-primary rounded-full animate-bounce" style={{ animationDelay: "0.2s", animationDuration: "0.8s" }}></div>
-                      <div className="h-3 w-3 bg-primary rounded-full animate-bounce" style={{ animationDelay: "0.4s", animationDuration: "0.8s" }}></div>
-                    </div>
-                    <div className="text-primary font-medium">
-                      Isso pode levar alguns minutos...
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      O sistema está buscando mensagens de follow-up...
-                    </div>
+    <div className="rounded-md border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Cliente</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Criada em</TableHead>
+            <TableHead>Enviada em</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {isLoading ? (
+            // Skeleton rows during loading
+            Array.from({ length: lastPageLength }).map((_, index) => (
+              <TableRow key={`skeleton-${index}`}>
+                <TableCell>
+                  <div className="space-y-2">
+                    <div className="h-4 bg-gray-200 rounded animate-pulse w-32"></div>
                   </div>
                 </TableCell>
+                <TableCell>
+                  <div className="h-6 bg-gray-200 rounded animate-pulse w-20"></div>
+                </TableCell>
+                <TableCell>
+                  <div className="h-4 bg-gray-200 rounded animate-pulse w-28"></div>
+                </TableCell>
+                <TableCell>
+                  <div className="h-4 bg-gray-200 rounded animate-pulse w-28"></div>
+                </TableCell>
               </TableRow>
-            ) : (
-              messages.map((message) => (
-                <TableRow key={message.id}>
-                  <TableCell>
-                    {message.customer.identifier ? (
-                      <div>
-                        <div className="font-medium">
-                          {message.customer.identifier}
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          {message.customer.phone}
-                        </div>
+            ))
+          ) : messages.length === 0 ? (
+            <TableRow>
+              <TableCell
+                colSpan={4}
+                className="text-center py-6 text-muted-foreground"
+              >
+                Nenhuma mensagem encontrada.
+              </TableCell>
+            </TableRow>
+          ) : (
+            messages.map((message) => (
+              <TableRow key={message.id}>
+                <TableCell>
+                  {message.customer.identifier ? (
+                    <div>
+                      <div className="font-medium">
+                        {message.customer.identifier}
                       </div>
-                    ) : (
-                      message.customer.phone
-                    )}
-                  </TableCell>
-                  <TableCell>{getStatusBadge(message.status)}</TableCell>
-                  <TableCell>
-                    {format(new Date(message.createdAt), "dd/MM/yyyy HH:mm", {
-                      locale: ptBR,
-                    })}
-                  </TableCell>
-                  <TableCell>
-                    {message.sentAt
-                      ? format(new Date(message.sentAt), "dd/MM/yyyy HH:mm", {
-                          locale: ptBR,
-                        })
-                      : "-"}
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+                      <div className="text-sm text-muted-foreground">
+                        {message.customer.phone}
+                      </div>
+                    </div>
+                  ) : (
+                    message.customer.phone
+                  )}
+                </TableCell>
+                <TableCell>{getStatusBadge(message.status)}</TableCell>
+                <TableCell>
+                  {format(new Date(message.createdAt), "dd/MM/yyyy HH:mm", {
+                    locale: ptBR,
+                  })}
+                </TableCell>
+                <TableCell>
+                  {message.sentAt
+                    ? format(new Date(message.sentAt), "dd/MM/yyyy HH:mm", {
+                        locale: ptBR,
+                      })
+                    : "-"}
+                </TableCell>
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
     </div>
   );
 }

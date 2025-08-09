@@ -39,9 +39,25 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { MultiSelect } from "@/components/ui/multi-select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { isColorDark } from "@/lib/utils";
 import { listTags } from "@/services/tag/listTags";
 import { Tag } from "@/types/tag";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 // Importação do tipo FollowUp
 import { FollowUp } from "@/types/follow-up";
@@ -207,6 +223,10 @@ export default function FollowUpDetailPage() {
   const [editedResponseTags, setEditedResponseTags] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState<boolean>(false);
 
+  // Estados para paginação das mensagens enfileiradas
+  const [messagesPage, setMessagesPage] = useState(1);
+  const [messagesLimit, setMessagesLimit] = useState(20);
+
   // Query para buscar detalhes do follow-up
   const {
     data: followUpData,
@@ -255,18 +275,23 @@ export default function FollowUpDetailPage() {
     isLoading: isLoadingMessages,
     error: messagesError,
   } = useQuery({
-    queryKey: ["queuedMessages", followUpData?.messageQueue.id],
-    queryFn: async () => {
+    queryKey: [
+      "queuedMessages",
+      followUpData?.messageQueue.id,
+      messagesPage,
+      messagesLimit,
+    ],
+    queryFn: () => {
       if (!followUpData?.messageQueue.id) {
-        throw new Error("MessageQueueId não disponível");
+        throw new Error("Message queue ID not found");
       }
       return listQueuedMessages({
-        messageQueueId: followUpData?.messageQueue.id,
-        page: 1,
-        limit: 50,
+        messageQueueId: followUpData.messageQueue.id,
+        page: messagesPage,
+        limit: messagesLimit,
       });
     },
-    enabled: !!followUpData,
+    enabled: !!followUpData?.messageQueue.id,
   });
 
   // Mostrar toast em caso de erro nas mensagens
@@ -334,6 +359,17 @@ export default function FollowUpDetailPage() {
     setIsEditing(false);
   };
 
+  // Função para alterar página das mensagens enfileiradas
+  const handleMessagesPageChange = (page: number) => {
+    setMessagesPage(page);
+  };
+
+  // Função para alterar limite de itens por página
+  const handleLimitChange = (limit: string) => {
+    setMessagesLimit(parseInt(limit));
+    setMessagesPage(1); // Reset to first page when changing limit
+  };
+
   // Função para salvar as alterações
   const handleSaveChanges = () => {
     if (!followUpData) return;
@@ -352,8 +388,10 @@ export default function FollowUpDetailPage() {
     });
   };
 
-  const isLoading = isLoadingFollowUp || isLoadingMessages;
-  const hasError = followUpError || messagesError;
+  // Only block the entire page while the follow-up details are loading.
+  // Messages loading (pagination) is handled inline in the table section.
+  const isLoading = isLoadingFollowUp;
+  const hasError = followUpError;
 
   if (isLoading) {
     return (
@@ -496,16 +534,26 @@ export default function FollowUpDetailPage() {
               ) : (
                 <div className="bg-slate-50 p-4 rounded-md border border-slate-100 h-full">
                   <div className="space-y-4">
-                    <h3 className="text-sm font-medium">Mensagens configuradas:</h3>
-                    {followUpData?.messages && followUpData.messages.length > 0 ? (
+                    <h3 className="text-sm font-medium">
+                      Mensagens configuradas:
+                    </h3>
+                    {followUpData?.messages &&
+                    followUpData.messages.length > 0 ? (
                       followUpData.messages.map((message, index) => (
-                        <div key={index} className="p-3 bg-white rounded-md border border-slate-200">
+                        <div
+                          key={index}
+                          className="p-3 bg-white rounded-md border border-slate-200"
+                        >
                           <p className="text-sm leading-relaxed">{message}</p>
-                          <p className="text-xs text-muted-foreground mt-1">Mensagem {index + 1}</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Mensagem {index + 1}
+                          </p>
                         </div>
                       ))
                     ) : (
-                      <p className="text-sm text-muted-foreground">Nenhuma mensagem configurada</p>
+                      <p className="text-sm text-muted-foreground">
+                        Nenhuma mensagem configurada
+                      </p>
                     )}
                   </div>
                 </div>
@@ -877,22 +925,198 @@ export default function FollowUpDetailPage() {
       </div>
 
       {/* Mensagens Enfileiradas */}
-      <div className="space-y-4">
-        <h2 className="text-xl font-bold">Mensagens aguardando envio</h2>
-        <Separator />
+      <div>
+        <h2 className="text-xl font-bold mb-4">Mensagens aguardando envio</h2>
+        <Separator className="mb-4" />
 
-        {isLoadingMessages ? (
-          <div className="flex justify-center py-8">
-            <p className="text-muted-foreground">Carregando mensagens...</p>
-          </div>
-        ) : messagesError ? (
+        {messagesError ? (
           <div className="bg-red-50 p-4 rounded-md border border-red-200">
             <p className="text-red-800">
               Erro ao carregar mensagens. Tente novamente mais tarde.
             </p>
           </div>
         ) : (
-          <QueuedMessagesTable messages={queuedMessagesData?.items || []} />
+          <>
+            <QueuedMessagesTable
+              messages={queuedMessagesData?.items || []}
+              isLoading={isLoadingMessages}
+              lastPageLength={messagesLimit}
+            />
+
+            {/* Seletor de itens por página e Paginação */}
+            <div className="flex items-center justify-between mt-4 gap-4">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">
+                  Resultados por página:
+                </span>
+                <Select
+                  value={String(messagesLimit)}
+                  onValueChange={handleLimitChange}
+                  disabled={isLoadingMessages}
+                >
+                  <SelectTrigger className="w-[80px]">
+                    <SelectValue placeholder="30" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="20">20</SelectItem>
+                    <SelectItem value="30">30</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Paginação - sempre visível quando há dados ou durante carregamento */}
+              {(queuedMessagesData && queuedMessagesData.totalPages > 1) ||
+              isLoadingMessages ? (
+                <div className="w-full">
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious
+                          onClick={() =>
+                            !isLoadingMessages &&
+                            handleMessagesPageChange(
+                              Math.max(1, messagesPage - 1)
+                            )
+                          }
+                          className={
+                            messagesPage === 1 || isLoadingMessages
+                              ? "pointer-events-none opacity-50"
+                              : "cursor-pointer"
+                          }
+                        />
+                      </PaginationItem>
+
+                      {(() => {
+                        if (isLoadingMessages) {
+                          // Show skeleton pagination during loading
+                          return [
+                            <PaginationItem key="loading-1">
+                              <div className="h-9 w-9 bg-gray-200 rounded animate-pulse"></div>
+                            </PaginationItem>,
+                            <PaginationItem key="loading-2">
+                              <div className="h-9 w-9 bg-gray-200 rounded animate-pulse"></div>
+                            </PaginationItem>,
+                            <PaginationItem key="loading-3">
+                              <div className="h-9 w-9 bg-gray-200 rounded animate-pulse"></div>
+                            </PaginationItem>,
+                          ];
+                        }
+
+                        if (!queuedMessagesData) return [];
+
+                        const totalPages = queuedMessagesData.totalPages;
+                        const currentPage = messagesPage;
+                        const pages = [];
+
+                        // Always show first page
+                        if (totalPages > 0) {
+                          pages.push(
+                            <PaginationItem key={1}>
+                              <PaginationLink
+                                onClick={() => handleMessagesPageChange(1)}
+                                isActive={currentPage === 1}
+                              >
+                                1
+                              </PaginationLink>
+                            </PaginationItem>
+                          );
+                        }
+
+                        // Add ellipsis after first page if needed
+                        if (currentPage > 3) {
+                          pages.push(
+                            <PaginationItem key="ellipsis-start">
+                              <span className="px-2 text-muted-foreground select-none">
+                                ...
+                              </span>
+                            </PaginationItem>
+                          );
+                        }
+
+                        // Show pages around current page
+                        const startPage = Math.max(2, currentPage - 1);
+                        const endPage = Math.min(
+                          totalPages - 1,
+                          currentPage + 1
+                        );
+
+                        for (let page = startPage; page <= endPage; page++) {
+                          if (page !== 1 && page !== totalPages) {
+                            pages.push(
+                              <PaginationItem key={page}>
+                                <PaginationLink
+                                  onClick={() => handleMessagesPageChange(page)}
+                                  isActive={page === currentPage}
+                                >
+                                  {page}
+                                </PaginationLink>
+                              </PaginationItem>
+                            );
+                          }
+                        }
+
+                        // Add ellipsis before last page if needed
+                        if (currentPage < totalPages - 2) {
+                          pages.push(
+                            <PaginationItem key="ellipsis-end">
+                              <span className="px-2 text-muted-foreground select-none">
+                                ...
+                              </span>
+                            </PaginationItem>
+                          );
+                        }
+
+                        // Always show last page (if different from first)
+                        if (totalPages > 1) {
+                          pages.push(
+                            <PaginationItem key={totalPages}>
+                              <PaginationLink
+                                onClick={() =>
+                                  handleMessagesPageChange(totalPages)
+                                }
+                                isActive={currentPage === totalPages}
+                              >
+                                {totalPages}
+                              </PaginationLink>
+                            </PaginationItem>
+                          );
+                        }
+
+                        return pages;
+                      })()}
+
+                      <PaginationItem>
+                        <PaginationNext
+                          onClick={() =>
+                            !isLoadingMessages &&
+                            queuedMessagesData &&
+                            handleMessagesPageChange(
+                              Math.min(
+                                queuedMessagesData.totalPages,
+                                messagesPage + 1
+                              )
+                            )
+                          }
+                          className={
+                            (queuedMessagesData &&
+                              messagesPage === queuedMessagesData.totalPages) ||
+                            isLoadingMessages
+                              ? "pointer-events-none opacity-50"
+                              : "cursor-pointer"
+                          }
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                </div>
+              ) : (
+                <div></div>
+              )}
+            </div>
+          </>
         )}
       </div>
     </div>
