@@ -1,4 +1,3 @@
-
 import { Check } from "lucide-react";
 
 interface StepIndicatorProps {
@@ -7,15 +6,21 @@ interface StepIndicatorProps {
   onStepClick?: (step: number) => void;
 }
 
-const AgentStepIndicator = ({ currentStep, steps, onStepClick }: StepIndicatorProps) => {
+const AgentStepIndicator = ({
+  currentStep,
+  steps,
+  onStepClick,
+}: StepIndicatorProps) => {
   return (
     <div className="flex justify-center items-center mb-8">
       {steps.map((step, index) => (
         <div
           key={index}
-          className={`step-item ${currentStep === index + 1 ? "active" : ""} ${
-            currentStep > index + 1 ? "complete" : ""
-          } ${onStepClick ? "cursor-pointer" : ""}`}
+          className={`step-item h-24 ${
+            currentStep === index + 1 ? "active" : ""
+          } ${currentStep > index + 1 ? "complete" : ""} ${
+            onStepClick ? "cursor-pointer" : ""
+          }`}
           onClick={() => onStepClick && onStepClick(index + 1)}
         >
           <div className="step">
@@ -25,7 +30,7 @@ const AgentStepIndicator = ({ currentStep, steps, onStepClick }: StepIndicatorPr
               index + 1
             )}
           </div>
-          <p className="text-sm mt-2">{step}</p>
+          <p className="text-sm mt-2 text-center h-8">{step}</p>
         </div>
       ))}
     </div>

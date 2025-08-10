@@ -71,6 +71,7 @@ export interface FullAgent {
   }[];
   customFields: CustomField[];
   followUps: FollowUp[];
+  entryTags: string[];
 }
 
 export interface Link {
@@ -150,6 +151,9 @@ export interface AgentFormData {
 
   // Step 5: Follow Ups
   followUps: FollowUp[];
+
+  // Entry Tags - Tags que serão adicionadas automaticamente aos novos chats
+  entryTags: string[];
 }
 
 export interface AIModel {
@@ -198,7 +202,7 @@ export type UpdateAgentResquest = {
   prompt: Prompt;
   contents: AssistantContent[];
   customFields: UpdateAssistantCustomField[];
-  followUps: UpdateFollowUpAction[];
+  entryTags: string[];
 };
 
 export type CreateAgentRequest = {
@@ -214,6 +218,6 @@ export type CreateAgentRequest = {
   prompt: Prompt;
   contentsIds: string[];
   customFields: Omit<CustomField, "id">[];
-  followUps: FollowUp[];
   workspaceId: string;
+  entryTags: string[];
 };

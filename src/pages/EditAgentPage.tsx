@@ -5,6 +5,7 @@ import AgentStepIndicator from "@/components/agents/AgentStepIndicator";
 import BasicInformation from "@/components/agents/step1/BasicInformation";
 import PromptContext from "@/components/agents/step3/PromptContext";
 import CustomFields from "@/components/agents/step2/EditCustomFields";
+import EntryTagsTab from "@/components/agents/step5/EntryTagsTab";
 import {
   AgentFormData,
   AssistantContent,
@@ -27,64 +28,14 @@ import { convertHtmlStringToText } from "@/lib/utils";
 import { useWorkspaceManager } from "@/hooks/useWorkspaceManager";
 
 const STEPS = [
-  "Basic Information",
-  "Custom Fields",
-  "Prompt & Context",
-  "Knowledge Content",
+  "Informações Básicas",
+  "Campos Personalizados",
+  "Prompt & Contexto",
+  "Conteúdo do Agente",
+  "Tags de Entrada",
 ];
 
 const EditAgentPage = () => {
-  // Função para processar os follow ups para o formato esperado pelo backend
-  const processFollowUpsForUpdate = (
-    currentFollowUps: Array<FollowUp>,
-    originalFollowUps: Array<FollowUp>
-  ): UpdateFollowUpAction[] => {
-    const result: UpdateFollowUpAction[] = [];
-
-    // Identifica follow ups a serem criados ou atualizados
-    currentFollowUps.forEach((followUp) => {
-      // Se tem ID, é uma atualização
-      if (followUp.id) {
-        const updateAction: UpdateFollowUp = {
-          action: "update",
-          followUpId: followUp.id,
-          followUp: {
-            name: followUp.name,
-            description: followUp.description,
-            delaySeconds: followUp.delaySeconds,
-          },
-        };
-        result.push(updateAction);
-      } else {
-        // Se não tem ID, é uma criação
-        const createAction: CreateFollowUp = {
-          action: "create",
-          followUp: {
-            name: followUp.name,
-            description: followUp.description,
-            delaySeconds: followUp.delaySeconds,
-          },
-        };
-        result.push(createAction);
-      }
-    });
-
-    // Identifica follow ups a serem excluídos (estavam no original mas não estão mais no atual)
-    originalFollowUps.forEach((originalFollowUp) => {
-      const stillExists = currentFollowUps.some(
-        (current) => current.id === originalFollowUp.id
-      );
-      if (!stillExists && originalFollowUp.id) {
-        const deleteAction: DeleteFollowUp = {
-          action: "delete",
-          followUpId: originalFollowUp.id,
-        };
-        result.push(deleteAction);
-      }
-    });
-
-    return result;
-  };
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -145,18 +96,16 @@ const EditAgentPage = () => {
   useEffect(() => {
     if (data) {
       setAgent(data);
-
       setFormData({
         name: data.name,
         description: data.description,
-        avatarUrl: data.avatar ? data.avatar.url : null,
+        avatarUrl: data.avatar?.url || null,
         timeZone: data.timeZone,
         language: data.language,
         initialMessage: data.initialMessage,
-        skipMessages: data.skipMessages || [],
+        skipMessages: data.skipMessages,
         iaModelId: data.iaModel.id,
-        iaProviderApiKey: "",
-
+        iaProviderApiKey: "", // Não enviamos a chave de volta para o frontend
         identity: data.prompt.identity,
         function: data.prompt.function,
         goal: data.prompt.goal,
@@ -164,10 +113,10 @@ const EditAgentPage = () => {
         instructions: data.prompt.instructions,
         blacklist: data.prompt.blacklist,
         links: data.prompt.links,
-
         contents: data.contents,
         customFields: data.customFields,
-        followUps: data.followUps || [],
+        followUps: data.followUps,
+        entryTags: data.entryTags || [],
       });
     }
   }, [data]);
@@ -202,33 +151,24 @@ const EditAgentPage = () => {
   };
 
   const handleSubmit = async () => {
-    if (!formData || !id) return;
-
-    console.log("formData.instructions", formData.instructions);
+    if (!formData || !agent) return;
 
     const formattedInstructions = convertHtmlStringToText(
       formData.instructions
     );
-
-    console.log("formattedInstructions", formattedInstructions);
-
-    // Processa os follow ups para o formato esperado pelo backend
-    const processedFollowUps =
-      followUpsToUpdate.length > 0
-        ? followUpsToUpdate
-        : processFollowUpsForUpdate(formData.followUps, agent?.followUps || []);
 
     await updateAgentMutation({
       agentId: id,
       agentData: {
         name: formData.name,
         description: formData.description,
-        avatarFileId: null,
+        avatarFileId: null, // Não estamos permitindo atualizar o avatar por enquanto
         timeZone: formData.timeZone,
+        language: formData.language,
         prompt: {
-          goal: formData.goal,
           identity: formData.identity,
           function: formData.function,
+          goal: formData.goal,
           style: formData.style,
           instructions: formattedInstructions,
           blacklist: formData.blacklist,
@@ -238,10 +178,9 @@ const EditAgentPage = () => {
         customFields: customFieldsToUpdate,
         initialMessage: formData.initialMessage,
         skipMessages: formData.skipMessages,
-        language: formData.language,
         iaModelId: formData.iaModelId,
         iaProviderApiKey: formData.iaProviderApiKey,
-        followUps: processedFollowUps,
+        entryTags: formData.entryTags,
       },
       workspaceId,
     });
@@ -285,6 +224,10 @@ const EditAgentPage = () => {
             setContentsToUpdate={setContentsToUpdate}
           />
         );
+      case 5:
+        return (
+          <EntryTagsTab formData={formData} updateFormData={updateFormData} />
+        );
       default:
         return null;
     }
@@ -310,6 +253,8 @@ const EditAgentPage = () => {
         );
       case 4:
         return true; // Knowledge content is optional
+      case 5:
+        return true; // Entry tags are optional
       default:
         return false;
     }
@@ -321,7 +266,9 @@ const EditAgentPage = () => {
         <div className="flex items-center justify-center h-[60vh]">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4" />
-            <p className="text-muted-foreground">Loading agent data...</p>
+            <p className="text-muted-foreground">
+              Carregando dados do agente...
+            </p>
           </div>
         </div>
       </div>
@@ -332,9 +279,9 @@ const EditAgentPage = () => {
     <div>
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Edit Agent</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Editar Agente</h1>
           <p className="text-muted-foreground">
-            Update your AI agent's configuration
+            Atualize a configuração do seu agente de IA
           </p>
         </div>
 
@@ -358,7 +305,7 @@ const EditAgentPage = () => {
           <div className="p-6 border-t flex justify-between">
             {currentStep !== 1 ? (
               <Button variant="outline" onClick={prevStep}>
-                Previous Step
+                Anterior
               </Button>
             ) : (
               <div></div>
@@ -366,7 +313,7 @@ const EditAgentPage = () => {
 
             {currentStep < STEPS.length ? (
               <Button onClick={nextStep} disabled={!isStepValid()}>
-                Next Step
+                Próximo
               </Button>
             ) : (
               <Button
@@ -374,7 +321,7 @@ const EditAgentPage = () => {
                 disabled={!isStepValid() || isUpdating}
                 isLoading={isUpdating}
               >
-                Save Changes
+                Salvar Alterações
               </Button>
             )}
           </div>

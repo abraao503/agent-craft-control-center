@@ -5,6 +5,7 @@ import AgentStepIndicator from "@/components/agents/AgentStepIndicator";
 import BasicInformation from "@/components/agents/step1/BasicInformation";
 import PromptContext from "@/components/agents/step3/PromptContext";
 import KnowledgeContent from "@/components/agents/step4/KnowledgeContent";
+import EntryTagsTab from "@/components/agents/step5/EntryTagsTab";
 import { AgentFormData, CreateAgentRequest } from "@/types/agent";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -19,6 +20,7 @@ const STEPS = [
   "Custom Fields",
   "Prompt & Context",
   "Knowledge Content",
+  "Entry Tags",
 ];
 
 const defaultFormData: AgentFormData = {
@@ -41,6 +43,7 @@ const defaultFormData: AgentFormData = {
   blacklist: null,
   links: null,
   followUps: [],
+  entryTags: [],
 };
 
 const CreateAgentPage = () => {
@@ -108,7 +111,7 @@ const CreateAgentPage = () => {
       },
       iaProviderApiKey: formData.iaProviderApiKey,
       skipMessages: formData.skipMessages,
-      followUps: formData.followUps,
+      entryTags: formData.entryTags,
       workspaceId: workspaceId,
     });
   };
@@ -137,6 +140,10 @@ const CreateAgentPage = () => {
             updateFormData={updateFormData}
           />
         );
+      case 5:
+        return (
+          <EntryTagsTab formData={formData} updateFormData={updateFormData} />
+        );
       default:
         return null;
     }
@@ -163,6 +170,8 @@ const CreateAgentPage = () => {
         );
       case 4:
         return true; // Knowledge content is optional
+      case 5:
+        return true; // Entry tags are optional
       default:
         return false;
     }
@@ -173,10 +182,10 @@ const CreateAgentPage = () => {
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
-            Create New Agent
+            Criar Novo Agente
           </h1>
           <p className="text-muted-foreground">
-            Set up a new AI agent by following the steps below
+            Configure um novo agente IA seguindo os passos abaixo
           </p>
         </div>
 
@@ -190,12 +199,12 @@ const CreateAgentPage = () => {
               onClick={prevStep}
               disabled={currentStep === 1}
             >
-              Previous Step
+              Anterior
             </Button>
 
             {currentStep < STEPS.length ? (
               <Button onClick={nextStep} disabled={!isStepValid()}>
-                Next Step
+                Próximo
               </Button>
             ) : (
               <Button
@@ -203,7 +212,7 @@ const CreateAgentPage = () => {
                 disabled={!isStepValid() || isPending}
                 isLoading={isPending}
               >
-                Create Agent
+                Criar Agente
               </Button>
             )}
           </div>
