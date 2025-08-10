@@ -24,6 +24,7 @@ import {
   Save,
   Timer,
   X,
+  Send,
   Tag as TagIcon,
 } from "lucide-react";
 import { QueuedMessagesTable } from "@/components/follow-up/QueuedMessagesTable";
@@ -52,7 +53,6 @@ import { Tag } from "@/types/tag";
 import {
   Pagination,
   PaginationContent,
-  PaginationEllipsis,
   PaginationItem,
   PaginationLink,
   PaginationNext,
@@ -631,6 +631,20 @@ export default function FollowUpDetailPage() {
                       </p>
                       <p className="text-sm font-medium">
                         {followUpData?.maxMessages || 3}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Progresso de mensagens enviadas */}
+                  <div className="flex items-center">
+                    <Send className="h-5 w-5 mr-2 text-slate-500" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">
+                        Mensagens enviadas
+                      </p>
+                      <p className="text-sm font-medium">
+                        {followUpData?.totalQueuedMessagesSent || 0}/
+                        {followUpData?.totalQueuedMessages || 0}
                       </p>
                     </div>
                   </div>

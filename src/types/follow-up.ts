@@ -11,6 +11,8 @@ export type FollowUp = {
   exclusiveTags?: string[]; // IDs das tags exclusivas
   responseTags?: string[]; // IDs das tags que serão atribuídas ao chat quando o follow-up for respondido
   maxMessages?: number; // número máximo de follow-ups a serem enviados
+  totalQueuedMessages?: number;
+  totalQueuedMessagesSent?: number;
   createdAt: Date;
   updatedAt: Date;
 };
