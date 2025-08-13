@@ -63,7 +63,7 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
     }: {
       id: string;
       handledBy: "ai" | "human";
-    }) => updateConversationHandler(id, handledBy),
+    }) => updateConversationHandler(id, { handledBy }),
     onSuccess: (handledBy) => {
       setShowConfirmation(false);
 
