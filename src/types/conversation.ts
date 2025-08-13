@@ -39,4 +39,5 @@ export type ConversationsFilters = {
   sortOrder: "asc" | "desc";
   initialDate?: Date;
   finalDate?: Date;
+  handledBy?: "assistant" | "human";
 };

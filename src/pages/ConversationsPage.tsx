@@ -46,8 +46,8 @@ import { ConversationModal } from "@/components/conversations/ConversationModal"
 
 import { listConversations } from "@/services/conversation/listConversations";
 import { Conversation, ConversationsFilters } from "@/types/conversation";
-import { AGENTS } from "@/services/mockData";
 import { useWorkspaceManager } from "@/hooks/useWorkspaceManager";
+import { listAgent } from "@/services/agent/listAgent";
 import { TagManager } from "@/components/tags/TagManager";
 import { listTags } from "@/services/tag/listTags";
 import { isColorDark } from "@/lib/utils";
@@ -87,6 +87,7 @@ const ConversationsPage = () => {
     finalDate: null,
     sortBy: "createdAt",
     sortOrder: "desc",
+    handledBy: undefined,
   });
 
   const [showTagManager, setShowTagManager] = useState(false);
@@ -112,6 +113,13 @@ const ConversationsPage = () => {
   const { data: tags = [] } = useQuery({
     queryKey: ["tags", workspaceId],
     queryFn: () => listTags(workspaceId),
+    enabled: !!workspaceId,
+  });
+
+  // Query to fetch agents
+  const { data: agentsData } = useQuery({
+    queryKey: ["agents", workspaceId],
+    queryFn: () => listAgent(workspaceId),
     enabled: !!workspaceId,
   });
 
@@ -146,6 +154,15 @@ const ConversationsPage = () => {
   // Handle end date change
   const handleEndDateChange = (date: Date | undefined) => {
     setFilters((prev) => ({ ...prev, finalDate: date || null, page: 1 }));
+  };
+
+  // Handle handledBy filter change
+  const handleHandledByChange = (value: string) => {
+    setFilters((prev) => ({
+      ...prev,
+      handledBy: value === "all" ? undefined : (value as "assistant" | "human"),
+      page: 1,
+    }));
   };
 
   // Handle page change
@@ -222,7 +239,7 @@ const ConversationsPage = () => {
               </div>
 
               {/* Filtros */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                 {/* Filtros de agentes */}
                 <div className="w-full sm:w-auto min-w-[150px] lg:flex-1">
                   <Select
@@ -236,11 +253,12 @@ const ConversationsPage = () => {
                       <SelectItem value="all_agents">
                         Todos os agentes
                       </SelectItem>
-                      {AGENTS.map((agent) => (
-                        <SelectItem key={agent.id} value={agent.id}>
-                          {agent.name}
-                        </SelectItem>
-                      ))}
+                      {agentsData?.agents &&
+                        agentsData.agents.map((agent) => (
+                          <SelectItem key={agent.id} value={agent.id}>
+                            {agent.name}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -267,6 +285,23 @@ const ConversationsPage = () => {
                           </div>
                         </SelectItem>
                       ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Filtro de atendimento (IA ou Humano) */}
+                <div className="w-full sm:w-auto min-w-[150px] lg:flex-1">
+                  <Select
+                    value={filters.handledBy || "all"}
+                    onValueChange={handleHandledByChange}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Tipo de atendimento" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos os atendimentos</SelectItem>
+                      <SelectItem value="assistant">Em atendimento por IA</SelectItem>
+                      <SelectItem value="human">Em atendimento por Humano</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
