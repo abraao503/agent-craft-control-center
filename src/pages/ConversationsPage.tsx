@@ -1,15 +1,21 @@
 import React, { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import {
   Loader2,
   Search,
   Tag as TagIcon,
   Calendar as CalendarIcon,
+  UserCog,
+  Bot,
+  X,
+  Check,
+  Plus,
 } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -45,12 +51,17 @@ import {
 import { ConversationModal } from "@/components/conversations/ConversationModal";
 
 import { listConversations } from "@/services/conversation/listConversations";
+import { updateConversationHandler } from "@/services/conversation/updateConversationHandler";
 import { Conversation, ConversationsFilters } from "@/types/conversation";
 import { useWorkspaceManager } from "@/hooks/useWorkspaceManager";
 import { listAgent } from "@/services/agent/listAgent";
 import { TagManager } from "@/components/tags/TagManager";
 import { listTags } from "@/services/tag/listTags";
+import { linkTagToChat } from "@/services/tag/linkTagToChat";
 import { isColorDark } from "@/lib/utils";
+import { Tag, TagLinkRequest } from "@/types/tag";
+import { MultiSelect } from "@/components/ui/multi-select";
+import { updateMultipleConversations } from "@/services/conversation/updateMultipleConversations";
 
 // Function to calculate page numbers for pagination
 const getPageNumbers = (currentPage: number, totalPages: number) => {
@@ -77,18 +88,35 @@ const getPageNumbers = (currentPage: number, totalPages: number) => {
 
 const ConversationsPage = () => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [selectedConversations, setSelectedConversations] = useState<string[]>(
+    []
+  );
+  const [selectAll, setSelectAll] = useState(false);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [removeSelectedTags, setRemoveSelectedTags] = useState<string[]>([]);
+  const [selectedHandler, setSelectedHandler] = useState<
+    "assistant" | "human" | undefined
+  >(undefined);
   const [filters, setFilters] = useState<ConversationsFilters>({
     page: 1,
     limit: 30,
     search: "",
     agentId: undefined,
     tagId: undefined,
+    tagIds: [],
     initialDate: null,
     finalDate: null,
     sortBy: "createdAt",
     sortOrder: "desc",
     handledBy: undefined,
   });
+
+  // Tipo para as opções de tag no MultiSelect
+  type TagOption = {
+    value: string;
+    label: string;
+    color: string;
+  };
 
   const [showTagManager, setShowTagManager] = useState(false);
 
@@ -102,6 +130,9 @@ const ConversationsPage = () => {
   // Selected conversation for the modal
   const [selectedConversation, setSelectedConversation] =
     useState<Conversation | null>(null);
+
+  // Query client for mutations
+  const queryClient = useQueryClient();
 
   // Query to fetch conversations
   const { data, isLoading, isError, refetch } = useQuery({
@@ -138,10 +169,11 @@ const ConversationsPage = () => {
   };
 
   // Handle tag filter change
-  const handleTagChange = (value: string) => {
+  const handleTagChange = (selected: string[]) => {
     setFilters((prev) => ({
       ...prev,
-      tagId: value === "all_tags" ? undefined : value,
+      tagIds: selected,
+      tagId: undefined, // Limpa o filtro antigo de tag única
       page: 1,
     }));
   };
@@ -180,15 +212,86 @@ const ConversationsPage = () => {
     setSelectedConversation(conversation);
   };
 
+  // A lógica de seleção de checkbox foi movida diretamente para o componente Checkbox
+
+  // Handle select all checkbox
+  const handleSelectAllChange = () => {
+    if (selectAll) {
+      setSelectedConversations([]);
+    } else {
+      setSelectedConversations(conversations.map((c) => c.id));
+    }
+    setSelectAll(!selectAll);
+  };
+
+  // Clear all selections
+  const clearSelections = () => {
+    setSelectedConversations([]);
+    setSelectAll(false);
+  };
+
   // Handle modal close
   const handleModalClose = () => {
     setSelectedConversation(null);
     refetch(); // Refresh data in case handler was changed
   };
 
+  // Mutation for bulk update (handler and/or tags)
+  const bulkUpdateMutation = useMutation({
+    mutationFn: async ({
+      chatIds,
+      tagIds,
+      removeTagIds,
+      handledBy,
+    }: {
+      chatIds: string[];
+      tagIds?: string[];
+      removeTagIds?: string[];
+      handledBy?: "assistant" | "human";
+    }) => {
+      return updateMultipleConversations({
+        chatIds,
+        tagIds: tagIds && tagIds.length > 0 ? tagIds : undefined,
+        removeTagIds: removeTagIds && removeTagIds.length > 0 ? removeTagIds : undefined,
+        handledBy,
+        workspaceId,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      setSelectedConversations([]);
+      setSelectAll(false);
+      setSelectedTags([]);
+      setRemoveSelectedTags([]);
+      setSelectedHandler(undefined);
+    },
+  });
+
+  // Handle bulk action
+  const handleBulkAction = () => {
+    if (selectedConversations.length > 0) {
+      const hasTagsSelected = selectedTags.length > 0;
+      const hasRemoveTagsSelected = removeSelectedTags.length > 0;
+      const hasHandlerSelected = selectedHandler !== undefined;
+
+      if (hasTagsSelected || hasRemoveTagsSelected || hasHandlerSelected) {
+        bulkUpdateMutation.mutate({
+          chatIds: selectedConversations,
+          tagIds: hasTagsSelected ? selectedTags : undefined,
+          removeTagIds: hasRemoveTagsSelected ? removeSelectedTags : undefined,
+          handledBy: selectedHandler,
+        });
+      }
+    }
+  };
+
   useEffect(() => {
     if (data) {
       setConversations(data.items);
+
+      // Reset selections when data changes
+      setSelectedConversations([]);
+      setSelectAll(false);
     }
   }, [data]);
 
@@ -265,28 +368,54 @@ const ConversationsPage = () => {
 
                 {/* Select de tags */}
                 <div className="w-full sm:w-auto min-w-[150px] lg:flex-1">
-                  <Select
-                    value={filters.tagId || "all_tags"}
-                    onValueChange={handleTagChange}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Todas as tags" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all_tags">Todas as tags</SelectItem>
-                      {tags.map((tag) => (
-                        <SelectItem key={tag.id} value={tag.id}>
-                          <div className="flex items-center gap-2">
-                            <div
-                              className="w-3 h-3 rounded-full"
-                              style={{ backgroundColor: tag.color }}
-                            />
-                            {tag.name}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <MultiSelect
+                    options={tags.map((tag) => ({
+                      value: tag.id,
+                      label: tag.name,
+                      color: tag.color,
+                    }))}
+                    placeholder="Filtrar por tags"
+                    selected={filters.tagIds || []}
+                    onChange={handleTagChange}
+                    renderOption={(option) => (
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-3 h-3 rounded-full"
+                          style={{ backgroundColor: option.color }}
+                        />
+                        {option.label}
+                      </div>
+                    )}
+                    renderSelection={(selected) => (
+                      <div className="flex flex-wrap gap-1">
+                        {selected.length === 0 ? (
+                          <span className="text-muted-foreground">
+                            Todas as tags
+                          </span>
+                        ) : (
+                          selected.map((option) => {
+                            const tag = tags.find((t) => t.id === option.value);
+                            if (!tag) return null;
+
+                            return (
+                              <Badge
+                                key={tag.id}
+                                style={{
+                                  backgroundColor: tag.color,
+                                  color: isColorDark(tag.color)
+                                    ? "white"
+                                    : "black",
+                                }}
+                                className="text-xs"
+                              >
+                                {tag.name}
+                              </Badge>
+                            );
+                          })
+                        )}
+                      </div>
+                    )}
+                  />
                 </div>
 
                 {/* Filtro de atendimento (IA ou Humano) */}
@@ -300,8 +429,12 @@ const ConversationsPage = () => {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Todos os atendimentos</SelectItem>
-                      <SelectItem value="assistant">Em atendimento por IA</SelectItem>
-                      <SelectItem value="human">Em atendimento por Humano</SelectItem>
+                      <SelectItem value="assistant">
+                        Em atendimento por IA
+                      </SelectItem>
+                      <SelectItem value="human">
+                        Em atendimento por Humano
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -397,10 +530,229 @@ const ConversationsPage = () => {
                   </div>
                 )}
 
+                {/* Bulk Actions Panel */}
+                {selectedConversations.length > 0 && (
+                  <div className="bg-muted/30 p-4 rounded-lg flex flex-col gap-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-medium">
+                        {selectedConversations.length} conversa(s)
+                        selecionada(s)
+                      </h3>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedConversations([]);
+                          setSelectAll(false);
+                          setSelectedTags([]);
+                          setRemoveSelectedTags([]);
+                          setSelectedHandler(undefined);
+                        }}
+                      >
+                        <X className="h-4 w-4 mr-1" />
+                        Limpar seleção
+                      </Button>
+                    </div>
+
+                    {/* Handler Management Section */}
+                    <div className="flex flex-col sm:flex-row items-center gap-4">
+                      <div className="text-sm font-medium">
+                        Transferir para:
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant={
+                            selectedHandler === "assistant"
+                              ? "default"
+                              : "outline"
+                          }
+                          size="sm"
+                          onClick={() =>
+                            setSelectedHandler(
+                              selectedHandler === "assistant"
+                                ? undefined
+                                : "assistant"
+                            )
+                          }
+                          className="h-8"
+                        >
+                          <Bot className="h-4 w-4 mr-1" />
+                          IA
+                        </Button>
+                        <Button
+                          variant={
+                            selectedHandler === "human" ? "default" : "outline"
+                          }
+                          size="sm"
+                          onClick={() =>
+                            setSelectedHandler(
+                              selectedHandler === "human" ? undefined : "human"
+                            )
+                          }
+                          className="h-8"
+                        >
+                          <UserCog className="h-4 w-4 mr-1" />
+                          Humano
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Tag Management Section - Add Tags */}
+                    <div className="flex flex-col sm:flex-row items-center gap-4 border-t pt-4 border-muted-foreground/20">
+                      <div className="text-sm font-medium">Adicionar tags:</div>
+                      <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <MultiSelect
+                          options={tags.map((tag) => ({
+                            value: tag.id,
+                            label: tag.name,
+                            color: tag.color,
+                          }))}
+                          placeholder="Selecionar tags"
+                          selected={selectedTags}
+                          onChange={setSelectedTags}
+                          renderOption={(option) => (
+                            <div className="flex items-center gap-2">
+                              <div
+                                className="w-3 h-3 rounded-full"
+                                style={{ backgroundColor: option.color }}
+                              />
+                              {option.label}
+                            </div>
+                          )}
+                          renderSelection={(selected) => (
+                            <div className="flex flex-wrap gap-1">
+                              {selected.length === 0 ? (
+                                <span className="text-muted-foreground">
+                                  Selecionar tags
+                                </span>
+                              ) : (
+                                selected.map((option) => {
+                                  const tag = tags.find(
+                                    (t) => t.id === option.value
+                                  );
+                                  if (!tag) return null;
+
+                                  return (
+                                    <Badge
+                                      key={tag.id}
+                                      style={{
+                                        backgroundColor: tag.color,
+                                        color: isColorDark(tag.color)
+                                          ? "white"
+                                          : "black",
+                                      }}
+                                      className="text-xs"
+                                    >
+                                      {tag.name}
+                                    </Badge>
+                                  );
+                                })
+                              )}
+                            </div>
+                          )}
+                        />
+                      </div>
+                    </div>
+                    
+                    {/* Tag Management Section - Remove Tags */}
+                    <div className="flex flex-col sm:flex-row items-center gap-4 border-t pt-4 border-muted-foreground/20">
+                      <div className="text-sm font-medium">Remover tags:</div>
+                      <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <MultiSelect
+                          options={tags.map((tag) => ({
+                            value: tag.id,
+                            label: tag.name,
+                            color: tag.color,
+                          }))}
+                          placeholder="Selecionar tags"
+                          selected={removeSelectedTags}
+                          onChange={setRemoveSelectedTags}
+                          renderOption={(option) => (
+                            <div className="flex items-center gap-2">
+                              <div
+                                className="w-3 h-3 rounded-full"
+                                style={{ backgroundColor: option.color }}
+                              />
+                              {option.label}
+                            </div>
+                          )}
+                          renderSelection={(selected) => (
+                            <div className="flex flex-wrap gap-1">
+                              {selected.length === 0 ? (
+                                <span className="text-muted-foreground">
+                                  Selecionar tags
+                                </span>
+                              ) : (
+                                selected.map((option) => {
+                                  const tag = tags.find(
+                                    (t) => t.id === option.value
+                                  );
+                                  if (!tag) return null;
+
+                                  return (
+                                    <Badge
+                                      key={tag.id}
+                                      variant="outline"
+                                      style={{
+                                        borderColor: tag.color,
+                                        color: tag.color,
+                                      }}
+                                      className="text-xs"
+                                    >
+                                      <X className="h-3 w-3 mr-1" />
+                                      {tag.name}
+                                    </Badge>
+                                  );
+                                })
+                              )}
+                            </div>
+                          )}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Action Button */}
+                    <div className="flex justify-end mt-2 border-t pt-4 border-muted-foreground/20">
+                      <Button
+                        onClick={handleBulkAction}
+                        disabled={
+                          selectedConversations.length === 0 ||
+                          (selectedTags.length === 0 &&
+                            removeSelectedTags.length === 0 &&
+                            selectedHandler === undefined) ||
+                          bulkUpdateMutation.isPending
+                        }
+                        className="w-full sm:w-auto"
+                      >
+                        {bulkUpdateMutation.isPending ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Processando...
+                          </>
+                        ) : bulkUpdateMutation.isSuccess ? (
+                          <>
+                            <Check className="h-4 w-4 mr-2" />
+                            Concluído
+                          </>
+                        ) : (
+                          <>Aplicar alterações</>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
                 <div className="rounded-md border">
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        <TableHead className="w-[50px]">
+                          <Checkbox
+                            checked={selectAll}
+                            onCheckedChange={handleSelectAllChange}
+                            aria-label="Selecionar todas as conversas"
+                          />
+                        </TableHead>
                         <TableHead>Data e Hora</TableHead>
                         <TableHead>Agente</TableHead>
                         <TableHead>Cliente</TableHead>
@@ -414,9 +766,39 @@ const ConversationsPage = () => {
                         conversations.map((conversation) => (
                           <TableRow
                             key={conversation.id}
-                            onClick={() => handleRowClick(conversation)}
-                            className="cursor-pointer hover:bg-muted/50"
+                            onClick={(e) => handleRowClick(conversation)}
+                            className={`cursor-pointer hover:bg-muted/50 ${
+                              selectedConversations.includes(conversation.id)
+                                ? "bg-muted/70"
+                                : ""
+                            }`}
                           >
+                            <TableCell
+                              className="w-[50px]"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Checkbox
+                                checked={selectedConversations.includes(
+                                  conversation.id
+                                )}
+                                onCheckedChange={() => {
+                                  const newSelected =
+                                    selectedConversations.includes(
+                                      conversation.id
+                                    )
+                                      ? selectedConversations.filter(
+                                          (id) => id !== conversation.id
+                                        )
+                                      : [
+                                          ...selectedConversations,
+                                          conversation.id,
+                                        ];
+                                  setSelectedConversations(newSelected);
+                                }}
+                                aria-label={`Selecionar conversa ${conversation.id}`}
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                            </TableCell>
                             <TableCell>
                               {conversation.lastInteraction
                                 ? format(

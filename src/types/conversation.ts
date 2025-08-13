@@ -33,6 +33,7 @@ export type ConversationsFilters = {
   search?: string;
   agentId?: string;
   tagId?: string;
+  tagIds?: string[];
   page: number;
   limit: number;
   sortBy: "createdAt" | "updatedAt";
