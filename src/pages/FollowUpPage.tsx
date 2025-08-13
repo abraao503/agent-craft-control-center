@@ -17,10 +17,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { FollowUpGrid } from "@/components/follow-up/FollowUpGrid";
 import { FollowUp } from "@/types/follow-up";
-import {
-  listFollowUps,
-  deleteFollowUp,
-} from "@/services/follow-up";
+import { listFollowUps, deleteFollowUp } from "@/services/follow-up";
 
 export default function FollowUpPage() {
   const navigate = useNavigate();
@@ -34,9 +31,6 @@ export default function FollowUpPage() {
     null
   );
 
-
-
-  // Query follow-ups
   const {
     data: followUpsData,
     isLoading,
@@ -47,9 +41,6 @@ export default function FollowUpPage() {
     enabled: !!workspaceId,
   });
 
-
-
-  // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteFollowUp(id),
     onSuccess: () => {
@@ -100,9 +91,7 @@ export default function FollowUpPage() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Follow-Ups</h1>
-        <Button
-          onClick={() => navigate('/follow-ups/create')}
-        >
+        <Button onClick={() => navigate("/follow-ups/create")}>
           <Plus className="mr-2 h-4 w-4" /> Novo Follow-Up
         </Button>
       </div>
@@ -119,7 +108,7 @@ export default function FollowUpPage() {
         </div>
       ) : (
         <FollowUpGrid
-          followUps={followUpsData?.followUps || []}
+          followUps={followUpsData || []}
           onEdit={handleEditClick}
           onDelete={handleDeleteClick}
         />

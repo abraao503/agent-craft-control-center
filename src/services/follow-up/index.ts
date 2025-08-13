@@ -1,6 +1,6 @@
 import { Pagination } from "@/types/pagination";
 import { api } from "../api";
-import { FollowUp, QueuedMessage } from "@/types/follow-up";
+import { FollowUp, MessageQueue, QueuedMessage } from "@/types/follow-up";
 
 // Follow-Up Services
 export type FollowUpData = {
@@ -13,6 +13,22 @@ export type FollowUpData = {
   inclusiveTags?: string[];
   exclusiveTags?: string[];
   responseTags?: string[];
+};
+
+export type FollowUpWithMessageQueue = Pick<
+  FollowUp,
+  | "id"
+  | "assistantId"
+  | "companyId"
+  | "name"
+  | "messages"
+  | "inactiveChatTime"
+  | "maxMessages"
+  | "workspaceId"
+  | "createdAt"
+  | "updatedAt"
+> & {
+  messageQueue: MessageQueue;
 };
 
 export const createFollowUp = async (data: FollowUpData) => {
@@ -29,16 +45,15 @@ export const listFollowUps = async (params: {
   workspaceId: string;
   assistantId?: string;
 }) => {
-  const response = await api.get("/follow-up", { params });
+  const response = await api.get<FollowUpWithMessageQueue[]>("/follow-up", {
+    params,
+  });
   return response.data;
 };
 
-export type FollowUpUpdateData = Partial<Omit<FollowUpData, 'workspaceId'>>;
+export type FollowUpUpdateData = Partial<Omit<FollowUpData, "workspaceId">>;
 
-export const updateFollowUp = async (
-  id: string,
-  data: FollowUpUpdateData
-) => {
+export const updateFollowUp = async (id: string, data: FollowUpUpdateData) => {
   const response = await api.put(`/follow-up/${id}`, data);
   return response.data;
 };

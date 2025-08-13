@@ -17,13 +17,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
 import { FollowUp } from "@/types/follow-up";
 import { useNavigate } from "react-router-dom";
+import { FollowUpWithMessageQueue } from "@/services/follow-up";
 
 interface FollowUpCardProps {
-  followUp: FollowUp;
-  onEdit: (followUp: FollowUp) => void;
-  onDelete: (followUp: FollowUp) => void;
+  followUp: FollowUpWithMessageQueue;
+  onEdit: (followUp: FollowUpWithMessageQueue) => void;
+  onDelete: (followUp: FollowUpWithMessageQueue) => void;
   disabled?: boolean;
 }
 
@@ -38,7 +40,18 @@ export function FollowUpCard({
     <Card className="h-full">
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start">
-          <CardTitle className="text-lg">{followUp.name}</CardTitle>
+          <div className="flex flex-col gap-1">
+            <CardTitle className="text-lg">{followUp.name}</CardTitle>
+            {followUp.messageQueue?.isActive ? (
+              <Badge className="bg-green-100 text-green-800 hover:bg-green-100 w-fit">
+                Ativo
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="text-muted-foreground w-fit">
+                Inativo
+              </Badge>
+            )}
+          </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -73,8 +86,11 @@ export function FollowUpCard({
       <CardContent className="pb-2">
         <div className="space-y-2">
           <p className="text-sm text-muted-foreground line-clamp-2">
-            {followUp.messages && followUp.messages.length > 0 
-              ? followUp.messages[0] + (followUp.messages.length > 1 ? ` (+${followUp.messages.length - 1})` : '') 
+            {followUp.messages && followUp.messages.length > 0
+              ? followUp.messages[0] +
+                (followUp.messages.length > 1
+                  ? ` (+${followUp.messages.length - 1})`
+                  : "")
               : "Sem mensagens configuradas"}
           </p>
           <div className="text-xs text-muted-foreground">

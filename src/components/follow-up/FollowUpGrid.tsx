@@ -1,4 +1,3 @@
-import React from "react";
 import { FollowUp } from "@/types/follow-up";
 import { FollowUpCard } from "./FollowUpCard";
 import {
@@ -7,15 +6,21 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { FollowUpWithMessageQueue } from "@/services/follow-up";
 
 interface FollowUpGridProps {
-  followUps: FollowUp[];
-  onEdit: (followUp: FollowUp) => void;
-  onDelete: (followUp: FollowUp) => void;
+  followUps: FollowUpWithMessageQueue[];
+  onEdit: (followUp: FollowUpWithMessageQueue) => void;
+  onDelete: (followUp: FollowUpWithMessageQueue) => void;
   isLoadingAction?: boolean;
 }
 
-export function FollowUpGrid({ followUps, onEdit, onDelete, isLoadingAction = false }: FollowUpGridProps) {
+export function FollowUpGrid({
+  followUps,
+  onEdit,
+  onDelete,
+  isLoadingAction = false,
+}: FollowUpGridProps) {
   if (followUps.length === 0) {
     return (
       <div className="flex items-center justify-center py-10 border rounded-md">

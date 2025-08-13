@@ -207,23 +207,24 @@ const ConversationsPage = () => {
             <CardTitle className="text-2xl font-bold">Conversas</CardTitle>
           </CardHeader>
           <CardContent>
-            {/* Filters */}
-            <div className="flex flex-col md:flex-row gap-4 mb-6">
-              <div className="flex-1">
+            <div className="mb-6 space-y-4">
+              <div className="w-full">
                 <div className="relative">
                   <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
                     type="search"
                     placeholder="Buscar conversas..."
-                    className="pl-8"
+                    className="pl-8 w-full"
                     value={filters.search}
                     onChange={handleSearchChange}
                   />
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-4">
-                <div className="w-full md:w-[180px]">
+              {/* Filtros */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                {/* Filtros de agentes */}
+                <div className="w-full sm:w-auto min-w-[150px] lg:flex-1">
                   <Select
                     value={filters.agentId || "all_agents"}
                     onValueChange={handleAgentChange}
@@ -244,7 +245,8 @@ const ConversationsPage = () => {
                   </Select>
                 </div>
 
-                <div className="w-full md:w-[180px]">
+                {/* Select de tags */}
+                <div className="w-full sm:w-auto min-w-[150px] lg:flex-1">
                   <Select
                     value={filters.tagId || "all_tags"}
                     onValueChange={handleTagChange}
@@ -268,65 +270,69 @@ const ConversationsPage = () => {
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
 
-                <div className="flex flex-wrap gap-2">
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="w-full justify-start text-left font-normal md:w-[180px]"
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {filters.initialDate ? (
-                          format(filters.initialDate, "dd/MM/yyyy")
-                        ) : (
-                          <span>Data inicial</span>
-                        )}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar
-                        mode="single"
-                        selected={filters.initialDate || undefined}
-                        onSelect={handleStartDateChange}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
+              {/* Seletores de data e botão de gerenciamento de tags */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                {/* Data inicial */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start text-left font-normal min-w-[140px]"
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {filters.initialDate ? (
+                        format(filters.initialDate, "dd/MM/yyyy")
+                      ) : (
+                        <span>Data inicial</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={filters.initialDate || undefined}
+                      onSelect={handleStartDateChange}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
 
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="w-full justify-start text-left font-normal md:w-[180px]"
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {filters.finalDate ? (
-                          format(filters.finalDate, "dd/MM/yyyy")
-                        ) : (
-                          <span>Data final</span>
-                        )}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar
-                        mode="single"
-                        selected={filters.finalDate || undefined}
-                        onSelect={handleEndDateChange}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
+                {/* Data final */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start text-left font-normal min-w-[140px]"
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {filters.finalDate ? (
+                        format(filters.finalDate, "dd/MM/yyyy")
+                      ) : (
+                        <span>Data final</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={filters.finalDate || undefined}
+                      onSelect={handleEndDateChange}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
 
-                  <Button
-                    variant="outline"
-                    className="flex items-center gap-2"
-                    onClick={() => setShowTagManager(!showTagManager)}
-                  >
-                    <TagIcon className="h-4 w-4" />
-                    {showTagManager ? "Ocultar gerenciador" : "Gerenciar tags"}
-                  </Button>
-                </div>
+                {/* Botão de gerenciar tags */}
+                <Button
+                  variant="outline"
+                  className="flex items-center gap-2 w-full"
+                  onClick={() => setShowTagManager(!showTagManager)}
+                >
+                  <TagIcon className="h-4 w-4" />
+                  {showTagManager ? "Ocultar gerenciador" : "Gerenciar tags"}
+                </Button>
               </div>
             </div>
 
