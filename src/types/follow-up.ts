@@ -3,7 +3,8 @@ export type FollowUp = {
   name: string;
   messages: string[];
   messageQueue: MessageQueue;
-  inactiveChatTime: number; // tempo em minutos
+  minInactiveChatTime: number; // tempo mínimo em minutos
+  maxInactiveChatTime: number; // tempo máximo em minutos
   workspaceId: string; // UUID
   assistantId: string; // UUID
   companyId: string; // UUID

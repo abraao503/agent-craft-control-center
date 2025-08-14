@@ -59,7 +59,7 @@ export function FollowUpTable({
                     : "Sem mensagens configuradas"}
                 </TableCell>
                 <TableCell>
-                  {followUp.inactiveChatTime} {followUp.inactiveChatTime === 1 ? "minuto" : "minutos"}
+                  {followUp.minInactiveChatTime} a {followUp.maxInactiveChatTime} {followUp.maxInactiveChatTime === 1 ? "minuto" : "minutos"}
                 </TableCell>
                 <TableCell>
                   {format(new Date(followUp.createdAt), "dd/MM/yyyy HH:mm", { locale: ptBR })}

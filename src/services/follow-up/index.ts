@@ -6,7 +6,8 @@ import { FollowUp, MessageQueue, QueuedMessage } from "@/types/follow-up";
 export type FollowUpData = {
   name: string;
   messages: string[];
-  inactiveChatTime: number;
+  minInactiveChatTime: number;
+  maxInactiveChatTime: number;
   maxMessages?: number;
   workspaceId: string;
   assistantId: string;
@@ -22,7 +23,8 @@ export type FollowUpWithMessageQueue = Pick<
   | "companyId"
   | "name"
   | "messages"
-  | "inactiveChatTime"
+  | "minInactiveChatTime"
+  | "maxInactiveChatTime"
   | "maxMessages"
   | "workspaceId"
   | "createdAt"

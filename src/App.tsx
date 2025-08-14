@@ -213,7 +213,10 @@ const App = () => (
                   <Route path="/agents" element={<AgentsListPage />} />
                   <Route path="/agents/new" element={<AgentCreatePage />} />
                   <Route path="/agents/edit/:id" element={<AgentEditPage />} />
-                  <Route path="/agents/:id" element={<AgentDetailsViewPage />} />
+                  <Route
+                    path="/agents/:id"
+                    element={<AgentDetailsViewPage />}
+                  />
                   <Route
                     path="/integrations"
                     element={<IntegrationsListPage />}
@@ -242,10 +245,22 @@ const App = () => (
                     element={<CustomersExportPage />}
                   />
                   <Route path="/follow-ups" element={<FollowUpListPage />} />
-                  <Route path="/follow-ups/create" element={<FollowUpCreatePageView />} />
-                  <Route path="/follow-ups/edit/:id" element={<FollowUpEditPageView />} />
-                  <Route path="/follow-ups/:id" element={<FollowUpDetailViewPage />} />
-                  <Route path="/message-queue" element={<MessageQueueListPage />} />
+                  <Route
+                    path="/follow-ups/create"
+                    element={<FollowUpCreatePageView />}
+                  />
+                  <Route
+                    path="/follow-ups/edit/:id"
+                    element={<FollowUpEditPageView />}
+                  />
+                  <Route
+                    path="/follow-ups/:id"
+                    element={<FollowUpDetailViewPage />}
+                  />
+                  <Route
+                    path="/message-queue"
+                    element={<MessageQueueListPage />}
+                  />
                   <Route path="*" element={<NotFoundPage />} />
                 </Route>
               </Routes>

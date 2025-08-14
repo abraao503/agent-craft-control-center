@@ -94,34 +94,52 @@ export function FollowUpCard({
               : "Sem mensagens configuradas"}
           </p>
           <div className="text-xs text-muted-foreground">
-            <span className="font-medium">Tempo de inatividade:</span>{" "}
+            <span className="font-medium">
+              Intervalo de tempo de inatividade:
+            </span>{" "}
             {(() => {
-              const timeValue = minutesToTimeValue(followUp.inactiveChatTime);
-              const parts = [];
+              const minTimeValue = minutesToTimeValue(
+                followUp.minInactiveChatTime || 60
+              );
+              const maxTimeValue = minutesToTimeValue(
+                followUp.maxInactiveChatTime || 120
+              );
 
-              if (timeValue.days > 0) {
-                parts.push(
-                  `${timeValue.days} ${timeValue.days === 1 ? "dia" : "dias"}`
-                );
-              }
+              const formatTimeValue = (timeValue: {
+                days: number;
+                hours: number;
+                minutes: number;
+              }) => {
+                const parts = [];
+                if (timeValue.days > 0) {
+                  parts.push(
+                    `${timeValue.days} ${timeValue.days === 1 ? "dia" : "dias"}`
+                  );
+                }
 
-              if (timeValue.hours > 0) {
-                parts.push(
-                  `${timeValue.hours} ${
-                    timeValue.hours === 1 ? "hora" : "horas"
-                  }`
-                );
-              }
+                if (timeValue.hours > 0) {
+                  parts.push(
+                    `${timeValue.hours} ${
+                      timeValue.hours === 1 ? "hora" : "horas"
+                    }`
+                  );
+                }
 
-              if (timeValue.minutes > 0 || parts.length === 0) {
-                parts.push(
-                  `${timeValue.minutes} ${
-                    timeValue.minutes === 1 ? "minuto" : "minutos"
-                  }`
-                );
-              }
+                if (timeValue.minutes > 0 || parts.length === 0) {
+                  parts.push(
+                    `${timeValue.minutes} ${
+                      timeValue.minutes === 1 ? "minuto" : "minutos"
+                    }`
+                  );
+                }
 
-              return parts.join(", ");
+                return parts.join(", ");
+              };
+
+              const minFormatted = formatTimeValue(minTimeValue);
+              const maxFormatted = formatTimeValue(maxTimeValue);
+
+              return `${minFormatted} - ${maxFormatted}`;
             })()}
           </div>
           <div className="text-xs text-muted-foreground">

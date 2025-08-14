@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { minutesToTimeValue } from "@/lib/time-utils";
-import { InactiveChatTimePicker } from "@/components/follow-up/InactiveChatTimePicker";
+import { InactiveChatRangePicker } from "@/components/follow-up/InactiveChatRangePicker";
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import {
@@ -215,8 +215,10 @@ export default function FollowUpDetailPage() {
   // Estado para controle de edição
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [editedMessages, setEditedMessages] = useState<string[]>([]);
-  const [editedInactiveChatTime, setEditedInactiveChatTime] =
+  const [editedMinInactiveChatTime, setEditedMinInactiveChatTime] =
     useState<number>(60);
+  const [editedMaxInactiveChatTime, setEditedMaxInactiveChatTime] =
+    useState<number>(120);
   const [editedMaxMessages, setEditedMaxMessages] = useState<number>(3);
   const [editedInclusiveTags, setEditedInclusiveTags] = useState<string[]>([]);
   const [editedExclusiveTags, setEditedExclusiveTags] = useState<string[]>([]);
@@ -249,7 +251,8 @@ export default function FollowUpDetailPage() {
   useEffect(() => {
     if (followUpData) {
       setEditedMessages(followUpData.messages || []);
-      setEditedInactiveChatTime(followUpData.inactiveChatTime);
+      setEditedMinInactiveChatTime(followUpData.minInactiveChatTime || 60);
+      setEditedMaxInactiveChatTime(followUpData.maxInactiveChatTime || 120);
       setEditedMaxMessages(followUpData.maxMessages || 3);
       setEditedInclusiveTags(followUpData.inclusiveTags || []);
       setEditedExclusiveTags(followUpData.exclusiveTags || []);
@@ -315,7 +318,8 @@ export default function FollowUpDetailPage() {
       id: string;
       data: {
         messages: string[];
-        inactiveChatTime: number;
+        minInactiveChatTime: number;
+        maxInactiveChatTime: number;
         maxMessages?: number;
         inclusiveTags?: string[];
         exclusiveTags?: string[];
@@ -347,7 +351,8 @@ export default function FollowUpDetailPage() {
     if (!followUpData) return;
 
     setEditedMessages(followUpData.messages || []);
-    setEditedInactiveChatTime(followUpData.inactiveChatTime);
+    setEditedMinInactiveChatTime(followUpData.minInactiveChatTime || 60);
+    setEditedMaxInactiveChatTime(followUpData.maxInactiveChatTime || 120);
     setEditedMaxMessages(followUpData.maxMessages || 3);
     setEditedInclusiveTags(followUpData.inclusiveTags || []);
     setEditedExclusiveTags(followUpData.exclusiveTags || []);
@@ -379,7 +384,8 @@ export default function FollowUpDetailPage() {
       id: followUpData.id,
       data: {
         messages: editedMessages,
-        inactiveChatTime: editedInactiveChatTime,
+        minInactiveChatTime: editedMinInactiveChatTime,
+        maxInactiveChatTime: editedMaxInactiveChatTime,
         maxMessages: editedMaxMessages,
         inclusiveTags: editedInclusiveTags,
         exclusiveTags: editedExclusiveTags,
@@ -502,12 +508,14 @@ export default function FollowUpDetailPage() {
                     </p>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="inactiveChatTime">
-                      Tempo de inatividade
+                    <Label htmlFor="inactiveChatTimeRange">
+                      Intervalo de tempo de inatividade
                     </Label>
-                    <InactiveChatTimePicker
-                      value={editedInactiveChatTime}
-                      onChange={setEditedInactiveChatTime}
+                    <InactiveChatRangePicker
+                      minValue={editedMinInactiveChatTime}
+                      maxValue={editedMaxInactiveChatTime}
+                      onMinChange={setEditedMinInactiveChatTime}
+                      onMaxChange={setEditedMaxInactiveChatTime}
                       maxDays={7}
                       minTotalMinutes={60}
                     />
@@ -565,41 +573,57 @@ export default function FollowUpDetailPage() {
                     <Clock className="h-5 w-5 mr-2 text-slate-500" />
                     <div>
                       <p className="text-xs text-muted-foreground">
-                        Tempo de inatividade
+                        Intervalo de tempo de inatividade
                       </p>
                       <p className="text-sm font-medium">
                         {followUpData &&
                           (() => {
-                            const timeValue = minutesToTimeValue(
-                              followUpData.inactiveChatTime
+                            const minTimeValue = minutesToTimeValue(
+                              followUpData.minInactiveChatTime || 60
                             );
-                            const parts = [];
+                            const maxTimeValue = minutesToTimeValue(
+                              followUpData.maxInactiveChatTime || 120
+                            );
 
-                            if (timeValue.days > 0) {
-                              parts.push(
-                                `${timeValue.days} ${
-                                  timeValue.days === 1 ? "dia" : "dias"
-                                }`
-                              );
-                            }
+                            const formatTimeValue = (timeValue: {
+                              days: number;
+                              hours: number;
+                              minutes: number;
+                            }) => {
+                              const parts = [];
+                              if (timeValue.days > 0) {
+                                parts.push(
+                                  `${timeValue.days} ${
+                                    timeValue.days === 1 ? "dia" : "dias"
+                                  }`
+                                );
+                              }
 
-                            if (timeValue.hours > 0) {
-                              parts.push(
-                                `${timeValue.hours} ${
-                                  timeValue.hours === 1 ? "hora" : "horas"
-                                }`
-                              );
-                            }
+                              if (timeValue.hours > 0) {
+                                parts.push(
+                                  `${timeValue.hours} ${
+                                    timeValue.hours === 1 ? "hora" : "horas"
+                                  }`
+                                );
+                              }
 
-                            if (timeValue.minutes > 0 || parts.length === 0) {
-                              parts.push(
-                                `${timeValue.minutes} ${
-                                  timeValue.minutes === 1 ? "minuto" : "minutos"
-                                }`
-                              );
-                            }
+                              if (timeValue.minutes > 0 || parts.length === 0) {
+                                parts.push(
+                                  `${timeValue.minutes} ${
+                                    timeValue.minutes === 1
+                                      ? "minuto"
+                                      : "minutos"
+                                  }`
+                                );
+                              }
 
-                            return parts.join(", ");
+                              return parts.join(", ");
+                            };
+
+                            const minFormatted = formatTimeValue(minTimeValue);
+                            const maxFormatted = formatTimeValue(maxTimeValue);
+
+                            return `${minFormatted} - ${maxFormatted}`;
                           })()}
                       </p>
                     </div>

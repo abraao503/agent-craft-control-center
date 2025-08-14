@@ -28,37 +28,49 @@ import { Tag } from "@/types/tag";
 import { listTags } from "@/services/tag/listTags";
 import { isColorDark } from "@/lib/utils";
 import { MultiSelect } from "@/components/ui/multi-select";
-import { InactiveChatTimePicker } from "./InactiveChatTimePicker";
+import { TimeUnitPicker } from "@/components/ui/time-unit-picker";
+import { minutesToTimeValue, timeValueToMinutes } from "@/lib/time-utils";
+import { InactiveChatRangePicker } from "./InactiveChatRangePicker";
 
-const formSchema = z.object({
-  name: z.string().min(3, {
-    message: "Nome deve ter pelo menos 3 caracteres",
-  }),
-  messages: z
-    .array(
-      z.string().min(10, {
-        message: "Cada mensagem deve ter pelo menos 10 caracteres",
-      })
-    )
-    .min(1, {
-      message: "Configure pelo menos uma mensagem",
+const formSchema = z
+  .object({
+    name: z.string().min(3, {
+      message: "Nome deve ter pelo menos 3 caracteres",
     }),
-  inactiveChatTime: z.coerce.number().min(1, {
-    message: "Tempo deve ser pelo menos 1 minuto",
-  }),
-  maxMessages: z.coerce
-    .number()
-    .min(1, {
-      message: "Número de mensagens deve ser pelo menos 1",
-    })
-    .optional(),
-  assistantId: z.string().uuid({
-    message: "Assistente inválido",
-  }),
-  inclusiveTags: z.array(z.string().uuid("Tag ID must be a valid UUID")),
-  exclusiveTags: z.array(z.string().uuid("Tag ID must be a valid UUID")),
-  responseTags: z.array(z.string().uuid("Tag ID must be a valid UUID")),
-});
+    messages: z
+      .array(
+        z.string().min(10, {
+          message: "Cada mensagem deve ter pelo menos 10 caracteres",
+        })
+      )
+      .min(1, {
+        message: "Configure pelo menos uma mensagem",
+      }),
+    minInactiveChatTime: z
+      .number()
+      .int()
+      .positive("Tempo mínimo deve ser um número inteiro positivo"),
+    maxInactiveChatTime: z
+      .number()
+      .int()
+      .positive("Tempo máximo deve ser um número inteiro positivo"),
+    maxMessages: z.coerce
+      .number()
+      .min(1, {
+        message: "Número de mensagens deve ser pelo menos 1",
+      })
+      .optional(),
+    assistantId: z.string().uuid({
+      message: "Assistente inválido",
+    }),
+    inclusiveTags: z.array(z.string().uuid("Tag ID must be a valid UUID")),
+    exclusiveTags: z.array(z.string().uuid("Tag ID must be a valid UUID")),
+    responseTags: z.array(z.string().uuid("Tag ID must be a valid UUID")),
+  })
+  .refine((data) => data.minInactiveChatTime <= data.maxInactiveChatTime, {
+    message: "O tempo mínimo não pode ser maior que o tempo máximo",
+    path: ["minInactiveChatTime"],
+  });
 
 type FormValues = z.infer<typeof formSchema>;
 
@@ -124,7 +136,8 @@ export function FollowUpForm({
     ? {
         name: initialData.name,
         messages: initialData.messages || [],
-        inactiveChatTime: initialData.inactiveChatTime,
+        minInactiveChatTime: initialData.minInactiveChatTime || 60,
+        maxInactiveChatTime: initialData.maxInactiveChatTime || 120,
         maxMessages: initialData.maxMessages || 3, // Default: 3 mensagens
         assistantId: initialData.assistantId,
         inclusiveTags: inclusiveTagIds,
@@ -134,7 +147,8 @@ export function FollowUpForm({
     : {
         name: "",
         messages: [""],
-        inactiveChatTime: 60, // Default: 1 hora
+        minInactiveChatTime: 60, // Default: 1 hora
+        maxInactiveChatTime: 120, // Default: 2 horas
         maxMessages: 3, // Default: 3 mensagens
         assistantId: "",
         inclusiveTags: [],
@@ -232,27 +246,60 @@ export function FollowUpForm({
           )}
         />
 
-        <FormField
-          control={form.control}
-          name="inactiveChatTime"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Tempo de inatividade</FormLabel>
-              <FormControl>
-                <InactiveChatTimePicker
-                  value={field.value}
-                  onChange={field.onChange}
-                  maxDays={7}
-                  minTotalMinutes={60}
-                />
-              </FormControl>
-              <FormMessage />
-              <p className="text-sm text-muted-foreground mt-1">
-                Tempo de inatividade do cliente antes de enviar o follow-up.
-              </p>
-            </FormItem>
-          )}
-        />
+        <div className="space-y-6">
+          <div>
+            <h3 className="text-lg font-medium">Intervalo de tempo de inatividade</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Defina o intervalo de tempo de inatividade do cliente antes de enviar o follow-up.
+            </p>
+          </div>
+          
+          <div className="grid gap-6">
+            <FormField
+              control={form.control}
+              name="minInactiveChatTime"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Tempo mínimo de inatividade</FormLabel>
+                  <FormControl>
+                    <TimeUnitPicker
+                      value={minutesToTimeValue(field.value)}
+                      onChange={(timeValue) => {
+                        const minutes = timeValueToMinutes(timeValue);
+                        field.onChange(minutes);
+                      }}
+                      maxDays={7}
+                      minTotalMinutes={60}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="maxInactiveChatTime"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Tempo máximo de inatividade</FormLabel>
+                  <FormControl>
+                    <TimeUnitPicker
+                      value={minutesToTimeValue(field.value)}
+                      onChange={(timeValue) => {
+                        const minutes = timeValueToMinutes(timeValue);
+                        field.onChange(minutes);
+                      }}
+                      maxDays={7}
+                      minTotalMinutes={60}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        </div>
 
         <FormField
           control={form.control}
