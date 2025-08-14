@@ -53,7 +53,7 @@ const WhatsAppForm = ({
     whatsappIntegrationName: initialData.whatsappIntegrationName || "z-api",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showWebhookPreview, setShowWebhookPreview] = useState(false);
+  // Webhook URL is now generated but not shown as a separate step
   const [webhookUrl, setWebhookUrl] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -89,13 +89,19 @@ const WhatsAppForm = ({
     }
   };
 
-  // Generate webhook URL when needed values change
+  // Generate webhook URL when needed values change (only in edit mode)
   useEffect(() => {
-    if (formData.whatsappIntegrationName && formData.agentId) {
+    if (
+      isEditMode &&
+      formData.whatsappIntegrationName &&
+      formData.agentId &&
+      initialData.id
+    ) {
       const frontendUrl =
         import.meta.env.VITE_API_URL || window.location.origin;
       const companyId = getUserCompanyId();
       const integrationName = formData.whatsappIntegrationName;
+      const integrationId = initialData.id;
 
       // Convert integration name to kebab-case for the URL
       const formattedIntegrationName = integrationName
@@ -103,19 +109,19 @@ const WhatsAppForm = ({
         .replace(/\s+/g, "-");
 
       setWebhookUrl(
-        `${frontendUrl}/webhook/${formattedIntegrationName}/${companyId}/${formData.agentId}`
+        `${frontendUrl}/webhook/${formattedIntegrationName}/${companyId}/${workspaceId}/${integrationId}`
       );
     }
-  }, [formData.whatsappIntegrationName, formData.agentId]);
+  }, [
+    formData.whatsappIntegrationName,
+    formData.agentId,
+    initialData.id,
+    isEditMode,
+    workspaceId,
+  ]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (formData.whatsappIntegrationName !== "evolux" && !showWebhookPreview) {
-      setShowWebhookPreview(true);
-      return;
-    }
-
     setIsSubmitting(true);
 
     try {
@@ -144,36 +150,29 @@ const WhatsAppForm = ({
 
   // Reset the webhook preview when the user changes important form data
   useEffect(() => {
-    if (showWebhookPreview) {
-      setShowWebhookPreview(false);
-    }
+    // Webhook URL is automatically generated when form data changes
   }, [formData.whatsappIntegrationName, formData.agentId]);
 
   const getButtonText = () => {
-    if (isSubmitting) {
-      return "Saving...";
-    }
-
-    if (showWebhookPreview || formData.whatsappIntegrationName === "evolux") {
-      return isEditMode ? "Update Integration" : "Create Integration";
-    }
-
-    return "Continue";
+    if (isEditMode) return "Save Changes";
+    return "Create Integration";
   };
 
   const disableButton = () => {
-    if (formData.whatsappIntegrationName === "evolux") {
-      return isSubmitting || !formData.agentId;
+    if (isSubmitting || isLoading) return true;
+
+    if (!formData.whatsappIntegrationName || !formData.agentId) return true;
+
+    if (formData.whatsappIntegrationName === "z-api") {
+      if (
+        !formData.externalToken ||
+        !formData.externalClientToken ||
+        !formData.postbackUrl
+      )
+        return true;
     }
 
-    return (
-      isSubmitting ||
-      !formData.externalToken ||
-      !formData.externalClientToken ||
-      !formData.agentId ||
-      !formData.whatsappIntegrationName ||
-      !formData.postbackUrl
-    );
+    return false;
   };
 
   return (
@@ -281,7 +280,6 @@ const WhatsAppForm = ({
                   updateFormData({ postbackUrl: e.target.value })
                 }
                 placeholder="Enter postback URL"
-                disabled={showWebhookPreview}
               />
               <p className="text-sm text-muted-foreground">
                 The URL where WhatsApp will send incoming messages
@@ -289,14 +287,15 @@ const WhatsAppForm = ({
             </div>
           )}
 
-          {showWebhookPreview && (
+          {isEditMode && (
             <div className="mt-8 p-6 border rounded-md bg-muted">
               <h3 className="font-medium text-lg mb-3">
-                Webhook URL for External Platform
+                Webhook URL para Plataforma Externa
               </h3>
               <p className="text-sm text-muted-foreground mb-4">
-                Copy this webhook URL and use it in your WhatsApp platform
-                settings before creating the integration.
+                Este é o webhook URL que será usado para receber mensagens do
+                WhatsApp. Você pode copiá-lo para configurar na sua plataforma
+                WhatsApp.
               </p>
               <div className="flex items-center space-x-2">
                 <div className="flex-1 relative">

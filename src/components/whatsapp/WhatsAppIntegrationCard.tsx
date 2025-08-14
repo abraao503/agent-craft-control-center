@@ -197,12 +197,14 @@ const WhatsAppIntegrationCard = ({
     const frontendUrl = import.meta.env.VITE_API_URL || window.location.origin;
     const companyId = getUserCompanyId();
     const integrationName = integration.whatsappIntegrationName || "unknown";
+    const workspaceId = user?.companyId || "";
+    const integrationId = integration.id;
 
     const formattedIntegrationName = integrationName
       .toLowerCase()
       .replace(/\s+/g, "-");
 
-    return `${frontendUrl}/webhook/${formattedIntegrationName}/${companyId}/${integration.agent.id}`;
+    return `${frontendUrl}/webhook/${formattedIntegrationName}/${companyId}/${workspaceId}/${integrationId}`;
   };
 
   const handleGenerateQrCode = () => {
