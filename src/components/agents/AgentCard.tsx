@@ -35,9 +35,7 @@ const AgentCard = ({ agent, onDelete }: AgentCardProps) => {
             )}
           </div>
         </div>
-        <CardDescription className="line-clamp-2">
-          alguma descrção do bot aqui
-        </CardDescription>
+        <CardDescription className="line-clamp-2"></CardDescription>
       </CardHeader>
       <CardContent className="pb-2 flex-grow">
         <div className="space-y-2 text-sm text-muted-foreground">

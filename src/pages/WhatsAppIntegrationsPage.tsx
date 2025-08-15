@@ -45,8 +45,8 @@ const WhatsAppIntegrationsPage = () => {
     mutationFn: (id: string) => deleteWhatsAppIntegration(id),
     onSuccess: () => {
       toast({
-        title: "Integration deleted",
-        description: "The WhatsApp integration has been successfully deleted.",
+        title: "Integração excluída",
+        description: "A integração do WhatsApp foi excluída com sucesso.",
       });
       queryClient.invalidateQueries({
         queryKey: ["company-whatsapp-integrations"],
@@ -94,16 +94,16 @@ const WhatsAppIntegrationsPage = () => {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">
-              WhatsApp Integrations
+              Integrações do WhatsApp
             </h1>
             <p className="text-muted-foreground">
-              Connect your AI agents to WhatsApp
+              Conecte seus agentes de IA ao WhatsApp
             </p>
           </div>
           <Link to="/integrations/new">
             <Button className="flex items-center">
               <Plus className="mr-2 h-5 w-5" />
-              New Integration
+              Nova Integração
             </Button>
           </Link>
         </div>
@@ -113,13 +113,13 @@ const WhatsAppIntegrationsPage = () => {
         ) : integrations.length === 0 ? (
           <div className="text-center py-12 border rounded-lg">
             <h3 className="font-medium text-lg">
-              No WhatsApp integrations yet
+              Nenhuma integração do WhatsApp ainda
             </h3>
             <p className="text-muted-foreground mb-4">
-              Connect your AI agents to WhatsApp to start interacting with users
+              Conecte seus agentes de IA ao WhatsApp para começar a interagir com usuários
             </p>
             <Link to="/integrations/new">
-              <Button>Create Integration</Button>
+              <Button>Criar Integração</Button>
             </Link>
           </div>
         ) : (
@@ -127,6 +127,7 @@ const WhatsAppIntegrationsPage = () => {
             {integrations.map((integration) => (
               <WhatsAppIntegrationCard
                 key={integration.id}
+                workspaceId={workspaceId}
                 integration={integration}
                 onDelete={handleDeleteClick}
               />
@@ -141,19 +142,19 @@ const WhatsAppIntegrationsPage = () => {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the
-              WhatsApp integration and disconnect it from your agent.
+              Esta ação não pode ser desfeita. Isso excluirá permanentemente a
+              integração do WhatsApp e a desconectará do seu agente.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDelete}
               className="bg-red-500 hover:bg-red-600"
             >
-              Delete
+              Excluir
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

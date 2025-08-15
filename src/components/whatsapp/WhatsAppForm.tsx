@@ -144,7 +144,7 @@ const WhatsAppForm = ({
   const copyWebhookToClipboard = () => {
     navigator.clipboard.writeText(webhookUrl);
     toast({
-      description: "Webhook URL copied to clipboard",
+      description: "URL do Webhook copiada para a área de transferência",
     });
   };
 
@@ -154,8 +154,8 @@ const WhatsAppForm = ({
   }, [formData.whatsappIntegrationName, formData.agentId]);
 
   const getButtonText = () => {
-    if (isEditMode) return "Save Changes";
-    return "Create Integration";
+    if (isEditMode) return "Salvar alterações";
+    return "Criar integração";
   };
 
   const disableButton = () => {
@@ -180,15 +180,17 @@ const WhatsAppForm = ({
       <CardHeader>
         <CardTitle>
           {isEditMode
-            ? "Edit WhatsApp Integration"
-            : "New WhatsApp Integration"}
+            ? "Editar integração do WhatsApp"
+            : "Nova integração do WhatsApp"}
         </CardTitle>
-        <CardDescription>Connect your AI agents to WhatsApp</CardDescription>
+        <CardDescription>
+          Conecte seus agentes de IA ao WhatsApp
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="whatsappIntegrationName">Type of Integration</Label>
+            <Label htmlFor="whatsappIntegrationName">Tipo de integração</Label>
             <Select
               value={formData.whatsappIntegrationName}
               onValueChange={(value) =>
@@ -199,7 +201,7 @@ const WhatsAppForm = ({
               disabled={isEditMode}
             >
               <SelectTrigger id="whatsappIntegrationName">
-                <SelectValue placeholder="Select WhatsApp integration" />
+                <SelectValue placeholder="Selecione a integração do WhatsApp" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="z-api">Z-API</SelectItem>
@@ -209,18 +211,18 @@ const WhatsAppForm = ({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="agentId">Agent</Label>
+            <Label htmlFor="agentId">Agente</Label>
             <Select
               value={formData.agentId}
               onValueChange={(value) => updateFormData({ agentId: value })}
             >
               <SelectTrigger id="agentId">
-                <SelectValue placeholder="Select an agent" />
+                <SelectValue placeholder="Selecione um agente" />
               </SelectTrigger>
               <SelectContent>
                 {isLoadingAgents ? (
                   <SelectItem value="loading" disabled>
-                    Loading...
+                    Carregando...
                   </SelectItem>
                 ) : (
                   agentsData?.agents?.map((agent) => (
@@ -232,62 +234,62 @@ const WhatsAppForm = ({
               </SelectContent>
             </Select>
             <p className="text-sm text-muted-foreground">
-              The AI agent to connect to WhatsApp
+              O agente de IA a ser conectado ao WhatsApp
             </p>
           </div>
 
           {formData.whatsappIntegrationName === "z-api" && (
             <div className="space-y-2">
-              <Label htmlFor="externalToken">External Token</Label>
+              <Label htmlFor="externalToken">Token externo</Label>
               <Input
                 id="externalToken"
                 value={formData.externalToken}
                 onChange={(e) =>
                   updateFormData({ externalToken: e.target.value })
                 }
-                placeholder="Enter your external token"
+                placeholder="Informe seu token externo"
               />
               <p className="text-sm text-muted-foreground">
-                Token provided by your WhatsApp provider
+                Token fornecido pelo seu provedor de WhatsApp
               </p>
             </div>
           )}
 
           {formData.whatsappIntegrationName === "z-api" && (
             <div className="space-y-2">
-              <Label htmlFor="externalClientToken">Client Token</Label>
+              <Label htmlFor="externalClientToken">Token do cliente</Label>
               <Input
                 id="externalClientToken"
                 value={formData.externalClientToken}
                 onChange={(e) =>
                   updateFormData({ externalClientToken: e.target.value })
                 }
-                placeholder="Enter your client token"
+                placeholder="Informe seu token do cliente"
               />
               <p className="text-sm text-muted-foreground">
-                Client token provided by your WhatsApp provider
+                Token do cliente fornecido pelo seu provedor de WhatsApp
               </p>
             </div>
           )}
 
           {formData.whatsappIntegrationName === "z-api" && (
             <div className="space-y-2">
-              <Label htmlFor="postbackUrl">Postback URL</Label>
+              <Label htmlFor="postbackUrl">URL de Postback</Label>
               <Input
                 id="postbackUrl"
                 value={formData.postbackUrl}
                 onChange={(e) =>
                   updateFormData({ postbackUrl: e.target.value })
                 }
-                placeholder="Enter postback URL"
+                placeholder="Informe a URL de postback"
               />
               <p className="text-sm text-muted-foreground">
-                The URL where WhatsApp will send incoming messages
+                A URL para onde o WhatsApp enviará mensagens recebidas
               </p>
             </div>
           )}
 
-          {isEditMode && (
+          {isEditMode && formData.whatsappIntegrationName === "z-api" && (
             <div className="mt-8 p-6 border rounded-md bg-muted">
               <h3 className="font-medium text-lg mb-3">
                 Webhook URL para Plataforma Externa
@@ -312,7 +314,7 @@ const WhatsAppForm = ({
                     onClick={copyWebhookToClipboard}
                   >
                     <Copy className="h-4 w-4" />
-                    <span className="sr-only">Copy</span>
+                    <span className="sr-only">Copiar</span>
                   </Button>
                 </div>
               </div>
@@ -323,7 +325,7 @@ const WhatsAppForm = ({
       <CardFooter className="pt-2 flex justify-end">
         <div className="flex space-x-2">
           <Button variant="ghost" size="sm" onClick={handleBackToIntegrations}>
-            Back
+            Voltar
           </Button>
           <Button
             type="submit"

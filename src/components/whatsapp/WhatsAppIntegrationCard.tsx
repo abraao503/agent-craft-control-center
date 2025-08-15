@@ -17,7 +17,6 @@ import { useToast } from "@/components/ui/use-toast";
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  listWhatsAppIntegrations,
   generateQrCode,
   activateCompanyWhatsAppIntegration,
   deactivateCompanyWhatsAppIntegration,
@@ -37,11 +36,13 @@ import { useAuth } from "@/contexts/auth/hooks";
 
 interface WhatsAppIntegrationCardProps {
   integration: CompanyWhatsAppIntegration;
+  workspaceId: string;
   onDelete: (id: string) => void;
 }
 
 const WhatsAppIntegrationCard = ({
   integration,
+  workspaceId,
   onDelete,
 }: WhatsAppIntegrationCardProps) => {
   const [copied, setCopied] = useState(false);
@@ -54,11 +55,6 @@ const WhatsAppIntegrationCard = ({
   const { toast } = useToast();
   const { user } = useAuth();
   const queryClient = useQueryClient();
-
-  const { data: whatsappIntegrations } = useQuery({
-    queryKey: ["whatsapp-integrations"],
-    queryFn: listWhatsAppIntegrations,
-  });
 
   const { data: agentsData } = useQuery({
     queryKey: ["agents", user?.companyId],
@@ -175,8 +171,9 @@ const WhatsAppIntegrationCard = ({
     navigator.clipboard.writeText(webhook);
     setCopied(true);
     toast({
-      title: "Copied to clipboard",
-      description: "The postback URL has been copied to your clipboard.",
+      title: "Copiado para a área de transferência",
+      description:
+        "A URL de postback foi copiada para a sua área de transferência.",
     });
     setTimeout(() => setCopied(false), 2000);
   };
@@ -196,8 +193,7 @@ const WhatsAppIntegrationCard = ({
   const getWebhookUrl = () => {
     const frontendUrl = import.meta.env.VITE_API_URL || window.location.origin;
     const companyId = getUserCompanyId();
-    const integrationName = integration.whatsappIntegrationName || "unknown";
-    const workspaceId = user?.companyId || "";
+    const integrationName = integration.whatsappIntegrationName;
     const integrationId = integration.id;
 
     const formattedIntegrationName = integrationName
@@ -274,21 +270,15 @@ const WhatsAppIntegrationCard = ({
             </div>
           </div>
         </div>
-        <CardDescription>
-          Connected to: {integration.agent.name}
-        </CardDescription>
+        <CardDescription>Conectado a: {integration.agent.name}</CardDescription>
       </CardHeader>
       <CardContent className="pb-2 flex-grow">
         <div className="space-y-2 text-sm text-muted-foreground">
-          <p>
-            <span className="font-medium text-foreground">Integration ID:</span>{" "}
-            {integration.id.substring(0, 8)}...
-          </p>
           {integration.whatsappIntegrationName !== "evolux" && (
             <div className="pt-2">
               <div className="flex items-center gap-1 mb-1">
                 <span className="font-medium text-foreground">
-                  Webhook URL:
+                  URL do Webhook:
                 </span>
               </div>
               <div className="flex items-center gap-1">
@@ -325,7 +315,7 @@ const WhatsAppIntegrationCard = ({
           <Link to={`/integrations/edit/${integration.id}`}>
             <Button variant="outline" size="sm">
               <Edit className="w-4 h-4 mr-1" />
-              Edit
+              Editar
             </Button>
           </Link>
           <Button
@@ -335,7 +325,7 @@ const WhatsAppIntegrationCard = ({
             onClick={() => onDelete(integration.id)}
           >
             <Trash2 className="w-4 h-4 mr-1" />
-            Delete
+            Excluir
           </Button>
         </div>
       </CardFooter>
@@ -351,7 +341,7 @@ const WhatsAppIntegrationCard = ({
           </DialogHeader>
           <div className="flex items-center justify-center p-4">
             {qrCodeData ? (
-              <img src={qrCodeData} alt="QR Code" className="w-96 h-96" />
+              <img src={qrCodeData} alt="Código QR" className="w-96 h-96" />
             ) : (
               <div className="w-64 h-64 flex items-center justify-center bg-gray-100 rounded-lg">
                 <p className="text-gray-500">Carregando QR Code...</p>

@@ -38,8 +38,8 @@ const EditWhatsAppIntegrationPage = () => {
       }),
     onSuccess: () => {
       toast({
-        title: "Integration updated",
-        description: "Your WhatsApp integration has been updated successfully.",
+        title: "Integração atualizada",
+        description: "Sua integração do WhatsApp foi atualizada com sucesso.",
       });
       queryClient.invalidateQueries({
         queryKey: ["company-whatsapp-integrations"],
@@ -64,7 +64,7 @@ const EditWhatsAppIntegrationPage = () => {
     return (
       <div>
         <div className="text-center py-12">
-          <p>Loading integration...</p>
+          <p>Carregando integração...</p>
         </div>
       </div>
     );
@@ -74,12 +74,12 @@ const EditWhatsAppIntegrationPage = () => {
     return (
       <div>
         <div className="text-center py-12">
-          <h2 className="text-2xl font-bold">Integration not found</h2>
+          <h2 className="text-2xl font-bold">Integração não encontrada</h2>
           <p className="text-muted-foreground">
-            The WhatsApp integration you're looking for doesn't exist.
+            A integração do WhatsApp que você procura não existe.
           </p>
           <Button onClick={() => navigate("/integrations")} className="mt-4">
-            Back to Integrations
+            Voltar para Integrações
           </Button>
         </div>
       </div>
@@ -99,17 +99,18 @@ const EditWhatsAppIntegrationPage = () => {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <h1 className="text-3xl font-bold tracking-tight">
-            Edit WhatsApp Integration
+            Editar Integração do WhatsApp
           </h1>
         </div>
         <p className="text-muted-foreground">
-          Update your WhatsApp integration
+          Atualize sua integração do WhatsApp
         </p>
 
         <WhatsAppForm
           onSubmit={handleSubmit}
           initialData={integration}
           isEditMode={true}
+          isLoading={updateMutation.isPending}
         />
       </div>
     </div>

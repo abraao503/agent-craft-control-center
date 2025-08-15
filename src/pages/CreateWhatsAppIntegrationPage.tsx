@@ -26,8 +26,8 @@ const CreateWhatsAppIntegrationPage = () => {
     mutationFn: (data: WhatsAppFormData) => createWhatsAppIntegration(data),
     onSuccess: () => {
       toast({
-        title: "Integration created",
-        description: "Your WhatsApp integration has been created successfully.",
+        title: "Integração criada",
+        description: "Sua integração do WhatsApp foi criada com sucesso.",
       });
       queryClient.invalidateQueries({
         queryKey: ["company-whatsapp-integrations"],
@@ -61,11 +61,11 @@ const CreateWhatsAppIntegrationPage = () => {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <h1 className="text-3xl font-bold tracking-tight">
-            New WhatsApp Integration
+            Nova Integração do WhatsApp
           </h1>
         </div>
         <p className="text-muted-foreground">
-          Connect your AI agent to WhatsApp
+          Conecte seu agente de IA ao WhatsApp
         </p>
 
         <WhatsAppForm
