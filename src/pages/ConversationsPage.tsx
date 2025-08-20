@@ -252,7 +252,8 @@ const ConversationsPage = () => {
       return updateMultipleConversations({
         chatIds,
         tagIds: tagIds && tagIds.length > 0 ? tagIds : undefined,
-        removeTagIds: removeTagIds && removeTagIds.length > 0 ? removeTagIds : undefined,
+        removeTagIds:
+          removeTagIds && removeTagIds.length > 0 ? removeTagIds : undefined,
         handledBy,
         workspaceId,
       });
@@ -653,7 +654,7 @@ const ConversationsPage = () => {
                         />
                       </div>
                     </div>
-                    
+
                     {/* Tag Management Section - Remove Tags */}
                     <div className="flex flex-col sm:flex-row items-center gap-4 border-t pt-4 border-muted-foreground/20">
                       <div className="text-sm font-medium">Remover tags:</div>
@@ -887,6 +888,9 @@ const ConversationsPage = () => {
                           <SelectItem value="30">30</SelectItem>
                           <SelectItem value="50">50</SelectItem>
                           <SelectItem value="100">100</SelectItem>
+                          <SelectItem value="200">200</SelectItem>
+                          <SelectItem value="500">500</SelectItem>
+                          <SelectItem value="750">750</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
