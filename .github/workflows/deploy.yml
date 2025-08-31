@@ -30,7 +30,7 @@ jobs:
           username: ${{ secrets.VPS_USER }} # usuário na VPS
           key: ${{ secrets.VPS_SSH_KEY }} # chave privada SSH
           source: "dist/*" # pasta build do React (no seu caso /web-agent/dist)
-          target: ~/web-agent/dist
+          target: ~/web-agent
 
       - name: Reiniciar PM2
         uses: appleboy/ssh-action@v0.1.7
