@@ -22,6 +22,9 @@ jobs:
 
       - name: Build React
         run: npm run build
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+          VITE_HIGHLIGHT_ENABLED: false
 
       - name: Enviar build para VPS
         uses: appleboy/scp-action@v0.1.7
@@ -32,7 +35,7 @@ jobs:
           source: "dist/*" # pasta build do React (no seu caso /web-agent/dist)
           target: ~/web-agent
 
-      - name: Reiniciar PM2
+      - name: Reiniciar Nginx
         uses: appleboy/ssh-action@v0.1.7
         with:
           host: ${{ secrets.VPS_HOST }}
