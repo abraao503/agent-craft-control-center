@@ -1,0 +1,42 @@
+name: Deploy React App
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.x"
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Build React
+        run: npm run build
+
+      - name: Enviar build para VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }} # IP ou domínio da VPS
+          username: ${{ secrets.VPS_USER }} # usuário na VPS
+          key: ${{ secrets.VPS_SSH_KEY }} # chave privada SSH
+          source: "dist/*" # pasta build do React (no seu caso /web-agent/dist)
+          target: "/web-agent/dist/" # pasta na VPS
+
+      - name: Reiniciar PM2
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            pm2 restart web-agent || pm2 start serve --name web-agent -- -s /web-agent/dist -l 3000
