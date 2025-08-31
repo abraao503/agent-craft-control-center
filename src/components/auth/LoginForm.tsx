@@ -38,10 +38,10 @@ const LoginForm = () => {
     <Card className="w-full max-w-md">
       <CardHeader>
         <CardTitle className="text-2xl font-bold text-center">
-          Welcome Back
+          Bem-vindo
         </CardTitle>
         <CardDescription className="text-center">
-          Login to your account to manage your AI agents
+          Entre para gerenciar seus agentes
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -60,12 +60,12 @@ const LoginForm = () => {
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">Senha</Label>
               <Link
                 to="/forgot-password"
                 className="text-sm text-primary hover:underline"
               >
-                Forgot password?
+                Esqueceu sua senha?
               </Link>
             </div>
             <Input
@@ -101,25 +101,14 @@ const LoginForm = () => {
                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                   ></path>
                 </svg>
-                Logging in...
+                Entrando...
               </span>
             ) : (
-              "Login"
+              "Entrar"
             )}
           </Button>
         </form>
       </CardContent>
-      <CardFooter className="justify-center">
-        <p className="text-sm text-muted-foreground">
-          Don't have an account?{" "}
-          <Link
-            to="/signup"
-            className="text-primary font-medium hover:underline"
-          >
-            Sign up
-          </Link>
-        </p>
-      </CardFooter>
     </Card>
   );
 };

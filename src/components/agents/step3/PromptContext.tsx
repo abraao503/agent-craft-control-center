@@ -19,7 +19,7 @@ const PromptContext = ({ formData, updateFormData }: PromptContextProps) => {
   useEffect(() => {
     const initialValue = convertTextToHtmlString(formData.instructions || "");
     setEditorValue(initialValue);
-  }, []);
+  }, [formData.instructions]);
 
   const handleAddLink = () => {
     const currentLinks = formData.links || [];
@@ -47,73 +47,73 @@ const PromptContext = ({ formData, updateFormData }: PromptContextProps) => {
   return (
     <div className="form-container space-y-6">
       <div className="space-y-2">
-        <Label htmlFor="identity">Identity</Label>
+        <Label htmlFor="identity">Identidade</Label>
         <Input
           id="identity"
-          placeholder="Support Assistant"
+          placeholder="Assistente de Suporte"
           value={formData.identity || ""}
           onChange={(e) => updateFormData({ identity: e.target.value })}
           required
         />
         <p className="text-sm text-muted-foreground">
-          The name or identity of your agent
+          Nome ou identidade do seu agente
         </p>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="function">Function</Label>
+        <Label htmlFor="function">Função</Label>
         <Textarea
           id="function"
-          placeholder="Handles customer support inquiries and provides product information"
+          placeholder="Atende solicitações de suporte ao cliente e fornece informações sobre produtos"
           value={formData.function || ""}
           onChange={(e) => updateFormData({ function: e.target.value })}
           required
           className="min-h-[100px]"
         />
         <p className="text-sm text-muted-foreground">
-          What is the specific function or role of your agent?
+          Qual é a função ou o papel específico do seu agente?
         </p>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="goal">Goal</Label>
+        <Label htmlFor="goal">Objetivo</Label>
         <Textarea
           id="goal"
-          placeholder="Help users find the right product for their needs and resolve any issues"
+          placeholder="Ajudar usuários a encontrar o produto certo para suas necessidades e resolver quaisquer problemas"
           value={formData.goal || ""}
           onChange={(e) => updateFormData({ goal: e.target.value })}
           required
           className="min-h-[100px]"
         />
         <p className="text-sm text-muted-foreground">
-          What should your agent help users accomplish?
+          O que seu agente deve ajudar os usuários a alcançar?
         </p>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="style">Style</Label>
+        <Label htmlFor="style">Estilo</Label>
         <Textarea
           id="style"
-          placeholder="Professional and friendly tone, concise responses"
+          placeholder="Tom profissional e amigável, respostas concisas"
           value={formData.style || ""}
           onChange={(e) => updateFormData({ style: e.target.value })}
           required
           className="min-h-[100px]"
         />
         <p className="text-sm text-muted-foreground">
-          Describe the communication style and tone of your agent
+          Descreva o estilo de comunicação e o tom do seu agente
         </p>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="instructions">Instructions</Label>
+        <Label htmlFor="instructions">Instruções</Label>
         <TipTapEditor
           value={editorValue}
           onChange={(newValue) => {
             setEditorValue(newValue);
             updateFormData({ instructions: newValue });
           }}
-          placeholder="Always be helpful and professional. Provide clear and concise answers..."
+          placeholder="Seja sempre prestativo e profissional. Forneça respostas claras e concisas..."
           className="min-h-[150px]"
           mentionItems={formData.customFields.map((field) => ({
             id: field.name,
@@ -127,16 +127,16 @@ const PromptContext = ({ formData, updateFormData }: PromptContextProps) => {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="blacklist">Blacklist</Label>
+        <Label htmlFor="blacklist">Lista de bloqueio</Label>
         <Textarea
           id="blacklist"
-          placeholder="List of topics or keywords to avoid discussing"
+          placeholder="Lista de tópicos ou palavras-chave a evitar"
           value={formData.blacklist || ""}
           onChange={(e) => updateFormData({ blacklist: e.target.value })}
           className="min-h-[100px]"
         />
         <p className="text-sm text-muted-foreground">
-          Optional: List of topics or keywords your agent should avoid
+          Opcional: Lista de tópicos ou palavras-chave que seu agente deve evitar
         </p>
       </div>
 
@@ -150,7 +150,7 @@ const PromptContext = ({ formData, updateFormData }: PromptContextProps) => {
             className="flex items-center gap-1"
           >
             <PlusCircle className="h-4 w-4" />
-            Add Link
+            Adicionar link
           </Button>
         </div>
 
@@ -165,11 +165,11 @@ const PromptContext = ({ formData, updateFormData }: PromptContextProps) => {
                   htmlFor={`link-name-${index}`}
                   className="text-xs mb-1 block"
                 >
-                  Name
+                  Nome
                 </Label>
                 <Input
                   id={`link-name-${index}`}
-                  placeholder="Documentation"
+                  placeholder="Documentação"
                   value={link.name}
                   onChange={(e) =>
                     handleLinkChange(index, "name", e.target.value)
@@ -204,8 +204,7 @@ const PromptContext = ({ formData, updateFormData }: PromptContextProps) => {
           ))}
           {(formData.links || []).length === 0 && (
             <p className="text-sm text-muted-foreground italic">
-              No links added. Click "Add Link" to add a reference link for your
-              agent.
+              Nenhum link adicionado. Clique em "Adicionar link" para adicionar um link de referência para o seu agente.
             </p>
           )}
         </div>

@@ -29,11 +29,11 @@ const Signup = () => {
               />
             </svg>
           </div>
-          <span className="text-2xl font-bold">AgentCraft</span>
+          <span className="text-2xl font-bold">7 Agentes</span>
         </div>
         <h1 className="text-3xl font-bold">Create Your Account</h1>
         <p className="text-muted-foreground mt-2">
-          Join AgentCraft to start building your own intelligent agents.
+          Join 7 Agentes to start building your own intelligent agents.
         </p>
       </div>
 

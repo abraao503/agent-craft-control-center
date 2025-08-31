@@ -51,8 +51,8 @@ const AgentsPage = () => {
     }) => deleteAgent(agentId, workspaceId),
     onSuccess: () => {
       toast({
-        title: "Agent deleted",
-        description: "The agent has been successfully deleted.",
+        title: "Agente excluído",
+        description: "O agente foi excluído com sucesso.",
       });
       queryClient.invalidateQueries({ queryKey: ["listAgent"] });
       setAgentToDelete(null);
@@ -96,15 +96,15 @@ const AgentsPage = () => {
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">AI Agents</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Agentes de IA</h1>
             <p className="text-muted-foreground">
-              Create and manage your intelligent agents
+              Crie e gerencie seus agentes inteligentes
             </p>
           </div>
           <Link to="/agents/new">
             <Button className="flex items-center">
               <Plus className="mr-2 h-5 w-5" />
-              New Agent
+              Novo Agente
             </Button>
           </Link>
         </div>
@@ -113,7 +113,7 @@ const AgentsPage = () => {
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
             className="pl-10"
-            placeholder="Search agents..."
+            placeholder="Pesquisar agentes..."
             value={searchQuery}
             onChange={handleSearch}
           />
@@ -125,20 +125,20 @@ const AgentsPage = () => {
           <div className="text-center py-12 border rounded-lg">
             {searchQuery ? (
               <>
-                <h3 className="font-medium text-lg">No agents found</h3>
+                <h3 className="font-medium text-lg">Nenhum agente encontrado</h3>
                 <p className="text-muted-foreground">
-                  No agents match your search query. Try using different
-                  keywords.
+                  Nenhum agente corresponde à sua pesquisa. Tente usar
+                  palavras-chave diferentes.
                 </p>
               </>
             ) : (
               <>
-                <h3 className="font-medium text-lg">No agents yet</h3>
+                <h3 className="font-medium text-lg">Nenhum agente ainda</h3>
                 <p className="text-muted-foreground mb-4">
-                  Create your first AI agent to get started
+                  Crie seu primeiro agente de IA para começar
                 </p>
                 <Link to="/agents/new">
-                  <Button>Create Agent</Button>
+                  <Button>Criar Agente</Button>
                 </Link>
               </>
             )}
@@ -162,20 +162,20 @@ const AgentsPage = () => {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the
-              agent and any associated WhatsApp integrations.
+              Esta ação não pode ser desfeita. Isso excluirá permanentemente o
+              agente e quaisquer integrações do WhatsApp associadas.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDelete}
               className="bg-red-500 hover:bg-red-600"
               disabled={isDeleting}
             >
-              {isDeleting ? "Deleting..." : "Delete"}
+              {isDeleting ? "Excluindo..." : "Excluir"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -89,24 +89,24 @@ const BasicInformation = ({
   return (
     <div className="form-container">
       <div className="space-y-2">
-        <Label htmlFor="name">Public Name</Label>
+        <Label htmlFor="name">Nome público</Label>
         <Input
           id="name"
-          placeholder="Customer Support Agent"
+          placeholder="Agente de Suporte ao Cliente"
           value={formData.name}
           onChange={(e) => updateFormData({ name: e.target.value })}
           required
         />
         <p className="text-sm text-muted-foreground">
-          This is the name that users will see when interacting with your agent.
+          Este é o nome que os usuários verão ao interagir com seu agente.
         </p>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="description">Description</Label>
+        <Label htmlFor="description">Descrição</Label>
         <Textarea
           id="description"
-          placeholder="A helpful agent that assists customers with their inquiries..."
+          placeholder="Um agente prestativo que ajuda clientes com suas dúvidas..."
           value={formData.description}
           onChange={(e) => updateFormData({ description: e.target.value })}
           required
@@ -115,13 +115,13 @@ const BasicInformation = ({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="timeZone">Time Zone</Label>
+        <Label htmlFor="timeZone">Fuso horário</Label>
         <Select
           value={formData.timeZone}
           onValueChange={(value) => updateFormData({ timeZone: value })}
         >
           <SelectTrigger className="w-full">
-            <SelectValue placeholder="Select a time zone" />
+            <SelectValue placeholder="Selecione um fuso horário" />
           </SelectTrigger>
           <SelectContent>
             {BRAZILIAN_TIMEZONES.map((tz) => (
@@ -134,13 +134,13 @@ const BasicInformation = ({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="language">Language</Label>
+        <Label htmlFor="language">Idioma</Label>
         <Select
           value={formData.language}
           onValueChange={(value: AgentLanguage) => handleUpdateLanguage(value)}
         >
           <SelectTrigger className="w-full">
-            <SelectValue placeholder="Select a language" />
+            <SelectValue placeholder="Selecione um idioma" />
           </SelectTrigger>
           <SelectContent>
             {LANGUAGES.map((lang) => (
@@ -153,27 +153,27 @@ const BasicInformation = ({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="initialMessage">Initial Message</Label>
+        <Label htmlFor="initialMessage">Mensagem inicial</Label>
         <Textarea
           id="initialMessage"
-          placeholder="Hello! How can I assist you today?"
+          placeholder="Olá! Como posso ajudar você hoje?"
           value={formData.initialMessage}
           onChange={(e) => updateFormData({ initialMessage: e.target.value })}
           required
         />
         <p className="text-sm text-muted-foreground">
-          The first message your agent will send when starting a conversation.
+          A primeira mensagem que seu agente enviará ao iniciar uma conversa.
         </p>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="iaModelId">AI Model</Label>
+        <Label htmlFor="iaModelId">Modelo de IA</Label>
         <Select
           value={formData.iaModelId}
           onValueChange={(value) => updateFormData({ iaModelId: value })}
         >
           <SelectTrigger className="w-full">
-            <SelectValue placeholder="Select an AI model" />
+            <SelectValue placeholder="Selecione um modelo de IA" />
           </SelectTrigger>
           <SelectContent>
             {iaModels.map((model) => (
@@ -184,7 +184,7 @@ const BasicInformation = ({
           </SelectContent>
         </Select>
         <p className="text-sm text-muted-foreground">
-          Different models have different capabilities and pricing.
+          Modelos diferentes possuem capacidades e preços diferentes.
         </p>
       </div>
 

@@ -29,12 +29,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       saveUserData(data);
 
       toast({
-        title: "Logged in successfully",
-        description: `Welcome back, ${data.user.name}!`,
+        title: "Login realizado com sucesso",
+        description: `Bem-vindo, ${data.user.name}!`,
       });
     } catch (error) {
       toast({
-        title: "Login failed",
+        title: "Erro ao realizar login",
         description:
           error.response?.data?.message || error.message || "Erro inesperado",
         variant: "destructive",
@@ -55,12 +55,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
 
       toast({
-        title: "Success",
-        description: "Account created successfully. You can now log in.",
+        title: "Cadastro realizado com sucesso",
+        description: "Conta criada com sucesso. Você pode agora fazer login.",
       });
     } catch (error) {
       toast({
-        title: "Signup failed",
+        title: "Erro ao realizar cadastro",
         description:
           error.response?.data?.message || error.message || "Erro inesperado",
         variant: "destructive",
@@ -75,8 +75,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     removeUserData();
 
     toast({
-      title: "Logged out",
-      description: "You have been logged out successfully.",
+      title: "Logout realizado com sucesso",
+      description: "Você foi deslogado com sucesso.",
     });
   };
 

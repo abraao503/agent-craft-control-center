@@ -16,11 +16,11 @@ import { convertHtmlStringToText } from "@/lib/utils";
 import { useWorkspaceManager } from "@/hooks/useWorkspaceManager";
 
 const STEPS = [
-  "Basic Information",
-  "Custom Fields",
-  "Prompt & Context",
-  "Knowledge Content",
-  "Entry Tags",
+  "Informações Básicas",
+  "Campos Personalizados",
+  "Prompt e Contexto",
+  //"Conteúdo de Conhecimento",
+  "Tags de Entrada",
 ];
 
 const defaultFormData: AgentFormData = {
@@ -72,8 +72,8 @@ const CreateAgentPage = () => {
     },
     onError: (error) => {
       toast({
-        title: "Erro ao criar agente",
-        description: "Ocorreu um erro ao criar o agente.",
+        title: "Error creating agent",
+        description: "An error occurred while creating the agent.",
         variant: "destructive",
       });
     },

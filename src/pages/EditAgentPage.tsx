@@ -13,10 +13,6 @@ import {
   UpdateAgentResquest,
   UpdateAssistantCustomField,
   UpdateFollowUpAction,
-  CreateFollowUp,
-  UpdateFollowUp,
-  DeleteFollowUp,
-  FollowUp,
 } from "@/types/agent";
 import { useToast } from "@/hooks/use-toast";
 import { getAgent } from "@/services/agent/getAgent";
@@ -31,7 +27,7 @@ const STEPS = [
   "Informações Básicas",
   "Campos Personalizados",
   "Prompt & Contexto",
-  "Conteúdo do Agente",
+  //"Conteúdo do Agente",
   "Tags de Entrada",
 ];
 

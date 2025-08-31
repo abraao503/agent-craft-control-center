@@ -138,7 +138,7 @@ const KnowledgeContent = ({
     if (newContentName.trim().length < 3) {
       toast({
         title: "Content name too short",
-        description: "O nome do conteúdo deve ter pelo menos 3 caracteres",
+        description: "Content name must be at least 3 characters long.",
         variant: "destructive",
       });
 
@@ -212,26 +212,25 @@ const KnowledgeContent = ({
   return (
     <div className="form-container">
       <div className="mb-6">
-        <h3 className="text-lg font-medium mb-2">Knowledge Content</h3>
+        <h3 className="text-lg font-medium mb-2">Conteúdo de conhecimento</h3>
         <p className="text-sm text-muted-foreground">
-          Select existing content or upload new files for your agent to use as
-          knowledge sources.
+          Selecione conteúdo existente ou envie novos arquivos para o seu agente usar como fontes de conhecimento.
         </p>
       </div>
 
       <div className="space-y-6">
         <Card className="p-4">
-          <Label className="block mb-4">Upload New Content</Label>
+          <Label className="block mb-4">Enviar novo conteúdo</Label>
           <div className="space-y-4">
             <Input
-              placeholder="Content name"
+              placeholder="Nome do conteúdo"
               value={newContentName}
               onChange={(e) => setNewContentName(e.target.value)}
             />
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
               <Upload className="mx-auto h-12 w-12 text-gray-400" />
               <p className="mt-2 text-sm text-muted-foreground">
-                Upload PDF or TXT files (max 10MB)
+                Envie arquivos PDF ou TXT (máx. 10MB)
               </p>
               <Input
                 id="upload"
@@ -246,12 +245,12 @@ const KnowledgeContent = ({
                 className="mt-4"
                 disabled={isUploading}
               >
-                Select File
+                Selecionar arquivo
               </Button>
               {selectedFile && (
                 <div className="mt-4">
                   <p className="text-sm font-medium">
-                    Selected file: {selectedFile.name}
+                    Arquivo selecionado: {selectedFile.name}
                   </p>
                   <Button
                     onClick={handleFileUpload}
@@ -259,7 +258,7 @@ const KnowledgeContent = ({
                     disabled={isUploading}
                     isLoading={isUploading}
                   >
-                    Upload
+                    Enviar
                   </Button>
                 </div>
               )}
@@ -268,11 +267,11 @@ const KnowledgeContent = ({
         </Card>
 
         <Card className="p-4">
-          <Label className="block mb-4">Available Content</Label>
+          <Label className="block mb-4">Conteúdo disponível</Label>
           <div className="space-y-2">
             {isLoading ? (
               <p className="text-sm text-muted-foreground text-center py-4">
-                Loading available content...
+                Carregando conteúdo disponível...
               </p>
             ) : availableContents.length > 0 ? (
               availableContents.map((content) => (
@@ -292,13 +291,13 @@ const KnowledgeContent = ({
                     </div>
                   </div>
                   <Badge variant="outline" className="ml-2">
-                    Select
+                    Selecionar
                   </Badge>
                 </div>
               ))
             ) : (
               <p className="text-sm text-muted-foreground text-center py-4">
-                No content available. Upload your first file above.
+                Nenhum conteúdo disponível. Envie seu primeiro arquivo acima.
               </p>
             )}
           </div>
@@ -306,11 +305,11 @@ const KnowledgeContent = ({
 
         <div className="mt-4">
           <Label className="block mb-2">
-            Selected Content ({formData.contents.length})
+            Conteúdo selecionado ({formData.contents.length})
           </Label>
           {formData.contents.length === 0 ? (
             <p className="text-sm text-muted-foreground py-4 text-center border rounded-md">
-              No content selected yet
+              Nenhum conteúdo selecionado ainda
             </p>
           ) : (
             <div className="border rounded-md p-4 space-y-2">
@@ -341,7 +340,7 @@ const KnowledgeContent = ({
                       className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0"
                     >
                       <X className="h-4 w-4" />
-                      <span className="sr-only">Remove</span>
+                      <span className="sr-only">Remover</span>
                     </Button>
                   </div>
                 );

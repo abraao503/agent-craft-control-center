@@ -77,7 +77,7 @@ const SignupForm = () => {
           Create Account
         </CardTitle>
         <CardDescription className="text-center">
-          Join AgentCraft to create and manage your AI agents
+          Join 7 Agentes to create and manage your AI agents
         </CardDescription>
       </CardHeader>
       <CardContent>

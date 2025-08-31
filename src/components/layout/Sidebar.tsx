@@ -454,11 +454,9 @@ const SidebarMenuContent = () => {
           )}
         >
           <div className="w-8 h-8 bg-primary rounded-md flex items-center justify-center">
-            <Bot className="w-5 h-5 text-primary-foreground" />
+            <img src="/img/icon.png" alt="App icon" className="w-6 h-6" />
           </div>
-          {!isCollapsed && (
-            <span className="text-lg font-bold">AgentCraft</span>
-          )}
+          {!isCollapsed && <span className="text-lg font-bold">7 Agentes</span>}
         </Link>
       </div>
 

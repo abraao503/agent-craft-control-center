@@ -61,19 +61,18 @@ const CustomFields = ({ formData, updateFormData }: CustomFieldsProps) => {
   return (
     <div className="form-container">
       <div className="mb-6">
-        <h3 className="text-lg font-medium mb-2">Custom Fields</h3>
+        <h3 className="text-lg font-medium mb-2">Campos personalizados</h3>
         <p className="text-sm text-muted-foreground">
-          Define custom fields that your agent will collect from users during
-          conversations.
+          Defina campos personalizados que seu agente coletará dos usuários durante as conversas.
         </p>
       </div>
 
       <div className="border rounded-lg p-4 mb-6">
-        <h4 className="font-medium mb-4">Add New Field</h4>
+        <h4 className="font-medium mb-4">Adicionar novo campo</h4>
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="fieldName">Internal Name</Label>
+              <Label htmlFor="fieldName">Nome interno</Label>
               <Input
                 id="fieldName"
                 placeholder="email"
@@ -86,29 +85,29 @@ const CustomFields = ({ formData, updateFormData }: CustomFieldsProps) => {
                 }
               />
               <p className="text-xs text-muted-foreground">
-                No spaces, used in your code (e.g., "email")
+                Sem espaços, usado no seu código (ex.: "email")
               </p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="fieldLabel">Display Label</Label>
+              <Label htmlFor="fieldLabel">Rótulo de exibição</Label>
               <Input
                 id="fieldLabel"
-                placeholder="Email Address"
+                placeholder="Endereço de e-mail"
                 value={newField.label}
                 onChange={(e) =>
                   setNewField({ ...newField, label: e.target.value })
                 }
               />
               <p className="text-xs text-muted-foreground">
-                What users will see (e.g., "Email Address")
+                O que os usuários verão (ex.: "Endereço de e-mail")
               </p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="fieldType">Field Type</Label>
+              <Label htmlFor="fieldType">Tipo de campo</Label>
               <Select
                 value={newField.type}
                 onValueChange={(value: "text" | "number" | "boolean") =>
@@ -116,12 +115,12 @@ const CustomFields = ({ formData, updateFormData }: CustomFieldsProps) => {
                 }
               >
                 <SelectTrigger id="fieldType">
-                  <SelectValue placeholder="Select field type" />
+                  <SelectValue placeholder="Selecione o tipo de campo" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="text">Text</SelectItem>
-                  <SelectItem value="number">Number</SelectItem>
-                  <SelectItem value="boolean">Boolean</SelectItem>
+                  <SelectItem value="text">Texto</SelectItem>
+                  <SelectItem value="number">Número</SelectItem>
+                  <SelectItem value="boolean">Booleano</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -145,29 +144,29 @@ const CustomFields = ({ formData, updateFormData }: CustomFieldsProps) => {
             disabled={!newField.name || !newField.label}
           >
             <Plus className="h-4 w-4 mr-2" />
-            Add Field
+            Adicionar campo
           </Button>
         </div>
       </div>
 
       <div>
         <h4 className="font-medium mb-4">
-          Custom Fields ({formData.customFields.length})
+          Campos personalizados ({formData.customFields.length})
         </h4>
         {formData.customFields.length === 0 ? (
           <p className="text-sm text-muted-foreground py-4 text-center border rounded-md">
-            No custom fields added yet
+            Nenhum campo personalizado adicionado ainda
           </p>
         ) : (
           <div className="border rounded-md overflow-hidden">
             <table className="w-full">
               <thead className="bg-muted/50">
                 <tr>
-                  <th className="text-left p-3 text-sm font-medium">Name</th>
-                  <th className="text-left p-3 text-sm font-medium">Label</th>
-                  <th className="text-left p-3 text-sm font-medium">Type</th>
+                  <th className="text-left p-3 text-sm font-medium">Nome</th>
+                  <th className="text-left p-3 text-sm font-medium">Rótulo</th>
+                  <th className="text-left p-3 text-sm font-medium">Tipo</th>
                   <th className="text-left p-3 text-sm font-medium">
-                    Identifier
+                    Identificador
                   </th>
                   <th className="p-3 w-12"></th>
                 </tr>
@@ -195,7 +194,7 @@ const CustomFields = ({ formData, updateFormData }: CustomFieldsProps) => {
                         className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0"
                       >
                         <X className="h-4 w-4" />
-                        <span className="sr-only">Remove</span>
+                        <span className="sr-only">Remover</span>
                       </Button>
                     </td>
                   </tr>

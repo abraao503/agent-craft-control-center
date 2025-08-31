@@ -42,18 +42,18 @@ const AgentDetailsCard = ({ agent }: AgentDetailsCardProps) => {
       <CardContent>
         <div className="space-y-6">
           <div>
-            <h3 className="text-lg font-medium mb-2">Basic Information</h3>
+            <h3 className="text-lg font-medium mb-2">Informações Básicas</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <p className="text-sm text-muted-foreground">AI Model</p>
+                <p className="text-sm text-muted-foreground">Modelo de IA</p>
                 <p className="font-medium">{agent.iaModel.name}</p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Language</p>
+                <p className="text-sm text-muted-foreground">Idioma</p>
                 <p className="font-medium">{agent.language}</p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Time Zone</p>
+                <p className="text-sm text-muted-foreground">Fuso Horário</p>
                 <p className="font-medium">{agent.timeZone}</p>
               </div>
             </div>
@@ -62,7 +62,7 @@ const AgentDetailsCard = ({ agent }: AgentDetailsCardProps) => {
           <Separator />
 
           <div>
-            <h3 className="text-lg font-medium mb-2">Initial Message</h3>
+            <h3 className="text-lg font-medium mb-2">Mensagem Inicial</h3>
             <div className="p-4 bg-muted/50 rounded-lg">
               <p className="italic">"{agent.initialMessage}"</p>
             </div>
@@ -71,64 +71,67 @@ const AgentDetailsCard = ({ agent }: AgentDetailsCardProps) => {
           <Separator />
 
           <div>
-            <h3 className="text-lg font-medium mb-2">Prompt & Context</h3>
+            <h3 className="text-lg font-medium mb-2">Prompt e Contexto</h3>
             <div className="space-y-4">
               <div>
-                <p className="text-sm text-muted-foreground">Description</p>
-                <p>{agent.prompt.description}</p>
+                <p className="text-sm text-muted-foreground">Identidade</p>
+                <p>{agent.prompt.identity}</p>
               </div>
 
               <div>
-                <p className="text-sm text-muted-foreground">Goal</p>
+                <p className="text-sm text-muted-foreground">Função</p>
+                <p>{agent.prompt.function}</p>
+              </div>
+
+              <div>
+                <p className="text-sm text-muted-foreground">Objetivo</p>
                 <p>{agent.prompt.goal}</p>
               </div>
 
               <div>
-                <p className="text-sm text-muted-foreground">Skills</p>
-                <p>{agent.prompt.habilities}</p>
+                <p className="text-sm text-muted-foreground">Estilo</p>
+                <p>{agent.prompt.style}</p>
               </div>
 
-              <div className="pt-2">
-                <p className="text-sm text-muted-foreground mb-1">
-                  Company Information
-                </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div>
-                    <p className="text-xs text-muted-foreground">Name</p>
-                    <p className="font-medium">{agent.prompt.companyName}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Sector</p>
-                    <p className="font-medium">{agent.prompt.companySector}</p>
-                  </div>
-                  <div className="md:col-span-2">
-                    <p className="text-xs text-muted-foreground">Website</p>
-                    <p className="font-medium">
+              <div>
+                <p className="text-sm text-muted-foreground">Instruções</p>
+                <p>{agent.prompt.instructions}</p>
+              </div>
+
+              {agent.prompt.blacklist && (
+                <div>
+                  <p className="text-sm text-muted-foreground">Mensagens a Ignorar</p>
+                  <p>{agent.prompt.blacklist}</p>
+                </div>
+              )}
+
+              {agent.prompt.links && agent.prompt.links.length > 0 && (
+                <div className="pt-2">
+                  <p className="text-sm text-muted-foreground mb-1">Links</p>
+                  <div className="flex flex-col gap-2">
+                    {agent.prompt.links.map((link, idx) => (
                       <a
-                        href={agent.prompt.companySite}
+                        key={idx}
+                        href={link.url}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-primary hover:underline"
                       >
-                        {agent.prompt.companySite}
+                        {link.name || link.url}
                       </a>
-                    </p>
-                  </div>
-                  <div className="md:col-span-2">
-                    <p className="text-xs text-muted-foreground">Description</p>
-                    <p>{agent.prompt.companyDescription}</p>
+                    ))}
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
 
           <Separator />
 
           <div>
-            <h3 className="text-lg font-medium mb-2">Knowledge Content</h3>
+            <h3 className="text-lg font-medium mb-2">Conteúdo de Conhecimento</h3>
             {agent.contents.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No content added</p>
+              <p className="text-sm text-muted-foreground">Nenhum conteúdo adicionado</p>
             ) : (
               <div className="flex flex-wrap gap-2">
                 {agent.contents.map((content) => (
