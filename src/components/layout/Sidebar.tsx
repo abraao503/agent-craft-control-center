@@ -487,11 +487,11 @@ const SidebarMenuContent = () => {
                 onClick={logout}
               >
                 <LogOut className="h-5 w-5" />
-                <span className="sr-only">Logout</span>
+                <span className="sr-only">Sair</span>
               </Button>
             </TooltipTrigger>
             <TooltipContent side="right" className="border-border">
-              Logout
+              Sair
             </TooltipContent>
           </Tooltip>
         ) : (
@@ -501,7 +501,7 @@ const SidebarMenuContent = () => {
             onClick={logout}
           >
             <LogOut className="mr-2 h-5 w-5" />
-            Logout
+            Sair
           </Button>
         )}
       </div>
