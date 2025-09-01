@@ -107,3 +107,32 @@
     @apply space-y-6 rounded-lg p-8 max-w-3xl mx-auto;
   }
 }
+
+/* Development theme overrides */
+/* Light mode overrides when `dev-theme` is present on <html> */
+.dev-theme:not(.dark) {
+  --primary: 217 91% 60%; /* blue 500 */
+  --primary-foreground: 210 40% 98%;
+  --secondary: 214 95% 62%;
+  --accent: 213 100% 95%;
+  --accent-foreground: 222.2 47.4% 11.2%;
+  --ring: 217 91% 60%;
+  --background: 210 100% 99%; /* subtle blue tint */
+  --muted: 213 60% 96%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+  --border: 214.3 31.8% 91.4%;
+}
+
+/* Dark mode overrides when `dev-theme` is present on <html> */
+.dark.dev-theme {
+  --primary: 217 91% 60%;
+  --primary-foreground: 222.2 47.4% 11.2%;
+  --secondary: 214 95% 62%;
+  --accent: 217 80% 25%;
+  --accent-foreground: 210 40% 98%;
+  --ring: 217 91% 60%;
+  --background: 222.2 84% 4.9%;
+  --muted: 217.2 32.6% 17.5%;
+  --muted-foreground: 215 20.2% 65.1%;
+  --border: 217.2 32.6% 17.5%;
+}

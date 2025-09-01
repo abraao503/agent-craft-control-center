@@ -72,6 +72,21 @@ const AppLayout = () => {
   const [pageTransitioning, setPageTransitioning] = useState(false);
   const mainContainerRef = useRef<HTMLDivElement>(null);
 
+  // Detect dev environment
+  const isDev = import.meta.env.VITE_APP_ENV === "development";
+
+  console.log("isDev", isDev);
+
+  // Apply a global dev theme class on <html>
+  useEffect(() => {
+    const el = document.documentElement;
+    if (isDev) {
+      el.classList.add("dev-theme");
+    } else {
+      el.classList.remove("dev-theme");
+    }
+  }, [isDev]);
+
   // Detectar tema e definir variáveis CSS apenas para a sidebar
   useEffect(() => {
     // Função para definir as variáveis de acordo com o tema
@@ -151,7 +166,12 @@ const AppLayout = () => {
     <SidebarProvider defaultOpen={initialState}>
       <MainContainerRefContext.Provider value={mainContainerRef}>
         <PageViewTracker />
-        <div className="flex flex-col h-screen overflow-hidden bg-background">
+        <div
+          className={cn(
+            "flex flex-col h-screen overflow-hidden bg-background",
+            isDev && "ring-2 ring-blue-500"
+          )}
+        >
           <Header />
           <div className="flex flex-1 overflow-hidden">
             <Sidebar />
