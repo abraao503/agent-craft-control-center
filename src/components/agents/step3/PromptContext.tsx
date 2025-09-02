@@ -19,7 +19,7 @@ const PromptContext = ({ formData, updateFormData }: PromptContextProps) => {
   useEffect(() => {
     const initialValue = convertTextToHtmlString(formData.instructions || "");
     setEditorValue(initialValue);
-  }, [formData.instructions]);
+  }, []);
 
   const handleAddLink = () => {
     const currentLinks = formData.links || [];
@@ -136,7 +136,8 @@ const PromptContext = ({ formData, updateFormData }: PromptContextProps) => {
           className="min-h-[100px]"
         />
         <p className="text-sm text-muted-foreground">
-          Opcional: Lista de tópicos ou palavras-chave que seu agente deve evitar
+          Opcional: Lista de tópicos ou palavras-chave que seu agente deve
+          evitar
         </p>
       </div>
 
@@ -204,7 +205,8 @@ const PromptContext = ({ formData, updateFormData }: PromptContextProps) => {
           ))}
           {(formData.links || []).length === 0 && (
             <p className="text-sm text-muted-foreground italic">
-              Nenhum link adicionado. Clique em "Adicionar link" para adicionar um link de referência para o seu agente.
+              Nenhum link adicionado. Clique em "Adicionar link" para adicionar
+              um link de referência para o seu agente.
             </p>
           )}
         </div>
