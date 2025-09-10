@@ -36,6 +36,7 @@ import FollowUpCreatePage from "./pages/FollowUpCreatePage";
 import FollowUpEditPage from "./pages/FollowUpEditPage";
 import FollowUpDetailPage from "./pages/FollowUpDetailPage";
 import MessageQueuePage from "./pages/MessageQueuePage";
+import PipelineDetailPage from "./pages/PipelineDetailPage";
 import Sidebar from "./components/layout/Sidebar";
 import Header from "./components/layout/Header";
 import { SidebarProvider } from "./components/ui/sidebar";
@@ -212,6 +213,7 @@ const FollowUpCreatePageView = () => <FollowUpCreatePage />;
 const FollowUpEditPageView = () => <FollowUpEditPage />;
 const FollowUpDetailViewPage = () => <FollowUpDetailPage />;
 const MessageQueueListPage = () => <MessageQueuePage />;
+const PipelineDetailViewPage = () => <PipelineDetailPage />;
 const NotFoundPage = () => <NotFound />;
 
 const App = () => (
@@ -259,6 +261,11 @@ const App = () => (
                   <Route
                     path="/customers/:id"
                     element={<CustomerDetailsViewPage />}
+                  />
+                  <Route path="/deals" element={<PipelineDetailViewPage />} />
+                  <Route
+                    path="/deals/pipeline/:pipelineId"
+                    element={<PipelineDetailViewPage />}
                   />
                   <Route
                     path="/customers/export-xlsx"

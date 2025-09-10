@@ -14,8 +14,8 @@ import {
   ChevronRight,
   Building2,
   Plus,
-  Clock,
   BellRing,
+  DollarSignIcon,
 } from "lucide-react";
 import { useAuth } from "@/contexts/auth/hooks";
 import {
@@ -357,6 +357,11 @@ const SidebarMenuContent = () => {
       path: "/customers",
       label: "Clientes",
       icon: <Users className="h-5 w-5" />,
+    },
+    {
+      path: "/deals",
+      label: "Negócios",
+      icon: <DollarSignIcon className="h-5 w-5" />,
     },
     {
       path: "/contents",
