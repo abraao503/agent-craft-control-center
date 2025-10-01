@@ -1,5 +1,5 @@
 import { api } from "../api";
-import { AssistantPipelineStage } from "@/types/pipeline";
+import { AssistantPipelineStage, WhatsAppIntegrationConfig } from "@/types/pipeline";
 
 // Item structure for updating existing stages within a pipeline
 export interface UpdatePipelineStageItem {
@@ -18,6 +18,7 @@ export interface UpdatePipelineInput {
   description?: string | null;
   stages?: UpdatePipelineStageItem[];
   assistantId?: string | null;
+  whatsappIntegration?: WhatsAppIntegrationConfig;
 }
 
 export const updatePipeline = async (

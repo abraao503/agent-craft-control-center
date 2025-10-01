@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useMemo, useRef, useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -28,8 +28,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { PipelineStageMinimal, AssistantPipelineStage } from "@/types/pipeline";
+import { PipelineStageMinimal, AssistantPipelineStage, WhatsAppIntegrationConfig } from "@/types/pipeline";
 import { Agent } from "@/types/agent";
+import { CompanyWhatsAppIntegration } from "@/types/whatsapp";
+import { useQuery } from "@tanstack/react-query";
+import { getCompanyWhatsAppIntegration } from "@/services/whatsapp/getCompanyWhatsAppIntegration";
 import { cn } from "@/lib/utils";
 import { GripVertical } from "lucide-react";
 import { AssistantStageConfig } from "./AssistantStageConfig";
@@ -63,11 +66,15 @@ interface PipelineEditorProps {
   stages: PipelineStageMinimal[];
   availableAgents?: Agent[];
   selectedAssistantId?: string;
+  availableWhatsAppIntegrations?: CompanyWhatsAppIntegration[];
+  initialWhatsAppConfig?: WhatsAppIntegrationConfig;
+  companyWhatsappIntegrationId?: string | null;
   onCancel: () => void;
   onSave: (args: {
     name: string;
     stages: EditableStage[];
     assistantId?: string;
+    whatsappIntegration?: WhatsAppIntegrationConfig;
   }) => Promise<void> | void;
   saveLabel?: string;
 }
@@ -171,6 +178,9 @@ export const PipelineEditor: React.FC<PipelineEditorProps> = ({
   stages,
   availableAgents = [],
   selectedAssistantId,
+  availableWhatsAppIntegrations = [],
+  initialWhatsAppConfig,
+  companyWhatsappIntegrationId,
   onCancel,
   onSave,
   saveLabel = "Salvar alterações",
@@ -197,6 +207,38 @@ export const PipelineEditor: React.FC<PipelineEditorProps> = ({
     // Use the assistant ID from pipeline
     return selectedAssistantId || "";
   });
+  const [useWhatsApp, setUseWhatsApp] = useState(false);
+  const [whatsAppIntegrationId, setWhatsAppIntegrationId] = useState("");
+  const [whatsAppIntegrationName, setWhatsAppIntegrationName] = useState<'evolux' | 'zapi'>('evolux');
+  const [initialStageOrder, setInitialStageOrder] = useState(0);
+  const [externalToken, setExternalToken] = useState("");
+  const [externalClientToken, setExternalClientToken] = useState("");
+  const [postbackUrl, setPostbackUrl] = useState("");
+
+  const whatsappIntegrationQuery = useQuery({
+    queryKey: ["getCompanyWhatsAppIntegration", companyWhatsappIntegrationId],
+    queryFn: () => getCompanyWhatsAppIntegration(companyWhatsappIntegrationId!),
+    enabled: !!companyWhatsappIntegrationId,
+  });
+
+  useEffect(() => {
+    if (whatsappIntegrationQuery.data) {
+      const data = whatsappIntegrationQuery.data;
+      setUseWhatsApp(true);
+      // Normalize z-api to zapi
+      const normalizedName = data.whatsappIntegrationName === 'z-api' ? 'zapi' : data.whatsappIntegrationName;
+      setWhatsAppIntegrationName(normalizedName as 'evolux' | 'zapi');
+      setExternalToken(data.externalToken || "");
+      setExternalClientToken(data.externalClientToken || "");
+      setPostbackUrl(data.postbackUrl || "");
+      
+      // Find stage order by initialPipelineStageId
+      const stageIndex = draftStages.findIndex(s => s.id === data.initialPipelineStageId);
+      if (stageIndex !== -1) {
+        setInitialStageOrder(draftStages[stageIndex].order);
+      }
+    }
+  }, [whatsappIntegrationQuery.data, draftStages]);
   const initialRef = useRef<{ name: string; stages: EditableStage[] }>({
     name: pipelineName,
     stages: normalize(stages),
@@ -253,10 +295,26 @@ export const PipelineEditor: React.FC<PipelineEditorProps> = ({
   const handleSave = async () => {
     setSaving(true);
     try {
+      let whatsappIntegration: WhatsAppIntegrationConfig | undefined;
+      
+      if (useWhatsApp) {
+        whatsappIntegration = {
+          whatsappIntegrationName: whatsAppIntegrationName,
+          initialPipelineStageOrder: initialStageOrder,
+        };
+        
+        if (whatsAppIntegrationName === 'zapi') {
+          whatsappIntegration.externalToken = externalToken;
+          whatsappIntegration.externalClientToken = externalClientToken;
+          whatsappIntegration.postbackUrl = postbackUrl;
+        }
+      }
+      
       await onSave({
         name: name.trim(),
         stages: draftStages.map((s, i) => ({ ...s, order: i })),
         assistantId: useAssistant ? assistantId : undefined,
+        whatsappIntegration,
       });
     } finally {
       setSaving(false);
@@ -359,6 +417,108 @@ export const PipelineEditor: React.FC<PipelineEditorProps> = ({
                 Configure em quais etapas o agente pode agir e para onde pode
                 mover os negócios.
               </p>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* WhatsApp Integration Section */}
+      <div className="border rounded-lg p-4 space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <Label className="text-base font-medium">
+              Integração WhatsApp
+            </Label>
+            <p className="text-sm text-muted-foreground mt-1">
+              Conecte este funil a uma integração WhatsApp para receber leads automaticamente
+            </p>
+          </div>
+          <Switch
+            checked={useWhatsApp}
+            onCheckedChange={(checked) => {
+              setUseWhatsApp(checked);
+              if (!checked) {
+                setWhatsAppIntegrationId("");
+                setExternalToken("");
+                setExternalClientToken("");
+                setPostbackUrl("");
+              }
+            }}
+          />
+        </div>
+
+        {useWhatsApp && (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Tipo de Integração</Label>
+              <Select 
+                value={whatsAppIntegrationName} 
+                onValueChange={(value) => setWhatsAppIntegrationName(value as 'evolux' | 'zapi')}
+              >
+                <SelectTrigger className="max-w-md">
+                  <SelectValue placeholder="Escolha o tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="evolux">Evolux</SelectItem>
+                  <SelectItem value="zapi">Z-API</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Etapa Inicial</Label>
+              <Select 
+                value={initialStageOrder.toString()} 
+                onValueChange={(value) => setInitialStageOrder(parseInt(value))}
+              >
+                <SelectTrigger className="max-w-md">
+                  <SelectValue placeholder="Escolha a etapa inicial" />
+                </SelectTrigger>
+                <SelectContent>
+                  {draftStages.map((stage) => (
+                    <SelectItem key={stage.id} value={stage.order.toString()}>
+                      {stage.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Novos leads do WhatsApp serão adicionados nesta etapa
+              </p>
+            </div>
+
+            {whatsAppIntegrationName === 'zapi' && (
+              <>
+                <div className="space-y-2">
+                  <Label>External Token</Label>
+                  <Input
+                    value={externalToken}
+                    onChange={(e) => setExternalToken(e.target.value)}
+                    placeholder="Digite o token externo"
+                    className="max-w-md"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>External Client Token</Label>
+                  <Input
+                    value={externalClientToken}
+                    onChange={(e) => setExternalClientToken(e.target.value)}
+                    placeholder="Digite o token do cliente"
+                    className="max-w-md"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Postback URL</Label>
+                  <Input
+                    value={postbackUrl}
+                    onChange={(e) => setPostbackUrl(e.target.value)}
+                    placeholder="Digite a URL de postback"
+                    className="max-w-md"
+                  />
+                </div>
+              </>
             )}
           </div>
         )}

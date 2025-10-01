@@ -17,8 +17,9 @@ import { listPipelines } from "@/services/pipeline/listPipelines";
 import { updatePipeline } from "@/services/pipeline/updatePipeline";
 import { createPipeline } from "@/services/pipeline/createPipeline";
 import { listAgent } from "@/services/agent/listAgent";
-import { PipelineStageMinimal, CreatePipelineInput, AssistantPipelineStage } from "@/types/pipeline";
+import { PipelineStageMinimal, CreatePipelineInput, AssistantPipelineStage, WhatsAppIntegrationConfig } from "@/types/pipeline";
 import { Agent } from "@/types/agent";
+import { listCompanyWhatsAppIntegrations } from "@/services/whatsapp/listCompanyWhatsAppIntegrations";
 
 const PipelineDetailPage = () => {
   const { pipelineId } = useParams();
@@ -27,7 +28,7 @@ const PipelineDetailPage = () => {
   const { toast } = useToast();
 
   const { workspaceId, isChangingWorkspace } = useWorkspaceManager({
-    queryKeys: ["listPipelineStages", "listDealsByPipeline", "listPipelines", "listAgent"],
+    queryKeys: ["listPipelineStages", "listDealsByPipeline", "listPipelines", "listAgent", "listCompanyWhatsAppIntegrations"],
     autoRefetch: true,
     trackLoadingState: true,
   });
@@ -49,7 +50,8 @@ const PipelineDetailPage = () => {
           stagesQuery.isLoading ||
           dealsQuery.isLoading ||
           pipelinesQuery.isLoading ||
-          agentsQuery.isLoading;
+          agentsQuery.isLoading ||
+          whatsappIntegrationsQuery.isLoading;
   };
 
   const shouldAutoSelectPipeline = () => {
@@ -81,6 +83,12 @@ const PipelineDetailPage = () => {
   const agentsQuery = useQuery({
     queryKey: ["listAgent", workspaceId],
     queryFn: () => listAgent(workspaceId!),
+    enabled: !!workspaceId,
+  });
+
+  const whatsappIntegrationsQuery = useQuery({
+    queryKey: ["listCompanyWhatsAppIntegrations", workspaceId],
+    queryFn: () => listCompanyWhatsAppIntegrations(workspaceId!),
     enabled: !!workspaceId,
   });
 
@@ -121,6 +129,7 @@ const PipelineDetailPage = () => {
   const stages = stagesQuery.data || [];
   const deals = dealsQuery.data || [];
   const agents = agentsQuery.data?.agents || [];
+  const whatsappIntegrations = whatsappIntegrationsQuery.data || [];
   
   const currentPipeline = useMemo(() => {
     return pipelinesQuery.data?.find((p) => p.id === pipelineId);
@@ -128,6 +137,7 @@ const PipelineDetailPage = () => {
   
   const currentPipelineName = currentPipeline?.name || "";
   const currentPipelineAssistantId = currentPipeline?.assistantId || undefined;
+  const currentPipelineWhatsappIntegrationId = currentPipeline?.companyWhatsappIntegrationId || undefined;
 
   const hasPipelines = (pipelinesQuery.data?.length ?? 0) > 0;
   const loading = shouldShowLoading();
@@ -182,6 +192,7 @@ const PipelineDetailPage = () => {
     name,
     stages: draft,
     assistantId,
+    whatsappIntegration,
   }: {
     name: string;
     stages: Array<{
@@ -193,6 +204,7 @@ const PipelineDetailPage = () => {
       assistantPipelineStage?: AssistantPipelineStage;
     }>;
     assistantId?: string;
+    whatsappIntegration?: WhatsAppIntegrationConfig;
   }) => {
     if (!pipelineId || !workspaceId) return;
     try {
@@ -208,6 +220,7 @@ const PipelineDetailPage = () => {
           winProbability: s.winProbability,
           assistantPipelineStage: s.assistantPipelineStage || null,
         })),
+        whatsappIntegration,
       });
       setIsEditing(false);
       // refresh data
@@ -256,6 +269,7 @@ const PipelineDetailPage = () => {
     name,
     stages: draft,
     assistantId,
+    whatsappIntegration,
   }: {
     name: string;
     stages: Array<{
@@ -267,6 +281,7 @@ const PipelineDetailPage = () => {
       assistantPipelineStage?: AssistantPipelineStage;
     }>;
     assistantId?: string;
+    whatsappIntegration?: WhatsAppIntegrationConfig;
   }) => {
     if (!workspaceId) return;
     try {
@@ -283,6 +298,7 @@ const PipelineDetailPage = () => {
             typeof s.winProbability === "number" ? s.winProbability : 100,
           assistantPipelineStage: s.assistantPipelineStage || null,
         })),
+        whatsappIntegration,
       };
       const res = await createPipeline(payload);
       setIsCreating(false);
@@ -340,6 +356,8 @@ const PipelineDetailPage = () => {
       stages={stages}
       availableAgents={agents}
       selectedAssistantId={currentPipelineAssistantId}
+      availableWhatsAppIntegrations={whatsappIntegrations}
+      companyWhatsappIntegrationId={currentPipelineWhatsappIntegrationId}
       onCancel={() => setIsEditing(false)}
       onSave={handleSavePipeline}
     />
@@ -351,6 +369,7 @@ const PipelineDetailPage = () => {
       stages={getDefaultCreateStages()}
       availableAgents={agents}
       selectedAssistantId={undefined}
+      availableWhatsAppIntegrations={whatsappIntegrations}
       onCancel={() => setIsCreating(false)}
       onSave={handleCreatePipeline}
       saveLabel="Criar funil"

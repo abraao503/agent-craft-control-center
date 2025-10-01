@@ -9,6 +9,7 @@ export interface PipelineListItem {
   updatedAt: string | Date;
   stagesCount: number;
   assistantId?: string | null;
+  companyWhatsappIntegrationId?: string | null;
 }
 
 export interface AssistantAllowedTargetStage {
@@ -30,12 +31,21 @@ export interface CreatePipelineStageInput {
   assistantPipelineStage?: AssistantPipelineStage | null;
 }
 
+export interface WhatsAppIntegrationConfig {
+  whatsappIntegrationName: 'evolux' | 'zapi';
+  initialPipelineStageOrder: number;
+  externalToken?: string;
+  externalClientToken?: string;
+  postbackUrl?: string;
+}
+
 export interface CreatePipelineInput {
   workspaceId: string; // UUID
   name: string;
   description?: string;
   stages: CreatePipelineStageInput[]; // at least 1
   assistantId?: string | null; // UUID of assistant to use in this pipeline
+  whatsappIntegration?: WhatsAppIntegrationConfig;
 }
 
 export interface CreatePipelineResponse {

@@ -21,10 +21,11 @@ export interface CompanyWhatsAppIntegrationFull {
   postbackUrl: string;
   externalToken: string;
   externalClientToken: string;
-  agentId: string;
+  pipelineId: string;
   whatsappIntegrationId: string;
   whatsappIntegrationName: "z-api" | "evolux";
   active: boolean;
+  initialPipelineStageId: string;
 }
 
 export interface WhatsAppFormData {
