@@ -1,4 +1,5 @@
 import { api } from "../api";
+import { AssistantPipelineStage } from "@/types/pipeline";
 
 // Item structure for updating existing stages within a pipeline
 export interface UpdatePipelineStageItem {
@@ -8,8 +9,7 @@ export interface UpdatePipelineStageItem {
   order: number;
   color?: string;
   winProbability?: number; // 0-100
-  isWonStage?: boolean;
-  isLostStage?: boolean;
+  assistantPipelineStage?: AssistantPipelineStage | null;
 }
 
 export interface UpdatePipelineInput {
@@ -17,6 +17,7 @@ export interface UpdatePipelineInput {
   name?: string;
   description?: string | null;
   stages?: UpdatePipelineStageItem[];
+  assistantId?: string | null;
 }
 
 export const updatePipeline = async (

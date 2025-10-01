@@ -45,6 +45,7 @@ import { MainContainerRefContext } from "./contexts/mainContainer";
 import { PageViewTracker } from "./components/PageViewTracker";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { WorkspaceProvider } from "./contexts/workspace/WorkspaceContext";
+import { Loader2 } from "lucide-react";
 
 const queryClient = new QueryClient();
 
@@ -66,7 +67,7 @@ const getInitialSidebarState = (): boolean => {
 
 // Componente de layout persistente
 const AppLayout = () => {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const isMobile = useIsMobile();
   const location = useLocation();
   const initialState = getInitialSidebarState();
@@ -75,8 +76,6 @@ const AppLayout = () => {
 
   // Detect dev environment
   const isDev = import.meta.env.VITE_APP_ENV === "development";
-
-  console.log("isDev", isDev);
 
   // Apply a global dev theme class on <html>
   useEffect(() => {
@@ -159,8 +158,16 @@ const AppLayout = () => {
     return () => clearTimeout(timer);
   }, [location.pathname]);
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
   if (!user) {
-    return <Navigate to="/login" />;
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   return (

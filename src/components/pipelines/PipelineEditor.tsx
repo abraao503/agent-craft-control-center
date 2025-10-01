@@ -10,6 +10,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,9 +28,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { PipelineStageMinimal } from "@/types/pipeline";
+import { PipelineStageMinimal, AssistantPipelineStage } from "@/types/pipeline";
+import { Agent } from "@/types/agent";
 import { cn } from "@/lib/utils";
 import { GripVertical } from "lucide-react";
+import { AssistantStageConfig } from "./AssistantStageConfig";
 import {
   DndContext,
   closestCenter,
@@ -45,15 +55,19 @@ export interface EditableStage extends PipelineStageMinimal {
   order: number;
   color?: string;
   winProbability?: number;
+  assistantPipelineStage?: AssistantPipelineStage;
 }
 
 interface PipelineEditorProps {
   pipelineName: string;
   stages: PipelineStageMinimal[];
+  availableAgents?: Agent[];
+  selectedAssistantId?: string;
   onCancel: () => void;
   onSave: (args: {
     name: string;
     stages: EditableStage[];
+    assistantId?: string;
   }) => Promise<void> | void;
   saveLabel?: string;
 }
@@ -63,6 +77,9 @@ interface SortableStageProps {
   index: number;
   onUpdate: (index: number, patch: Partial<EditableStage>) => void;
   onRemove: (index: number) => void;
+  assistantEnabled: boolean;
+  assistantId?: string;
+  allStages: EditableStage[];
 }
 
 const SortableStage: React.FC<SortableStageProps> = ({
@@ -70,6 +87,9 @@ const SortableStage: React.FC<SortableStageProps> = ({
   index,
   onUpdate,
   onRemove,
+  assistantEnabled,
+  assistantId,
+  allStages,
 }) => {
   const {
     attributes,
@@ -111,17 +131,24 @@ const SortableStage: React.FC<SortableStageProps> = ({
                 onChange={(e) => onUpdate(index, { name: e.target.value })}
               />
             </div>
-            <div className="space-y-2">
-              <Label>Probabilidade: {stage.winProbability ?? 0}%</Label>
-              <Slider
-                value={[stage.winProbability ?? 0]}
-                min={0}
-                max={100}
-                step={1}
-                onValueChange={(v) => onUpdate(index, { winProbability: v[0] })}
-              />
-            </div>
           </div>
+
+          {assistantEnabled && assistantId && (
+            <AssistantStageConfig
+              stageId={stage.id}
+              stageName={stage.name}
+              stageOrder={stage.order}
+              assistantConfig={stage.assistantPipelineStage}
+              availableStages={allStages.map((s) => ({
+                id: s.id,
+                name: s.name,
+                order: s.order,
+              }))}
+              onConfigChange={(stageId, config) => {
+                onUpdate(index, { assistantPipelineStage: config });
+              }}
+            />
+          )}
         </CardContent>
         <CardFooter className="mt-auto flex items-center justify-between">
           <div className="flex items-center justify-between">
@@ -142,6 +169,8 @@ const SortableStage: React.FC<SortableStageProps> = ({
 export const PipelineEditor: React.FC<PipelineEditorProps> = ({
   pipelineName,
   stages,
+  availableAgents = [],
+  selectedAssistantId,
   onCancel,
   onSave,
   saveLabel = "Salvar alterações",
@@ -153,12 +182,21 @@ export const PipelineEditor: React.FC<PipelineEditorProps> = ({
       color: s.color,
       winProbability: s.winProbability ?? 0,
       order: idx,
+      assistantPipelineStage: s.assistantPipelineStage,
     }));
 
   const [name, setName] = useState(pipelineName);
   const [draftStages, setDraftStages] = useState<EditableStage[]>(() =>
     normalize(stages)
   );
+  const [useAssistant, setUseAssistant] = useState(() => {
+    // Check if pipeline has an assistant configured
+    return !!selectedAssistantId;
+  });
+  const [assistantId, setAssistantId] = useState(() => {
+    // Use the assistant ID from pipeline
+    return selectedAssistantId || "";
+  });
   const initialRef = useRef<{ name: string; stages: EditableStage[] }>({
     name: pipelineName,
     stages: normalize(stages),
@@ -218,6 +256,7 @@ export const PipelineEditor: React.FC<PipelineEditorProps> = ({
       await onSave({
         name: name.trim(),
         stages: draftStages.map((s, i) => ({ ...s, order: i })),
+        assistantId: useAssistant ? assistantId : undefined,
       });
     } finally {
       setSaving(false);
@@ -271,6 +310,60 @@ export const PipelineEditor: React.FC<PipelineEditorProps> = ({
         </div>
       </div>
 
+      {/* Assistant Configuration Section */}
+      <div className="border rounded-lg p-4 space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <Label className="text-base font-medium">
+              Configuração de Agente
+            </Label>
+            <p className="text-sm text-muted-foreground mt-1">
+              Configure um agente para automatizar ações neste funil
+            </p>
+          </div>
+          <Switch
+            checked={useAssistant}
+            onCheckedChange={(checked) => {
+              setUseAssistant(checked);
+              if (!checked) {
+                setAssistantId("");
+                // Clear assistant config from all stages
+                setDraftStages((prev) =>
+                  prev.map((stage) => ({
+                    ...stage,
+                    assistantPipelineStage: undefined,
+                  }))
+                );
+              }
+            }}
+          />
+        </div>
+
+        {useAssistant && (
+          <div className="space-y-2">
+            <Label>Selecionar Agente</Label>
+            <Select value={assistantId} onValueChange={setAssistantId}>
+              <SelectTrigger className="max-w-md">
+                <SelectValue placeholder="Escolha um agente" />
+              </SelectTrigger>
+              <SelectContent>
+                {availableAgents.map((agent) => (
+                  <SelectItem key={agent.id} value={agent.id}>
+                    {agent.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {assistantId && (
+              <p className="text-xs text-muted-foreground">
+                Configure em quais etapas o agente pode agir e para onde pode
+                mover os negócios.
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+
       <div className="overflow-x-auto">
         <DndContext
           sensors={sensors}
@@ -289,6 +382,9 @@ export const PipelineEditor: React.FC<PipelineEditorProps> = ({
                   index={index}
                   onUpdate={setStage}
                   onRemove={handleRemove}
+                  assistantEnabled={useAssistant && !!assistantId}
+                  assistantId={assistantId}
+                  allStages={draftStages}
                 />
               ))}
             </SortableContext>

@@ -16,7 +16,9 @@ import PipelineEditor from "@/components/pipelines/PipelineEditor";
 import { listPipelines } from "@/services/pipeline/listPipelines";
 import { updatePipeline } from "@/services/pipeline/updatePipeline";
 import { createPipeline } from "@/services/pipeline/createPipeline";
-import { PipelineStageMinimal, CreatePipelineInput } from "@/types/pipeline";
+import { listAgent } from "@/services/agent/listAgent";
+import { PipelineStageMinimal, CreatePipelineInput, AssistantPipelineStage } from "@/types/pipeline";
+import { Agent } from "@/types/agent";
 
 const PipelineDetailPage = () => {
   const { pipelineId } = useParams();
@@ -25,7 +27,7 @@ const PipelineDetailPage = () => {
   const { toast } = useToast();
 
   const { workspaceId, isChangingWorkspace } = useWorkspaceManager({
-    queryKeys: ["listPipelineStages", "listDealsByPipeline", "listPipelines"],
+    queryKeys: ["listPipelineStages", "listDealsByPipeline", "listPipelines", "listAgent"],
     autoRefetch: true,
     trackLoadingState: true,
   });
@@ -43,7 +45,11 @@ const PipelineDetailPage = () => {
   const shouldShowLoading = () => {
     return isCreating
       ? false
-      : isChangingWorkspace || stagesQuery.isLoading || dealsQuery.isLoading;
+      : isChangingWorkspace ||
+          stagesQuery.isLoading ||
+          dealsQuery.isLoading ||
+          pipelinesQuery.isLoading ||
+          agentsQuery.isLoading;
   };
 
   const shouldAutoSelectPipeline = () => {
@@ -72,20 +78,56 @@ const PipelineDetailPage = () => {
     enabled: !!workspaceId,
   });
 
+  const agentsQuery = useQuery({
+    queryKey: ["listAgent", workspaceId],
+    queryFn: () => listAgent(workspaceId!),
+    enabled: !!workspaceId,
+  });
+
   useEffect(() => {
     if (!workspaceId || pipelineId || isCreating) return;
 
     const list = pipelinesQuery.data;
-    if (list && list.length > 0) {
-      navigate(`/deals/pipeline/${list[0].id}`, { replace: true });
+    if (!list || list.length === 0) return;
+
+    try {
+      const key = `acc:selectedPipeline:${workspaceId}`;
+      const saved = localStorage.getItem(key);
+      const exists = saved && list.some((p) => p.id === saved);
+      const targetId = exists ? saved! : list[0].id;
+      if (exists) {
+        navigate(`/deals/pipeline/${targetId}`, { replace: true });
+      } else {
+        // clean stale value and fallback to first
+        if (saved) localStorage.removeItem(key);
+        navigate("/");
+      }
+    } catch {
+      navigate("/");
     }
   }, [workspaceId, pipelineId, pipelinesQuery.data, navigate, isCreating]);
 
+  // Persist currently selected pipeline per workspace
+  useEffect(() => {
+    if (!workspaceId || !pipelineId) return;
+    try {
+      const key = `acc:selectedPipeline:${workspaceId}`;
+      localStorage.setItem(key, pipelineId);
+    } catch {
+      // ignore storage errors
+    }
+  }, [workspaceId, pipelineId]);
+
   const stages = stagesQuery.data || [];
   const deals = dealsQuery.data || [];
-  const currentPipelineName = useMemo(() => {
-    return pipelinesQuery.data?.find((p) => p.id === pipelineId)?.name || "";
+  const agents = agentsQuery.data?.agents || [];
+  
+  const currentPipeline = useMemo(() => {
+    return pipelinesQuery.data?.find((p) => p.id === pipelineId);
   }, [pipelinesQuery.data, pipelineId]);
+  
+  const currentPipelineName = currentPipeline?.name || "";
+  const currentPipelineAssistantId = currentPipeline?.assistantId || undefined;
 
   const hasPipelines = (pipelinesQuery.data?.length ?? 0) > 0;
   const loading = shouldShowLoading();
@@ -124,12 +166,22 @@ const PipelineDetailPage = () => {
   };
 
   const handleSelectPipeline = (id: string) => {
-    if (id && id !== pipelineId) navigate(`/deals/pipeline/${id}`);
+    if (!id || id === pipelineId) return;
+    try {
+      if (workspaceId) {
+        const key = `acc:selectedPipeline:${workspaceId}`;
+        localStorage.setItem(key, id);
+      }
+    } catch {
+      // ignore storage errors
+    }
+    navigate(`/deals/pipeline/${id}`);
   };
 
   const handleSavePipeline = async ({
     name,
     stages: draft,
+    assistantId,
   }: {
     name: string;
     stages: Array<{
@@ -138,19 +190,23 @@ const PipelineDetailPage = () => {
       order: number;
       color?: string;
       winProbability?: number;
+      assistantPipelineStage?: AssistantPipelineStage;
     }>;
+    assistantId?: string;
   }) => {
     if (!pipelineId || !workspaceId) return;
     try {
       await updatePipeline(pipelineId, {
         workspaceId,
         name,
+        assistantId: assistantId || null,
         stages: draft.map((s) => ({
           id: s.id,
           name: s.name,
           order: s.order,
           color: s.color,
           winProbability: s.winProbability,
+          assistantPipelineStage: s.assistantPipelineStage || null,
         })),
       });
       setIsEditing(false);
@@ -199,6 +255,7 @@ const PipelineDetailPage = () => {
   const handleCreatePipeline = async ({
     name,
     stages: draft,
+    assistantId,
   }: {
     name: string;
     stages: Array<{
@@ -207,13 +264,16 @@ const PipelineDetailPage = () => {
       order: number;
       color?: string;
       winProbability?: number;
+      assistantPipelineStage?: AssistantPipelineStage;
     }>;
+    assistantId?: string;
   }) => {
     if (!workspaceId) return;
     try {
       const payload: CreatePipelineInput = {
         workspaceId,
         name: name || "Novo funil",
+        assistantId: assistantId || null,
         stages: draft.map((s, i) => ({
           name: s.name || `Etapa ${i + 1}`,
           description: "",
@@ -221,8 +281,7 @@ const PipelineDetailPage = () => {
           color: s.color || "#64748b",
           winProbability:
             typeof s.winProbability === "number" ? s.winProbability : 100,
-          isWonStage: false,
-          isLostStage: false,
+          assistantPipelineStage: s.assistantPipelineStage || null,
         })),
       };
       const res = await createPipeline(payload);
@@ -279,6 +338,8 @@ const PipelineDetailPage = () => {
     <PipelineEditor
       pipelineName={currentPipelineName}
       stages={stages}
+      availableAgents={agents}
+      selectedAssistantId={currentPipelineAssistantId}
       onCancel={() => setIsEditing(false)}
       onSave={handleSavePipeline}
     />
@@ -288,6 +349,8 @@ const PipelineDetailPage = () => {
     <PipelineEditor
       pipelineName={"Novo funil"}
       stages={getDefaultCreateStages()}
+      availableAgents={agents}
+      selectedAssistantId={undefined}
       onCancel={() => setIsCreating(false)}
       onSave={handleCreatePipeline}
       saveLabel="Criar funil"

@@ -58,7 +58,10 @@ export const CreateDealModal: React.FC<CreateDealModalProps> = ({
   const { data: customersData } = useQuery({
     queryKey: ["listCustomersForDeal", workspaceId, open],
     queryFn: () =>
-      listCustomers({ page: 1, limit: 50, orderBy: "createdAt", order: "desc" }, workspaceId),
+      listCustomers(
+        { page: 1, limit: 50, orderBy: "createdAt", order: "desc" },
+        workspaceId
+      ),
     enabled: open && !!workspaceId,
   });
 
@@ -66,12 +69,13 @@ export const CreateDealModal: React.FC<CreateDealModalProps> = ({
 
   const validate = (): string | null => {
     if (!pipelineId) return "Pipeline is required";
-    if (!currentStageId) return "Stage is required";
-    if (!customerId) return "Customer is required";
-    if (!title.trim()) return "Title is required";
+    if (!currentStageId) return "Selecione a etapa";
+    if (!customerId) return "Selecione o cliente";
+    if (!title.trim()) return "Título é obrigatório";
     const n = value ? Number(value) : undefined;
-    if (n !== undefined && (isNaN(n) || n < 0)) return "Value must be a number greater or equal to 0";
-    if (currency && currency.length !== 3) return "Currency must have 3 letters";
+    if (n !== undefined && (isNaN(n) || n < 0))
+      return "Valor deve ser um número maior ou igual a 0";
+    if (currency && currency.length !== 3) return "Moeda deve ter 3 letras";
     return null;
   };
 
@@ -124,7 +128,9 @@ export const CreateDealModal: React.FC<CreateDealModalProps> = ({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Novo Negócio</DialogTitle>
-          <DialogDescription>Preencha os dados do negócio e selecione a etapa inicial.</DialogDescription>
+          <DialogDescription>
+            Preencha os dados do negócio e selecione a etapa inicial.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
@@ -137,7 +143,9 @@ export const CreateDealModal: React.FC<CreateDealModalProps> = ({
                 </SelectTrigger>
                 <SelectContent>
                   {stageOptions.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.name}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -151,7 +159,9 @@ export const CreateDealModal: React.FC<CreateDealModalProps> = ({
                 </SelectTrigger>
                 <SelectContent>
                   {customers.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>{c.identifier}</SelectItem>
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.identifier || c.phone}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -161,41 +171,65 @@ export const CreateDealModal: React.FC<CreateDealModalProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label>Título</Label>
-              <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Título do negócio" />
+              <Input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Título do negócio"
+              />
             </div>
             <div className="space-y-2">
               <Label>Valor</Label>
-              <Input type="number" min={0} value={value} onChange={(e) => setValue(e.target.value)} placeholder="0" />
+              <Input
+                type="number"
+                min={0}
+                value={value}
+                onChange={(e) => setValue(e.target.value)}
+                placeholder="0"
+              />
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label>Moeda</Label>
-              <Input value={currency} onChange={(e) => setCurrency(e.target.value.toUpperCase())} maxLength={3} />
+              <Input
+                value={currency}
+                onChange={(e) => setCurrency(e.target.value.toUpperCase())}
+                maxLength={3}
+                disabled={true}
+              />
             </div>
             <div className="space-y-2">
               <Label>Previsão de Fechamento</Label>
-              <DateTimePicker date={expectedCloseDate} setDate={setExpectedCloseDate} />
+              <DateTimePicker
+                date={expectedCloseDate}
+                setDate={setExpectedCloseDate}
+              />
             </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Responsável (opcional)</Label>
-            <Input value={assignedUserId} onChange={(e) => setAssignedUserId(e.target.value)} placeholder="UUID do usuário" />
           </div>
 
           <div className="space-y-2">
             <Label>Descrição</Label>
-            <Textarea value={description} onChange={(e) => setDescription(e.target.value)} />
+            <Textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
           </div>
 
           {error && <div className="text-sm text-red-600">{error}</div>}
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>Cancelar</Button>
-          <Button onClick={handleSubmit} disabled={submitting}>{submitting ? "Criando..." : "Criar"}</Button>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={submitting}
+          >
+            Cancelar
+          </Button>
+          <Button onClick={handleSubmit} disabled={submitting}>
+            {submitting ? "Criando..." : "Criar"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

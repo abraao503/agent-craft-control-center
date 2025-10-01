@@ -50,7 +50,7 @@ const PromptContext = ({ formData, updateFormData }: PromptContextProps) => {
         <Label htmlFor="identity">Identidade</Label>
         <Input
           id="identity"
-          placeholder="Assistente de Suporte"
+          placeholder="Agente de Suporte"
           value={formData.identity || ""}
           onChange={(e) => updateFormData({ identity: e.target.value })}
           required

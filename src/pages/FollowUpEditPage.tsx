@@ -7,7 +7,11 @@ import { listAgent } from "@/services/agent/listAgent";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { FollowUpForm } from "@/components/follow-up/FollowUpForm";
-import { updateFollowUp, getFollowUpById, FollowUpUpdateData } from "@/services/follow-up";
+import {
+  updateFollowUp,
+  getFollowUpById,
+  FollowUpUpdateData,
+} from "@/services/follow-up";
 import { FollowUp } from "@/types/follow-up";
 
 export default function FollowUpEditPage() {
@@ -82,7 +86,9 @@ export default function FollowUpEditPage() {
     loadFollowUp();
   }, [id, workspaceId, toast, navigate]);
 
-  const handleEditSubmit = (data: FollowUpUpdateData & { workspaceId: string }) => {
+  const handleEditSubmit = (
+    data: FollowUpUpdateData & { workspaceId: string }
+  ) => {
     if (!id) return;
     updateMutation.mutate({ id, data });
   };
@@ -141,13 +147,13 @@ export default function FollowUpEditPage() {
           <div className="py-8 text-center">
             <div className="flex flex-col items-center justify-center gap-2">
               <div className="h-6 w-6 animate-spin rounded-full border-2 border-gray-300 border-t-primary"></div>
-              <p className="text-muted-foreground">Carregando assistentes...</p>
+              <p className="text-muted-foreground">Carregando agentes...</p>
             </div>
           </div>
         ) : assistants.length === 0 ? (
           <div className="py-8 text-center">
             <p className="text-muted-foreground">
-              Nenhum assistente disponível. Crie um assistente primeiro.
+              Nenhum agente disponível. Crie um agente primeiro.
             </p>
           </div>
         ) : selectedFollowUp ? (

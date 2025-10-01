@@ -8,6 +8,17 @@ export interface PipelineListItem {
   createdAt: string | Date;
   updatedAt: string | Date;
   stagesCount: number;
+  assistantId?: string | null;
+}
+
+export interface AssistantAllowedTargetStage {
+  targetStageOrder: number;
+  targetStageId?: string;
+  moveCondition: string;
+}
+
+export interface AssistantPipelineStage {
+  assistantAllowedTargetStages: AssistantAllowedTargetStage[];
 }
 
 export interface CreatePipelineStageInput {
@@ -16,8 +27,7 @@ export interface CreatePipelineStageInput {
   order: number; // integer >= 0
   color: string; // hex color string e.g. #FF0000
   winProbability: number; // 0-100
-  isWonStage: boolean;
-  isLostStage: boolean;
+  assistantPipelineStage?: AssistantPipelineStage | null;
 }
 
 export interface CreatePipelineInput {
@@ -25,6 +35,7 @@ export interface CreatePipelineInput {
   name: string;
   description?: string;
   stages: CreatePipelineStageInput[]; // at least 1
+  assistantId?: string | null; // UUID of assistant to use in this pipeline
 }
 
 export interface CreatePipelineResponse {
@@ -34,7 +45,9 @@ export interface CreatePipelineResponse {
 export interface PipelineStageMinimal {
   id: string;
   name: string;
+  order?: number;
   // Optional fields if backend provides more data
   color?: string;
   winProbability?: number;
+  assistantPipelineStage?: AssistantPipelineStage | null;
 }

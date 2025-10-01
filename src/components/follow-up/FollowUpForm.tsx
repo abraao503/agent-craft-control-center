@@ -61,7 +61,7 @@ const formSchema = z
       })
       .optional(),
     assistantId: z.string().uuid({
-      message: "Assistente inválido",
+      message: "Agente inválido",
     }),
     inclusiveTags: z.array(z.string().uuid("Tag ID must be a valid UUID")),
     exclusiveTags: z.array(z.string().uuid("Tag ID must be a valid UUID")),
@@ -248,12 +248,15 @@ export function FollowUpForm({
 
         <div className="space-y-6">
           <div>
-            <h3 className="text-lg font-medium">Intervalo de tempo de inatividade</h3>
+            <h3 className="text-lg font-medium">
+              Intervalo de tempo de inatividade
+            </h3>
             <p className="text-sm text-muted-foreground mb-4">
-              Defina o intervalo de tempo de inatividade do cliente antes de enviar o follow-up.
+              Defina o intervalo de tempo de inatividade do cliente antes de
+              enviar o follow-up.
             </p>
           </div>
-          
+
           <div className="grid gap-6">
             <FormField
               control={form.control}
@@ -276,7 +279,7 @@ export function FollowUpForm({
                 </FormItem>
               )}
             />
-            
+
             <FormField
               control={form.control}
               name="maxInactiveChatTime"
@@ -324,11 +327,11 @@ export function FollowUpForm({
           name="assistantId"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Assistente</FormLabel>
+              <FormLabel>Agente</FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione um assistente" />
+                    <SelectValue placeholder="Selecione um agente" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
