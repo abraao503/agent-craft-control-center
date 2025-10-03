@@ -13,11 +13,17 @@ import { CreateDealModal } from "@/components/deals/CreateDealModal";
 import { useToast } from "@/components/ui/use-toast";
 import PipelineSwitcher from "@/components/pipelines/PipelineSwitcher";
 import PipelineEditor from "@/components/pipelines/PipelineEditor";
+import { PipelineWhatsAppConnection } from "@/components/pipelines/PipelineWhatsAppConnection";
 import { listPipelines } from "@/services/pipeline/listPipelines";
 import { updatePipeline } from "@/services/pipeline/updatePipeline";
 import { createPipeline } from "@/services/pipeline/createPipeline";
 import { listAgent } from "@/services/agent/listAgent";
-import { PipelineStageMinimal, CreatePipelineInput, AssistantPipelineStage, WhatsAppIntegrationConfig } from "@/types/pipeline";
+import {
+  PipelineStageMinimal,
+  CreatePipelineInput,
+  AssistantPipelineStage,
+  WhatsAppIntegrationConfig,
+} from "@/types/pipeline";
 import { Agent } from "@/types/agent";
 import { listCompanyWhatsAppIntegrations } from "@/services/whatsapp/listCompanyWhatsAppIntegrations";
 
@@ -28,7 +34,13 @@ const PipelineDetailPage = () => {
   const { toast } = useToast();
 
   const { workspaceId, isChangingWorkspace } = useWorkspaceManager({
-    queryKeys: ["listPipelineStages", "listDealsByPipeline", "listPipelines", "listAgent", "listCompanyWhatsAppIntegrations"],
+    queryKeys: [
+      "listPipelineStages",
+      "listDealsByPipeline",
+      "listPipelines",
+      "listAgent",
+      "listCompanyWhatsAppIntegrations",
+    ],
     autoRefetch: true,
     trackLoadingState: true,
   });
@@ -130,14 +142,15 @@ const PipelineDetailPage = () => {
   const deals = dealsQuery.data || [];
   const agents = agentsQuery.data?.agents || [];
   const whatsappIntegrations = whatsappIntegrationsQuery.data || [];
-  
+
   const currentPipeline = useMemo(() => {
     return pipelinesQuery.data?.find((p) => p.id === pipelineId);
   }, [pipelinesQuery.data, pipelineId]);
-  
+
   const currentPipelineName = currentPipeline?.name || "";
   const currentPipelineAssistantId = currentPipeline?.assistantId || undefined;
-  const currentPipelineWhatsappIntegrationId = currentPipeline?.companyWhatsappIntegrationId || undefined;
+  const currentPipelineWhatsappIntegrationId =
+    currentPipeline?.companyWhatsappIntegrationId || undefined;
 
   const hasPipelines = (pipelinesQuery.data?.length ?? 0) > 0;
   const loading = shouldShowLoading();
@@ -388,6 +401,12 @@ const PipelineDetailPage = () => {
       deals={deals}
       onMoveDeal={onMoveDeal}
       isMoving={isMoving}
+      workspaceId={workspaceId}
+      onDealUpdated={() =>
+        queryClient.invalidateQueries({
+          queryKey: ["listDealsByPipeline", pipelineId, workspaceId],
+        })
+      }
     />
   );
 
@@ -412,6 +431,11 @@ const PipelineDetailPage = () => {
           )}
         </div>
         <div className="flex items-center gap-2">
+          {currentPipelineWhatsappIntegrationId && canShowActions() && (
+            <PipelineWhatsAppConnection
+              companyWhatsappIntegrationId={currentPipelineWhatsappIntegrationId}
+            />
+          )}
           {workspaceId && canShowActions() && (
             <PipelineSwitcher
               workspaceId={workspaceId}

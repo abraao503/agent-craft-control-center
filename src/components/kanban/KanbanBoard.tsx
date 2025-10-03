@@ -5,6 +5,7 @@ import { DealListItem } from "@/types/deal";
 import { PipelineStageMinimal } from "@/types/pipeline";
 import { cn } from "@/lib/utils";
 import { DollarSign } from "lucide-react";
+import { DealDetailsModal } from "@/components/deals/DealDetailsModal";
 
 interface KanbanBoardProps {
   stages: PipelineStageMinimal[];
@@ -12,6 +13,8 @@ interface KanbanBoardProps {
   onMoveDeal: (dealId: string, toStageId: string) => Promise<void> | void;
   isMoving?: boolean;
   stageMeta?: Record<string, { color?: string; winProbability?: number }>; // optional extra
+  workspaceId?: string;
+  onDealUpdated?: () => void;
 }
 
 // Format currency safely
@@ -38,8 +41,12 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   onMoveDeal,
   isMoving,
   stageMeta,
+  workspaceId,
+  onDealUpdated,
 }) => {
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
+  const [selectedDeal, setSelectedDeal] = useState<DealListItem | null>(null);
+  const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const dealsByStage = useMemo(() => {
     const map: Record<string, DealListItem[]> = {};
     stages.forEach((s) => (map[s.id] = []));
@@ -69,10 +76,16 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     await onMoveDeal(dealId, toStageId);
   };
 
+  const handleDealClick = (deal: DealListItem) => {
+    setSelectedDeal(deal);
+    setDetailsModalOpen(true);
+  };
+
   return (
-    <div className="overflow-x-auto">
-      <div className="flex items-start gap-4 h-[calc(100vh-220px)] w-max pr-2">
-        {stages.map((stage) => {
+    <>
+      <div className="overflow-x-auto">
+        <div className="flex items-start gap-4 h-[calc(100vh-220px)] w-max pr-2">
+          {stages.map((stage) => {
           const stageDeals = dealsByStage[stage.id] || [];
           const totalValue = stageDeals.reduce(
             (acc, d) => acc + (d.value || 0),
@@ -154,6 +167,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                             )}
                             draggable
                             onDragStart={(e) => handleDragStart(e, deal.id)}
+                            onClick={() => handleDealClick(deal)}
                             aria-grabbed="true"
                           >
                             <div className="font-medium text-sm truncate">
@@ -190,8 +204,19 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
             </div>
           );
         })}
+        </div>
       </div>
-    </div>
+
+      {workspaceId && (
+        <DealDetailsModal
+          open={detailsModalOpen}
+          onOpenChange={setDetailsModalOpen}
+          deal={selectedDeal}
+          workspaceId={workspaceId}
+          onUpdated={onDealUpdated}
+        />
+      )}
+    </>
   );
 };
 

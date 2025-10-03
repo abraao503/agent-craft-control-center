@@ -26,6 +26,7 @@ export interface CompanyWhatsAppIntegrationFull {
   whatsappIntegrationName: "z-api" | "evolux";
   active: boolean;
   initialPipelineStageId: string;
+  status: "close" | "open" | "connecting";
 }
 
 export interface WhatsAppFormData {

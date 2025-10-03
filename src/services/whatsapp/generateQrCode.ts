@@ -1,4 +1,4 @@
-import { api } from "@/lib/api";
+import { api } from "@/services/api";
 
 type ApiResponse = {
   qrCode: string;

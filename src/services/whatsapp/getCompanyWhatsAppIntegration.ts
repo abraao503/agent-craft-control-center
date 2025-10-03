@@ -11,6 +11,7 @@ type ApiResponse = {
   pipelineId: string;
   initialPipelineStageId: string;
   active: boolean;
+  status: "close" | "open" | "connecting";
 };
 
 export const getCompanyWhatsAppIntegration = async (
@@ -30,5 +31,6 @@ export const getCompanyWhatsAppIntegration = async (
     whatsappIntegrationName: data.whatsappIntegrationName as "z-api" | "evolux",
     active: data.active,
     initialPipelineStageId: data.initialPipelineStageId,
+    status: data.status,
   };
 };

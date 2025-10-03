@@ -21,7 +21,7 @@ export type Conversation = {
   agent: {
     id: string;
     name: string;
-  };
+  } | null;
   totalMessages: number;
   handledBy: "ai" | "human";
   tags?: Tag[];

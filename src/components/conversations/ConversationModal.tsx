@@ -336,7 +336,7 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
 
     setIsSending(true);
     sendMessageMutation.mutate({
-      agentId: localConversation.agent.id,
+      agentId: localConversation.agent?.id,
       chatId: localConversation.id,
       message: newMessage,
     });
@@ -365,7 +365,7 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
             Conversa com {localConversation.customer.phone}
           </DialogTitle>
           <DialogDescription>
-            Agente: {localConversation.agent.name} | Última interação:{" "}
+            Agente: {localConversation.agent?.name} | Última interação:{" "}
             {/* {formatDate(localConversation.lastInteractionAt)} */}
           </DialogDescription>
         </DialogHeader>

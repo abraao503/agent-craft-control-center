@@ -808,7 +808,7 @@ const ConversationsPage = () => {
                                   )
                                 : "Sem interações"}
                             </TableCell>
-                            <TableCell>{conversation.agent.name}</TableCell>
+                            <TableCell>{conversation.agent?.name}</TableCell>
                             <TableCell>
                               {conversation.customer.identifier ? (
                                 <div>

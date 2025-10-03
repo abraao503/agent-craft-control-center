@@ -41,3 +41,65 @@ export interface MoveDealStageInput {
   stageId: string; // destination stage UUID
   reason?: string;
 }
+
+export interface UpdateDealInput {
+  title?: string;
+  description?: string;
+  value?: number;
+  currency?: string;
+  expectedCloseDate?: string;
+  assignedUserId?: string;
+  customer?: {
+    name?: string;
+  };
+}
+
+export interface DealNote {
+  id: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+  user: {
+    id: string;
+    name: string;
+  } | null;
+}
+
+export interface CreateDealNoteInput {
+  dealId: string;
+  content: string;
+}
+
+export interface CreateDealNoteResponse {
+  id: string;
+}
+
+export interface UpdateDealNoteInput {
+  content: string;
+}
+
+export interface DealDetails {
+  id: string;
+  title: string;
+  description: string | null;
+  value: number | null;
+  currency: string;
+  expectedCloseDate: string | null;
+  actualCloseDate: string | null;
+  createdAt: string;
+  updatedAt: string;
+  customer?: {
+    id: string;
+    name: string;
+    phone: string;
+  };
+  assignedUser?: {
+    id: string;
+    name: string;
+  };
+  currentStage?: {
+    id: string;
+    name: string;
+    color: string;
+  };
+}

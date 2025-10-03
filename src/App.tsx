@@ -46,6 +46,7 @@ import { PageViewTracker } from "./components/PageViewTracker";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { WorkspaceProvider } from "./contexts/workspace/WorkspaceContext";
 import { Loader2 } from "lucide-react";
+import { TokenDebugger } from "./components/debug/TokenDebugger";
 
 const queryClient = new QueryClient();
 
