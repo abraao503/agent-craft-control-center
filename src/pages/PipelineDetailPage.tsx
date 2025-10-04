@@ -24,7 +24,6 @@ import {
   AssistantPipelineStage,
   WhatsAppIntegrationConfig,
 } from "@/types/pipeline";
-import { Agent } from "@/types/agent";
 import { listCompanyWhatsAppIntegrations } from "@/services/whatsapp/listCompanyWhatsAppIntegrations";
 
 const PipelineDetailPage = () => {
@@ -115,13 +114,14 @@ const PipelineDetailPage = () => {
       const saved = localStorage.getItem(key);
       const exists = saved && list.some((p) => p.id === saved);
       const targetId = exists ? saved! : list[0].id;
-      if (exists) {
-        navigate(`/deals/pipeline/${targetId}`, { replace: true });
-      } else {
-        // clean stale value and fallback to first
-        if (saved) localStorage.removeItem(key);
-        navigate("/");
+
+      // Clean stale value if it doesn't exist in the list
+      if (saved && !exists) {
+        localStorage.removeItem(key);
       }
+
+      // Navigate to the target pipeline (either saved or first one)
+      navigate(`/deals/pipeline/${targetId}`, { replace: true });
     } catch {
       navigate("/");
     }
@@ -433,7 +433,9 @@ const PipelineDetailPage = () => {
         <div className="flex items-center gap-2">
           {currentPipelineWhatsappIntegrationId && canShowActions() && (
             <PipelineWhatsAppConnection
-              companyWhatsappIntegrationId={currentPipelineWhatsappIntegrationId}
+              companyWhatsappIntegrationId={
+                currentPipelineWhatsappIntegrationId
+              }
             />
           )}
           {workspaceId && canShowActions() && (
