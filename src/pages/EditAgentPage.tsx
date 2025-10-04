@@ -80,10 +80,17 @@ const EditAgentPage = () => {
         });
         navigate(`/agents/${id}`);
       },
-      onError: (error) => {
+      onError: (error: unknown) => {
+        const apiError = error as { response?: { data?: { statusCode?: number; message?: string } }; message?: string };
+        const isInvalidApiKey = 
+          apiError?.response?.data?.statusCode === 422 && 
+          apiError?.response?.data?.message === "Invalid API key";
+
         toast({
-          title: "Error updating agent",
-          description: error.message,
+          title: isInvalidApiKey ? "Chave de API Inválida" : "Erro ao atualizar agente",
+          description: isInvalidApiKey 
+            ? "A chave de API fornecida é inválida. Verifique sua chave de API e tente novamente."
+            : apiError.message || "Ocorreu um erro ao atualizar o agente.",
           variant: "destructive",
         });
       },

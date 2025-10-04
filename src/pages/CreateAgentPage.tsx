@@ -70,10 +70,17 @@ const CreateAgentPage = () => {
       });
       navigate("/agents");
     },
-    onError: (error) => {
+    onError: (error: unknown) => {
+      const apiError = error as { response?: { data?: { statusCode?: number; message?: string } } };
+      const isInvalidApiKey = 
+        apiError?.response?.data?.statusCode === 422 && 
+        apiError?.response?.data?.message === "Invalid API key";
+
       toast({
-        title: "Error creating agent",
-        description: "An error occurred while creating the agent.",
+        title: isInvalidApiKey ? "Chave de API Inválida" : "Erro ao criar agente",
+        description: isInvalidApiKey 
+          ? "A chave de API fornecida é inválida. Verifique sua chave de API e tente novamente."
+          : "Ocorreu um erro ao criar o agente.",
         variant: "destructive",
       });
     },
