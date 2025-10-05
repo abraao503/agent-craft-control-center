@@ -19,7 +19,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const login = async (email: string, password: string) => {
-    setIsLoading(true);
     try {
       const { data } = await api.post<UserLoginResponse>("/user/login", {
         email,
@@ -40,13 +39,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         variant: "destructive",
       });
       throw error;
-    } finally {
-      setIsLoading(false);
     }
   };
 
   const signup = async (name: string, email: string, password: string) => {
-    setIsLoading(true);
     try {
       const { data } = await api.post("/user/register", {
         name,
@@ -66,8 +62,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         variant: "destructive",
       });
       throw error;
-    } finally {
-      setIsLoading(false);
     }
   };
 

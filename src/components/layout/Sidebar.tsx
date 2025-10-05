@@ -283,7 +283,7 @@ const WorkspaceSelector = ({ isCollapsed }: { isCollapsed: boolean }) => {
   }
 
   return (
-    <div className="px-4 py-2 border-b border-border">
+    <div className="px-4 py-2">
       <div className="flex justify-between items-center mb-1">
         <p className="text-sm text-muted-foreground">Workspace</p>
         <Button

@@ -36,8 +36,6 @@ import { sendMessage } from "@/services/conversation/sendMessage";
 import { updateConversationHandler } from "@/services/conversation/updateConversationHandler";
 import { connectSocket, getSocket } from "@/lib/socket";
 import { useToast } from "@/hooks/use-toast";
-import { ChatTagManager } from "@/components/tags/ChatTagManager";
-import { isColorDark } from "@/lib/utils";
 import { ChatSidebar } from "./ChatSidebar";
 
 type ChatWindowProps = {
@@ -52,17 +50,27 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   const { toast } = useToast();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const lastScrollTop = useRef(0);
+  const previousMessagesLength = useRef(0);
+  const previousScrollHeight = useRef(0);
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [newMessage, setNewMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [localConversation, setLocalConversation] = useState(conversation);
+  const [alreadyScrolled, setAlreadyScrolled] = useState(false);
 
   // Fetch messages
-  const { data: messagesData, isLoading: isLoadingMessages } = useQuery({
+  const {
+    data: messagesData,
+    isLoading: isLoadingMessages,
+    isFetching: isFetchingMessages,
+  } = useQuery({
     queryKey: ["messages", conversation.id, currentPage],
     queryFn: () => listMessages({ chatId: conversation.id, page: currentPage }),
+    staleTime: 0,
+    refetchOnWindowFocus: false,
   });
 
   // Update conversation handler mutation
@@ -113,6 +121,16 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       if (textareaRef.current) {
         textareaRef.current.style.height = "auto";
       }
+
+      // Scroll to bottom after sending message
+      setTimeout(() => {
+        if (scrollAreaRef.current) {
+          scrollAreaRef.current.scrollTo({
+            top: scrollAreaRef.current.scrollHeight,
+            behavior: "smooth",
+          });
+        }
+      }, 100);
     } catch (error) {
       toast({
         title: "Erro ao enviar mensagem",
@@ -154,6 +172,16 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           createdAt: data.createdAt,
         };
         setMessages((prev) => [...prev, newMsg]);
+
+        // Scroll to bottom on new real-time message
+        setTimeout(() => {
+          if (scrollAreaRef.current) {
+            scrollAreaRef.current.scrollTo({
+              top: scrollAreaRef.current.scrollHeight,
+              behavior: "smooth",
+            });
+          }
+        }, 100);
       }
     });
 
@@ -167,27 +195,90 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   // Update messages when data changes
   useEffect(() => {
     if (messagesData) {
-      setMessages(messagesData.items.reverse());
+      if (currentPage === 1) {
+        setMessages(messagesData.items.reverse());
+      } else {
+        // Save current scroll height before adding new messages
+        const scrollElement = scrollAreaRef.current;
+        if (scrollElement) {
+          previousScrollHeight.current = scrollElement.scrollHeight;
+        }
+
+        // Add unique messages to the beginning
+        setMessages((prevMessages) => {
+          const newUniqueMessages = messagesData.items.filter(
+            (msg) =>
+              !prevMessages.some((existingMsg) => existingMsg.id === msg.id)
+          );
+          return [...newUniqueMessages.reverse(), ...prevMessages];
+        });
+      }
       setHasMore(messagesData.page < messagesData.totalPages);
     }
-  }, [messagesData]);
+  }, [messagesData, currentPage]);
+
+  // Restore scroll position after loading old messages
+  useEffect(() => {
+    if (
+      currentPage > 1 &&
+      scrollAreaRef.current &&
+      previousScrollHeight.current > 0
+    ) {
+      const scrollElement = scrollAreaRef.current;
+      const newScrollHeight = scrollElement.scrollHeight;
+      const scrollDifference = newScrollHeight - previousScrollHeight.current;
+
+      // Maintain scroll position by adjusting for new content height
+      scrollElement.scrollTop = scrollDifference;
+      previousScrollHeight.current = 0;
+    }
+  }, [messages, currentPage]);
 
   // Update local conversation when prop changes
   useEffect(() => {
     setLocalConversation(conversation);
   }, [conversation]);
 
-  // Auto scroll to bottom on new messages
+  // Scroll to bottom when chat opens
   useEffect(() => {
-    if (scrollAreaRef.current) {
-      const scrollElement = scrollAreaRef.current.querySelector(
-        "[data-radix-scroll-area-viewport]"
-      );
-      if (scrollElement) {
-        scrollElement.scrollTop = scrollElement.scrollHeight;
-      }
+    if (
+      alreadyScrolled ||
+      !messages.length ||
+      !scrollAreaRef.current ||
+      isLoadingMessages
+    )
+      return;
+
+    scrollAreaRef.current.scrollTo({
+      top: scrollAreaRef.current.scrollHeight,
+      behavior: "smooth",
+    });
+
+    setAlreadyScrolled(true);
+  }, [messages.length, isLoadingMessages, alreadyScrolled]);
+
+  // Auto scroll to bottom only for new messages (not when loading old ones)
+  useEffect(() => {
+    if (!scrollAreaRef.current) return;
+
+    const currentLength = messages.length;
+    const previousLength = previousMessagesLength.current;
+
+    // Only scroll if messages were added at the end (new messages)
+    // Not when loading old messages (currentPage > 1)
+    if (
+      currentLength > previousLength &&
+      currentPage === 1 &&
+      alreadyScrolled
+    ) {
+      scrollAreaRef.current.scrollTo({
+        top: scrollAreaRef.current.scrollHeight,
+        behavior: "smooth",
+      });
     }
-  }, [messages]);
+
+    previousMessagesLength.current = currentLength;
+  }, [messages, currentPage, alreadyScrolled]);
 
   // Auto resize textarea
   useEffect(() => {
@@ -203,6 +294,23 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         scrollHeight > maxHeight ? "auto" : "hidden";
     }
   }, [newMessage]);
+
+  // Handle scroll to load more messages
+  const handleScroll = (event: React.UIEvent<HTMLDivElement>) => {
+    const target = event.target as HTMLDivElement;
+
+    if (isFetchingMessages || !hasMore) return;
+
+    const currentScrollTop = target.scrollTop;
+
+    // Scroll up → load more messages
+    if (currentScrollTop < lastScrollTop.current && currentScrollTop <= 140) {
+      setCurrentPage((prev) => prev + 1);
+    }
+
+    // Update last scrollTop
+    lastScrollTop.current = currentScrollTop;
+  };
 
   const getInitials = (name?: string, phone?: string) => {
     if (name) {
@@ -247,7 +355,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
             </Avatar>
             <div>
               <h3 className="font-semibold">
-                {conversation.customer.identifier || conversation.customer.phone}
+                {conversation.customer.identifier ||
+                  conversation.customer.phone}
               </h3>
               <div className="flex items-center gap-2">
                 <Badge
@@ -295,62 +404,71 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           </div>
         </div>
 
-      {/* Messages */}
-      <ScrollArea ref={scrollAreaRef} className="flex-1 bg-[#efeae2] pr-2">
-        <div className="p-4">
-          {isLoadingMessages ? (
-            <div className="flex justify-center items-center h-full">
-              <Loader2 className="h-6 w-6 animate-spin text-primary" />
-            </div>
-          ) : messages.length === 0 ? (
-            <div className="flex justify-center items-center h-full text-muted-foreground">
-              Nenhuma mensagem ainda
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {messages.map((message) => {
-                const isCustomer = message.sender === "customer";
-                return (
-                  <div
-                    key={message.id}
-                    className={`flex ${
-                      isCustomer ? "justify-start" : "justify-end"
-                    }`}
-                  >
+        {/* Messages */}
+        <ScrollArea
+          ref={scrollAreaRef}
+          className="flex-1 bg-[#efeae2] pr-2"
+          onScroll={handleScroll}
+        >
+          <div className="p-4">
+            {isFetchingMessages && currentPage > 1 && (
+              <div className="flex justify-center py-2">
+                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+              </div>
+            )}
+            {isLoadingMessages && currentPage === 1 ? (
+              <div className="flex justify-center items-center h-full">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              </div>
+            ) : messages.length === 0 ? (
+              <div className="flex justify-center items-center h-full text-muted-foreground">
+                Nenhuma mensagem ainda
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {messages.map((message) => {
+                  const isCustomer = message.sender === "customer";
+                  return (
                     <div
-                      className={`max-w-[70%] rounded-lg p-3 ${
-                        isCustomer
-                          ? "bg-white"
-                          : message.sender === "assistant"
-                          ? "bg-[#d9fdd3]"
-                          : "bg-[#cfe9ff]"
+                      key={message.id}
+                      className={`flex ${
+                        isCustomer ? "justify-start" : "justify-end"
                       }`}
                     >
-                      <div className="flex items-center gap-2 mb-1">
-                        {message.sender === "assistant" && (
-                          <Bot className="h-3 w-3 text-primary" />
-                        )}
-                        {message.sender === "human_assistant" && (
-                          <UserCog className="h-3 w-3 text-blue-600" />
-                        )}
-                        <span className="text-xs font-semibold text-muted-foreground">
-                          {getSenderLabel(message.sender)}
+                      <div
+                        className={`max-w-[70%] rounded-lg p-3 ${
+                          isCustomer
+                            ? "bg-white"
+                            : message.sender === "assistant"
+                            ? "bg-[#d9fdd3]"
+                            : "bg-[#cfe9ff]"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          {message.sender === "assistant" && (
+                            <Bot className="h-3 w-3 text-primary" />
+                          )}
+                          {message.sender === "human_assistant" && (
+                            <UserCog className="h-3 w-3 text-blue-600" />
+                          )}
+                          <span className="text-xs font-semibold text-muted-foreground">
+                            {getSenderLabel(message.sender)}
+                          </span>
+                        </div>
+                        <p className="text-sm whitespace-pre-wrap break-words">
+                          {message.content}
+                        </p>
+                        <span className="text-xs text-muted-foreground mt-1 block text-right">
+                          {format(new Date(message.createdAt), "HH:mm")}
                         </span>
                       </div>
-                      <p className="text-sm whitespace-pre-wrap break-words">
-                        {message.content}
-                      </p>
-                      <span className="text-xs text-muted-foreground mt-1 block text-right">
-                        {format(new Date(message.createdAt), "HH:mm")}
-                      </span>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </ScrollArea>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </ScrollArea>
 
         {/* Input */}
         <div className="bg-background border-t p-3">
