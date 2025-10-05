@@ -28,6 +28,7 @@ import SettingsPage from "./pages/SettingsPage";
 import NotFound from "./pages/NotFound";
 import ContentManagementPage from "./pages/ContentManagementPage";
 import ConversationsPage from "./pages/ConversationsPage";
+import ChatsPage from "./pages/ChatsPage";
 import CustomersPage from "./pages/CustomersPage";
 import CustomerDetailsPage from "./pages/CustomerDetailsPage";
 import CustomersExportXlsxPage from "./pages/CustomersExportXlsxPage";
@@ -46,7 +47,6 @@ import { PageViewTracker } from "./components/PageViewTracker";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { WorkspaceProvider } from "./contexts/workspace/WorkspaceContext";
 import { Loader2 } from "lucide-react";
-import { TokenDebugger } from "./components/debug/TokenDebugger";
 
 const queryClient = new QueryClient();
 
@@ -187,7 +187,8 @@ const AppLayout = () => {
             <main
               ref={mainContainerRef}
               className={cn(
-                "flex-1 p-6 bg-background overflow-y-auto dark:text-gray-200 transition-opacity",
+                "flex-1 bg-background overflow-y-auto dark:text-gray-200 transition-opacity",
+                location.pathname !== "/chats" && "p-6",
                 pageTransitioning ? "opacity-95" : "opacity-100",
                 isMobile ? "pl-[60px]" : ""
               )}
@@ -213,6 +214,7 @@ const IntegrationsEditPage = () => <EditWhatsAppIntegrationPage />;
 const SettingsConfigPage = () => <SettingsPage />;
 const ContentsPage = () => <ContentManagementPage />;
 const ConversationsListPage = () => <ConversationsPage />;
+const ChatsListPage = () => <ChatsPage />;
 const CustomersListPage = () => <CustomersPage />;
 const CustomerDetailsViewPage = () => <CustomerDetailsPage />;
 const CustomersExportPage = () => <CustomersExportXlsxPage />;
@@ -265,6 +267,7 @@ const App = () => (
                     path="/conversations"
                     element={<ConversationsListPage />}
                   />
+                  <Route path="/chats" element={<ChatsListPage />} />
                   <Route path="/customers" element={<CustomersListPage />} />
                   <Route
                     path="/customers/:id"
