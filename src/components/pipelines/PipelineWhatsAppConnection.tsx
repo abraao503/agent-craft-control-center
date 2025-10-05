@@ -9,6 +9,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/auth/hooks";
 import { connectSocket } from "@/lib/socket";
 import { InstanceStatusEvent } from "@/types/whatsapp";
+import { WHATSAPP_INTEGRATION_NAMES } from "@/types/whatsapp-integration";
 import {
   Dialog,
   DialogContent,
@@ -66,7 +67,7 @@ export const PipelineWhatsAppConnection = ({
   }, [connectionStatus, qrCodeOpen]);
 
   useEffect(() => {
-    if (!integration || integration.whatsappIntegrationName !== "evolux")
+    if (!integration || integration.whatsappIntegrationName !== WHATSAPP_INTEGRATION_NAMES.EVOLUX)
       return;
 
     const token = localStorage.getItem("token");
@@ -142,7 +143,7 @@ export const PipelineWhatsAppConnection = ({
       <div className="flex items-center gap-2 px-3 py-1.5 border rounded-md bg-background">
         <MessageSquare className="h-4 w-4 text-green-600" />
         <span className="text-sm font-medium">WhatsApp</span>
-        {integration.whatsappIntegrationName === "evolux" && (
+        {integration.whatsappIntegrationName === WHATSAPP_INTEGRATION_NAMES.EVOLUX && (
           <Badge variant="outline" className="flex items-center gap-1 h-5">
             <span
               className={`h-2 w-2 rounded-full ${getStatusColor()}`}
@@ -150,7 +151,7 @@ export const PipelineWhatsAppConnection = ({
             <span className="text-xs">{getStatusText()}</span>
           </Badge>
         )}
-        {integration.whatsappIntegrationName === "evolux" &&
+        {integration.whatsappIntegrationName === WHATSAPP_INTEGRATION_NAMES.EVOLUX &&
           connectionStatus !== "open" && (
             <Button
               variant="ghost"

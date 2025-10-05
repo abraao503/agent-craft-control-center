@@ -2,6 +2,7 @@ import {
   CompanyWhatsAppIntegration,
   InstanceStatusEvent,
 } from "@/types/whatsapp";
+import { WHATSAPP_INTEGRATION_NAMES } from "@/types/whatsapp-integration";
 import {
   Card,
   CardContent,
@@ -133,7 +134,7 @@ const WhatsAppIntegrationCard = ({
   }, [integration.active]);
 
   useEffect(() => {
-    if (integration.whatsappIntegrationName !== "evolux") return;
+    if (integration.whatsappIntegrationName !== WHATSAPP_INTEGRATION_NAMES.EVOLUX) return;
 
     const token = localStorage.getItem("token");
     const socket = connectSocket(token);
@@ -241,7 +242,7 @@ const WhatsAppIntegrationCard = ({
             {integration.whatsappIntegrationName}
           </CardTitle>
           <div className="flex items-center gap-2">
-            {integration.whatsappIntegrationName === "evolux" && (
+            {integration.whatsappIntegrationName === WHATSAPP_INTEGRATION_NAMES.EVOLUX && (
               <Badge variant="outline" className="flex items-center gap-1">
                 <span
                   className={`h-2 w-2 rounded-full ${getStatusColor()}`}
@@ -274,7 +275,7 @@ const WhatsAppIntegrationCard = ({
       </CardHeader>
       <CardContent className="pb-2 flex-grow">
         <div className="space-y-2 text-sm text-muted-foreground">
-          {integration.whatsappIntegrationName !== "evolux" && (
+          {integration.whatsappIntegrationName !== WHATSAPP_INTEGRATION_NAMES.EVOLUX && (
             <div className="pt-2">
               <div className="flex items-center gap-1 mb-1">
                 <span className="font-medium text-foreground">
@@ -300,7 +301,7 @@ const WhatsAppIntegrationCard = ({
       </CardContent>
       <CardFooter className="pt-2 flex justify-end">
         <div className="flex flex-wrap gap-x-2">
-          {integration.whatsappIntegrationName === "evolux" &&
+          {integration.whatsappIntegrationName === WHATSAPP_INTEGRATION_NAMES.EVOLUX &&
             connectionStatus !== "open" && (
               <Button
                 variant="outline"

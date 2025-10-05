@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { WhatsAppFormData } from "@/types/whatsapp";
+import { WhatsAppIntegrationName, WHATSAPP_INTEGRATION_NAMES } from "@/types/whatsapp-integration";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -38,7 +39,7 @@ const defaultFormData: WhatsAppFormData = {
   externalClientToken: "",
   postbackUrl: "",
   agentId: "",
-  whatsappIntegrationName: "z-api" as "z-api" | "evolux",
+  whatsappIntegrationName: WHATSAPP_INTEGRATION_NAMES.ZAPI,
 };
 
 const WhatsAppForm = ({
@@ -50,7 +51,7 @@ const WhatsAppForm = ({
   const [formData, setFormData] = useState<WhatsAppFormData>({
     ...defaultFormData,
     ...initialData,
-    whatsappIntegrationName: initialData.whatsappIntegrationName || "z-api",
+    whatsappIntegrationName: initialData.whatsappIntegrationName || WHATSAPP_INTEGRATION_NAMES.ZAPI,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   // Webhook URL is now generated but not shown as a separate step
@@ -195,7 +196,7 @@ const WhatsAppForm = ({
               value={formData.whatsappIntegrationName}
               onValueChange={(value) =>
                 updateFormData({
-                  whatsappIntegrationName: value as "z-api" | "evolux",
+                  whatsappIntegrationName: value as WhatsAppIntegrationName,
                 })
               }
               disabled={isEditMode}
@@ -204,8 +205,8 @@ const WhatsAppForm = ({
                 <SelectValue placeholder="Selecione a integração do WhatsApp" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="z-api">Z-API</SelectItem>
-                <SelectItem value="evolux">Evolux</SelectItem>
+                <SelectItem value={WHATSAPP_INTEGRATION_NAMES.ZAPI}>Z-API</SelectItem>
+                <SelectItem value={WHATSAPP_INTEGRATION_NAMES.EVOLUX}>Evolux</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -238,7 +239,7 @@ const WhatsAppForm = ({
             </p>
           </div>
 
-          {formData.whatsappIntegrationName === "z-api" && (
+          {formData.whatsappIntegrationName === WHATSAPP_INTEGRATION_NAMES.ZAPI && (
             <div className="space-y-2">
               <Label htmlFor="externalToken">Token externo</Label>
               <Input
@@ -255,7 +256,7 @@ const WhatsAppForm = ({
             </div>
           )}
 
-          {formData.whatsappIntegrationName === "z-api" && (
+          {formData.whatsappIntegrationName === WHATSAPP_INTEGRATION_NAMES.ZAPI && (
             <div className="space-y-2">
               <Label htmlFor="externalClientToken">Token do cliente</Label>
               <Input
@@ -272,7 +273,7 @@ const WhatsAppForm = ({
             </div>
           )}
 
-          {formData.whatsappIntegrationName === "z-api" && (
+          {formData.whatsappIntegrationName === WHATSAPP_INTEGRATION_NAMES.ZAPI && (
             <div className="space-y-2">
               <Label htmlFor="postbackUrl">URL de Postback</Label>
               <Input
@@ -289,7 +290,7 @@ const WhatsAppForm = ({
             </div>
           )}
 
-          {isEditMode && formData.whatsappIntegrationName === "z-api" && (
+          {isEditMode && formData.whatsappIntegrationName === WHATSAPP_INTEGRATION_NAMES.ZAPI && (
             <div className="mt-8 p-6 border rounded-md bg-muted">
               <h3 className="font-medium text-lg mb-3">
                 Webhook URL para Plataforma Externa

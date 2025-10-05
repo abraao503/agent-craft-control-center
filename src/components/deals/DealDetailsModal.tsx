@@ -215,14 +215,14 @@ export const DealDetailsModal: React.FC<DealDetailsModalProps> = ({
         <DialogHeader>
           <DialogTitle>Editar "{dealDetails?.title || deal.title}"</DialogTitle>
           <DialogDescription>
-            Adicionar e editar oportunidade detalhes, atividades, notas e
+            Adicionar e editar negócio detalhes, atividades, notas e
             compromisso.
           </DialogDescription>
         </DialogHeader>
 
         <Tabs defaultValue="details" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="details">Detalhes da oportunidade</TabsTrigger>
+            <TabsTrigger value="details">Detalhes do negócio</TabsTrigger>
             <TabsTrigger value="notes">Observações</TabsTrigger>
           </TabsList>
 
@@ -309,17 +309,15 @@ export const DealDetailsModal: React.FC<DealDetailsModalProps> = ({
                   </div>
 
                   <div className="border-t pt-4 mt-4 px-1">
-                    <h3 className="font-semibold mb-3">
-                      Oportunidade Detalhes
-                    </h3>
+                    <h3 className="font-semibold mb-3">Detalhes do negócio</h3>
 
                     <div className="space-y-3">
                       <div className="space-y-2">
-                        <Label>Nome da oportunidade *</Label>
+                        <Label>Nome do negócio *</Label>
                         <Input
                           value={title}
                           onChange={(e) => setTitle(e.target.value)}
-                          placeholder="Nome da oportunidade"
+                          placeholder="Nome do negócio"
                         />
                       </div>
 
@@ -341,7 +339,7 @@ export const DealDetailsModal: React.FC<DealDetailsModalProps> = ({
 
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-2">
-                          <Label>Valor da oportunidade</Label>
+                          <Label>Valor do negócio</Label>
                           <Input
                             type="number"
                             min={0}
@@ -376,7 +374,7 @@ export const DealDetailsModal: React.FC<DealDetailsModalProps> = ({
                         <Textarea
                           value={description}
                           onChange={(e) => setDescription(e.target.value)}
-                          placeholder="Descrição da oportunidade"
+                          placeholder="Descrição do negócio"
                           rows={4}
                         />
                       </div>

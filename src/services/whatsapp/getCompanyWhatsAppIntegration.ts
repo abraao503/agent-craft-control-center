@@ -1,4 +1,5 @@
 import { CompanyWhatsAppIntegrationFull } from "@/types/whatsapp";
+import { WhatsAppIntegrationName } from "@/types/whatsapp-integration";
 import { api } from "../api";
 
 type ApiResponse = {
@@ -28,7 +29,7 @@ export const getCompanyWhatsAppIntegration = async (
     externalToken: data.externalToken,
     externalClientToken: data.externalClientToken,
     whatsappIntegrationId: data.whatsappIntegrationId,
-    whatsappIntegrationName: data.whatsappIntegrationName as "z-api" | "evolux",
+    whatsappIntegrationName: data.whatsappIntegrationName as WhatsAppIntegrationName,
     active: data.active,
     initialPipelineStageId: data.initialPipelineStageId,
     status: data.status,

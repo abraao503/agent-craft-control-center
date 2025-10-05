@@ -31,6 +31,7 @@ import {
 import { PipelineStageMinimal, AssistantPipelineStage, WhatsAppIntegrationConfig } from "@/types/pipeline";
 import { Agent } from "@/types/agent";
 import { CompanyWhatsAppIntegration } from "@/types/whatsapp";
+import { WhatsAppIntegrationName, WHATSAPP_INTEGRATION_NAMES } from "@/types/whatsapp-integration";
 import { useQuery } from "@tanstack/react-query";
 import { getCompanyWhatsAppIntegration } from "@/services/whatsapp/getCompanyWhatsAppIntegration";
 import { cn } from "@/lib/utils";
@@ -74,7 +75,7 @@ interface PipelineEditorProps {
     name: string;
     stages: EditableStage[];
     assistantId?: string;
-    whatsappIntegration?: WhatsAppIntegrationConfig;
+    whatsappIntegration?: WhatsAppIntegrationConfig | null;
   }) => Promise<void> | void;
   saveLabel?: string;
 }
@@ -209,7 +210,7 @@ export const PipelineEditor: React.FC<PipelineEditorProps> = ({
   });
   const [useWhatsApp, setUseWhatsApp] = useState(false);
   const [whatsAppIntegrationId, setWhatsAppIntegrationId] = useState("");
-  const [whatsAppIntegrationName, setWhatsAppIntegrationName] = useState<'evolux' | 'zapi'>('evolux');
+  const [whatsAppIntegrationName, setWhatsAppIntegrationName] = useState<WhatsAppIntegrationName>(WHATSAPP_INTEGRATION_NAMES.EVOLUX);
   const [initialStageOrder, setInitialStageOrder] = useState(0);
   const [externalToken, setExternalToken] = useState("");
   const [externalClientToken, setExternalClientToken] = useState("");
@@ -225,9 +226,7 @@ export const PipelineEditor: React.FC<PipelineEditorProps> = ({
     if (whatsappIntegrationQuery.data) {
       const data = whatsappIntegrationQuery.data;
       setUseWhatsApp(true);
-      // Normalize z-api to zapi
-      const normalizedName = data.whatsappIntegrationName === 'z-api' ? 'zapi' : data.whatsappIntegrationName;
-      setWhatsAppIntegrationName(normalizedName as 'evolux' | 'zapi');
+      setWhatsAppIntegrationName(data.whatsappIntegrationName);
       setExternalToken(data.externalToken || "");
       setExternalClientToken(data.externalClientToken || "");
       setPostbackUrl(data.postbackUrl || "");
@@ -295,7 +294,7 @@ export const PipelineEditor: React.FC<PipelineEditorProps> = ({
   const handleSave = async () => {
     setSaving(true);
     try {
-      let whatsappIntegration: WhatsAppIntegrationConfig | undefined;
+      let whatsappIntegration: WhatsAppIntegrationConfig | null | undefined;
       
       if (useWhatsApp) {
         whatsappIntegration = {
@@ -303,11 +302,14 @@ export const PipelineEditor: React.FC<PipelineEditorProps> = ({
           initialPipelineStageOrder: initialStageOrder,
         };
         
-        if (whatsAppIntegrationName === 'zapi') {
+        if (whatsAppIntegrationName === WHATSAPP_INTEGRATION_NAMES.ZAPI) {
           whatsappIntegration.externalToken = externalToken;
           whatsappIntegration.externalClientToken = externalClientToken;
           whatsappIntegration.postbackUrl = postbackUrl;
         }
+      } else if (companyWhatsappIntegrationId) {
+        // If WhatsApp was previously configured but now disabled, send null to remove it
+        whatsappIntegration = null;
       }
       
       await onSave({
@@ -453,14 +455,14 @@ export const PipelineEditor: React.FC<PipelineEditorProps> = ({
               <Label>Tipo de Integração</Label>
               <Select 
                 value={whatsAppIntegrationName} 
-                onValueChange={(value) => setWhatsAppIntegrationName(value as 'evolux' | 'zapi')}
+                onValueChange={(value) => setWhatsAppIntegrationName(value as WhatsAppIntegrationName)}
               >
                 <SelectTrigger className="max-w-md">
                   <SelectValue placeholder="Escolha o tipo" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="evolux">Evolux</SelectItem>
-                  <SelectItem value="zapi">Z-API</SelectItem>
+                  <SelectItem value={WHATSAPP_INTEGRATION_NAMES.EVOLUX}>Evolux</SelectItem>
+                  <SelectItem value={WHATSAPP_INTEGRATION_NAMES.ZAPI}>Z-API</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -487,7 +489,7 @@ export const PipelineEditor: React.FC<PipelineEditorProps> = ({
               </p>
             </div>
 
-            {whatsAppIntegrationName === 'zapi' && (
+            {whatsAppIntegrationName === WHATSAPP_INTEGRATION_NAMES.ZAPI && (
               <>
                 <div className="space-y-2">
                   <Label>External Token</Label>

@@ -18,7 +18,7 @@ export interface UpdatePipelineInput {
   description?: string | null;
   stages?: UpdatePipelineStageItem[];
   assistantId?: string | null;
-  whatsappIntegration?: WhatsAppIntegrationConfig;
+  whatsappIntegration?: WhatsAppIntegrationConfig | null;
 }
 
 export const updatePipeline = async (

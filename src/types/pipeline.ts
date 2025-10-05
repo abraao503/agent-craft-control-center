@@ -1,6 +1,8 @@
 // Types for Sales Pipeline and Deals
 // Comments in English as per project rules
 
+import { WhatsAppIntegrationName } from './whatsapp-integration';
+
 export interface PipelineListItem {
   id: string;
   name: string;
@@ -32,7 +34,7 @@ export interface CreatePipelineStageInput {
 }
 
 export interface WhatsAppIntegrationConfig {
-  whatsappIntegrationName: 'evolux' | 'zapi';
+  whatsappIntegrationName: WhatsAppIntegrationName;
   initialPipelineStageOrder: number;
   externalToken?: string;
   externalClientToken?: string;
@@ -45,7 +47,7 @@ export interface CreatePipelineInput {
   description?: string;
   stages: CreatePipelineStageInput[]; // at least 1
   assistantId?: string | null; // UUID of assistant to use in this pipeline
-  whatsappIntegration?: WhatsAppIntegrationConfig;
+  whatsappIntegration?: WhatsAppIntegrationConfig | null;
 }
 
 export interface CreatePipelineResponse {

@@ -217,7 +217,7 @@ const PipelineDetailPage = () => {
       assistantPipelineStage?: AssistantPipelineStage;
     }>;
     assistantId?: string;
-    whatsappIntegration?: WhatsAppIntegrationConfig;
+    whatsappIntegration?: WhatsAppIntegrationConfig | null;
   }) => {
     if (!pipelineId || !workspaceId) return;
     try {
@@ -294,7 +294,7 @@ const PipelineDetailPage = () => {
       assistantPipelineStage?: AssistantPipelineStage;
     }>;
     assistantId?: string;
-    whatsappIntegration?: WhatsAppIntegrationConfig;
+    whatsappIntegration?: WhatsAppIntegrationConfig | null;
   }) => {
     if (!workspaceId) return;
     try {
