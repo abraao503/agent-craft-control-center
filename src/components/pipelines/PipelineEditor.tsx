@@ -28,14 +28,30 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { PipelineStageMinimal, AssistantPipelineStage, WhatsAppIntegrationConfig } from "@/types/pipeline";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  PipelineStageMinimal,
+  AssistantPipelineStage,
+  WhatsAppIntegrationConfig,
+} from "@/types/pipeline";
 import { Agent } from "@/types/agent";
 import { CompanyWhatsAppIntegration } from "@/types/whatsapp";
-import { WhatsAppIntegrationName, WHATSAPP_INTEGRATION_NAMES } from "@/types/whatsapp-integration";
+import {
+  WhatsAppIntegrationName,
+  WHATSAPP_INTEGRATION_NAMES,
+} from "@/types/whatsapp-integration";
 import { useQuery } from "@tanstack/react-query";
 import { getCompanyWhatsAppIntegration } from "@/services/whatsapp/getCompanyWhatsAppIntegration";
 import { cn } from "@/lib/utils";
-import { GripVertical } from "lucide-react";
+import { GripVertical, Bot, MessageSquare, Settings, Pencil, Check, X } from "lucide-react";
 import { AssistantStageConfig } from "./AssistantStageConfig";
 import {
   DndContext,
@@ -108,9 +124,32 @@ const SortableStage: React.FC<SortableStageProps> = ({
     isDragging,
   } = useSortable({ id: stage.id });
 
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editedName, setEditedName] = useState(stage.name);
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
+  };
+
+  const handleSaveName = () => {
+    if (editedName.trim()) {
+      onUpdate(index, { name: editedName.trim() });
+    }
+    setIsEditingName(false);
+  };
+
+  const handleCancelEdit = () => {
+    setEditedName(stage.name);
+    setIsEditingName(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSaveName();
+    } else if (e.key === 'Escape') {
+      handleCancelEdit();
+    }
   };
 
   return (
@@ -121,13 +160,56 @@ const SortableStage: React.FC<SortableStageProps> = ({
     >
       <Card className="flex flex-col bg-background/60 border-border h-[calc(100vh-350px)]">
         <CardHeader
-          className="py-3 bg-muted/40 rounded-t-xl border-b border-border cursor-grab active:cursor-grabbing select-none"
-          {...attributes}
-          {...listeners}
+          className="py-3 bg-muted/40 rounded-t-xl border-b border-border"
         >
-          <CardTitle className="text-sm flex items-center justify-between">
-            <span>{stage.name || "(Sem nome)"}</span>
-            <GripVertical className="h-4 w-4 text-muted-foreground" />
+          <CardTitle className="text-sm flex items-center justify-between gap-2">
+            {isEditingName ? (
+              <div className="flex items-center gap-1 flex-1">
+                <Input
+                  value={editedName}
+                  onChange={(e) => setEditedName(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  className="h-7 text-sm"
+                  autoFocus
+                  onBlur={handleSaveName}
+                />
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-7 w-7"
+                  onClick={handleSaveName}
+                >
+                  <Check className="h-3 w-3" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-7 w-7"
+                  onClick={handleCancelEdit}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 flex-1 group">
+                <span className="flex-1">{stage.name || "(Sem nome)"}</span>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={() => setIsEditingName(true)}
+                >
+                  <Pencil className="h-3 w-3" />
+                </Button>
+              </div>
+            )}
+            <div
+              className="cursor-grab active:cursor-grabbing select-none"
+              {...attributes}
+              {...listeners}
+            >
+              <GripVertical className="h-4 w-4 text-muted-foreground" />
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent className="p-3 flex-1 overflow-auto">
@@ -210,11 +292,14 @@ export const PipelineEditor: React.FC<PipelineEditorProps> = ({
   });
   const [useWhatsApp, setUseWhatsApp] = useState(false);
   const [whatsAppIntegrationId, setWhatsAppIntegrationId] = useState("");
-  const [whatsAppIntegrationName, setWhatsAppIntegrationName] = useState<WhatsAppIntegrationName>(WHATSAPP_INTEGRATION_NAMES.EVOLUX);
+  const [whatsAppIntegrationName, setWhatsAppIntegrationName] =
+    useState<WhatsAppIntegrationName>(WHATSAPP_INTEGRATION_NAMES.EVOLUX);
   const [initialStageOrder, setInitialStageOrder] = useState(0);
   const [externalToken, setExternalToken] = useState("");
   const [externalClientToken, setExternalClientToken] = useState("");
   const [postbackUrl, setPostbackUrl] = useState("");
+  const [assistantModalOpen, setAssistantModalOpen] = useState(false);
+  const [whatsappModalOpen, setWhatsappModalOpen] = useState(false);
 
   const whatsappIntegrationQuery = useQuery({
     queryKey: ["getCompanyWhatsAppIntegration", companyWhatsappIntegrationId],
@@ -230,9 +315,11 @@ export const PipelineEditor: React.FC<PipelineEditorProps> = ({
       setExternalToken(data.externalToken || "");
       setExternalClientToken(data.externalClientToken || "");
       setPostbackUrl(data.postbackUrl || "");
-      
+
       // Find stage order by initialPipelineStageId
-      const stageIndex = draftStages.findIndex(s => s.id === data.initialPipelineStageId);
+      const stageIndex = draftStages.findIndex(
+        (s) => s.id === data.initialPipelineStageId
+      );
       if (stageIndex !== -1) {
         setInitialStageOrder(draftStages[stageIndex].order);
       }
@@ -295,13 +382,13 @@ export const PipelineEditor: React.FC<PipelineEditorProps> = ({
     setSaving(true);
     try {
       let whatsappIntegration: WhatsAppIntegrationConfig | null | undefined;
-      
+
       if (useWhatsApp) {
         whatsappIntegration = {
           whatsappIntegrationName: whatsAppIntegrationName,
           initialPipelineStageOrder: initialStageOrder,
         };
-        
+
         if (whatsAppIntegrationName === WHATSAPP_INTEGRATION_NAMES.ZAPI) {
           whatsappIntegration.externalToken = externalToken;
           whatsappIntegration.externalClientToken = externalClientToken;
@@ -311,7 +398,7 @@ export const PipelineEditor: React.FC<PipelineEditorProps> = ({
         // If WhatsApp was previously configured but now disabled, send null to remove it
         whatsappIntegration = null;
       }
-      
+
       await onSave({
         name: name.trim(),
         stages: draftStages.map((s, i) => ({ ...s, order: i })),
@@ -370,160 +457,222 @@ export const PipelineEditor: React.FC<PipelineEditorProps> = ({
         </div>
       </div>
 
-      {/* Assistant Configuration Section */}
-      <div className="border rounded-lg p-4 space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <Label className="text-base font-medium">
-              Configuração de Agente
-            </Label>
-            <p className="text-sm text-muted-foreground mt-1">
-              Configure um agente para automatizar ações neste funil
-            </p>
-          </div>
-          <Switch
-            checked={useAssistant}
-            onCheckedChange={(checked) => {
-              setUseAssistant(checked);
-              if (!checked) {
-                setAssistantId("");
-                // Clear assistant config from all stages
-                setDraftStages((prev) =>
-                  prev.map((stage) => ({
-                    ...stage,
-                    assistantPipelineStage: undefined,
-                  }))
-                );
-              }
-            }}
-          />
-        </div>
+      {/* Compact Configuration Buttons */}
+      <div className="flex gap-2">
+        {/* Assistant Configuration */}
+        <Dialog open={assistantModalOpen} onOpenChange={setAssistantModalOpen}>
+          <DialogTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <Bot className="h-4 w-4" />
+              <span>Agente</span>
+              {useAssistant && assistantId && (
+                <span className="text-xs text-muted-foreground">
+                  • {availableAgents.find((a) => a.id === assistantId)?.name}
+                </span>
+              )}
+              <Settings className="h-3 w-3 ml-1 text-muted-foreground" />
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Configuração de Agente</DialogTitle>
+              <DialogDescription>
+                Configure um agente para automatizar ações neste funil
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="flex items-center justify-between">
+                <Label>Usar Agente</Label>
+                <Switch
+                  checked={useAssistant}
+                  onCheckedChange={(checked) => {
+                    setUseAssistant(checked);
+                    if (!checked) {
+                      setAssistantId("");
+                      setDraftStages((prev) =>
+                        prev.map((stage) => ({
+                          ...stage,
+                          assistantPipelineStage: undefined,
+                        }))
+                      );
+                    }
+                  }}
+                />
+              </div>
 
-        {useAssistant && (
-          <div className="space-y-2">
-            <Label>Selecionar Agente</Label>
-            <Select value={assistantId} onValueChange={setAssistantId}>
-              <SelectTrigger className="max-w-md">
-                <SelectValue placeholder="Escolha um agente" />
-              </SelectTrigger>
-              <SelectContent>
-                {availableAgents.map((agent) => (
-                  <SelectItem key={agent.id} value={agent.id}>
-                    {agent.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {assistantId && (
-              <p className="text-xs text-muted-foreground">
-                Configure em quais etapas o agente pode agir e para onde pode
-                mover os negócios.
-              </p>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* WhatsApp Integration Section */}
-      <div className="border rounded-lg p-4 space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <Label className="text-base font-medium">
-              Integração WhatsApp
-            </Label>
-            <p className="text-sm text-muted-foreground mt-1">
-              Conecte este funil a uma integração WhatsApp para receber leads automaticamente
-            </p>
-          </div>
-          <Switch
-            checked={useWhatsApp}
-            onCheckedChange={(checked) => {
-              setUseWhatsApp(checked);
-              if (!checked) {
-                setWhatsAppIntegrationId("");
-                setExternalToken("");
-                setExternalClientToken("");
-                setPostbackUrl("");
-              }
-            }}
-          />
-        </div>
-
-        {useWhatsApp && (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Tipo de Integração</Label>
-              <Select 
-                value={whatsAppIntegrationName} 
-                onValueChange={(value) => setWhatsAppIntegrationName(value as WhatsAppIntegrationName)}
-              >
-                <SelectTrigger className="max-w-md">
-                  <SelectValue placeholder="Escolha o tipo" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={WHATSAPP_INTEGRATION_NAMES.EVOLUX}>Evolux</SelectItem>
-                  <SelectItem value={WHATSAPP_INTEGRATION_NAMES.ZAPI}>Z-API</SelectItem>
-                </SelectContent>
-              </Select>
+              {useAssistant && (
+                <>
+                  <div className="space-y-2">
+                    <Label>Selecionar Agente</Label>
+                    <Select value={assistantId} onValueChange={setAssistantId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Escolha um agente" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableAgents.map((agent) => (
+                          <SelectItem key={agent.id} value={agent.id}>
+                            {agent.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {assistantId && (
+                    <p className="text-sm text-muted-foreground">
+                      Configure nas etapas abaixo onde o agente pode agir e para
+                      onde pode mover os negócios.
+                    </p>
+                  )}
+                </>
+              )}
             </div>
+            <DialogFooter>
+              <Button onClick={() => setAssistantModalOpen(false)}>OK</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
-            <div className="space-y-2">
-              <Label>Etapa Inicial</Label>
-              <Select 
-                value={initialStageOrder.toString()} 
-                onValueChange={(value) => setInitialStageOrder(parseInt(value))}
-              >
-                <SelectTrigger className="max-w-md">
-                  <SelectValue placeholder="Escolha a etapa inicial" />
-                </SelectTrigger>
-                <SelectContent>
-                  {draftStages.map((stage) => (
-                    <SelectItem key={stage.id} value={stage.order.toString()}>
-                      {stage.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                Novos leads do WhatsApp serão adicionados nesta etapa
-              </p>
+        {/* WhatsApp Integration */}
+        <Dialog open={whatsappModalOpen} onOpenChange={setWhatsappModalOpen}>
+          <DialogTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <MessageSquare className="h-4 w-4" />
+              <span>WhatsApp</span>
+              {useWhatsApp && (
+                <span className="text-xs text-muted-foreground">
+                  • {whatsAppIntegrationName}
+                </span>
+              )}
+              <Settings className="h-3 w-3 ml-1 text-muted-foreground" />
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Integração WhatsApp</DialogTitle>
+              <DialogDescription>
+                Conecte este funil a uma integração WhatsApp para receber leads
+                automaticamente
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="flex items-center justify-between">
+                <Label>Usar WhatsApp</Label>
+                <Switch
+                  checked={useWhatsApp}
+                  onCheckedChange={(checked) => {
+                    setUseWhatsApp(checked);
+                    if (!checked) {
+                      setWhatsAppIntegrationId("");
+                      setExternalToken("");
+                      setExternalClientToken("");
+                      setPostbackUrl("");
+                    }
+                  }}
+                />
+              </div>
+
+              {useWhatsApp && (
+                <>
+                  <div className="space-y-2">
+                    <Label>Tipo de Integração</Label>
+                    <Select
+                      value={whatsAppIntegrationName}
+                      onValueChange={(value) =>
+                        setWhatsAppIntegrationName(
+                          value as WhatsAppIntegrationName
+                        )
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Escolha o tipo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={WHATSAPP_INTEGRATION_NAMES.EVOLUX}>
+                          Evolux
+                        </SelectItem>
+                        <SelectItem value={WHATSAPP_INTEGRATION_NAMES.ZAPI}>
+                          Z-API
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Etapa Inicial</Label>
+                    <Select
+                      value={initialStageOrder.toString()}
+                      onValueChange={(value) =>
+                        setInitialStageOrder(parseInt(value))
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Escolha a etapa inicial" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {draftStages.map((stage) => (
+                          <SelectItem
+                            key={stage.id}
+                            value={stage.order.toString()}
+                          >
+                            {stage.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      Novos leads do WhatsApp serão adicionados nesta etapa
+                    </p>
+                  </div>
+
+                  {whatsAppIntegrationName ===
+                    WHATSAPP_INTEGRATION_NAMES.ZAPI && (
+                    <>
+                      <div className="space-y-2">
+                        <Label>External Token</Label>
+                        <Input
+                          value={externalToken}
+                          onChange={(e) => setExternalToken(e.target.value)}
+                          placeholder="Digite o token externo"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>External Client Token</Label>
+                        <Input
+                          value={externalClientToken}
+                          onChange={(e) =>
+                            setExternalClientToken(e.target.value)
+                          }
+                          placeholder="Digite o token do cliente"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Postback URL</Label>
+                        <Input
+                          value={postbackUrl}
+                          onChange={(e) => setPostbackUrl(e.target.value)}
+                          placeholder="Digite a URL de postback"
+                        />
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
             </div>
-
-            {whatsAppIntegrationName === WHATSAPP_INTEGRATION_NAMES.ZAPI && (
-              <>
-                <div className="space-y-2">
-                  <Label>External Token</Label>
-                  <Input
-                    value={externalToken}
-                    onChange={(e) => setExternalToken(e.target.value)}
-                    placeholder="Digite o token externo"
-                    className="max-w-md"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>External Client Token</Label>
-                  <Input
-                    value={externalClientToken}
-                    onChange={(e) => setExternalClientToken(e.target.value)}
-                    placeholder="Digite o token do cliente"
-                    className="max-w-md"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Postback URL</Label>
-                  <Input
-                    value={postbackUrl}
-                    onChange={(e) => setPostbackUrl(e.target.value)}
-                    placeholder="Digite a URL de postback"
-                    className="max-w-md"
-                  />
-                </div>
-              </>
-            )}
-          </div>
-        )}
+            <DialogFooter>
+              <Button onClick={() => setWhatsappModalOpen(false)}>OK</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="overflow-x-auto">

@@ -38,7 +38,7 @@ export const AssistantStageConfig: React.FC<AssistantStageConfigProps> = ({
   availableStages,
   onConfigChange,
 }) => {
-  const agentEnabledForStage = assistantConfig !== null;
+  const agentEnabledForStage = !!assistantConfig;
   const allowedTargetStages =
     assistantConfig?.assistantAllowedTargetStages ?? [];
 
