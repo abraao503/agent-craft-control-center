@@ -350,11 +350,6 @@ const SidebarMenuContent = () => {
     { path: "/agents", label: "Agents", icon: <Bot className="h-5 w-5" /> },
     {
       path: "/chats",
-      label: "Chats",
-      icon: <MessageSquare className="h-5 w-5" />,
-    },
-    {
-      path: "/conversations",
       label: "Conversas",
       icon: <MessagesSquare className="h-5 w-5" />,
     },

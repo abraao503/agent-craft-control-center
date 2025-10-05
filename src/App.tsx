@@ -27,7 +27,6 @@ import EditWhatsAppIntegrationPage from "./pages/EditWhatsAppIntegrationPage";
 import SettingsPage from "./pages/SettingsPage";
 import NotFound from "./pages/NotFound";
 import ContentManagementPage from "./pages/ContentManagementPage";
-import ConversationsPage from "./pages/ConversationsPage";
 import ChatsPage from "./pages/ChatsPage";
 import CustomersPage from "./pages/CustomersPage";
 import CustomerDetailsPage from "./pages/CustomerDetailsPage";
@@ -213,7 +212,6 @@ const IntegrationsCreatePage = () => <CreateWhatsAppIntegrationPage />;
 const IntegrationsEditPage = () => <EditWhatsAppIntegrationPage />;
 const SettingsConfigPage = () => <SettingsPage />;
 const ContentsPage = () => <ContentManagementPage />;
-const ConversationsListPage = () => <ConversationsPage />;
 const ChatsListPage = () => <ChatsPage />;
 const CustomersListPage = () => <CustomersPage />;
 const CustomerDetailsViewPage = () => <CustomerDetailsPage />;
@@ -263,10 +261,6 @@ const App = () => (
                   />
                   <Route path="/settings" element={<SettingsConfigPage />} />
                   <Route path="/contents" element={<ContentsPage />} />
-                  <Route
-                    path="/conversations"
-                    element={<ConversationsListPage />}
-                  />
                   <Route path="/chats" element={<ChatsListPage />} />
                   <Route path="/customers" element={<CustomersListPage />} />
                   <Route
