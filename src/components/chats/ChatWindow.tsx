@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
-import { format } from "date-fns";
+import { format, isToday, isYesterday, isSameDay } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   Send,
@@ -14,6 +15,7 @@ import {
   UserCog,
   Tag as TagIcon,
   Info,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -34,6 +36,7 @@ import { Message, MessageEvent } from "@/types/message";
 import { listMessages } from "@/services/conversation/listMessages";
 import { sendMessage } from "@/services/conversation/sendMessage";
 import { updateConversationHandler } from "@/services/conversation/updateConversationHandler";
+import { clearConversationExternalId } from "@/services/conversation/clearConversationExternalId";
 import { connectSocket, getSocket } from "@/lib/socket";
 import { useToast } from "@/hooks/use-toast";
 import { ChatSidebar } from "./ChatSidebar";
@@ -101,6 +104,24 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     onError: () => {
       toast({
         title: "Erro ao alterar atendimento",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Clear conversation external ID mutation
+  const clearExternalIdMutation = useMutation({
+    mutationFn: () => clearConversationExternalId(conversation.id),
+    onSuccess: () => {
+      toast({
+        title: "Registro limpo com sucesso",
+        description: "O registro externo desta conversa foi limpo.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Erro ao limpar registro",
+        description: "Não foi possível limpar o registro externo. Tente novamente.",
         variant: "destructive",
       });
     },
@@ -339,6 +360,30 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     }
   };
 
+  const formatDateSeparator = (date: Date) => {
+    const now = new Date();
+    const diffInDays = Math.floor(
+      (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24)
+    );
+
+    if (diffInDays === 0) {
+      return "Hoje";
+    } else if (diffInDays === 1) {
+      return "Ontem";
+    } else if (diffInDays < 7) {
+      return format(date, "EEEE", { locale: ptBR });
+    } else {
+      return format(date, "dd/MM/yyyy", { locale: ptBR });
+    }
+  };
+
+  const shouldShowDateSeparator = (currentMsg: Message, previousMsg: Message | null) => {
+    if (!previousMsg) return true;
+    const currentDate = new Date(currentMsg.createdAt);
+    const previousDate = new Date(previousMsg.createdAt);
+    return !isSameDay(currentDate, previousDate);
+  };
+
   return (
     <div className="flex h-full w-full">
       <div className="flex flex-col flex-1">
@@ -399,6 +444,15 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                     />
                   </div>
                 </div>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => clearExternalIdMutation.mutate()}
+                  disabled={clearExternalIdMutation.isPending}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  {clearExternalIdMutation.isPending ? "Limpando..." : "Limpar registro"}
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -426,43 +480,56 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
               </div>
             ) : (
               <div className="space-y-3">
-                {messages.map((message) => {
+                {messages.map((message, index) => {
                   const isCustomer = message.sender === "customer";
+                  const previousMessage = index > 0 ? messages[index - 1] : null;
+                  const showDateSeparator = shouldShowDateSeparator(message, previousMessage);
+                  
                   return (
-                    <div
-                      key={message.id}
-                      className={`flex ${
-                        isCustomer ? "justify-start" : "justify-end"
-                      }`}
-                    >
+                    <React.Fragment key={message.id}>
+                      {showDateSeparator && (
+                        <div className="flex justify-center my-4">
+                          <div className="bg-white/80 backdrop-blur-sm px-3 py-1 rounded-full shadow-sm">
+                            <span className="text-xs font-medium text-muted-foreground">
+                              {formatDateSeparator(new Date(message.createdAt))}
+                            </span>
+                          </div>
+                        </div>
+                      )}
                       <div
-                        className={`max-w-[70%] rounded-lg p-3 ${
-                          isCustomer
-                            ? "bg-white"
-                            : message.sender === "assistant"
-                            ? "bg-[#d9fdd3]"
-                            : "bg-[#cfe9ff]"
+                        className={`flex ${
+                          isCustomer ? "justify-start" : "justify-end"
                         }`}
                       >
-                        <div className="flex items-center gap-2 mb-1">
-                          {message.sender === "assistant" && (
-                            <Bot className="h-3 w-3 text-primary" />
-                          )}
-                          {message.sender === "human_assistant" && (
-                            <UserCog className="h-3 w-3 text-blue-600" />
-                          )}
-                          <span className="text-xs font-semibold text-muted-foreground">
-                            {getSenderLabel(message.sender)}
+                        <div
+                          className={`max-w-[70%] rounded-lg p-3 ${
+                            isCustomer
+                              ? "bg-white"
+                              : message.sender === "assistant"
+                              ? "bg-[#d9fdd3]"
+                              : "bg-[#cfe9ff]"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 mb-1">
+                            {message.sender === "assistant" && (
+                              <Bot className="h-3 w-3 text-primary" />
+                            )}
+                            {message.sender === "human_assistant" && (
+                              <UserCog className="h-3 w-3 text-blue-600" />
+                            )}
+                            <span className="text-xs font-semibold text-muted-foreground">
+                              {getSenderLabel(message.sender)}
+                            </span>
+                          </div>
+                          <p className="text-sm whitespace-pre-wrap break-words">
+                            {message.content}
+                          </p>
+                          <span className="text-xs text-muted-foreground mt-1 block text-right">
+                            {format(new Date(message.createdAt), "HH:mm")}
                           </span>
                         </div>
-                        <p className="text-sm whitespace-pre-wrap break-words">
-                          {message.content}
-                        </p>
-                        <span className="text-xs text-muted-foreground mt-1 block text-right">
-                          {format(new Date(message.createdAt), "HH:mm")}
-                        </span>
                       </div>
-                    </div>
+                    </React.Fragment>
                   );
                 })}
               </div>

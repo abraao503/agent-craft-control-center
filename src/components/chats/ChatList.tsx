@@ -66,7 +66,11 @@ export const ChatList: React.FC<ChatListProps> = ({
       <div className="p-4 border-b">
         <h2 className="text-xl font-semibold mb-3">Chats</h2>
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          {isLoading ? (
+            <Loader2 className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground animate-spin" />
+          ) : (
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          )}
           <Input
             type="search"
             placeholder="Buscar ou começar uma nova conversa"
@@ -79,16 +83,12 @@ export const ChatList: React.FC<ChatListProps> = ({
 
       {/* Chat List */}
       <ScrollArea className="flex-1">
-        {isLoading ? (
-          <div className="flex justify-center items-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin text-primary" />
-          </div>
-        ) : conversations.length === 0 ? (
+        {conversations.length === 0 ? (
           <div className="p-4 text-center text-muted-foreground">
-            Nenhuma conversa encontrada
+            {isLoading ? "Buscando..." : "Nenhuma conversa encontrada"}
           </div>
         ) : (
-          <div className="divide-y">
+          <div className="divide-y" style={{ opacity: isLoading ? 0.5 : 1 }}>
             {conversations.map((conversation) => (
               <div
                 key={conversation.id}

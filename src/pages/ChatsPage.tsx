@@ -125,7 +125,7 @@ const ChatsPage = () => {
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
         {/* Error state */}
-        {isError && (
+        {isError && !isLoading && (
           <div className="flex-1 flex items-center justify-center p-4">
             <Alert variant="destructive" className="max-w-md">
               <AlertDescription>
@@ -136,15 +136,8 @@ const ChatsPage = () => {
           </div>
         )}
 
-        {/* Loading state */}
-        {(isLoading || isChangingWorkspace) && (
-          <div className="flex-1 flex items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
-        )}
-
         {/* Chat Layout */}
-        {!isLoading && !isError && data && (
+        {!isError && (
           <>
             {/* Chat List - Left Side */}
             <div className="w-[200px] md:w-[380px] flex-shrink-0">
@@ -154,7 +147,7 @@ const ChatsPage = () => {
                 onSelectConversation={handleSelectConversation}
                 searchValue={filters.search || ""}
                 onSearchChange={handleSearchChange}
-                isLoading={isLoading}
+                isLoading={isLoading || isChangingWorkspace}
               />
             </div>
 
