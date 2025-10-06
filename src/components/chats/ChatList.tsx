@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Conversation } from "@/types/conversation";
 import { isColorDark } from "@/lib/utils";
 
@@ -66,11 +67,13 @@ export const ChatList: React.FC<ChatListProps> = ({
       <div className="p-4 border-b">
         <h2 className="text-xl font-semibold mb-3">Chats</h2>
         <div className="relative">
-          {isLoading ? (
-            <Loader2 className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground animate-spin" />
-          ) : (
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          )}
+          <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
+            {isLoading && searchValue ? (
+              <Loader2 className="h-4 w-4 text-muted-foreground animate-spin" />
+            ) : (
+              <Search className="h-4 w-4 text-muted-foreground" />
+            )}
+          </div>
           <Input
             type="search"
             placeholder="Buscar ou começar uma nova conversa"
@@ -83,87 +86,112 @@ export const ChatList: React.FC<ChatListProps> = ({
 
       {/* Chat List */}
       <ScrollArea className="flex-1">
-        {conversations.length === 0 ? (
-          <div className="p-4 text-center text-muted-foreground">
-            {isLoading ? "Buscando..." : "Nenhuma conversa encontrada"}
-          </div>
-        ) : (
-          <div className="divide-y" style={{ opacity: isLoading ? 0.5 : 1 }}>
-            {conversations.map((conversation) => (
-              <div
-                key={conversation.id}
-                onClick={() => onSelectConversation(conversation)}
-                className={`p-4 cursor-pointer hover:bg-muted/50 transition-colors ${
-                  selectedConversationId === conversation.id ? "bg-muted" : ""
-                }`}
-              >
+        {isLoading && conversations.length === 0 ? (
+          <div className="divide-y">
+            {Array.from({ length: 5 }).map((_, index) => (
+              <div key={index} className="p-4">
                 <div className="flex gap-3">
-                  {/* Avatar */}
-                  <Avatar className="h-12 w-12 flex-shrink-0">
-                    <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                      {getInitials(
-                        conversation.customer.identifier,
-                        conversation.customer.phone
-                      )}
-                    </AvatarFallback>
-                  </Avatar>
-
-                  {/* Content */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-start mb-1">
-                      <h3 className="font-semibold truncate">
-                        {conversation.customer.identifier ||
-                          conversation.customer.phone}
-                      </h3>
-                      <span className="text-xs text-muted-foreground ml-2 flex-shrink-0">
-                        {formatLastInteraction(conversation.lastInteraction)}
-                      </span>
+                  <Skeleton className="h-12 w-12 rounded-full flex-shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <div className="flex justify-between items-start">
+                      <Skeleton className="h-4 w-32" />
+                      <Skeleton className="h-3 w-12" />
                     </div>
-
-                    <div className="flex items-center gap-2 mb-1">
-                      <Badge
-                        variant={
-                          conversation.handledBy === "ai"
-                            ? "default"
-                            : "outline"
-                        }
-                        className="text-xs"
-                      >
-                        {conversation.handledBy === "ai" ? "IA" : "Humano"}
-                      </Badge>
-                      {conversation.agent && (
-                        <span className="text-xs text-muted-foreground truncate">
-                          {conversation.agent.name}
-                        </span>
-                      )}
+                    <Skeleton className="h-3 w-20" />
+                    <div className="flex gap-1">
+                      <Skeleton className="h-5 w-16" />
+                      <Skeleton className="h-5 w-16" />
                     </div>
-
-                    {/* Tags */}
-                    {conversation.tags && conversation.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {conversation.tags.slice(0, 3).map((tag) => (
-                          <Badge
-                            key={tag.id}
-                            style={{
-                              backgroundColor: tag.color,
-                              color: isColorDark(tag.color) ? "white" : "black",
-                            }}
-                            className="text-xs"
-                          >
-                            {tag.name}
-                          </Badge>
-                        ))}
-                        {conversation.tags.length > 3 && (
-                          <Badge variant="outline" className="text-xs">
-                            +{conversation.tags.length - 3}
-                          </Badge>
-                        )}
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>
             ))}
+          </div>
+        ) : conversations.length === 0 ? (
+          <div className="p-4 text-center text-muted-foreground">
+            Nenhuma conversa encontrada
+          </div>
+        ) : (
+          <div className="relative">
+            <div className="divide-y" style={{ opacity: isLoading ? 0.5 : 1 }}>
+              {conversations.map((conversation) => (
+                <div
+                  key={conversation.id}
+                  onClick={() => onSelectConversation(conversation)}
+                  className={`p-4 cursor-pointer hover:bg-muted/50 transition-colors ${
+                    selectedConversationId === conversation.id ? "bg-muted" : ""
+                  }`}
+                >
+                  <div className="flex gap-3">
+                    {/* Avatar */}
+                    <Avatar className="h-12 w-12 flex-shrink-0">
+                      <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                        {getInitials(
+                          conversation.customer.identifier,
+                          conversation.customer.phone
+                        )}
+                      </AvatarFallback>
+                    </Avatar>
+
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-start mb-1">
+                        <h3 className="font-semibold truncate">
+                          {conversation.customer.identifier ||
+                            conversation.customer.phone}
+                        </h3>
+                        <span className="text-xs text-muted-foreground ml-2 flex-shrink-0">
+                          {formatLastInteraction(conversation.lastInteraction)}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2 mb-1">
+                        <Badge
+                          variant={
+                            conversation.handledBy === "ai"
+                              ? "default"
+                              : "outline"
+                          }
+                          className="text-xs"
+                        >
+                          {conversation.handledBy === "ai" ? "IA" : "Humano"}
+                        </Badge>
+                        {conversation.agent && (
+                          <span className="text-xs text-muted-foreground truncate">
+                            {conversation.agent.name}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Tags */}
+                      {conversation.tags && conversation.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {conversation.tags.slice(0, 3).map((tag) => (
+                            <Badge
+                              key={tag.id}
+                              style={{
+                                backgroundColor: tag.color,
+                                color: isColorDark(tag.color)
+                                  ? "white"
+                                  : "black",
+                              }}
+                              className="text-xs"
+                            >
+                              {tag.name}
+                            </Badge>
+                          ))}
+                          {conversation.tags.length > 3 && (
+                            <Badge variant="outline" className="text-xs">
+                              +{conversation.tags.length - 3}
+                            </Badge>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </ScrollArea>
