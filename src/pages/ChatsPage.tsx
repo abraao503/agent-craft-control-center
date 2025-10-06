@@ -34,7 +34,7 @@ const ChatsPage = () => {
     tagIds: [],
     initialDate: null,
     finalDate: null,
-    sortBy: "createdAt",
+    sortBy: "updatedAt",
     sortOrder: "desc",
     handledBy: undefined,
   });
