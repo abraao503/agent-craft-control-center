@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { QrCode, MessageSquare } from "lucide-react";
+import { QrCode, MessageSquare, Copy } from "lucide-react";
 import { getCompanyWhatsAppIntegration } from "@/services/whatsapp/getCompanyWhatsAppIntegration";
 import { generateQrCode } from "@/services/whatsapp/generateQrCode";
 import { useToast } from "@/components/ui/use-toast";
@@ -20,15 +20,18 @@ import {
 
 interface PipelineWhatsAppConnectionProps {
   companyWhatsappIntegrationId: string;
+  workspaceId: string;
 }
 
 export const PipelineWhatsAppConnection = ({
   companyWhatsappIntegrationId,
+  workspaceId,
 }: PipelineWhatsAppConnectionProps) => {
   const { toast } = useToast();
   const { user } = useAuth();
   const [qrCodeOpen, setQrCodeOpen] = useState(false);
   const [qrCodeData, setQrCodeData] = useState<string>("");
+  const [copied, setCopied] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<
     "close" | "open" | "connecting"
   >("connecting");
@@ -130,6 +133,33 @@ export const PipelineWhatsAppConnection = ({
     qrCodeMutation.mutate();
   };
 
+  const getWebhookUrl = () => {
+    if (!integration) return "";
+    
+    const frontendUrl = import.meta.env.VITE_API_URL || window.location.origin;
+    const companyId = user.companyId;
+    const integrationName = integration.whatsappIntegrationName;
+    const integrationId = integration.id;
+
+    const formattedIntegrationName = integrationName
+      .toLowerCase()
+      .replace(/\s+/g, "-");
+
+    return `${frontendUrl}/webhook/${formattedIntegrationName}/${companyId}/${workspaceId}/${integrationId}`;
+  };
+
+  const copyWebhookToClipboard = () => {
+    const webhook = getWebhookUrl();
+
+    navigator.clipboard.writeText(webhook);
+    setCopied(true);
+    toast({
+      title: "Copiado para a área de transferência",
+      description: "A URL do webhook foi copiada para a sua área de transferência.",
+    });
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   if (isLoading) {
     return null;
   }
@@ -166,6 +196,17 @@ export const PipelineWhatsAppConnection = ({
               </span>
             </Button>
           )}
+        {integration.whatsappIntegrationName !== WHATSAPP_INTEGRATION_NAMES.EVOLUX && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={copyWebhookToClipboard}
+            className="h-7 px-2"
+          >
+            <Copy className="w-3.5 h-3.5 mr-1" />
+            <span className="text-xs">Copiar Webhook</span>
+          </Button>
+        )}
       </div>
 
       <Dialog open={qrCodeOpen} onOpenChange={setQrCodeOpen}>

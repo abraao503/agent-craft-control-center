@@ -431,11 +431,12 @@ const PipelineDetailPage = () => {
           )}
         </div>
         <div className="flex items-center gap-2">
-          {currentPipelineWhatsappIntegrationId && canShowActions() && (
+          {currentPipelineWhatsappIntegrationId && canShowActions() && workspaceId && (
             <PipelineWhatsAppConnection
               companyWhatsappIntegrationId={
                 currentPipelineWhatsappIntegrationId
               }
+              workspaceId={workspaceId}
             />
           )}
           {workspaceId && canShowActions() && (
