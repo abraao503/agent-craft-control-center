@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { format, isToday, isYesterday, isSameDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -16,6 +16,8 @@ import {
   Tag as TagIcon,
   Info,
   Trash2,
+  Clock,
+  AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -41,6 +43,13 @@ import { connectSocket, getSocket } from "@/lib/socket";
 import { useToast } from "@/hooks/use-toast";
 import { ChatSidebar } from "./ChatSidebar";
 
+type MessageStatus = "pending" | "sent" | "failed";
+
+type MessageWithStatus = Message & {
+  status?: MessageStatus;
+  tempId?: string;
+};
+
 type ChatWindowProps = {
   conversation: Conversation;
   onUpdateConversation: (conversation: Conversation) => void;
@@ -56,13 +65,14 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   const lastScrollTop = useRef(0);
   const previousMessagesLength = useRef(0);
   const previousScrollHeight = useRef(0);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<MessageWithStatus[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [newMessage, setNewMessage] = useState("");
-  const [isSending, setIsSending] = useState(false);
   const [localConversation, setLocalConversation] = useState(conversation);
   const [alreadyScrolled, setAlreadyScrolled] = useState(false);
+  const [pendingQueue, setPendingQueue] = useState<MessageWithStatus[]>([]);
+  const isProcessingQueue = useRef(false);
 
   // Fetch messages
   const {
@@ -127,39 +137,89 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     },
   });
 
-  // Handle send message
-  const handleSendMessage = async () => {
-    if (!newMessage.trim() || isSending) return;
+  // Process message queue
+  const processQueue = useCallback(async () => {
+    if (isProcessingQueue.current || pendingQueue.length === 0) return;
 
-    setIsSending(true);
+    isProcessingQueue.current = true;
+    const messageToSend = pendingQueue[0];
+
     try {
-      await sendMessage({
+      const sentMessage = await sendMessage({
         chatId: conversation.id,
-        message: newMessage,
+        message: messageToSend.content,
         agentId: conversation.agent?.id || "",
       });
-      setNewMessage("");
-      if (textareaRef.current) {
-        textareaRef.current.style.height = "auto";
-      }
 
-      // Scroll to bottom after sending message
-      setTimeout(() => {
-        if (scrollAreaRef.current) {
-          scrollAreaRef.current.scrollTo({
-            top: scrollAreaRef.current.scrollHeight,
-            behavior: "smooth",
-          });
-        }
-      }, 100);
+      // Update message status to sent and replace with real message
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.tempId === messageToSend.tempId
+            ? { ...sentMessage, status: "sent" }
+            : msg
+        )
+      );
+
+      // Remove from queue
+      setPendingQueue((prev) => prev.slice(1));
     } catch (error) {
+      // Mark message as failed
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.tempId === messageToSend.tempId
+            ? { ...msg, status: "failed" }
+            : msg
+        )
+      );
+
+      // Remove from queue
+      setPendingQueue((prev) => prev.slice(1));
+
       toast({
         title: "Erro ao enviar mensagem",
+        description: "A mensagem não foi enviada. Tente novamente.",
         variant: "destructive",
       });
     } finally {
-      setIsSending(false);
+      isProcessingQueue.current = false;
     }
+  }, [pendingQueue, conversation.id, conversation.agent?.id, toast]);
+
+  // Handle send message
+  const handleSendMessage = () => {
+    if (!newMessage.trim()) return;
+
+    const tempId = `temp-${Date.now()}-${Math.random()}`;
+    const pendingMessage: MessageWithStatus = {
+      id: tempId,
+      tempId,
+      chatId: conversation.id,
+      sender: "human_assistant",
+      content: newMessage,
+      createdAt: new Date().toISOString(),
+      status: "pending",
+    };
+
+    // Add to messages immediately
+    setMessages((prev) => [...prev, pendingMessage]);
+
+    // Add to queue
+    setPendingQueue((prev) => [...prev, pendingMessage]);
+
+    setNewMessage("");
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+    }
+
+    // Scroll to bottom after adding message
+    setTimeout(() => {
+      if (scrollAreaRef.current) {
+        scrollAreaRef.current.scrollTo({
+          top: scrollAreaRef.current.scrollHeight,
+          behavior: "smooth",
+        });
+      }
+    }, 100);
   };
 
   // Handle handler toggle
@@ -170,6 +230,13 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       handledBy: newHandler,
     });
   };
+
+  // Process queue when it changes
+  useEffect(() => {
+    if (pendingQueue.length > 0 && !isProcessingQueue.current) {
+      processQueue();
+    }
+  }, [pendingQueue, processQueue]);
 
   // Socket connection for real-time messages
   useEffect(() => {
@@ -185,12 +252,13 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
 
     socket.on("message", (data: MessageEvent) => {
       if (data.chatId === conversation.id) {
-        const newMsg: Message = {
+        const newMsg: MessageWithStatus = {
           id: data.messageId,
           chatId: data.chatId,
           sender: data.sender,
           content: data.content,
           createdAt: data.createdAt,
+          status: "sent",
         };
         setMessages((prev) => [...prev, newMsg]);
 
@@ -377,11 +445,21 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     }
   };
 
-  const shouldShowDateSeparator = (currentMsg: Message, previousMsg: Message | null) => {
+  const shouldShowDateSeparator = (currentMsg: MessageWithStatus, previousMsg: MessageWithStatus | null) => {
     if (!previousMsg) return true;
     const currentDate = new Date(currentMsg.createdAt);
     const previousDate = new Date(previousMsg.createdAt);
     return !isSameDay(currentDate, previousDate);
+  };
+
+  const getMessageStatusIcon = (status?: MessageStatus) => {
+    if (status === "pending") {
+      return <Clock className="h-3 w-3 text-muted-foreground" />;
+    }
+    if (status === "failed") {
+      return <AlertCircle className="h-3 w-3 text-destructive" />;
+    }
+    return null;
   };
 
   return (
@@ -524,9 +602,18 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                           <p className="text-sm whitespace-pre-wrap break-words">
                             {message.content}
                           </p>
-                          <span className="text-xs text-muted-foreground mt-1 block text-right">
-                            {format(new Date(message.createdAt), "HH:mm")}
-                          </span>
+                          <div className="flex items-center justify-end gap-1 mt-1">
+                            {message.status && message.status !== "sent" && (
+                              <span className="flex items-center">
+                                {getMessageStatusIcon(message.status)}
+                              </span>
+                            )}
+                            {message.status !== "pending" && (
+                              <span className="text-xs text-muted-foreground">
+                                {format(new Date(message.createdAt), "HH:mm")}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -555,20 +642,15 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                 }
               }}
               className="flex-1 min-h-[40px] max-h-[120px] resize-none"
-              disabled={isSending}
               rows={1}
             />
             <Button
               size="icon"
               onClick={handleSendMessage}
-              disabled={!newMessage.trim() || isSending}
+              disabled={!newMessage.trim()}
               className="flex-shrink-0"
             >
-              {isSending ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                <Send className="h-5 w-5" />
-              )}
+              <Send className="h-5 w-5" />
             </Button>
           </div>
         </div>
