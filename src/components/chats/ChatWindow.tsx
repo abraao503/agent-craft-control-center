@@ -217,7 +217,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   useEffect(() => {
     if (messagesData) {
       if (currentPage === 1) {
-        setMessages(messagesData.items.reverse());
+        setMessages(messagesData.items);
       } else {
         // Save current scroll height before adding new messages
         const scrollElement = scrollAreaRef.current;
@@ -231,7 +231,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
             (msg) =>
               !prevMessages.some((existingMsg) => existingMsg.id === msg.id)
           );
-          return [...newUniqueMessages.reverse(), ...prevMessages];
+          return [...newUniqueMessages, ...prevMessages];
         });
       }
       setHasMore(messagesData.page < messagesData.totalPages);
@@ -486,7 +486,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                   const showDateSeparator = shouldShowDateSeparator(message, previousMessage);
                   
                   return (
-                    <React.Fragment key={message.id}>
+                    <div key={message.id}>
                       {showDateSeparator && (
                         <div className="flex justify-center my-4">
                           <div className="bg-white/80 backdrop-blur-sm px-3 py-1 rounded-full shadow-sm">
@@ -529,7 +529,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                           </span>
                         </div>
                       </div>
-                    </React.Fragment>
+                    </div>
                   );
                 })}
               </div>
