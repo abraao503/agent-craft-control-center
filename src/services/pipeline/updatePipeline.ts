@@ -3,7 +3,7 @@ import { AssistantPipelineStage, WhatsAppIntegrationConfig } from "@/types/pipel
 
 // Item structure for updating existing stages within a pipeline
 export interface UpdatePipelineStageItem {
-  id: string;
+  id?: string; // Optional for new stages
   name?: string;
   description?: string | null;
   order: number;

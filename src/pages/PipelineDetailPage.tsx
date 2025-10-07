@@ -15,7 +15,10 @@ import PipelineSwitcher from "@/components/pipelines/PipelineSwitcher";
 import PipelineEditor from "@/components/pipelines/PipelineEditor";
 import { PipelineWhatsAppConnection } from "@/components/pipelines/PipelineWhatsAppConnection";
 import { listPipelines } from "@/services/pipeline/listPipelines";
-import { updatePipeline } from "@/services/pipeline/updatePipeline";
+import {
+  updatePipeline,
+  UpdatePipelineStageItem,
+} from "@/services/pipeline/updatePipeline";
 import { createPipeline } from "@/services/pipeline/createPipeline";
 import { listAgent } from "@/services/agent/listAgent";
 import {
@@ -225,14 +228,20 @@ const PipelineDetailPage = () => {
         workspaceId,
         name,
         assistantId: assistantId || null,
-        stages: draft.map((s) => ({
-          id: s.id,
-          name: s.name,
-          order: s.order,
-          color: s.color,
-          winProbability: s.winProbability,
-          assistantPipelineStage: s.assistantPipelineStage || null,
-        })),
+        stages: draft.map((s): UpdatePipelineStageItem => {
+          const stage: UpdatePipelineStageItem = {
+            name: s.name,
+            order: s.order,
+            color: s.color,
+            winProbability: s.winProbability,
+            assistantPipelineStage: s.assistantPipelineStage || null,
+          };
+          // Only include id if it's not a temporary id (new stage)
+          if (!s.id.startsWith("tmp-")) {
+            stage.id = s.id;
+          }
+          return stage;
+        }),
         whatsappIntegration,
       });
       setIsEditing(false);
@@ -431,14 +440,16 @@ const PipelineDetailPage = () => {
           )}
         </div>
         <div className="flex items-center gap-2">
-          {currentPipelineWhatsappIntegrationId && canShowActions() && workspaceId && (
-            <PipelineWhatsAppConnection
-              companyWhatsappIntegrationId={
-                currentPipelineWhatsappIntegrationId
-              }
-              workspaceId={workspaceId}
-            />
-          )}
+          {currentPipelineWhatsappIntegrationId &&
+            canShowActions() &&
+            workspaceId && (
+              <PipelineWhatsAppConnection
+                companyWhatsappIntegrationId={
+                  currentPipelineWhatsappIntegrationId
+                }
+                workspaceId={workspaceId}
+              />
+            )}
           {workspaceId && canShowActions() && (
             <PipelineSwitcher
               workspaceId={workspaceId}
