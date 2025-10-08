@@ -5,7 +5,7 @@ import { DealListItem } from "@/types/deal";
 import { PipelineStageMinimal } from "@/types/pipeline";
 import { cn } from "@/lib/utils";
 import { DollarSign } from "lucide-react";
-import { DealDetailsModal } from "@/components/deals/DealDetailsModal";
+import { DealViewModal } from "@/components/deals/DealViewModal";
 
 interface KanbanBoardProps {
   stages: PipelineStageMinimal[];
@@ -208,12 +208,11 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
       </div>
 
       {workspaceId && (
-        <DealDetailsModal
+        <DealViewModal
           open={detailsModalOpen}
           onOpenChange={setDetailsModalOpen}
           deal={selectedDeal}
           workspaceId={workspaceId}
-          onUpdated={onDealUpdated}
         />
       )}
     </>

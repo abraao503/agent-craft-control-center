@@ -28,6 +28,7 @@ import {
   WhatsAppIntegrationConfig,
 } from "@/types/pipeline";
 import { listCompanyWhatsAppIntegrations } from "@/services/whatsapp/listCompanyWhatsAppIntegrations";
+import { AxiosError } from "axios";
 
 const PipelineDetailPage = () => {
   const { pipelineId } = useParams();
@@ -178,14 +179,44 @@ const PipelineDetailPage = () => {
       // Revalidate
       queryClient.invalidateQueries({ queryKey: key });
       toast({ title: "Sucesso", description: "Negócio movido com sucesso." });
-    } catch (e) {
+    } catch (e: unknown) {
       // Revert on error
       queryClient.setQueryData(key, previous);
-      toast({
-        title: "Error",
-        description: "Failed to move deal.",
-        variant: "destructive",
-      });
+
+      // Handle validation error for required fields
+      if (
+        e &&
+        e instanceof AxiosError &&
+        e?.response?.status === 422 &&
+        e?.response?.data?.message
+      ) {
+        const errorMessage = e.response.data.message;
+
+        // Extract field names from error message
+        const match = errorMessage.match(
+          /Required fields must be filled: (.+)/
+        );
+        if (match) {
+          const fields = match[1];
+          toast({
+            title: "Campos obrigatórios não preenchidos",
+            description: `Preencha os seguintes campos antes de mover o negócio: ${fields}`,
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Erro de validação",
+            description: errorMessage,
+            variant: "destructive",
+          });
+        }
+      } else {
+        toast({
+          title: "Erro",
+          description: "Falha ao mover negócio.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsMoving(false);
     }
