@@ -36,7 +36,7 @@ import {
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { DealListItem, DealNote } from "@/types/deal";
-import { StageFormField, FieldType } from "@/types/stage-form-field";
+import { StageFormField, FieldType, DocumentType } from "@/types/stage-form-field";
 import { getDealById } from "@/services/deal/getDealById";
 import { getDealFormFields } from "@/services/deal/getDealFormFields";
 import { saveDealFormValues } from "@/services/deal/saveDealFormValues";
@@ -81,7 +81,7 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
   const [showSelectTypeModal, setShowSelectTypeModal] = useState(false);
   const [showCreateFieldModal, setShowCreateFieldModal] = useState(false);
   const [showEditFieldModal, setShowEditFieldModal] = useState(false);
-  const [selectedFieldType, setSelectedFieldType] = useState<FieldType | null>(
+  const [selectedFieldType, setSelectedFieldType] = useState<FieldType | "document" | null>(
     null
   );
   const [editingField, setEditingField] = useState<StageFormField | null>(null);
@@ -378,7 +378,7 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
     }
   };
 
-  const handleSelectFieldType = (type: FieldType) => {
+  const handleSelectFieldType = (type: FieldType | "document") => {
     setSelectedFieldType(type);
     setShowCreateFieldModal(true);
   };
@@ -388,12 +388,9 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
     label: string;
     description: string;
     isRequired: boolean;
+    type: FieldType;
   }) => {
-    if (!selectedFieldType) return;
-    createFieldMutation.mutate({
-      ...data,
-      type: selectedFieldType,
-    });
+    createFieldMutation.mutate(data);
   };
 
   const handleEditField = (field: StageFormField) => {
@@ -482,6 +479,9 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
         return "📅";
       case "datetime":
         return "🕐";
+      case "cpf":
+      case "cnpj":
+        return "📄";
       default:
         return "I";
     }
@@ -545,6 +545,17 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
             value={value}
             onChange={(e) => handleFieldValueChange(field.id, e.target.value)}
             onBlur={() => handleFieldBlur(field.id)}
+          />
+        );
+      case "cpf":
+      case "cnpj":
+        return (
+          <Input
+            type="text"
+            value={value}
+            onChange={(e) => handleFieldValueChange(field.id, e.target.value)}
+            onBlur={() => handleFieldBlur(field.id)}
+            placeholder={field.description || field.label}
           />
         );
       default:

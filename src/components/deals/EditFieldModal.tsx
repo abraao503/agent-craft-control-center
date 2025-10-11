@@ -19,6 +19,7 @@ import {
   Hash,
   Calendar,
   CalendarClock,
+  File,
 } from "lucide-react";
 
 interface EditFieldModalProps {
@@ -49,6 +50,9 @@ const getFieldIcon = (type: string) => {
       return <Calendar className="h-5 w-5" />;
     case "datetime":
       return <CalendarClock className="h-5 w-5" />;
+    case "cpf":
+    case "cnpj":
+      return <File className="h-5 w-5" />;
     default:
       return <Type className="h-5 w-5" />;
   }
@@ -70,6 +74,10 @@ const getFieldTypeLabel = (type: string) => {
       return "Data";
     case "datetime":
       return "Data e Hora";
+    case "cpf":
+      return "CPF";
+    case "cnpj":
+      return "CNPJ";
     default:
       return "";
   }

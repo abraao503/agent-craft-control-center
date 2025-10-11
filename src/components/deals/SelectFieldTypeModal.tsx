@@ -15,16 +15,17 @@ import {
   Calendar,
   CalendarClock,
   Hash,
+  File,
 } from "lucide-react";
 import { FieldType } from "@/types/stage-form-field";
 
 interface SelectFieldTypeModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSelectType: (type: FieldType) => void;
+  onSelectType: (type: FieldType | "document") => void;
 }
 
-const fieldTypes: Array<{ type: FieldType; label: string; icon: React.ReactNode }> = [
+const fieldTypes: Array<{ type: FieldType | "document"; label: string; icon: React.ReactNode }> = [
   { type: "short_text", label: "Texto Curto", icon: <Type className="h-5 w-5" /> },
   { type: "long_text", label: "Texto Longo", icon: <AlignLeft className="h-5 w-5" /> },
   { type: "email", label: "E-mail", icon: <Mail className="h-5 w-5" /> },
@@ -32,6 +33,7 @@ const fieldTypes: Array<{ type: FieldType; label: string; icon: React.ReactNode 
   { type: "number", label: "Número", icon: <Hash className="h-5 w-5" /> },
   { type: "date", label: "Data", icon: <Calendar className="h-5 w-5" /> },
   { type: "datetime", label: "Data e Hora", icon: <CalendarClock className="h-5 w-5" /> },
+  { type: "document", label: "Documento", icon: <File className="h-5 w-5" /> },
 ];
 
 export const SelectFieldTypeModal: React.FC<SelectFieldTypeModalProps> = ({

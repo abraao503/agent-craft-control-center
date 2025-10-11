@@ -8,7 +8,11 @@ export type FieldType =
   | "datetime"
   | "date"
   | "phone"
-  | "email";
+  | "email"
+  | "cpf"
+  | "cnpj";
+
+export type DocumentType = "cpf" | "cnpj";
 
 export interface StageFormField {
   id: string;

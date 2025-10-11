@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -10,7 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { FieldType } from "@/types/stage-form-field";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { FieldType, DocumentType } from "@/types/stage-form-field";
 import {
   Type,
   AlignLeft,
@@ -19,22 +20,24 @@ import {
   Hash,
   Calendar,
   CalendarClock,
+  File,
 } from "lucide-react";
 
 interface CreateFieldModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  fieldType: FieldType | null;
+  fieldType: FieldType | "document" | null;
   onCreateField: (data: {
     name: string;
     label: string;
     description: string;
     isRequired: boolean;
+    type: FieldType;
   }) => void;
   isCreating?: boolean;
 }
 
-const getFieldIcon = (type: FieldType | null) => {
+const getFieldIcon = (type: FieldType | "document" | null) => {
   switch (type) {
     case "short_text":
       return <Type className="h-5 w-5" />;
@@ -50,12 +53,16 @@ const getFieldIcon = (type: FieldType | null) => {
       return <Calendar className="h-5 w-5" />;
     case "datetime":
       return <CalendarClock className="h-5 w-5" />;
+    case "document":
+    case "cpf":
+    case "cnpj":
+      return <File className="h-5 w-5" />;
     default:
       return <Type className="h-5 w-5" />;
   }
 };
 
-const getFieldTypeLabel = (type: FieldType | null) => {
+const getFieldTypeLabel = (type: FieldType | "document" | null) => {
   switch (type) {
     case "short_text":
       return "Texto Curto";
@@ -71,6 +78,12 @@ const getFieldTypeLabel = (type: FieldType | null) => {
       return "Data";
     case "datetime":
       return "Data e Hora";
+    case "document":
+      return "Documento";
+    case "cpf":
+      return "CPF";
+    case "cnpj":
+      return "CNPJ";
     default:
       return "";
   }
@@ -86,19 +99,31 @@ export const CreateFieldModal: React.FC<CreateFieldModalProps> = ({
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [isRequired, setIsRequired] = useState(false);
+  const [documentType, setDocumentType] = useState<DocumentType>("cnpj");
+
+  // Reset form when modal is closed
+  useEffect(() => {
+    if (!open) {
+      setName("");
+      setDescription("");
+      setIsRequired(false);
+      setDocumentType("cnpj");
+    }
+  }, [open]);
 
   const handleSubmit = () => {
     if (!name.trim()) return;
+    
+    // If fieldType is "document", use the selected documentType as the actual type
+    const actualType: FieldType = fieldType === "document" ? documentType : (fieldType as FieldType);
+    
     onCreateField({
       name: name.trim().toLowerCase().replace(/\s+/g, "_"),
       label: name.trim(),
       description: description.trim(),
       isRequired,
+      type: actualType,
     });
-    // Reset form
-    setName("");
-    setDescription("");
-    setIsRequired(false);
   };
 
   return (
@@ -118,6 +143,7 @@ export const CreateFieldModal: React.FC<CreateFieldModalProps> = ({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Ex: Orçamento do Cliente"
+              disabled={isCreating}
             />
           </div>
 
@@ -127,14 +153,36 @@ export const CreateFieldModal: React.FC<CreateFieldModalProps> = ({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Texto de Ajuda"
+              disabled={isCreating}
             />
           </div>
+
+          {fieldType === "document" && (
+            <div className="space-y-2">
+              <Label>Tipo do documento</Label>
+              <RadioGroup value={documentType} onValueChange={(value) => setDocumentType(value as DocumentType)} disabled={isCreating}>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="cpf" id="cpf" />
+                  <label htmlFor="cpf" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                    CPF
+                  </label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="cnpj" id="cnpj" />
+                  <label htmlFor="cnpj" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                    CNPJ
+                  </label>
+                </div>
+              </RadioGroup>
+            </div>
+          )}
 
           <div className="flex items-center space-x-2">
             <Checkbox
               id="isRequired"
               checked={isRequired}
               onCheckedChange={(checked) => setIsRequired(checked as boolean)}
+              disabled={isCreating}
             />
             <label
               htmlFor="isRequired"
