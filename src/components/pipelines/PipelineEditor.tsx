@@ -8,7 +8,6 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -158,9 +157,16 @@ const SortableStage: React.FC<SortableStageProps> = ({
       style={style}
       className={cn("min-w-[320px] w-[320px] max-w-[360px]")}
     >
-      <Card className="flex flex-col bg-background/60 border-border h-[calc(100vh-350px)]">
+      <Card 
+        className="flex flex-col bg-background/60 border-border h-[calc(100vh-350px)] overflow-hidden"
+        style={
+          stage.color
+            ? { borderTop: `3px solid ${stage.color}` }
+            : undefined
+        }
+      >
         <CardHeader
-          className="py-3 bg-muted/40 rounded-t-xl border-b border-border"
+          className="py-3 bg-muted/40 border-b border-border"
         >
           <CardTitle className="text-sm flex items-center justify-between gap-2">
             {isEditingName ? (
@@ -220,6 +226,19 @@ const SortableStage: React.FC<SortableStageProps> = ({
                 value={stage.name}
                 onChange={(e) => onUpdate(index, { name: e.target.value })}
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Cor</Label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={stage.color || "#64748b"}
+                  onChange={(e) => onUpdate(index, { color: e.target.value })}
+                  className="h-8 w-12 rounded border border-input cursor-pointer"
+                />
+                <span className="text-xs text-muted-foreground">{stage.color || "#64748b"}</span>
+              </div>
             </div>
           </div>
 

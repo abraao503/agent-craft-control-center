@@ -18,6 +18,7 @@ export interface DealListItem {
   updatedAt: string | Date;
   customer?: RelatedMinimal | null;
   assignedUser?: RelatedMinimal | null;
+  tags?: string[]; // Array of tag IDs associated with the deal
 }
 
 export interface CreateDealInput {
@@ -103,4 +104,5 @@ export interface DealDetails {
     name: string;
     color: string;
   };
+  tags?: string[]; // Array of tag IDs associated with the deal
 }

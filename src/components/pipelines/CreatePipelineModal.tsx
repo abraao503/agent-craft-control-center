@@ -12,7 +12,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { Slider } from "@/components/ui/slider";
 import { createPipeline } from "@/services/pipeline/createPipeline";
 import { CreatePipelineInput, CreatePipelineStageInput } from "@/types/pipeline";
 
@@ -23,7 +22,10 @@ interface CreatePipelineModalProps {
   onCreated?: (pipelineId: string) => void;
 }
 
-type StageForm = CreatePipelineStageInput;
+type StageForm = CreatePipelineStageInput & {
+  isWonStage: boolean;
+  isLostStage: boolean;
+};
 
 const defaultStage = (order: number): StageForm => ({
   name: "",
@@ -72,11 +74,9 @@ export const CreatePipelineModal: React.FC<CreatePipelineModalProps> = ({
     if (!stages.some((s) => s.isWonStage)) return "You must mark at least one stage as Won";
     if (!stages.some((s) => s.isLostStage)) return "You must mark at least one stage as Lost";
 
-    // Basic color and probability checks
+    // Basic color checks
     for (const s of stages) {
       if (s.order < 0) return "Order must be a non-negative integer";
-      if (s.winProbability < 0 || s.winProbability > 100)
-        return "Win probability must be between 0 and 100";
       if (!/^#([0-9a-fA-F]{6})$/.test(s.color))
         return "Color must be a 6-digit hex value (e.g. #FF0000)";
     }
@@ -171,13 +171,16 @@ export const CreatePipelineModal: React.FC<CreatePipelineModalProps> = ({
                     </div>
 
                     <div className="space-y-2">
-                      <Label>Cor (hex)</Label>
-                      <Input value={stage.color} onChange={(e) => updateStage(index, { color: e.target.value })} placeholder="#4F46E5" />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Probabilidade de ganho: {stage.winProbability}%</Label>
-                      <Slider value={[stage.winProbability]} min={0} max={100} step={1} onValueChange={(v) => updateStage(index, { winProbability: v[0] })} />
+                      <Label>Cor</Label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={stage.color}
+                          onChange={(e) => updateStage(index, { color: e.target.value })}
+                          className="h-8 w-12 rounded border border-input cursor-pointer"
+                        />
+                        <span className="text-xs text-muted-foreground">{stage.color}</span>
+                      </div>
                     </div>
                   </div>
 

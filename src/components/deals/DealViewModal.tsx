@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -33,6 +33,7 @@ import {
   ChevronDown,
   ChevronRight,
   Loader2,
+  X,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { DealListItem, DealNote } from "@/types/deal";
@@ -57,8 +58,17 @@ import {
 import { SelectFieldTypeModal } from "./SelectFieldTypeModal";
 import { CreateFieldModal } from "./CreateFieldModal";
 import { EditFieldModal } from "./EditFieldModal";
+import { DealTagsSelector } from "./DealTagsSelector";
 import { updateStageFormField } from "@/services/stage-form-field/updateStageFormField";
 import { updateDeal } from "@/services/deal/updateDeal";
+import { updateDealTags } from "@/services/deal/updateDealTags";
+import { listTags } from "@/services/tag/listTags";
+import {
+  formatCPF,
+  formatCNPJ,
+  isValidCPF,
+  isValidCNPJ,
+} from "@brazilian-utils/brazilian-utils";
 
 interface DealViewModalProps {
   open: boolean;
@@ -77,6 +87,7 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
   const queryClient = useQueryClient();
 
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [newNoteContent, setNewNoteContent] = useState("");
   const [showSelectTypeModal, setShowSelectTypeModal] = useState(false);
   const [showCreateFieldModal, setShowCreateFieldModal] = useState(false);
@@ -95,6 +106,13 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
 
   // Track which field is being saved
   const [savingField, setSavingField] = useState<string | null>(null);
+  
+  // Track fields that have been modified locally to prevent overwriting during API updates
+  // Using ref to avoid triggering useEffect when modified fields change
+  const modifiedFieldsRef = useRef<Set<string>>(new Set());
+
+  // Tags management
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
 
   // Fetch deal details
   const { data: dealDetails, isLoading: dealDetailsLoading } = useQuery({
@@ -132,16 +150,28 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
     enabled: open && !!deal?.id,
   });
 
+  // Fetch tags
+  const { data: allTags = [] } = useQuery({
+    queryKey: ["tags", workspaceId],
+    queryFn: () => listTags(workspaceId),
+    enabled: !!workspaceId,
+  });
+
   // Initialize field values
   useEffect(() => {
     if (currentFields.length > 0) {
-      const values: Record<string, string> = {};
-      currentFields.forEach((field) => {
-        if (field.value) {
-          values[field.id] = field.value;
-        }
+      setFieldValues((prevValues) => {
+        const values: Record<string, string> = {};
+        currentFields.forEach((field) => {
+          // Only update from API if field hasn't been modified locally
+          if (modifiedFieldsRef.current.has(field.id)) {
+            values[field.id] = prevValues[field.id] || "";
+          } else {
+            values[field.id] = field.value || "";
+          }
+        });
+        return values;
       });
-      setFieldValues(values);
     }
   }, [currentFields]);
 
@@ -152,6 +182,7 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
       setDescription(dealDetails.description || "");
       setValue(dealDetails.value?.toString() || "");
       setCustomerName(dealDetails.customer?.name || "");
+      setSelectedTagIds(dealDetails.tags || []);
     }
   }, [dealDetails]);
 
@@ -199,6 +230,10 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
       await saveDealFormValues(deal.id, { values });
     },
     onSuccess: () => {
+      // Clear modified fields after successful save
+      if (savingField) {
+        modifiedFieldsRef.current.delete(savingField);
+      }
       queryClient.invalidateQueries({
         queryKey: ["getDealFormFields", deal?.id],
       });
@@ -328,24 +363,104 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
     },
   });
 
-  const handleFieldValueChange = (fieldId: string, value: string) => {
-    setFieldValues((prev) => ({ ...prev, [fieldId]: value }));
+  // Update tags mutation
+  const updateTagsMutation = useMutation({
+    mutationFn: async (tagIds: string[]) => {
+      if (!deal) return;
+      await updateDealTags(deal.id, workspaceId, { tagIds });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["getDealById", deal?.id] });
+      queryClient.invalidateQueries({ queryKey: ["listDealsByPipeline"] });
+      toast({ title: "Sucesso", description: "Tags atualizadas." });
+    },
+    onError: () => {
+      toast({
+        title: "Erro",
+        description: "Falha ao atualizar tags.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleFieldValueChange = (fieldId: string, value: string, fieldType?: FieldType) => {
+    // Mark field as modified
+    modifiedFieldsRef.current.add(fieldId);
+    
+    // Clear error when user starts typing
+    setFieldErrors((prev) => {
+      const newErrors = { ...prev };
+      delete newErrors[fieldId];
+      return newErrors;
+    });
+
+    // Format CPF/CNPJ as user types
+    let formattedValue = value;
+    if (fieldType === "cpf") {
+      // Remove non-numeric characters
+      const numericValue = value.replace(/\D/g, "");
+      if (numericValue.length <= 11) {
+        try {
+          formattedValue = formatCPF(numericValue);
+        } catch {
+          formattedValue = numericValue;
+        }
+      }
+    } else if (fieldType === "cnpj") {
+      // Remove non-numeric characters
+      const numericValue = value.replace(/\D/g, "");
+      if (numericValue.length <= 14) {
+        try {
+          formattedValue = formatCNPJ(numericValue);
+        } catch {
+          formattedValue = numericValue;
+        }
+      }
+    }
+
+    setFieldValues((prev) => ({ ...prev, [fieldId]: formattedValue }));
   };
 
   const handleSaveFields = () => {
     saveFieldValuesMutation.mutate();
   };
 
-  const handleFieldBlur = (fieldId: string) => {
+  const handleFieldBlur = (fieldId: string, fieldType?: FieldType) => {
     // Save field value when input loses focus
     const currentValue = fieldValues[fieldId];
     const originalField = currentFields.find((f) => f.id === fieldId);
     const originalValue = originalField?.value || "";
 
+    // Validate CPF/CNPJ on blur
+    if (currentValue && currentValue.trim()) {
+      if (fieldType === "cpf") {
+        const numericValue = currentValue.replace(/\D/g, "");
+        if (numericValue && !isValidCPF(numericValue)) {
+          setFieldErrors((prev) => ({
+            ...prev,
+            [fieldId]: "CPF inválido",
+          }));
+          return;
+        }
+      } else if (fieldType === "cnpj") {
+        const numericValue = currentValue.replace(/\D/g, "");
+        if (numericValue && !isValidCNPJ(numericValue)) {
+          setFieldErrors((prev) => ({
+            ...prev,
+            [fieldId]: "CNPJ inválido",
+          }));
+          return;
+        }
+      }
+    }
+
     // Only save if value actually changed
     if (currentValue !== undefined && currentValue !== originalValue) {
       setSavingField(fieldId);
       saveFieldValuesMutation.mutate();
+    } else {
+      // Remove from modified fields if value hasn't changed
+      modifiedFieldsRef.current.delete(fieldId);
     }
   };
 
@@ -418,6 +533,10 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
 
   const handleAddNote = () => {
     createNoteMutation.mutate();
+  };
+
+  const handleTagsChange = (tagIds: string[]) => {
+    setSelectedTagIds(tagIds);
   };
 
   const handleCloseModal = (isOpen: boolean) => {
@@ -548,16 +667,25 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
           />
         );
       case "cpf":
-      case "cnpj":
+      case "cnpj": {
+        const hasError = fieldErrors[field.id];
         return (
-          <Input
-            type="text"
-            value={value}
-            onChange={(e) => handleFieldValueChange(field.id, e.target.value)}
-            onBlur={() => handleFieldBlur(field.id)}
-            placeholder={field.description || field.label}
-          />
+          <div className="space-y-1">
+            <Input
+              type="text"
+              value={value}
+              onChange={(e) => handleFieldValueChange(field.id, e.target.value, field.type)}
+              onBlur={() => handleFieldBlur(field.id, field.type)}
+              placeholder={field.description || field.label}
+              className={hasError ? "border-red-500" : ""}
+              maxLength={field.type === "cpf" ? 14 : 18}
+            />
+            {hasError && (
+              <p className="text-xs text-red-500">{hasError}</p>
+            )}
+          </div>
         );
+      }
       default:
         return (
           <Input
@@ -703,6 +831,21 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
                           rows={4}
                         />
                       </div>
+                    </div>
+                  </div>
+
+                  {/* Tags Section */}
+                  <div className="border-t pt-4 mt-4 px-1">
+                    <h3 className="font-semibold mb-3">Tags</h3>
+                    
+                    <div className="space-y-2">
+                      <DealTagsSelector
+                        allTags={allTags}
+                        selectedTagIds={selectedTagIds}
+                        onTagsChange={handleTagsChange}
+                        onSave={(tagIds) => updateTagsMutation.mutate(tagIds)}
+                        isLoading={updateTagsMutation.isPending}
+                      />
                     </div>
                   </div>
 
