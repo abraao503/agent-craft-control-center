@@ -1,11 +1,13 @@
 import React, { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from "@/components/ui/button";
 import { DealListItem } from "@/types/deal";
 import { PipelineStageMinimal } from "@/types/pipeline";
 import { cn } from "@/lib/utils";
-import { DollarSign } from "lucide-react";
+import { MessageSquare } from "lucide-react";
 import { DealViewModal } from "@/components/deals/DealViewModal";
+import { useNavigate } from "react-router-dom";
 
 interface KanbanBoardProps {
   stages: PipelineStageMinimal[];
@@ -44,9 +46,12 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   workspaceId,
   onDealUpdated,
 }) => {
+  const navigate = useNavigate();
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
   const [selectedDeal, setSelectedDeal] = useState<DealListItem | null>(null);
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
+  const [agentStates, setAgentStates] = useState<Record<string, boolean>>({});
+
   const dealsByStage = useMemo(() => {
     const map: Record<string, DealListItem[]> = {};
     stages.forEach((s) => (map[s.id] = []));
@@ -81,129 +86,153 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     setDetailsModalOpen(true);
   };
 
+  const handleOpenChat = (e: React.MouseEvent, chatId?: string) => {
+    e.stopPropagation();
+    if (chatId) {
+      navigate(`/chats?chatId=${chatId}`);
+    }
+  };
+
   return (
     <>
       <div className="overflow-x-auto">
         <div className="flex items-start gap-4 h-[calc(100vh-220px)] w-max pr-2">
           {stages.map((stage) => {
-          const stageDeals = dealsByStage[stage.id] || [];
-          const totalValue = stageDeals.reduce(
-            (acc, d) => acc + (d.value || 0),
-            0
-          );
-          const probability =
-            stageMeta?.[stage.id]?.winProbability ?? stage.winProbability;
-          const totalWeighted =
-            probability != null
-              ? stageDeals.reduce(
-                  (acc, d) => acc + (d.value || 0) * (probability / 100),
-                  0
-                )
-              : undefined;
-          const headerColor =
-            stageMeta?.[stage.id]?.color || stage.color || undefined;
-
-          return (
-            <div
-              key={stage.id}
-              className="min-w-[320px] w-[320px] max-w-[360px]"
-              onDragOver={handleDragOver}
-              onDrop={(e) => handleDrop(e, stage.id)}
-              onDragEnter={() => setDragOverStage(stage.id)}
-              onDragLeave={(e) => {
-                if (
-                  (e.currentTarget as HTMLElement).contains(
-                    e.relatedTarget as Node
+            const stageDeals = dealsByStage[stage.id] || [];
+            const totalValue = stageDeals.reduce(
+              (acc, d) => acc + (d.value || 0),
+              0
+            );
+            const probability =
+              stageMeta?.[stage.id]?.winProbability ?? stage.winProbability;
+            const totalWeighted =
+              probability != null
+                ? stageDeals.reduce(
+                    (acc, d) => acc + (d.value || 0) * (probability / 100),
+                    0
                   )
-                )
-                  return;
-                setDragOverStage((curr) => (curr === stage.id ? null : curr));
-              }}
-              aria-dropeffect="move"
-            >
-              <Card className="flex flex-col flex-1 bg-background/60 border-border">
-                <CardHeader
-                  className={cn(
-                    "py-3 bg-muted/40 rounded-t-xl border-b border-border"
-                  )}
-                  style={
-                    headerColor
-                      ? { borderTop: `4px solid ${headerColor}` }
-                      : undefined
-                  }
-                >
-                  <CardTitle className="flex flex-col justify-between text-sm">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold truncate">
-                        {stage.name}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <span>{formatCurrency(totalValue)}</span>
-                      <span>• {stageDeals.length} negócios</span>
-                      {totalWeighted != null && (
-                        <span className="hidden md:inline">
-                          • {formatCurrency(totalWeighted)}
-                        </span>
-                      )}
-                    </div>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-2">
-                  <div
+                : undefined;
+            const headerColor =
+              stageMeta?.[stage.id]?.color || stage.color || undefined;
+
+            return (
+              <div
+                key={stage.id}
+                className="min-w-[320px] w-[320px] max-w-[360px]"
+                onDragOver={handleDragOver}
+                onDrop={(e) => handleDrop(e, stage.id)}
+                onDragEnter={() => setDragOverStage(stage.id)}
+                onDragLeave={(e) => {
+                  if (
+                    (e.currentTarget as HTMLElement).contains(
+                      e.relatedTarget as Node
+                    )
+                  )
+                    return;
+                  setDragOverStage((curr) => (curr === stage.id ? null : curr));
+                }}
+                aria-dropeffect="move"
+              >
+                <Card className="flex flex-col flex-1 bg-background/60 border-border">
+                  <CardHeader
                     className={cn(
-                      "rounded-md transition ring-offset-1",
-                      dragOverStage === stage.id && "ring-2 ring-primary/40"
+                      "py-3 bg-muted/40 rounded-t-xl border-b border-border"
                     )}
+                    style={
+                      headerColor
+                        ? { borderTop: `4px solid ${headerColor}` }
+                        : undefined
+                    }
                   >
-                    <ScrollArea className="h-[calc(100vh-340px)] pr-1">
-                      <div className="space-y-2">
-                        {stageDeals.map((deal) => (
-                          <div
-                            key={deal.id}
-                            className={cn(
-                              "rounded-md border p-3 bg-card cursor-move shadow-sm hover:shadow transition",
-                              isMoving && "opacity-70"
-                            )}
-                            draggable
-                            onDragStart={(e) => handleDragStart(e, deal.id)}
-                            onClick={() => handleDealClick(deal)}
-                            aria-grabbed="true"
-                          >
-                            <div className="font-medium text-sm truncate">
-                              {deal.title}
-                            </div>
-                            {deal.description && (
-                              <div className="text-xs text-muted-foreground line-clamp-2 mt-1">
-                                {deal.description}
-                              </div>
-                            )}
-                            <div className="flex items-center justify-between mt-2 text-xs">
-                              <span className="font-semibold">
-                                {formatCurrency(
-                                  deal.value ?? 0,
-                                  deal.currency ?? "BRL"
-                                )}
-                              </span>
-                              <span className="text-muted-foreground truncate">
-                                {deal.customer?.name || "Cliente"}
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                        {stageDeals.length === 0 && (
-                          <div className="text-sm text-muted-foreground py-8 text-center border rounded-md bg-muted/20">
-                            Arraste negócios para esta etapa
-                          </div>
+                    <CardTitle className="flex flex-col justify-between text-sm">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold truncate">
+                          {stage.name}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <span>{formatCurrency(totalValue)}</span>
+                        <span>• {stageDeals.length} negócios</span>
+                        {totalWeighted != null && (
+                          <span className="hidden md:inline">
+                            • {formatCurrency(totalWeighted)}
+                          </span>
                         )}
                       </div>
-                    </ScrollArea>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          );
-        })}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-2">
+                    <div
+                      className={cn(
+                        "rounded-md transition ring-offset-1",
+                        dragOverStage === stage.id && "ring-2 ring-primary/40"
+                      )}
+                    >
+                      <ScrollArea className="h-[calc(100vh-340px)] pr-1">
+                        <div className="space-y-2">
+                          {stageDeals.map((deal) => {
+                            const isAgentActive = agentStates[deal.id] ?? true;
+                            return (
+                              <div
+                                key={deal.id}
+                                className={cn(
+                                  "rounded-md border p-3 bg-card cursor-move shadow-sm hover:shadow transition",
+                                  isMoving && "opacity-70"
+                                )}
+                                draggable
+                                onDragStart={(e) => handleDragStart(e, deal.id)}
+                                onClick={() => handleDealClick(deal)}
+                                aria-grabbed="true"
+                              >
+                                <div className="font-medium text-sm truncate">
+                                  {deal.title}
+                                </div>
+                                {deal.description && (
+                                  <div className="text-xs text-muted-foreground line-clamp-2 mt-1">
+                                    {deal.description}
+                                  </div>
+                                )}
+                                <div className="flex items-center justify-between mt-2 text-xs">
+                                  <span className="font-semibold">
+                                    {formatCurrency(
+                                      deal.value ?? 0,
+                                      deal.currency ?? "BRL"
+                                    )}
+                                  </span>
+                                  <span className="text-muted-foreground truncate">
+                                    {deal.customer?.name || "Cliente"}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-1 mt-2 justify-end">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-7 w-7 p-0"
+                                    onClick={(e) =>
+                                      handleOpenChat(e, deal.customer?.chatId)
+                                    }
+                                    disabled={!deal.customer?.chatId}
+                                    title="Open chat"
+                                  >
+                                    <MessageSquare className="h-3.5 w-3.5" />
+                                  </Button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                          {stageDeals.length === 0 && (
+                            <div className="text-sm text-muted-foreground py-8 text-center border rounded-md bg-muted/20">
+                              Arraste negócios para esta etapa
+                            </div>
+                          )}
+                        </div>
+                      </ScrollArea>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            );
+          })}
         </div>
       </div>
 

@@ -84,6 +84,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     queryFn: () => listMessages({ chatId: conversation.id, page: currentPage }),
     staleTime: 0,
     refetchOnWindowFocus: false,
+    refetchOnMount: "always",
   });
 
   // Update conversation handler mutation
@@ -327,6 +328,17 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   useEffect(() => {
     setLocalConversation(conversation);
   }, [conversation]);
+
+  // Reset states when conversation changes
+  useEffect(() => {
+    setCurrentPage(1);
+    setHasMore(true);
+    setAlreadyScrolled(false);
+    setPendingQueue([]);
+    previousMessagesLength.current = 0;
+    previousScrollHeight.current = 0;
+    lastScrollTop.current = 0;
+  }, [conversation.id]);
 
   // Scroll to bottom when chat opens
   useEffect(() => {

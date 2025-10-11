@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { MessageSquare, Loader2 } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 import {
   Select,
   SelectContent,
@@ -10,21 +11,21 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ChatList } from "@/components/chats/ChatList";
 import { ChatWindow } from "@/components/chats/ChatWindow";
 import { listConversations } from "@/services/conversation/listConversations";
 import { Conversation, ConversationsFilters } from "@/types/conversation";
 import { useWorkspaceManager } from "@/hooks/useWorkspaceManager";
 import { listAgent } from "@/services/agent/listAgent";
-import { MultiSelect } from "@/components/ui/multi-select";
 import { listTags } from "@/services/tag/listTags";
-import { Badge } from "@/components/ui/badge";
-import { isColorDark } from "@/lib/utils";
 
 const ChatsPage = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] =
     useState<Conversation | null>(null);
+  const [isLoadingFromUrl, setIsLoadingFromUrl] = useState(false);
   const [filters, setFilters] = useState<ConversationsFilters>({
     page: 1,
     limit: 50,
@@ -71,6 +72,30 @@ const ChatsPage = () => {
       setConversations(data.items);
     }
   }, [data]);
+
+  // Auto-select chat from URL parameter
+  useEffect(() => {
+    const chatId = searchParams.get("chatId");
+
+    if (chatId) {
+      // Set loading state when chatId is present
+      if (conversations.length === 0 && isLoading) {
+        setIsLoadingFromUrl(true);
+      } else if (conversations.length > 0) {
+        const chat = conversations.find((conv) => conv.id === chatId);
+        if (chat) {
+          setSelectedConversation(chat);
+          setIsLoadingFromUrl(false);
+          // Remove chatId from URL after selecting
+          searchParams.delete("chatId");
+          setSearchParams(searchParams, { replace: true });
+        } else {
+          // Chat not found, stop loading
+          setIsLoadingFromUrl(false);
+        }
+      }
+    }
+  }, [conversations, searchParams, setSearchParams, isLoading]);
 
   // Handle search change
   const handleSearchChange = (value: string) => {
@@ -153,7 +178,37 @@ const ChatsPage = () => {
 
             {/* Chat Window - Right Side */}
             <div className="flex-1 flex">
-              {selectedConversation ? (
+              {isLoadingFromUrl ? (
+                <div className="flex-1 flex flex-col bg-white">
+                  {/* Header Skeleton */}
+                  <div className="border-b p-4 flex items-center gap-3">
+                    <Skeleton className="h-10 w-10 rounded-full" />
+                    <div className="flex-1">
+                      <Skeleton className="h-5 w-48 mb-2" />
+                      <Skeleton className="h-4 w-32" />
+                    </div>
+                  </div>
+                  {/* Messages Skeleton */}
+                  <div className="flex-1 p-4 space-y-4 overflow-hidden">
+                    <div className="flex justify-start">
+                      <Skeleton className="h-16 w-64 rounded-lg" />
+                    </div>
+                    <div className="flex justify-end">
+                      <Skeleton className="h-16 w-56 rounded-lg" />
+                    </div>
+                    <div className="flex justify-start">
+                      <Skeleton className="h-20 w-72 rounded-lg" />
+                    </div>
+                    <div className="flex justify-end">
+                      <Skeleton className="h-12 w-48 rounded-lg" />
+                    </div>
+                  </div>
+                  {/* Input Skeleton */}
+                  <div className="border-t p-4">
+                    <Skeleton className="h-12 w-full rounded-lg" />
+                  </div>
+                </div>
+              ) : selectedConversation ? (
                 <ChatWindow
                   conversation={selectedConversation}
                   onUpdateConversation={handleUpdateConversation}
