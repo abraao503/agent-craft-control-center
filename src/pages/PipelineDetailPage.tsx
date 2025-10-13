@@ -6,7 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useWorkspaceManager } from "@/hooks/useWorkspaceManager";
 import { listPipelineStages } from "@/services/pipeline/listPipelineStages";
 import { moveDealStage } from "@/services/deal/moveDealStage";
-import { DealListItem } from "@/types/deal";
+import { DealListItem, GetDealsByStageResponse } from "@/types/deal";
 import KanbanBoard from "@/components/kanban/KanbanBoard";
 import { CreateDealModal } from "@/components/deals/CreateDealModal";
 import { useToast } from "@/components/ui/use-toast";
@@ -154,10 +154,74 @@ const PipelineDetailPage = () => {
 
     setIsMoving(true);
 
+    // Find the deal and its current stage
+    let fromStageId: string | null = null;
+    let movedDeal: DealListItem | null = null;
+
+    // Store previous data for rollback
+    const previousData: Record<string, unknown> = {};
+
+    // Optimistic update: Move deal immediately in the UI
+    stages.forEach((stage) => {
+      const queryKey = ["dealsByStage", stage.id, workspaceId];
+      const currentData = queryClient.getQueryData<{ pages: GetDealsByStageResponse[] }>(queryKey);
+      
+      if (currentData) {
+        previousData[stage.id] = currentData;
+        
+        // Check if this stage has the deal
+        const pages = currentData.pages || [];
+        for (const page of pages) {
+          const deal = page.deals?.find((d: DealListItem) => d.id === dealId);
+          if (deal) {
+            fromStageId = stage.id;
+            movedDeal = { ...deal, stageId: toStageId };
+            break;
+          }
+        }
+      }
+    });
+
+    if (movedDeal && fromStageId) {
+      // Remove from old stage
+      const fromQueryKey = ["dealsByStage", fromStageId, workspaceId];
+      queryClient.setQueryData<{ pages: GetDealsByStageResponse[] }>(fromQueryKey, (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page) => ({
+            ...page,
+            deals: page.deals.filter((d: DealListItem) => d.id !== dealId),
+            total: page.total - 1,
+          })),
+        };
+      });
+
+      // Add to new stage
+      const toQueryKey = ["dealsByStage", toStageId, workspaceId];
+      queryClient.setQueryData<{ pages: GetDealsByStageResponse[] }>(toQueryKey, (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page, index: number) => {
+            // Add to first page
+            if (index === 0) {
+              return {
+                ...page,
+                deals: [movedDeal!, ...page.deals],
+                total: page.total + 1,
+              };
+            }
+            return page;
+          }),
+        };
+      });
+    }
+
     try {
       await moveDealStage(dealId, { workspaceId, stageId: toStageId });
       
-      // Invalidate all stage queries to refetch data
+      // Revalidate to ensure data consistency
       stages.forEach((stage) => {
         queryClient.invalidateQueries({
           queryKey: ["dealsByStage", stage.id, workspaceId],
@@ -166,6 +230,11 @@ const PipelineDetailPage = () => {
       
       toast({ title: "Sucesso", description: "Negócio movido com sucesso." });
     } catch (e: unknown) {
+      // Rollback optimistic update on error
+      Object.entries(previousData).forEach(([stageId, data]) => {
+        queryClient.setQueryData(["dealsByStage", stageId, workspaceId], data);
+      });
+
       // Handle validation error for required fields
       if (
         e &&
