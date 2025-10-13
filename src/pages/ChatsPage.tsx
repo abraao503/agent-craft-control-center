@@ -15,6 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ChatList } from "@/components/chats/ChatList";
 import { ChatWindow } from "@/components/chats/ChatWindow";
 import { listConversations } from "@/services/conversation/listConversations";
+import { getConversationById } from "@/services/conversation/getConversationById";
 import { Conversation, ConversationsFilters } from "@/types/conversation";
 import { useWorkspaceManager } from "@/hooks/useWorkspaceManager";
 import { listAgent } from "@/services/agent/listAgent";
@@ -77,25 +78,26 @@ const ChatsPage = () => {
   useEffect(() => {
     const chatId = searchParams.get("chatId");
 
-    if (chatId) {
-      // Set loading state when chatId is present
-      if (conversations.length === 0 && isLoading) {
-        setIsLoadingFromUrl(true);
-      } else if (conversations.length > 0) {
-        const chat = conversations.find((conv) => conv.id === chatId);
-        if (chat) {
+    if (chatId && workspaceId) {
+      setIsLoadingFromUrl(true);
+      
+      // Fetch the specific chat by ID
+      getConversationById(chatId, workspaceId)
+        .then((chat) => {
           setSelectedConversation(chat);
-          setIsLoadingFromUrl(false);
           // Remove chatId from URL after selecting
           searchParams.delete("chatId");
           setSearchParams(searchParams, { replace: true });
-        } else {
-          // Chat not found, stop loading
+        })
+        .catch((error) => {
+          console.error("Failed to load chat:", error);
+        })
+        .finally(() => {
           setIsLoadingFromUrl(false);
-        }
-      }
+        });
     }
-  }, [conversations, searchParams, setSearchParams, isLoading]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, workspaceId]);
 
   // Handle search change
   const handleSearchChange = (value: string) => {

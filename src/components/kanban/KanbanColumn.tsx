@@ -198,7 +198,6 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
     e: React.MouseEvent | React.TouchEvent,
     chatId?: string
   ) => {
-    console.log("handleOpenChat called", chatId);
     e.preventDefault();
     e.stopPropagation();
     if (chatId) {
@@ -327,10 +326,6 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                             : "opacity-50 cursor-not-allowed"
                         )}
                         onClick={(e) => {
-                          console.log(
-                            "Chat button clicked",
-                            deal.customer?.chatId
-                          );
                           if (!deal.customer?.chatId) return;
                           e.preventDefault();
                           e.stopPropagation();
