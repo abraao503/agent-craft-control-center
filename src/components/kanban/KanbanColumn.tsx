@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
@@ -67,7 +67,10 @@ const DealTagsPopover: React.FC<{
           className="flex items-center gap-1 cursor-pointer"
           onMouseEnter={() => setIsOpen(true)}
           onMouseLeave={() => setIsOpen(false)}
-          onClick={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
         >
           <TagIcon className="h-3.5 w-3.5 text-muted-foreground" />
           <span className="text-xs text-muted-foreground/80">
@@ -191,7 +194,12 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
     await onMoveDeal(dealId, stage.id);
   };
 
-  const handleOpenChat = (e: React.MouseEvent, chatId?: string) => {
+  const handleOpenChat = (
+    e: React.MouseEvent | React.TouchEvent,
+    chatId?: string
+  ) => {
+    console.log("handleOpenChat called", chatId);
+    e.preventDefault();
     e.stopPropagation();
     if (chatId) {
       navigate(`/chats?chatId=${chatId}`);
@@ -259,12 +267,27 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                   <div
                     key={deal.id}
                     className={cn(
-                      "rounded-md border p-3 bg-card cursor-move shadow-sm hover:shadow transition",
+                      "rounded-md border p-3 bg-card shadow-sm hover:shadow transition group",
                       isMoving && "opacity-70"
                     )}
                     draggable
-                    onDragStart={(e) => handleDragStart(e, deal.id)}
-                    onClick={() => onDealClick(deal)}
+                    onDragStart={(e) => {
+                      // Only start drag if not clicking on button area
+                      const target = e.target as HTMLElement;
+                      if (target.closest("[data-no-drag]")) {
+                        e.preventDefault();
+                        return;
+                      }
+                      handleDragStart(e, deal.id);
+                    }}
+                    onClick={(e) => {
+                      // Only open modal if not clicking on button area
+                      const target = e.target as HTMLElement;
+                      if (target.closest("[data-no-drag]")) {
+                        return;
+                      }
+                      onDealClick(deal);
+                    }}
                     aria-grabbed="true"
                   >
                     <div className="font-medium text-sm truncate text-foreground/90">
@@ -286,23 +309,41 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                         {deal.customer?.name || "Cliente"}
                       </span>
                     </div>
-                    <div className="flex items-center gap-1 mt-2 justify-end">
+
+                    {/* Buttons area - not draggable */}
+                    <div
+                      className="flex items-center gap-1 mt-2 justify-end"
+                      data-no-drag="true"
+                    >
                       <DealTagsPopover
                         tagIds={deal.tags}
                         workspaceId={workspaceId}
                       />
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 w-7 p-0"
-                        onClick={(e) =>
-                          handleOpenChat(e, deal.customer?.chatId)
+                      <div
+                        className={cn(
+                          "inline-flex items-center justify-center h-7 w-7 p-0 rounded-md transition-colors",
+                          deal.customer?.chatId
+                            ? "hover:bg-accent hover:text-accent-foreground cursor-pointer"
+                            : "opacity-50 cursor-not-allowed"
+                        )}
+                        onClick={(e) => {
+                          console.log(
+                            "Chat button clicked",
+                            deal.customer?.chatId
+                          );
+                          if (!deal.customer?.chatId) return;
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleOpenChat(e, deal.customer?.chatId);
+                        }}
+                        title={
+                          deal.customer?.chatId
+                            ? "Open chat"
+                            : "No chat available"
                         }
-                        disabled={!deal.customer?.chatId}
-                        title="Open chat"
                       >
-                        <MessageSquare className="h-3.5 w-3.5 text-muted-foreground" />
-                      </Button>
+                        <MessageSquare className="h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -318,7 +359,6 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                     <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                   </div>
                 )}
-
 
                 {isFetchingNextPage && (
                   <div className="flex items-center justify-center py-2">
