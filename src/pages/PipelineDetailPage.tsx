@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useWorkspaceManager } from "@/hooks/useWorkspaceManager";
 import { listPipelineStages } from "@/services/pipeline/listPipelineStages";
-import { listDealsByPipeline } from "@/services/deal/listDealsByPipeline";
 import { moveDealStage } from "@/services/deal/moveDealStage";
 import { DealListItem } from "@/types/deal";
 import KanbanBoard from "@/components/kanban/KanbanBoard";
@@ -39,7 +38,6 @@ const PipelineDetailPage = () => {
   const { workspaceId, isChangingWorkspace } = useWorkspaceManager({
     queryKeys: [
       "listPipelineStages",
-      "listDealsByPipeline",
       "listPipelines",
       "listAgent",
       "listCompanyWhatsAppIntegrations",
@@ -63,7 +61,6 @@ const PipelineDetailPage = () => {
       ? false
       : isChangingWorkspace ||
           stagesQuery.isLoading ||
-          dealsQuery.isLoading ||
           pipelinesQuery.isLoading ||
           agentsQuery.isLoading ||
           whatsappIntegrationsQuery.isLoading;
@@ -80,12 +77,6 @@ const PipelineDetailPage = () => {
   const stagesQuery = useQuery({
     queryKey: ["listPipelineStages", pipelineId, workspaceId],
     queryFn: () => listPipelineStages(pipelineId!, workspaceId!),
-    enabled: isDataReady(),
-  });
-
-  const dealsQuery = useQuery({
-    queryKey: ["listDealsByPipeline", pipelineId, workspaceId],
-    queryFn: () => listDealsByPipeline(pipelineId!, workspaceId!),
     enabled: isDataReady(),
   });
 
@@ -143,7 +134,6 @@ const PipelineDetailPage = () => {
   }, [workspaceId, pipelineId]);
 
   const stages = stagesQuery.data || [];
-  const deals = dealsQuery.data || [];
   const agents = agentsQuery.data?.agents || [];
   const whatsappIntegrations = whatsappIntegrationsQuery.data || [];
 
@@ -163,26 +153,19 @@ const PipelineDetailPage = () => {
     if (!pipelineId || !workspaceId) return;
 
     setIsMoving(true);
-    const key = ["listDealsByPipeline", pipelineId, workspaceId] as const;
-    const previous = queryClient.getQueryData<DealListItem[] | undefined>(key);
-
-    // Optimistic update
-    queryClient.setQueryData<DealListItem[] | undefined>(key, (old) => {
-      if (!old) return old;
-      return old.map((d) =>
-        d.id === dealId ? { ...d, stageId: toStageId } : d
-      );
-    });
 
     try {
       await moveDealStage(dealId, { workspaceId, stageId: toStageId });
-      // Revalidate
-      queryClient.invalidateQueries({ queryKey: key });
+      
+      // Invalidate all stage queries to refetch data
+      stages.forEach((stage) => {
+        queryClient.invalidateQueries({
+          queryKey: ["dealsByStage", stage.id, workspaceId],
+        });
+      });
+      
       toast({ title: "Sucesso", description: "Negócio movido com sucesso." });
     } catch (e: unknown) {
-      // Revert on error
-      queryClient.setQueryData(key, previous);
-
       // Handle validation error for required fields
       if (
         e &&
@@ -438,15 +421,16 @@ const PipelineDetailPage = () => {
   const renderKanbanBoard = () => (
     <KanbanBoard
       stages={stages}
-      deals={deals}
       onMoveDeal={onMoveDeal}
       isMoving={isMoving}
       workspaceId={workspaceId}
-      onDealUpdated={() =>
-        queryClient.invalidateQueries({
-          queryKey: ["listDealsByPipeline", pipelineId, workspaceId],
-        })
-      }
+      onDealUpdated={() => {
+        stages.forEach((stage) => {
+          queryClient.invalidateQueries({
+            queryKey: ["dealsByStage", stage.id, workspaceId],
+          });
+        });
+      }}
     />
   );
 
@@ -502,11 +486,13 @@ const PipelineDetailPage = () => {
           workspaceId={workspaceId!}
           pipelineId={pipelineId!}
           stages={stages}
-          onCreated={() =>
-            queryClient.invalidateQueries({
-              queryKey: ["listDealsByPipeline", pipelineId, workspaceId],
-            })
-          }
+          onCreated={() => {
+            stages.forEach((stage) => {
+              queryClient.invalidateQueries({
+                queryKey: ["dealsByStage", stage.id, workspaceId],
+              });
+            });
+          }}
         />
       )}
     </div>

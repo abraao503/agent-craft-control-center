@@ -960,9 +960,13 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
           <div className="flex flex-col">
             {/* Header with stage name and add button */}
             <div className="p-4 border-b flex items-center justify-between">
-              <h3 className="font-semibold text-sm">
-                {dealDetails?.currentStage?.name || "Etapa Atual"}
-              </h3>
+              {dealDetailsLoading ? (
+                <Skeleton className="h-5 w-32" />
+              ) : (
+                <h3 className="font-semibold text-sm">
+                  {dealDetails?.currentStage?.name || "Etapa Atual"}
+                </h3>
+              )}
               <Button
                 size="sm"
                 variant="outline"

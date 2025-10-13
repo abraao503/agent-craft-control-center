@@ -106,3 +106,17 @@ export interface DealDetails {
   };
   tags?: string[]; // Array of tag IDs associated with the deal
 }
+
+export interface GetDealsByStageResponse {
+  deals: DealListItem[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface GetDealsByStageParams {
+  stageId: string;
+  workspaceId: string;
+  limit?: number;
+  offset?: number;
+}
