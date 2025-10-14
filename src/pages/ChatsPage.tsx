@@ -78,16 +78,13 @@ const ChatsPage = () => {
   useEffect(() => {
     const chatId = searchParams.get("chatId");
 
-    if (chatId && workspaceId) {
+    if (chatId && workspaceId && !selectedConversation) {
       setIsLoadingFromUrl(true);
       
       // Fetch the specific chat by ID
       getConversationById(chatId, workspaceId)
         .then((chat) => {
           setSelectedConversation(chat);
-          // Remove chatId from URL after selecting
-          searchParams.delete("chatId");
-          setSearchParams(searchParams, { replace: true });
         })
         .catch((error) => {
           console.error("Failed to load chat:", error);
@@ -135,6 +132,8 @@ const ChatsPage = () => {
   // Handle conversation selection
   const handleSelectConversation = (conversation: Conversation) => {
     setSelectedConversation(conversation);
+    // Update URL with selected chat ID
+    setSearchParams({ chatId: conversation.id }, { replace: true });
   };
 
   // Handle conversation update

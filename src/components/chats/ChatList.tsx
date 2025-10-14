@@ -36,7 +36,7 @@ export const ChatList: React.FC<ChatListProps> = ({
   useEffect(() => {
     const timer = setTimeout(() => {
       onSearchChange(localSearchValue);
-    }, 700);
+    }, 500);
 
     return () => clearTimeout(timer);
   }, [localSearchValue, onSearchChange]);

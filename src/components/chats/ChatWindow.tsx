@@ -81,7 +81,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     isFetching: isFetchingMessages,
   } = useQuery({
     queryKey: ["messages", conversation.id, currentPage],
-    queryFn: () => listMessages({ chatId: conversation.id, page: currentPage }),
+    queryFn: () =>
+      listMessages({ chatId: conversation.id, page: currentPage, limit: 50 }),
     staleTime: 0,
     refetchOnWindowFocus: false,
     refetchOnMount: "always",
@@ -132,7 +133,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     onError: () => {
       toast({
         title: "Erro ao limpar registro",
-        description: "Não foi possível limpar o registro externo. Tente novamente.",
+        description:
+          "Não foi possível limpar o registro externo. Tente novamente.",
         variant: "destructive",
       });
     },
@@ -405,7 +407,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     const currentScrollTop = target.scrollTop;
 
     // Scroll up → load more messages
-    if (currentScrollTop < lastScrollTop.current && currentScrollTop <= 140) {
+    if (currentScrollTop < lastScrollTop.current && currentScrollTop <= 600) {
       setCurrentPage((prev) => prev + 1);
     }
 
@@ -457,7 +459,10 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     }
   };
 
-  const shouldShowDateSeparator = (currentMsg: MessageWithStatus, previousMsg: MessageWithStatus | null) => {
+  const shouldShowDateSeparator = (
+    currentMsg: MessageWithStatus,
+    previousMsg: MessageWithStatus | null
+  ) => {
     if (!previousMsg) return true;
     const currentDate = new Date(currentMsg.createdAt);
     const previousDate = new Date(previousMsg.createdAt);
@@ -541,7 +546,9 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                   className="text-destructive focus:text-destructive"
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
-                  {clearExternalIdMutation.isPending ? "Limpando..." : "Limpar registro"}
+                  {clearExternalIdMutation.isPending
+                    ? "Limpando..."
+                    : "Limpar registro"}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -572,9 +579,13 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
               <div className="space-y-3">
                 {messages.map((message, index) => {
                   const isCustomer = message.sender === "customer";
-                  const previousMessage = index > 0 ? messages[index - 1] : null;
-                  const showDateSeparator = shouldShowDateSeparator(message, previousMessage);
-                  
+                  const previousMessage =
+                    index > 0 ? messages[index - 1] : null;
+                  const showDateSeparator = shouldShowDateSeparator(
+                    message,
+                    previousMessage
+                  );
+
                   return (
                     <div key={message.id}>
                       {showDateSeparator && (

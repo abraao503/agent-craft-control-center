@@ -11,6 +11,7 @@ export type Message = {
 export type ListMessagesParams = {
   chatId: string;
   page?: number;
+  limit: number;
 };
 
 export type ListMessagesResponse = Pagination<Message>;
