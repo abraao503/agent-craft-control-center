@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Search, Loader2 } from "lucide-react";
@@ -27,6 +27,20 @@ export const ChatList: React.FC<ChatListProps> = ({
   onSearchChange,
   isLoading,
 }) => {
+  const [localSearchValue, setLocalSearchValue] = useState(searchValue);
+
+  useEffect(() => {
+    setLocalSearchValue(searchValue);
+  }, [searchValue]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onSearchChange(localSearchValue);
+    }, 700);
+
+    return () => clearTimeout(timer);
+  }, [localSearchValue, onSearchChange]);
+
   const formatLastInteraction = (date: Date | null) => {
     if (!date) return "";
 
@@ -68,7 +82,7 @@ export const ChatList: React.FC<ChatListProps> = ({
         <h2 className="text-xl font-semibold mb-3">Chats</h2>
         <div className="relative">
           <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
-            {isLoading && searchValue ? (
+            {isLoading && localSearchValue ? (
               <Loader2 className="h-4 w-4 text-muted-foreground animate-spin" />
             ) : (
               <Search className="h-4 w-4 text-muted-foreground" />
@@ -78,8 +92,8 @@ export const ChatList: React.FC<ChatListProps> = ({
             type="search"
             placeholder="Buscar ou começar uma nova conversa"
             className="pl-10"
-            value={searchValue}
-            onChange={(e) => onSearchChange(e.target.value)}
+            value={localSearchValue}
+            onChange={(e) => setLocalSearchValue(e.target.value)}
           />
         </div>
       </div>
@@ -127,7 +141,7 @@ export const ChatList: React.FC<ChatListProps> = ({
                     <Avatar className="h-12 w-12 flex-shrink-0">
                       <AvatarFallback className="bg-primary/10 text-primary font-semibold">
                         {getInitials(
-                          conversation.customer.identifier,
+                          conversation.customer.name,
                           conversation.customer.phone
                         )}
                       </AvatarFallback>
@@ -137,7 +151,7 @@ export const ChatList: React.FC<ChatListProps> = ({
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-start mb-1">
                         <h3 className="font-semibold truncate">
-                          {conversation.customer.identifier ||
+                          {conversation.customer.name ||
                             conversation.customer.phone}
                         </h3>
                         <span className="text-xs text-muted-foreground ml-2 flex-shrink-0">
