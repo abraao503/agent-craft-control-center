@@ -37,7 +37,11 @@ import {
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { DealListItem, DealNote } from "@/types/deal";
-import { StageFormField, FieldType, DocumentType } from "@/types/stage-form-field";
+import {
+  StageFormField,
+  FieldType,
+  DocumentType,
+} from "@/types/stage-form-field";
 import { getDealById } from "@/services/deal/getDealById";
 import { getDealFormFields } from "@/services/deal/getDealFormFields";
 import { saveDealFormValues } from "@/services/deal/saveDealFormValues";
@@ -69,6 +73,7 @@ import {
   isValidCPF,
   isValidCNPJ,
 } from "@brazilian-utils/brazilian-utils";
+import { AxiosError } from "axios";
 
 interface DealViewModalProps {
   open: boolean;
@@ -92,9 +97,9 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
   const [showSelectTypeModal, setShowSelectTypeModal] = useState(false);
   const [showCreateFieldModal, setShowCreateFieldModal] = useState(false);
   const [showEditFieldModal, setShowEditFieldModal] = useState(false);
-  const [selectedFieldType, setSelectedFieldType] = useState<FieldType | "document" | null>(
-    null
-  );
+  const [selectedFieldType, setSelectedFieldType] = useState<
+    FieldType | "document" | null
+  >(null);
   const [editingField, setEditingField] = useState<StageFormField | null>(null);
   const [expandedStages, setExpandedStages] = useState<Set<string>>(new Set());
 
@@ -106,7 +111,7 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
 
   // Track which field is being saved
   const [savingField, setSavingField] = useState<string | null>(null);
-  
+
   // Track fields that have been modified locally to prevent overwriting during API updates
   // Using ref to avoid triggering useEffect when modified fields change
   const modifiedFieldsRef = useRef<Set<string>>(new Set());
@@ -259,11 +264,9 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
       isRequired: boolean;
     }) => {
       if (!deal) return;
-      const maxOrder = Math.max(...stageFields.map((f) => f.order), -1);
       await createStageFormField({
         ...data,
         stageId: deal.stageId,
-        order: maxOrder + 1,
       });
     },
     onSuccess: () => {
@@ -277,7 +280,23 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
       setSelectedFieldType(null);
       toast({ title: "Sucesso", description: "Campo criado com sucesso." });
     },
-    onError: () => {
+    onError: (error: unknown) => {
+      if (error instanceof AxiosError) {
+        if (
+          error?.response?.data?.message ===
+          "Field with this name already exists in stage"
+        ) {
+          toast({
+            title: "Erro",
+            description:
+              "Este nome de campo já existe. Por favor, escolha outro nome.",
+            variant: "destructive",
+          });
+
+          return;
+        }
+      }
+
       toast({
         title: "Erro",
         description: "Falha ao criar campo.",
@@ -383,10 +402,14 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
     },
   });
 
-  const handleFieldValueChange = (fieldId: string, value: string, fieldType?: FieldType) => {
+  const handleFieldValueChange = (
+    fieldId: string,
+    value: string,
+    fieldType?: FieldType
+  ) => {
     // Mark field as modified
     modifiedFieldsRef.current.add(fieldId);
-    
+
     // Clear error when user starts typing
     setFieldErrors((prev) => {
       const newErrors = { ...prev };
@@ -674,15 +697,15 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
             <Input
               type="text"
               value={value}
-              onChange={(e) => handleFieldValueChange(field.id, e.target.value, field.type)}
+              onChange={(e) =>
+                handleFieldValueChange(field.id, e.target.value, field.type)
+              }
               onBlur={() => handleFieldBlur(field.id, field.type)}
               placeholder={field.description || field.label}
               className={hasError ? "border-red-500" : ""}
               maxLength={field.type === "cpf" ? 14 : 18}
             />
-            {hasError && (
-              <p className="text-xs text-red-500">{hasError}</p>
-            )}
+            {hasError && <p className="text-xs text-red-500">{hasError}</p>}
           </div>
         );
       }
@@ -837,7 +860,7 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
                   {/* Tags Section */}
                   <div className="border-t pt-4 mt-4 px-1">
                     <h3 className="font-semibold mb-3">Tags</h3>
-                    
+
                     <div className="space-y-2">
                       <DealTagsSelector
                         allTags={allTags}
@@ -1130,29 +1153,30 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
                       </p>
                     )}
 
-                    {!notesLoading && notes.map((note) => (
-                      <div key={note.id} className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <Avatar className="h-6 w-6">
-                            <AvatarFallback className="text-xs">
-                              {note.user?.name?.charAt(0) || "U"}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-medium">
-                              {note.user?.name || "Usuário"}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {formatDistanceToNow(new Date(note.createdAt), {
-                                addSuffix: true,
-                                locale: ptBR,
-                              })}
-                            </p>
+                    {!notesLoading &&
+                      notes.map((note) => (
+                        <div key={note.id} className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <Avatar className="h-6 w-6">
+                              <AvatarFallback className="text-xs">
+                                {note.user?.name?.charAt(0) || "U"}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-medium">
+                                {note.user?.name || "Usuário"}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {formatDistanceToNow(new Date(note.createdAt), {
+                                  addSuffix: true,
+                                  locale: ptBR,
+                                })}
+                              </p>
+                            </div>
                           </div>
+                          <p className="text-sm pl-8">{note.content}</p>
                         </div>
-                        <p className="text-sm pl-8">{note.content}</p>
-                      </div>
-                    ))}
+                      ))}
                   </div>
                 </div>
               </div>

@@ -35,7 +35,6 @@ export interface CreateStageFormFieldInput {
   description?: string;
   type: FieldType;
   isRequired: boolean;
-  order: number;
   stageId: string;
 }
 
