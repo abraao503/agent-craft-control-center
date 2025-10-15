@@ -840,6 +840,28 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
                       </div>
 
                       <div className="space-y-2">
+                        <Label>Data de criação</Label>
+                        <Input
+                          value={
+                            dealDetails?.createdAt
+                              ? new Date(dealDetails.createdAt).toLocaleString(
+                                  "pt-BR",
+                                  {
+                                    day: "2-digit",
+                                    month: "2-digit",
+                                    year: "numeric",
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  }
+                                )
+                              : ""
+                          }
+                          disabled
+                          className="bg-muted"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
                         <Label className="flex items-center gap-2">
                           Descrição
                           {savingField === "description" && (
