@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { DealListItem } from "@/types/deal";
 import { PipelineStageMinimal } from "@/types/pipeline";
 import { cn, isColorDark } from "@/lib/utils";
-import { MessageSquare, Tag as TagIcon, Loader2 } from "lucide-react";
+import { MessageCircle, Tag as TagIcon, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
   Popover,
@@ -337,7 +337,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                             : "No chat available"
                         }
                       >
-                        <MessageSquare className="h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+                        <MessageCircle className="h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
                       </div>
                     </div>
                   </div>
