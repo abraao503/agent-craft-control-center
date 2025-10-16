@@ -22,8 +22,17 @@ import { DateTimePicker } from "@/components/ui/date-time-picker";
 import { createDeal } from "@/services/deal/createDeal";
 import { CreateDealInput } from "@/types/deal";
 import { PipelineStageMinimal } from "@/types/pipeline";
-import { useQuery } from "@tanstack/react-query";
-import { listCustomers } from "@/services/customer";
+
+interface ValidationError {
+  field: string;
+  message: string;
+}
+
+interface ApiErrorResponse {
+  statusCode: number;
+  message: string;
+  errors?: ValidationError[];
+}
 
 interface CreateDealModalProps {
   open: boolean;
@@ -43,7 +52,6 @@ export const CreateDealModal: React.FC<CreateDealModalProps> = ({
   onCreated,
 }) => {
   const [currentStageId, setCurrentStageId] = useState<string>("");
-  const [customerId, setCustomerId] = useState<string>("");
   const [assignedUserId, setAssignedUserId] = useState<string>("");
   const [title, setTitle] = useState<string>("");
   const [description, setDescription] = useState<string>("");
@@ -52,30 +60,48 @@ export const CreateDealModal: React.FC<CreateDealModalProps> = ({
   const [expectedCloseDate, setExpectedCloseDate] = useState<Date | undefined>(
     undefined
   );
+  const [customerName, setCustomerName] = useState<string>("");
+  const [customerPhone, setCustomerPhone] = useState<string>("");
+  const [customerEmail, setCustomerEmail] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { data: customersData } = useQuery({
-    queryKey: ["listCustomersForDeal", workspaceId, open],
-    queryFn: () =>
-      listCustomers(
-        { page: 1, limit: 50, orderBy: "createdAt", order: "desc" },
-        workspaceId
-      ),
-    enabled: open && !!workspaceId,
-  });
+  const formatPhoneNumber = (value: string): string => {
+    // Remove all non-digit characters
+    const digits = value.replace(/\D/g, "");
 
-  const customers = customersData?.items || [];
+    // Limit to 11 digits
+    const limited = digits.slice(0, 11);
+
+    // Format as (XX) 9XXXX-XXXX
+    if (limited.length <= 2) {
+      return limited;
+    } else if (limited.length <= 7) {
+      return `(${limited.slice(0, 2)}) ${limited.slice(2)}`;
+    } else {
+      return `(${limited.slice(0, 2)}) ${limited.slice(2, 7)}-${limited.slice(
+        7
+      )}`;
+    }
+  };
+
+  const getUnformattedPhone = (formatted: string): string => {
+    return formatted.replace(/\D/g, "");
+  };
 
   const validate = (): string | null => {
-    if (!pipelineId) return "Pipeline is required";
+    if (!pipelineId) return "Pipeline é obrigatório";
     if (!currentStageId) return "Selecione a etapa";
-    if (!customerId) return "Selecione o cliente";
+    if (!customerName.trim()) return "Nome do cliente é obrigatório";
+    const phone = getUnformattedPhone(customerPhone);
+    if (!phone) return "Telefone do cliente é obrigatório";
+    if (phone.length !== 11) return "Formato de telefone inválido";
     if (!title.trim()) return "Título é obrigatório";
     const n = value ? Number(value) : undefined;
     if (n !== undefined && (isNaN(n) || n < 0))
       return "Valor deve ser um número maior ou igual a 0";
     if (currency && currency.length !== 3) return "Moeda deve ter 3 letras";
+    if (customerEmail && !customerEmail.includes("@")) return "Email inválido";
     return null;
   };
 
@@ -91,13 +117,15 @@ export const CreateDealModal: React.FC<CreateDealModalProps> = ({
       workspaceId,
       pipelineId,
       currentStageId,
-      customerId,
       assignedUserId: assignedUserId || undefined,
       title: title.trim(),
       description: description?.trim() || undefined,
       value: value ? Number(value) : undefined,
       currency: currency || "BRL",
       expectedCloseDate: expectedCloseDate?.toISOString(),
+      customerName: customerName.trim(),
+      customerPhone: getUnformattedPhone(customerPhone),
+      customerEmail: customerEmail.trim() || undefined,
     };
 
     try {
@@ -107,15 +135,64 @@ export const CreateDealModal: React.FC<CreateDealModalProps> = ({
       onOpenChange(false);
       // reset
       setCurrentStageId("");
-      setCustomerId("");
       setAssignedUserId("");
       setTitle("");
       setDescription("");
       setValue("");
       setCurrency("BRL");
       setExpectedCloseDate(undefined);
-    } catch (e) {
-      setError("Failed to create deal. Please try again.");
+      setCustomerName("");
+      setCustomerPhone("");
+      setCustomerEmail("");
+    } catch (e: unknown) {
+      // Handle API errors with Portuguese messages
+      const error = e as { response?: { data?: ApiErrorResponse } };
+      if (error?.response?.data) {
+        const errorData = error.response.data;
+
+        // Handle validation errors
+        if (errorData.statusCode === 400 && errorData.errors) {
+          const errorMessages = errorData.errors.map((err: ValidationError) => {
+            const fieldMessages: Record<string, string> = {
+              "Invalid workspace ID format":
+                "Formato de ID do workspace inválido",
+              "Invalid pipeline ID format":
+                "Formato de ID do pipeline inválido",
+              "Invalid stage ID format": "Formato de ID da etapa inválido",
+              "Invalid user ID format": "Formato de ID do usuário inválido",
+              "Deal title is required": "Título do negócio é obrigatório",
+              "Value must be non-negative":
+                "Valor deve ser maior ou igual a zero",
+              "Currency must be 3 characters": "Moeda deve ter 3 caracteres",
+              "Invalid date format": "Formato de data inválido",
+              "Customer name is required": "Nome do cliente é obrigatório",
+              "Phone must be in format XX9NNNNNNNN (11 digits)":
+                "Telefone deve estar no formato XX9NNNNNNNN (11 dígitos)",
+              "Invalid email format": "Formato de email inválido",
+            };
+            return fieldMessages[err.message] || err.message;
+          });
+          setError(errorMessages.join(", "));
+        } else if (errorData.statusCode === 404) {
+          const notFoundMessages: Record<string, string> = {
+            "Pipeline not found": "Pipeline não encontrado",
+            "Stage not found in pipeline": "Etapa não encontrada no pipeline",
+          };
+          setError(
+            notFoundMessages[errorData.message] || "Recurso não encontrado"
+          );
+        } else if (errorData.statusCode === 409) {
+          setError("Já existe um negócio para este cliente neste pipeline");
+        } else if (errorData.statusCode === 500) {
+          setError("Erro ao criar negócio. Tente novamente.");
+        } else {
+          setError(
+            errorData.message || "Erro ao criar negócio. Tente novamente."
+          );
+        }
+      } else {
+        setError("Erro ao criar negócio. Tente novamente.");
+      }
     } finally {
       setSubmitting(false);
     }
@@ -152,19 +229,35 @@ export const CreateDealModal: React.FC<CreateDealModalProps> = ({
             </div>
 
             <div className="space-y-2">
-              <Label>Cliente</Label>
-              <Select value={customerId} onValueChange={setCustomerId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o cliente" />
-                </SelectTrigger>
-                <SelectContent>
-                  {customers.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.identifier || c.phone}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label>Nome do Cliente</Label>
+              <Input
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+                placeholder="Nome completo"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label>Telefone do Cliente</Label>
+              <Input
+                value={customerPhone}
+                onChange={(e) =>
+                  setCustomerPhone(formatPhoneNumber(e.target.value))
+                }
+                placeholder="(11) 98765-4321"
+                maxLength={15}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Email do Cliente (Opcional)</Label>
+              <Input
+                type="email"
+                value={customerEmail}
+                onChange={(e) => setCustomerEmail(e.target.value)}
+                placeholder="cliente@exemplo.com"
+              />
             </div>
           </div>
 

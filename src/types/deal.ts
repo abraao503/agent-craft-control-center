@@ -25,13 +25,15 @@ export interface CreateDealInput {
   workspaceId: string; // UUID
   pipelineId: string; // UUID
   currentStageId: string; // UUID
-  customerId: string; // UUID
   assignedUserId?: string; // UUID
   title: string;
   description?: string;
   value?: number; // >= 0
   currency?: string; // default BRL
   expectedCloseDate?: string; // ISO datetime
+  customerName: string; // Required - Customer name
+  customerPhone: string; // Required - Phone in format XX9NNNNNNNN (11 digits)
+  customerEmail?: string; // Optional - Valid email format
 }
 
 export interface CreateDealResponse {
