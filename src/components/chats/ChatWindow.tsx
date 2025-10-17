@@ -488,17 +488,16 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
             <Avatar className="h-10 w-10">
               <AvatarFallback className="bg-primary/10 text-primary font-semibold">
                 {getInitials(
-                  conversation.customer.identifier,
+                  conversation.customer.name,
                   conversation.customer.phone
                 )}
               </AvatarFallback>
             </Avatar>
             <div>
-              <h3 className="font-semibold">
-                {conversation.customer.identifier ||
-                  conversation.customer.phone}
-              </h3>
               <div className="flex items-center gap-2">
+                <h3 className="font-semibold">
+                  {conversation.customer.name || conversation.customer.phone}
+                </h3>
                 <Badge
                   variant={
                     localConversation.handledBy === "ai" ? "default" : "outline"
@@ -507,11 +506,15 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                 >
                   {localConversation.handledBy === "ai" ? "IA" : "Humano"}
                 </Badge>
-                {conversation.agent && (
-                  <span className="text-xs text-muted-foreground">
-                    {conversation.agent.name}
-                  </span>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                {conversation.customer.name && (
+                  <span>{conversation.customer.phone}</span>
                 )}
+                {conversation.customer.name && conversation.agent && (
+                  <span>•</span>
+                )}
+                {conversation.agent && <span>{conversation.agent.name}</span>}
               </div>
             </div>
           </div>

@@ -150,10 +150,17 @@ export const ChatList: React.FC<ChatListProps> = ({
                     {/* Content */}
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-start mb-1">
-                        <h3 className="font-semibold truncate">
-                          {conversation.customer.name ||
-                            conversation.customer.phone}
-                        </h3>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold truncate">
+                            {conversation.customer.name ||
+                              conversation.customer.phone}
+                          </h3>
+                          {conversation.customer.name && (
+                            <p className="text-xs text-muted-foreground truncate">
+                              {conversation.customer.phone}
+                            </p>
+                          )}
+                        </div>
                         <span className="text-xs text-muted-foreground ml-2 flex-shrink-0">
                           {formatLastInteraction(conversation.lastInteraction)}
                         </span>
