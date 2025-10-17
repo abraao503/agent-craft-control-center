@@ -52,6 +52,7 @@ const getFieldIcon = (type: FieldType | "document" | null) => {
     case "date":
       return <Calendar className="h-5 w-5" />;
     case "datetime":
+    case "due_date":
       return <CalendarClock className="h-5 w-5" />;
     case "document":
     case "cpf":
@@ -78,6 +79,8 @@ const getFieldTypeLabel = (type: FieldType | "document" | null) => {
       return "Data";
     case "datetime":
       return "Data e Hora";
+    case "due_date":
+      return "Data de Vencimento";
     case "document":
       return "Documento";
     case "cpf":

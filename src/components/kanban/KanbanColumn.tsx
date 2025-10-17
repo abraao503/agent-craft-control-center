@@ -297,6 +297,29 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                         {deal.description}
                       </div>
                     )}
+                    {deal.dueDate && (
+                      <div className="mt-2 space-y-1">
+                        <div className="text-xs text-muted-foreground/70">
+                          data de vencimento
+                        </div>
+                        <div
+                          className={cn(
+                            "inline-block px-2 py-0.5 rounded text-xs font-medium",
+                            new Date(deal.dueDate) < new Date()
+                              ? "bg-red-500/90 text-white"
+                              : "bg-muted text-foreground/80"
+                          )}
+                        >
+                          {new Date(deal.dueDate).toLocaleString("pt-BR", {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </div>
+                      </div>
+                    )}
                     <div className="flex items-center justify-between mt-2 text-xs">
                       <span className="font-semibold text-foreground/85">
                         {formatCurrency(

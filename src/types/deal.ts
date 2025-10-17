@@ -19,6 +19,7 @@ export interface DealListItem {
   customer?: RelatedMinimal | null;
   assignedUser?: RelatedMinimal | null;
   tags?: string[]; // Array of tag IDs associated with the deal
+  dueDate?: string | null; // Due date from due_date field type
 }
 
 export interface CreateDealInput {

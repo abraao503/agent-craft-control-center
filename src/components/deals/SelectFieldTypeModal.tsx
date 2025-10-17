@@ -33,6 +33,7 @@ const fieldTypes: Array<{ type: FieldType | "document"; label: string; icon: Rea
   { type: "number", label: "Número", icon: <Hash className="h-5 w-5" /> },
   { type: "date", label: "Data", icon: <Calendar className="h-5 w-5" /> },
   { type: "datetime", label: "Data e Hora", icon: <CalendarClock className="h-5 w-5" /> },
+  { type: "due_date", label: "Data de Vencimento", icon: <CalendarClock className="h-5 w-5" /> },
   { type: "document", label: "Documento", icon: <File className="h-5 w-5" /> },
 ];
 

@@ -19,6 +19,7 @@ type DealApiItem = {
   customer?: RelatedMinimal | null;
   assignedUser?: RelatedMinimal | null;
   tags?: string[];
+  dueDate?: string | null;
 };
 
 type ApiResponse = {
@@ -34,16 +35,13 @@ export const getDealsByStage = async ({
   limit = 10,
   offset = 0,
 }: GetDealsByStageParams): Promise<GetDealsByStageResponse> => {
-  const { data } = await api.get<ApiResponse>(
-    `/deal/stage/${stageId}`,
-    {
-      params: {
-        workspaceId,
-        limit,
-        offset,
-      },
-    }
-  );
+  const { data } = await api.get<ApiResponse>(`/deal/stage/${stageId}`, {
+    params: {
+      workspaceId,
+      limit,
+      offset,
+    },
+  });
 
   // Normalize deals data
   const normalizedDeals: DealListItem[] = data.deals.map((apiDeal) => ({
@@ -58,6 +56,7 @@ export const getDealsByStage = async ({
     customer: apiDeal.customer,
     assignedUser: apiDeal.assignedUser,
     tags: apiDeal.tags || [],
+    dueDate: apiDeal.dueDate,
   }));
 
   return {

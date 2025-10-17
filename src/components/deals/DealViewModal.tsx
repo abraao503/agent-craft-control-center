@@ -52,7 +52,7 @@ import { deleteStageFormField } from "@/services/stage-form-field/deleteStageFor
 import { getDealNotes } from "@/services/deal/getDealNotes";
 import { createDealNote } from "@/services/deal/createDealNote";
 import { useToast } from "@/components/ui/use-toast";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, format, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   Collapsible,
@@ -212,6 +212,8 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["getDealById", deal?.id] });
+      // Invalidate deal listings to reflect changes in kanban
+      queryClient.invalidateQueries({ queryKey: ["dealsByStage"] });
       setSavingField(null);
     },
     onError: () => {
@@ -226,13 +228,11 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
 
   // Save field values mutation
   const saveFieldValuesMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (fieldId: string) => {
       if (!deal) return;
-      const values = Object.entries(fieldValues).map(([fieldId, value]) => ({
-        fieldId,
-        value,
-      }));
-      await saveDealFormValues(deal.id, { values });
+      // Send only the field being edited
+      const value = fieldValues[fieldId];
+      await saveDealFormValues(deal.id, { values: [{ fieldId, value }] });
     },
     onSuccess: () => {
       // Clear modified fields after successful save
@@ -242,6 +242,8 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
       queryClient.invalidateQueries({
         queryKey: ["getDealFormFields", deal?.id],
       });
+      // Invalidate deal listings to reflect dueDate changes in kanban
+      queryClient.invalidateQueries({ queryKey: ["dealsByStage"] });
       setSavingField(null);
     },
     onError: () => {
@@ -444,10 +446,6 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
     setFieldValues((prev) => ({ ...prev, [fieldId]: formattedValue }));
   };
 
-  const handleSaveFields = () => {
-    saveFieldValuesMutation.mutate();
-  };
-
   const handleFieldBlur = (fieldId: string, fieldType?: FieldType) => {
     // Save field value when input loses focus
     const currentValue = fieldValues[fieldId];
@@ -480,7 +478,7 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
     // Only save if value actually changed
     if (currentValue !== undefined && currentValue !== originalValue) {
       setSavingField(fieldId);
-      saveFieldValuesMutation.mutate();
+      saveFieldValuesMutation.mutate(fieldId);
     } else {
       // Remove from modified fields if value hasn't changed
       modifiedFieldsRef.current.delete(fieldId);
@@ -579,16 +577,7 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
         updateDealMutation.mutate({ customerName });
       }
 
-      // Check if any custom field was modified
-      const hasModifiedFields = currentFields.some((field) => {
-        const currentValue = fieldValues[field.id] || "";
-        const originalValue = field.value || "";
-        return currentValue !== originalValue;
-      });
-
-      if (hasModifiedFields) {
-        saveFieldValuesMutation.mutate();
-      }
+      // Custom fields are now saved automatically on blur, no need to save on close
     }
     onOpenChange(isOpen);
   };
@@ -620,6 +609,8 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
       case "date":
         return "📅";
       case "datetime":
+        return "🕐";
+      case "due_date":
         return "🕐";
       case "cpf":
       case "cnpj":
@@ -681,6 +672,7 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
           />
         );
       case "datetime":
+      case "due_date":
         return (
           <Input
             type="datetime-local"
@@ -1023,10 +1015,15 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
               </Button>
             </div>
 
-            <ScrollArea className="flex-1">
-              <div className="p-4 space-y-4">
-                {/* Fields List */}
-                <div className="space-y-3">
+            {/* Fields Section */}
+            <div className="flex-1 overflow-hidden border-b">
+              <div className="p-4 pb-2">
+                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                  Campos Personalizados
+                </h4>
+              </div>
+              <ScrollArea className="h-[calc(45vh-120px)]">
+                <div className="px-4 pb-4 space-y-3">
                   {stageFieldsLoading ? (
                     // Skeleton loading state
                     <>
@@ -1052,157 +1049,174 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
                     </p>
                   ) : (
                     stageFields.map((field) => (
-                      <div key={field.id} className="space-y-2">
-                        {/* Field Header */}
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <p className="text-sm font-medium">
-                                {field.label}
-                                {field.isRequired && (
-                                  <span className="text-destructive ml-1">
-                                    *
-                                  </span>
+                        <div key={field.id} className="space-y-2">
+                          {/* Field Header */}
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <p className="text-sm font-medium">
+                                  {field.label}
+                                  {field.isRequired && (
+                                    <span className="text-destructive ml-1">
+                                      *
+                                    </span>
+                                  )}
+                                </p>
+                                {savingField === field.id && (
+                                  <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
                                 )}
-                              </p>
-                              {savingField === field.id && (
-                                <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                              </div>
+                              {field.description && (
+                                <p className="text-xs text-muted-foreground">
+                                  {field.description}
+                                </p>
                               )}
                             </div>
-                            {field.description && (
-                              <p className="text-xs text-muted-foreground">
-                                {field.description}
-                              </p>
-                            )}
+
+                            {/* Actions Menu */}
+                            <div className="flex items-center gap-1">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 w-6 p-0 cursor-grab"
+                              >
+                                <GripVertical className="h-4 w-4 text-muted-foreground" />
+                              </Button>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-6 w-6 p-0"
+                                  >
+                                    <MoreVertical className="h-4 w-4 text-muted-foreground" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem
+                                    onClick={() => handleEditField(field)}
+                                  >
+                                    <Edit2 className="h-3 w-3 mr-2" />
+                                    Editar
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => handleDeleteField(field.id)}
+                                    className="text-destructive"
+                                  >
+                                    <Trash2 className="h-3 w-3 mr-2" />
+                                    Remover
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
                           </div>
 
-                          {/* Actions Menu */}
-                          <div className="flex items-center gap-1">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-6 w-6 p-0 cursor-grab"
-                            >
-                              <GripVertical className="h-4 w-4 text-muted-foreground" />
-                            </Button>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="h-6 w-6 p-0"
-                                >
-                                  <MoreVertical className="h-4 w-4 text-muted-foreground" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem
-                                  onClick={() => handleEditField(field)}
-                                >
-                                  <Edit2 className="h-3 w-3 mr-2" />
-                                  Editar
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() => handleDeleteField(field.id)}
-                                  className="text-destructive"
-                                >
-                                  <Trash2 className="h-3 w-3 mr-2" />
-                                  Remover
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
+                          {/* Field Input */}
+                          {renderFieldInput(field)}
                         </div>
-
-                        {/* Field Input */}
-                        {renderFieldInput(field)}
-                      </div>
-                    ))
-                  )}
+                      ))
+                    )}
                 </div>
+              </ScrollArea>
+            </div>
 
-                <Separator />
+            {/* Comments Section */}
+            <div className="flex-1 overflow-hidden flex flex-col">
+              <div className="p-4 pb-2">
+                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                  Comentários
+                </h4>
+              </div>
+              <div className="px-4 pb-2 space-y-3">
+                <Textarea
+                  value={newNoteContent}
+                  onChange={(e) => setNewNoteContent(e.target.value)}
+                  placeholder="Escreva aqui..."
+                  rows={3}
+                  className="resize-none"
+                />
 
-                {/* Comments Section */}
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-medium">
-                      Escrever um comentário!
-                    </p>
-                  </div>
+                {newNoteContent.trim() && (
+                  <Button
+                    size="sm"
+                    onClick={handleAddNote}
+                    disabled={createNoteMutation.isPending}
+                    className="w-full"
+                  >
+                    Adicionar Comentário
+                  </Button>
+                )}
+              </div>
 
-                  <Textarea
-                    value={newNoteContent}
-                    onChange={(e) => setNewNoteContent(e.target.value)}
-                    placeholder="Escreva aqui..."
-                    rows={3}
-                    className="resize-none"
-                  />
+              {/* Comments List with ScrollArea */}
+              <ScrollArea className="flex-1 px-4">
+                <div className="space-y-3 pb-4">
+                      {notesLoading && (
+                        <>
+                          {[1, 2].map((i) => (
+                            <div key={i} className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <Skeleton className="h-6 w-6 rounded-full" />
+                                <div className="flex-1 space-y-1">
+                                  <Skeleton className="h-3 w-24" />
+                                  <Skeleton className="h-3 w-32" />
+                                </div>
+                              </div>
+                              <Skeleton className="h-10 w-full ml-8" />
+                            </div>
+                          ))}
+                        </>
+                      )}
 
-                  {newNoteContent.trim() && (
-                    <Button
-                      size="sm"
-                      onClick={handleAddNote}
-                      disabled={createNoteMutation.isPending}
-                      className="w-full"
-                    >
-                      Adicionar Comentário
-                    </Button>
-                  )}
+                      {!notesLoading && notes.length === 0 && (
+                        <p className="text-xs text-muted-foreground text-center py-4">
+                          Nenhum comentário ainda.
+                        </p>
+                      )}
 
-                  {/* Comments List */}
-                  <div className="space-y-3 pt-2">
-                    {notesLoading && (
-                      <>
-                        {[1, 2].map((i) => (
-                          <div key={i} className="space-y-1">
+                      {!notesLoading &&
+                        notes.map((note) => (
+                          <div key={note.id} className="space-y-1">
                             <div className="flex items-center gap-2">
-                              <Skeleton className="h-6 w-6 rounded-full" />
-                              <div className="flex-1 space-y-1">
-                                <Skeleton className="h-3 w-24" />
-                                <Skeleton className="h-3 w-32" />
+                              <Avatar className="h-6 w-6">
+                                <AvatarFallback className="text-xs">
+                                  {note.user?.name?.charAt(0) || "U"}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-medium">
+                                  {note.user?.name || "Usuário"}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {(() => {
+                                    const noteDate = new Date(note.createdAt);
+                                    const daysDiff = differenceInDays(
+                                      new Date(),
+                                      noteDate
+                                    );
+                                    
+                                    if (daysDiff >= 7) {
+                                      return format(
+                                        noteDate,
+                                        "dd/MM/yyyy 'às' HH:mm",
+                                        { locale: ptBR }
+                                      );
+                                    }
+                                    
+                                    return formatDistanceToNow(noteDate, {
+                                      addSuffix: true,
+                                      locale: ptBR,
+                                    });
+                                  })()}
+                                </p>
                               </div>
                             </div>
-                            <Skeleton className="h-10 w-full ml-8" />
+                            <p className="text-sm pl-8">{note.content}</p>
                           </div>
                         ))}
-                      </>
-                    )}
-
-                    {!notesLoading && notes.length === 0 && (
-                      <p className="text-xs text-muted-foreground text-center py-4">
-                        Nenhum comentário ainda.
-                      </p>
-                    )}
-
-                    {!notesLoading &&
-                      notes.map((note) => (
-                        <div key={note.id} className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <Avatar className="h-6 w-6">
-                              <AvatarFallback className="text-xs">
-                                {note.user?.name?.charAt(0) || "U"}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs font-medium">
-                                {note.user?.name || "Usuário"}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                {formatDistanceToNow(new Date(note.createdAt), {
-                                  addSuffix: true,
-                                  locale: ptBR,
-                                })}
-                              </p>
-                            </div>
-                          </div>
-                          <p className="text-sm pl-8">{note.content}</p>
-                        </div>
-                      ))}
-                  </div>
                 </div>
-              </div>
-            </ScrollArea>
+              </ScrollArea>
+            </div>
           </div>
         </div>
       </DialogContent>

@@ -7,6 +7,7 @@ export type FieldType =
   | "number"
   | "datetime"
   | "date"
+  | "due_date"
   | "phone"
   | "email"
   | "cpf"
