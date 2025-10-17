@@ -92,7 +92,6 @@ export const CreateDealModal: React.FC<CreateDealModalProps> = ({
   const validate = (): string | null => {
     if (!pipelineId) return "Pipeline é obrigatório";
     if (!currentStageId) return "Selecione a etapa";
-    if (!customerName.trim()) return "Nome do cliente é obrigatório";
     const phone = getUnformattedPhone(customerPhone);
     if (!phone) return "Telefone do cliente é obrigatório";
     if (phone.length !== 11) return "Formato de telefone inválido";
@@ -165,7 +164,6 @@ export const CreateDealModal: React.FC<CreateDealModalProps> = ({
                 "Valor deve ser maior ou igual a zero",
               "Currency must be 3 characters": "Moeda deve ter 3 caracteres",
               "Invalid date format": "Formato de data inválido",
-              "Customer name is required": "Nome do cliente é obrigatório",
               "Phone must be in format XX9NNNNNNNN (11 digits)":
                 "Telefone deve estar no formato XX9NNNNNNNN (11 dígitos)",
               "Invalid email format": "Formato de email inválido",
