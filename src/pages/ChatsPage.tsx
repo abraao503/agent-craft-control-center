@@ -30,6 +30,8 @@ const ChatsPage = () => {
   const [selectedConversation, setSelectedConversation] =
     useState<Conversation | null>(null);
   const [isLoadingFromUrl, setIsLoadingFromUrl] = useState(false);
+  const [lastMessageEvent, setLastMessageEvent] =
+    useState<MessageSentEvent | null>(null);
   const [filters, setFilters] = useState<ConversationsFilters>({
     page: 1,
     limit: 50,
@@ -109,6 +111,9 @@ const ChatsPage = () => {
     const handleMessageSent = (event: MessageSentEvent) => {
       console.log("New message received:", event);
 
+      // Store the event to pass to ChatWindow
+      setLastMessageEvent(event);
+
       setConversations((prev) => {
         const chatIndex = prev.findIndex((conv) => conv.id === event.chatId);
 
@@ -157,6 +162,14 @@ const ChatsPage = () => {
             lastInteraction: new Date(event.createdAt),
           };
         });
+
+        // Auto-mark as read if chat is open and handled by human
+        if (
+          event.sender === "customer" &&
+          selectedConversation.handledBy === "human"
+        ) {
+          socket.emit("chat:mark-as-read", { chatId: event.chatId });
+        }
       }
     };
 
@@ -334,6 +347,7 @@ const ChatsPage = () => {
                 <ChatWindow
                   conversation={selectedConversation}
                   onUpdateConversation={handleUpdateConversation}
+                  newMessageEvent={lastMessageEvent}
                 />
               ) : (
                 <div className="flex-1 flex flex-col items-center justify-center bg-[#f0f2f5] text-muted-foreground">

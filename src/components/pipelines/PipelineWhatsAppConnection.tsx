@@ -113,12 +113,7 @@ export const PipelineWhatsAppConnection = ({
       socket.off("instance:status", handleInstanceStatus);
       socket.off("qr:generated", handleQrGenerated);
     };
-  }, [
-    socket,
-    joinedWorkspace,
-    integration,
-    companyWhatsappIntegrationId,
-  ]);
+  }, [socket, joinedWorkspace, integration, companyWhatsappIntegrationId]);
 
   const getStatusColor = () => {
     switch (connectionStatus) {

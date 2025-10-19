@@ -18,6 +18,7 @@ import {
   Trash2,
   Clock,
   AlertCircle,
+  ArrowRightLeft,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -28,11 +29,8 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import { Conversation } from "@/types/conversation";
 import { Message } from "@/types/message";
 import { listMessages } from "@/services/conversation/listMessages";
@@ -41,6 +39,7 @@ import { updateConversationHandler } from "@/services/conversation/updateConvers
 import { clearConversationExternalId } from "@/services/conversation/clearConversationExternalId";
 import { useToast } from "@/hooks/use-toast";
 import { ChatSidebar } from "./ChatSidebar";
+import { MessageSentEvent } from "@/types/websocket";
 
 type MessageStatus = "pending" | "sent" | "failed";
 
@@ -52,11 +51,13 @@ type MessageWithStatus = Message & {
 type ChatWindowProps = {
   conversation: Conversation;
   onUpdateConversation: (conversation: Conversation) => void;
+  newMessageEvent?: MessageSentEvent | null;
 };
 
 export const ChatWindow: React.FC<ChatWindowProps> = ({
   conversation,
   onUpdateConversation,
+  newMessageEvent,
 }) => {
   const { toast } = useToast();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -239,6 +240,42 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       processQueue();
     }
   }, [pendingQueue, processQueue]);
+
+  // Handle new message from WebSocket
+  useEffect(() => {
+    if (!newMessageEvent || newMessageEvent.chatId !== conversation.id) {
+      return;
+    }
+
+    const newMsg: MessageWithStatus = {
+      id: newMessageEvent.messageId,
+      chatId: newMessageEvent.chatId,
+      sender: newMessageEvent.sender,
+      content: newMessageEvent.content,
+      createdAt: newMessageEvent.createdAt instanceof Date 
+        ? newMessageEvent.createdAt.toISOString() 
+        : newMessageEvent.createdAt,
+      status: "sent",
+    };
+
+    setMessages((prev) => {
+      // Check if message already exists (avoid duplicates)
+      const exists = prev.some((msg) => msg.id === newMsg.id);
+      if (exists) return prev;
+      
+      return [...prev, newMsg];
+    });
+
+    // Scroll to bottom on new real-time message
+    setTimeout(() => {
+      if (scrollAreaRef.current) {
+        scrollAreaRef.current.scrollTo({
+          top: scrollAreaRef.current.scrollHeight,
+          behavior: "smooth",
+        });
+      }
+    }, 100);
+  }, [newMessageEvent, conversation.id]);
 
   // Update messages when data changes
   useEffect(() => {
@@ -450,19 +487,9 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
               </AvatarFallback>
             </Avatar>
             <div>
-              <div className="flex items-center gap-2">
-                <h3 className="font-semibold">
-                  {conversation.customer.name || conversation.customer.phone}
-                </h3>
-                <Badge
-                  variant={
-                    localConversation.handledBy === "ai" ? "default" : "outline"
-                  }
-                  className="text-xs"
-                >
-                  {localConversation.handledBy === "ai" ? "IA" : "Humano"}
-                </Badge>
-              </div>
+              <h3 className="font-semibold">
+                {conversation.customer.name || conversation.customer.phone}
+              </h3>
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 {conversation.customer.name && (
                   <span>{conversation.customer.phone}</span>
@@ -475,7 +502,47 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            {/* Handler Status Badge */}
+            <div
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border-2 ${
+                localConversation.handledBy === "ai"
+                  ? "bg-blue-50 border-blue-200 text-blue-700"
+                  : "bg-green-50 border-green-200 text-green-700"
+              }`}
+            >
+              {localConversation.handledBy === "ai" ? (
+                <>
+                  <Bot className="h-4 w-4" />
+                  <span className="text-sm font-medium">Atendimento por IA</span>
+                </>
+              ) : (
+                <>
+                  <UserCog className="h-4 w-4" />
+                  <span className="text-sm font-medium">Atendimento Humano</span>
+                </>
+              )}
+            </div>
+
+            {/* Transfer Button */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleToggleHandler}
+              disabled={updateHandlerMutation.isPending}
+              className="gap-2"
+            >
+              {updateHandlerMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <ArrowRightLeft className="h-4 w-4" />
+              )}
+              {localConversation.handledBy === "ai"
+                ? "Transferir para Humano"
+                : "Transferir para IA"}
+            </Button>
+
+            {/* More Options Menu */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon">
@@ -483,22 +550,6 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <div className="p-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="handler-toggle" className="text-sm">
-                      {localConversation.handledBy === "ai"
-                        ? "Transferir para Humano"
-                        : "Transferir para IA"}
-                    </Label>
-                    <Switch
-                      id="handler-toggle"
-                      checked={localConversation.handledBy === "human"}
-                      onCheckedChange={handleToggleHandler}
-                      disabled={updateHandlerMutation.isPending}
-                    />
-                  </div>
-                </div>
-                <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={() => clearExternalIdMutation.mutate()}
                   disabled={clearExternalIdMutation.isPending}
