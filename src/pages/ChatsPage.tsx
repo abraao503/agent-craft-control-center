@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { MessageSquare, Loader2 } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import {
@@ -16,6 +16,7 @@ import { ChatList } from "@/components/chats/ChatList";
 import { ChatWindow } from "@/components/chats/ChatWindow";
 import { listConversations } from "@/services/conversation/listConversations";
 import { getConversationById } from "@/services/conversation/getConversationById";
+import { markChatAsRead } from "@/services/conversation/markChatAsRead";
 import { Conversation, ConversationsFilters } from "@/types/conversation";
 import { useWorkspaceManager } from "@/hooks/useWorkspaceManager";
 import { listAgent } from "@/services/agent/listAgent";
@@ -67,6 +68,24 @@ const ChatsPage = () => {
     enabled: !!workspaceId,
   });
 
+  // Mutation to mark chat as read
+  const markAsReadMutation = useMutation({
+    mutationFn: (chatId: string) => markChatAsRead(chatId),
+    onSuccess: (_, chatId) => {
+      // Update local state to remove unread count
+      setConversations((prev) =>
+        prev.map((conv) =>
+          conv.id === chatId ? { ...conv, unreadCount: 0 } : conv
+        )
+      );
+      if (selectedConversation?.id === chatId) {
+        setSelectedConversation((prev) =>
+          prev ? { ...prev, unreadCount: 0 } : null
+        );
+      }
+    },
+  });
+
   // Update conversations when data changes
   useEffect(() => {
     if (data) {
@@ -85,6 +104,11 @@ const ChatsPage = () => {
       getConversationById(chatId, workspaceId)
         .then((chat) => {
           setSelectedConversation(chat);
+          
+          // Mark chat as read if it has unread messages
+          if (chat.unreadCount && chat.unreadCount > 0) {
+            markAsReadMutation.mutate(chat.id);
+          }
         })
         .catch((error) => {
           console.error("Failed to load chat:", error);
@@ -134,6 +158,11 @@ const ChatsPage = () => {
     setSelectedConversation(conversation);
     // Update URL with selected chat ID
     setSearchParams({ chatId: conversation.id }, { replace: true });
+    
+    // Mark chat as read if it has unread messages
+    if (conversation.unreadCount && conversation.unreadCount > 0) {
+      markAsReadMutation.mutate(conversation.id);
+    }
   };
 
   // Handle conversation update

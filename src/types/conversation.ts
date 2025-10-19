@@ -13,6 +13,8 @@ export type ConversationMessage = {
 export type Conversation = {
   id: string;
   lastInteraction: Date | null;
+  lastMessage?: string;
+  unreadCount?: number;
   customer: {
     id: string;
     phone: string;

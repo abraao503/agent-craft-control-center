@@ -151,7 +151,14 @@ export const ChatList: React.FC<ChatListProps> = ({
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-start mb-1">
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold truncate">
+                          <h3
+                            className={`truncate ${
+                              conversation.unreadCount &&
+                              conversation.unreadCount > 0
+                                ? "font-bold"
+                                : "font-semibold"
+                            }`}
+                          >
                             {conversation.customer.name ||
                               conversation.customer.phone}
                           </h3>
@@ -161,10 +168,29 @@ export const ChatList: React.FC<ChatListProps> = ({
                             </p>
                           )}
                         </div>
-                        <span className="text-xs text-muted-foreground ml-2 flex-shrink-0">
-                          {formatLastInteraction(conversation.lastInteraction)}
-                        </span>
+                        <div className="flex flex-col items-end gap-1 ml-2 flex-shrink-0">
+                          <span className="text-xs text-muted-foreground">
+                            {formatLastInteraction(
+                              conversation.lastInteraction
+                            )}
+                          </span>
+                          {conversation.unreadCount !== undefined &&
+                            conversation.unreadCount > 0 && (
+                              <div className="bg-green-500 text-white text-xs font-semibold rounded-full min-w-[20px] h-5 px-1.5 flex items-center justify-center">
+                                {conversation.unreadCount > 99
+                                  ? "99+"
+                                  : conversation.unreadCount}
+                              </div>
+                            )}
+                        </div>
                       </div>
+
+                      {/* Last Message */}
+                      {conversation.lastMessage && (
+                        <p className="text-sm text-muted-foreground truncate mb-2">
+                          {conversation.lastMessage}
+                        </p>
+                      )}
 
                       <div className="flex items-center gap-2 mb-1">
                         <Badge
