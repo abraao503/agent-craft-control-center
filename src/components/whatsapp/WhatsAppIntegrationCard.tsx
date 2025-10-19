@@ -34,7 +34,10 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/contexts/auth/hooks";
 import { useWebSocket } from "@/hooks/useWebSocket";
-import { InstanceStatusEvent as WsInstanceStatusEvent, QrCodeGeneratedEvent } from "@/types/websocket";
+import {
+  InstanceStatusEvent as WsInstanceStatusEvent,
+  QrCodeGeneratedEvent,
+} from "@/types/websocket";
 
 interface WhatsAppIntegrationCardProps {
   integration: CompanyWhatsAppIntegration;
@@ -107,7 +110,7 @@ const WhatsAppIntegrationCard = ({
   });
 
   const qrCodeMutation = useMutation({
-    mutationFn: () => generateQrCode(integration.id),
+    mutationFn: () => generateQrCode(integration.id, workspaceId),
     onSuccess: (data) => {
       setQrCodeData(data.qrCode);
       setQrCodeOpen(true);
@@ -138,17 +141,22 @@ const WhatsAppIntegrationCard = ({
   const { socket, connected, joinedWorkspace } = useWebSocket({
     workspaceId,
     token,
-    enabled: integration.whatsappIntegrationName === WHATSAPP_INTEGRATION_NAMES.EVOLUX,
+    enabled:
+      integration.whatsappIntegrationName === WHATSAPP_INTEGRATION_NAMES.EVOLUX,
   });
 
   useEffect(() => {
-    if (!socket || !joinedWorkspace || integration.whatsappIntegrationName !== WHATSAPP_INTEGRATION_NAMES.EVOLUX) {
+    if (
+      !socket ||
+      !joinedWorkspace ||
+      integration.whatsappIntegrationName !== WHATSAPP_INTEGRATION_NAMES.EVOLUX
+    ) {
       return;
     }
 
     const handleInstanceStatus = (event: WsInstanceStatusEvent) => {
       if (event.companyWhatsappIntegrationId === integration.id) {
-        console.log('Instance status updated:', event.status);
+        console.log("Instance status updated:", event.status);
         setConnectionStatus(event.status as "close" | "open" | "connecting");
       }
     };
@@ -168,7 +176,12 @@ const WhatsAppIntegrationCard = ({
       socket.off("instance:status", handleInstanceStatus);
       socket.off("qr:generated", handleQrGenerated);
     };
-  }, [socket, joinedWorkspace, integration.id, integration.whatsappIntegrationName]);
+  }, [
+    socket,
+    joinedWorkspace,
+    integration.id,
+    integration.whatsappIntegrationName,
+  ]);
 
   const copyPostbackUrlToClipboard = () => {
     const webhook = getWebhookUrl();
@@ -246,7 +259,8 @@ const WhatsAppIntegrationCard = ({
             {integration.whatsappIntegrationName}
           </CardTitle>
           <div className="flex items-center gap-2">
-            {integration.whatsappIntegrationName === WHATSAPP_INTEGRATION_NAMES.EVOLUX && (
+            {integration.whatsappIntegrationName ===
+              WHATSAPP_INTEGRATION_NAMES.EVOLUX && (
               <Badge variant="outline" className="flex items-center gap-1">
                 <span
                   className={`h-2 w-2 rounded-full ${getStatusColor()}`}
@@ -279,7 +293,8 @@ const WhatsAppIntegrationCard = ({
       </CardHeader>
       <CardContent className="pb-2 flex-grow">
         <div className="space-y-2 text-sm text-muted-foreground">
-          {integration.whatsappIntegrationName !== WHATSAPP_INTEGRATION_NAMES.EVOLUX && (
+          {integration.whatsappIntegrationName !==
+            WHATSAPP_INTEGRATION_NAMES.EVOLUX && (
             <div className="pt-2">
               <div className="flex items-center gap-1 mb-1">
                 <span className="font-medium text-foreground">
@@ -305,7 +320,8 @@ const WhatsAppIntegrationCard = ({
       </CardContent>
       <CardFooter className="pt-2 flex justify-end">
         <div className="flex flex-wrap gap-x-2">
-          {integration.whatsappIntegrationName === WHATSAPP_INTEGRATION_NAMES.EVOLUX &&
+          {integration.whatsappIntegrationName ===
+            WHATSAPP_INTEGRATION_NAMES.EVOLUX &&
             connectionStatus !== "open" && (
               <Button
                 variant="outline"

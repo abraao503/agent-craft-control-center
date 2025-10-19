@@ -48,7 +48,7 @@ export const PipelineWhatsAppConnection = ({
   }, [integration]);
 
   const qrCodeMutation = useMutation({
-    mutationFn: () => generateQrCode(companyWhatsappIntegrationId),
+    mutationFn: () => generateQrCode(companyWhatsappIntegrationId, workspaceId),
     onSuccess: (data) => {
       setQrCodeData(data.qrCode);
       setQrCodeOpen(true);
@@ -70,7 +70,10 @@ export const PipelineWhatsAppConnection = ({
   }, [connectionStatus, qrCodeOpen]);
 
   useEffect(() => {
-    if (!integration || integration.whatsappIntegrationName !== WHATSAPP_INTEGRATION_NAMES.EVOLUX)
+    if (
+      !integration ||
+      integration.whatsappIntegrationName !== WHATSAPP_INTEGRATION_NAMES.EVOLUX
+    )
       return;
 
     const token = localStorage.getItem("token");
@@ -135,7 +138,7 @@ export const PipelineWhatsAppConnection = ({
 
   const getWebhookUrl = () => {
     if (!integration) return "";
-    
+
     const frontendUrl = import.meta.env.VITE_API_URL || window.location.origin;
     const companyId = user.companyId;
     const integrationName = integration.whatsappIntegrationName;
@@ -155,7 +158,8 @@ export const PipelineWhatsAppConnection = ({
     setCopied(true);
     toast({
       title: "Copiado para a área de transferência",
-      description: "A URL do webhook foi copiada para a sua área de transferência.",
+      description:
+        "A URL do webhook foi copiada para a sua área de transferência.",
     });
     setTimeout(() => setCopied(false), 2000);
   };
@@ -173,15 +177,15 @@ export const PipelineWhatsAppConnection = ({
       <div className="flex items-center gap-2 px-3 py-1.5 border rounded-md bg-background">
         <MessageSquare className="h-4 w-4 text-green-600" />
         <span className="text-sm font-medium">WhatsApp</span>
-        {integration.whatsappIntegrationName === WHATSAPP_INTEGRATION_NAMES.EVOLUX && (
+        {integration.whatsappIntegrationName ===
+          WHATSAPP_INTEGRATION_NAMES.EVOLUX && (
           <Badge variant="outline" className="flex items-center gap-1 h-5">
-            <span
-              className={`h-2 w-2 rounded-full ${getStatusColor()}`}
-            ></span>
+            <span className={`h-2 w-2 rounded-full ${getStatusColor()}`}></span>
             <span className="text-xs">{getStatusText()}</span>
           </Badge>
         )}
-        {integration.whatsappIntegrationName === WHATSAPP_INTEGRATION_NAMES.EVOLUX &&
+        {integration.whatsappIntegrationName ===
+          WHATSAPP_INTEGRATION_NAMES.EVOLUX &&
           connectionStatus !== "open" && (
             <Button
               variant="ghost"
@@ -196,7 +200,8 @@ export const PipelineWhatsAppConnection = ({
               </span>
             </Button>
           )}
-        {integration.whatsappIntegrationName !== WHATSAPP_INTEGRATION_NAMES.EVOLUX && (
+        {integration.whatsappIntegrationName !==
+          WHATSAPP_INTEGRATION_NAMES.EVOLUX && (
           <Button
             variant="ghost"
             size="sm"
