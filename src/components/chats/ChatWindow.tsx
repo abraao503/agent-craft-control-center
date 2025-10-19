@@ -34,12 +34,11 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Conversation } from "@/types/conversation";
-import { Message, MessageEvent } from "@/types/message";
+import { Message } from "@/types/message";
 import { listMessages } from "@/services/conversation/listMessages";
 import { sendMessage } from "@/services/conversation/sendMessage";
 import { updateConversationHandler } from "@/services/conversation/updateConversationHandler";
 import { clearConversationExternalId } from "@/services/conversation/clearConversationExternalId";
-import { connectSocket, getSocket } from "@/lib/socket";
 import { useToast } from "@/hooks/use-toast";
 import { ChatSidebar } from "./ChatSidebar";
 
@@ -240,49 +239,6 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       processQueue();
     }
   }, [pendingQueue, processQueue]);
-
-  // Socket connection for real-time messages
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) return;
-
-    const socket = connectSocket(token);
-
-    socket.on("connect", () => {
-      const room = `chat:${conversation.id}`;
-      socket.emit("join", { room });
-    });
-
-    socket.on("message", (data: MessageEvent) => {
-      if (data.chatId === conversation.id) {
-        const newMsg: MessageWithStatus = {
-          id: data.messageId,
-          chatId: data.chatId,
-          sender: data.sender,
-          content: data.content,
-          createdAt: data.createdAt,
-          status: "sent",
-        };
-        setMessages((prev) => [...prev, newMsg]);
-
-        // Scroll to bottom on new real-time message
-        setTimeout(() => {
-          if (scrollAreaRef.current) {
-            scrollAreaRef.current.scrollTo({
-              top: scrollAreaRef.current.scrollHeight,
-              behavior: "smooth",
-            });
-          }
-        }, 100);
-      }
-    });
-
-    return () => {
-      if (socket) {
-        socket.off("message");
-      }
-    };
-  }, [conversation.id]);
 
   // Update messages when data changes
   useEffect(() => {

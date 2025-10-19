@@ -21,11 +21,3 @@ export type SendMessageParams = {
   message: string;
   agentId: string;
 };
-
-export type MessageEvent = {
-  messageId: string;
-  chatId: string;
-  sender: "customer" | "assistant" | "human_assistant";
-  content: string;
-  createdAt: string;
-};

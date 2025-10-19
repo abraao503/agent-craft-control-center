@@ -7,8 +7,11 @@ import { getCompanyWhatsAppIntegration } from "@/services/whatsapp/getCompanyWha
 import { generateQrCode } from "@/services/whatsapp/generateQrCode";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/auth/hooks";
-import { connectSocket } from "@/lib/socket";
-import { InstanceStatusEvent } from "@/types/whatsapp";
+import { useWebSocket } from "@/hooks/useWebSocket";
+import {
+  InstanceStatusEvent as WsInstanceStatusEvent,
+  QrCodeGeneratedEvent,
+} from "@/types/websocket";
 import { WHATSAPP_INTEGRATION_NAMES } from "@/types/whatsapp-integration";
 import {
   Dialog,
@@ -69,42 +72,53 @@ export const PipelineWhatsAppConnection = ({
     }
   }, [connectionStatus, qrCodeOpen]);
 
+  const token = localStorage.getItem("token") || "";
+  const { socket, connected, joinedWorkspace } = useWebSocket({
+    workspaceId,
+    token,
+    enabled:
+      !!integration &&
+      integration.whatsappIntegrationName === WHATSAPP_INTEGRATION_NAMES.EVOLUX,
+  });
+
   useEffect(() => {
     if (
+      !socket ||
+      !joinedWorkspace ||
       !integration ||
       integration.whatsappIntegrationName !== WHATSAPP_INTEGRATION_NAMES.EVOLUX
-    )
+    ) {
       return;
+    }
 
-    const token = localStorage.getItem("token");
-    const socket = connectSocket(token);
-
-    socket.on("connect", () => {
-      const room = `company:${user.companyId}`;
-      socket.emit("join", { room });
-    });
-
-    socket.on("instance:status", (event: InstanceStatusEvent) => {
+    const handleInstanceStatus = (event: WsInstanceStatusEvent) => {
       if (event.companyWhatsappIntegrationId === companyWhatsappIntegrationId) {
-        setConnectionStatus(event.status);
+        console.log("Instance status updated:", event.status);
+        setConnectionStatus(event.status as "close" | "open" | "connecting");
       }
-    });
+    };
 
-    socket.on("qr:generated", (event) => {
+    const handleQrGenerated = (event: QrCodeGeneratedEvent) => {
       if (event.companyWhatsappIntegrationId === companyWhatsappIntegrationId) {
+        console.log("QR Code generated:", event.qrCode);
         setQrCodeData(event.qrCode);
         setQrCodeOpen(true);
       }
-    });
+    };
 
-    socket.emit("get:instance:status", {
-      integrationId: companyWhatsappIntegrationId,
-    });
+    socket.on("instance:status", handleInstanceStatus);
+    socket.on("qr:generated", handleQrGenerated);
 
     return () => {
-      socket.disconnect();
+      socket.off("instance:status", handleInstanceStatus);
+      socket.off("qr:generated", handleQrGenerated);
     };
-  }, [integration, companyWhatsappIntegrationId, user.companyId]);
+  }, [
+    socket,
+    joinedWorkspace,
+    integration,
+    companyWhatsappIntegrationId,
+  ]);
 
   const getStatusColor = () => {
     switch (connectionStatus) {
