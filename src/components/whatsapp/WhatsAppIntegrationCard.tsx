@@ -32,8 +32,9 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { connectSocket } from "@/lib/socket";
 import { useAuth } from "@/contexts/auth/hooks";
+import { useWebSocket } from "@/hooks/useWebSocket";
+import { InstanceStatusEvent as WsInstanceStatusEvent, QrCodeGeneratedEvent } from "@/types/websocket";
 
 interface WhatsAppIntegrationCardProps {
   integration: CompanyWhatsAppIntegration;
@@ -133,38 +134,41 @@ const WhatsAppIntegrationCard = ({
     setIsActive(integration.active);
   }, [integration.active]);
 
+  const token = localStorage.getItem("token") || "";
+  const { socket, connected, joinedWorkspace } = useWebSocket({
+    workspaceId,
+    token,
+    enabled: integration.whatsappIntegrationName === WHATSAPP_INTEGRATION_NAMES.EVOLUX,
+  });
+
   useEffect(() => {
-    if (integration.whatsappIntegrationName !== WHATSAPP_INTEGRATION_NAMES.EVOLUX) return;
+    if (!socket || !joinedWorkspace || integration.whatsappIntegrationName !== WHATSAPP_INTEGRATION_NAMES.EVOLUX) {
+      return;
+    }
 
-    const token = localStorage.getItem("token");
-    const socket = connectSocket(token);
-
-    socket.on("connect", () => {
-      const room = `company:${user.companyId}`;
-      socket.emit("join", { room });
-    });
-
-    socket.on("instance:status", (event: InstanceStatusEvent) => {
+    const handleInstanceStatus = (event: WsInstanceStatusEvent) => {
       if (event.companyWhatsappIntegrationId === integration.id) {
-        setConnectionStatus(event.status);
+        console.log('Instance status updated:', event.status);
+        setConnectionStatus(event.status as "close" | "open" | "connecting");
       }
-    });
+    };
 
-    socket.on("qr:generated", (event) => {
+    const handleQrGenerated = (event: QrCodeGeneratedEvent) => {
       if (event.companyWhatsappIntegrationId === integration.id) {
-        console.log("QR Code gerado:", event.qrCode);
+        console.log("QR Code generated:", event.qrCode);
         setQrCodeData(event.qrCode);
         setQrCodeOpen(true);
       }
-    });
+    };
 
-    // Solicitar status inicial
-    socket.emit("get:instance:status", { integrationId: integration.id });
+    socket.on("instance:status", handleInstanceStatus);
+    socket.on("qr:generated", handleQrGenerated);
 
     return () => {
-      socket.disconnect();
+      socket.off("instance:status", handleInstanceStatus);
+      socket.off("qr:generated", handleQrGenerated);
     };
-  }, [integration.id, integration.whatsappIntegrationName, user.companyId]);
+  }, [socket, joinedWorkspace, integration.id, integration.whatsappIntegrationName]);
 
   const copyPostbackUrlToClipboard = () => {
     const webhook = getWebhookUrl();

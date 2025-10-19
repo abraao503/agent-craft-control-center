@@ -21,6 +21,8 @@ import { Conversation, ConversationsFilters } from "@/types/conversation";
 import { useWorkspaceManager } from "@/hooks/useWorkspaceManager";
 import { listAgent } from "@/services/agent/listAgent";
 import { listTags } from "@/services/tag/listTags";
+import { useWebSocket } from "@/hooks/useWebSocket";
+import { MessageSentEvent, ChatMarkedAsReadEvent } from "@/types/websocket";
 
 const ChatsPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -46,6 +48,13 @@ const ChatsPage = () => {
     queryKeys: ["conversations"],
     autoRefetch: true,
     trackLoadingState: true,
+  });
+
+  const token = localStorage.getItem("token") || "";
+  const { socket, connected, joinedWorkspace } = useWebSocket({
+    workspaceId: workspaceId || "",
+    token,
+    enabled: !!workspaceId,
   });
 
   // Query to fetch conversations
@@ -93,18 +102,101 @@ const ChatsPage = () => {
     }
   }, [data]);
 
+  // WebSocket event handlers
+  useEffect(() => {
+    if (!socket || !joinedWorkspace) return;
+
+    const handleMessageSent = (event: MessageSentEvent) => {
+      console.log("New message received:", event);
+
+      setConversations((prev) => {
+        const chatIndex = prev.findIndex((conv) => conv.id === event.chatId);
+
+        if (chatIndex === -1) {
+          // New conversation - refetch to get full data
+          refetch();
+          return prev;
+        }
+
+        // Update existing conversation
+        const updatedConversations = [...prev];
+        const chat = { ...updatedConversations[chatIndex] };
+
+        // Update last message and timestamp
+        chat.lastMessage = event.content;
+        chat.lastInteraction = new Date(event.createdAt);
+
+        // Increment unread count if:
+        // 1. Message is from customer
+        // 2. Chat is not currently selected
+        // 3. Chat is being handled by agent (not human)
+        if (
+          event.sender === "customer" &&
+          selectedConversation?.id !== event.chatId &&
+          chat.handledBy === "ai"
+        ) {
+          chat.unreadCount = (chat.unreadCount || 0) + 1;
+        }
+
+        // Remove from current position
+        updatedConversations.splice(chatIndex, 1);
+
+        // Add to top
+        updatedConversations.unshift(chat);
+
+        return updatedConversations;
+      });
+
+      // Update selected conversation if it's the one that received the message
+      if (selectedConversation?.id === event.chatId) {
+        setSelectedConversation((prev) => {
+          if (!prev) return null;
+          return {
+            ...prev,
+            lastMessage: event.content,
+            lastInteraction: new Date(event.createdAt),
+          };
+        });
+      }
+    };
+
+    const handleChatMarkedAsRead = (event: ChatMarkedAsReadEvent) => {
+      console.log("Chat marked as read:", event);
+
+      setConversations((prev) =>
+        prev.map((conv) =>
+          conv.id === event.chatId ? { ...conv, unreadCount: 0 } : conv
+        )
+      );
+
+      if (selectedConversation?.id === event.chatId) {
+        setSelectedConversation((prev) =>
+          prev ? { ...prev, unreadCount: 0 } : null
+        );
+      }
+    };
+
+    socket.on("message:sent", handleMessageSent);
+    socket.on("chat:marked-as-read", handleChatMarkedAsRead);
+
+    return () => {
+      socket.off("message:sent", handleMessageSent);
+      socket.off("chat:marked-as-read", handleChatMarkedAsRead);
+    };
+  }, [socket, joinedWorkspace, selectedConversation, refetch]);
+
   // Auto-select chat from URL parameter
   useEffect(() => {
     const chatId = searchParams.get("chatId");
 
     if (chatId && workspaceId && !selectedConversation) {
       setIsLoadingFromUrl(true);
-      
+
       // Fetch the specific chat by ID
       getConversationById(chatId, workspaceId)
         .then((chat) => {
           setSelectedConversation(chat);
-          
+
           // Mark chat as read if it has unread messages
           if (chat.unreadCount && chat.unreadCount > 0) {
             markAsReadMutation.mutate(chat.id);
@@ -158,7 +250,7 @@ const ChatsPage = () => {
     setSelectedConversation(conversation);
     // Update URL with selected chat ID
     setSearchParams({ chatId: conversation.id }, { replace: true });
-    
+
     // Mark chat as read if it has unread messages
     if (conversation.unreadCount && conversation.unreadCount > 0) {
       markAsReadMutation.mutate(conversation.id);

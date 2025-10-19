@@ -21,6 +21,7 @@ import {
 } from "@/services/whatsapp";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useWorkspaceManager } from "@/hooks/useWorkspaceManager";
+import { useWebSocket } from "@/hooks/useWebSocket";
 
 const WhatsAppIntegrationsPage = () => {
   const [integrationToDelete, setIntegrationToDelete] = useState<string | null>(
@@ -34,6 +35,13 @@ const WhatsAppIntegrationsPage = () => {
     queryKeys: ["company-whatsapp-integrations"],
     autoRefetch: true,
     trackLoadingState: true,
+  });
+
+  const token = localStorage.getItem("token") || "";
+  const { socket, connected, joinedWorkspace } = useWebSocket({
+    workspaceId: workspaceId || "",
+    token,
+    enabled: !!workspaceId,
   });
 
   const { data: integrations = [], isLoading } = useQuery({
@@ -116,7 +124,8 @@ const WhatsAppIntegrationsPage = () => {
               Nenhuma integração do WhatsApp ainda
             </h3>
             <p className="text-muted-foreground mb-4">
-              Conecte seus agentes de IA ao WhatsApp para começar a interagir com usuários
+              Conecte seus agentes de IA ao WhatsApp para começar a interagir
+              com usuários
             </p>
             <Link to="/integrations/new">
               <Button>Criar Integração</Button>
