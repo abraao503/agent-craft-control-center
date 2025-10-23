@@ -4,6 +4,9 @@ export interface MessageSentEvent {
   workspaceId: string;
   sender: 'customer' | 'assistant' | 'human_assistant';
   content: string;
+  type?: 'text' | 'image' | 'audio' | 'document';
+  mediaUrl?: string;
+  mediaMimetype?: string;
   createdAt: Date;
 }
 

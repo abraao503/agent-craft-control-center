@@ -4,6 +4,9 @@ export type Message = {
   id: string;
   sender: "customer" | "assistant" | "human_assistant";
   content: string;
+  type: "text" | "image" | "audio" | "document";
+  mediaUrl: string | null;
+  mediaMimetype: string | null;
   createdAt: string;
   chatId: string;
 };

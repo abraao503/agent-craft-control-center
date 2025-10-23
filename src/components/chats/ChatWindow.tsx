@@ -19,6 +19,7 @@ import {
   Clock,
   AlertCircle,
   ArrowRightLeft,
+  Mic,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -35,11 +36,15 @@ import { Conversation } from "@/types/conversation";
 import { Message } from "@/types/message";
 import { listMessages } from "@/services/conversation/listMessages";
 import { sendMessage } from "@/services/conversation/sendMessage";
+import { sendMediaMessage } from "@/services/conversation/sendMediaMessage";
 import { updateConversationHandler } from "@/services/conversation/updateConversationHandler";
 import { clearConversationExternalId } from "@/services/conversation/clearConversationExternalId";
 import { useToast } from "@/hooks/use-toast";
 import { ChatSidebar } from "./ChatSidebar";
 import { MessageSentEvent } from "@/types/websocket";
+import { MessageContent } from "./media/MessageContent";
+import { MediaPreviewModal } from "./MediaPreviewModal";
+import { AudioRecorder } from "./AudioRecorder";
 
 type MessageStatus = "pending" | "sent" | "failed";
 
@@ -73,6 +78,10 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   const [alreadyScrolled, setAlreadyScrolled] = useState(false);
   const [pendingQueue, setPendingQueue] = useState<MessageWithStatus[]>([]);
   const isProcessingQueue = useRef(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isMediaPreviewOpen, setIsMediaPreviewOpen] = useState(false);
+  const [isRecordingAudio, setIsRecordingAudio] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch messages
   const {
@@ -188,6 +197,205 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     }
   }, [pendingQueue, conversation.id, conversation.agent?.id, toast]);
 
+  // Validate file type and size
+  const validateFile = (file: File): { valid: boolean; error?: string } => {
+    const maxSize = 50 * 1024 * 1024; // 50 MB
+    
+    if (file.size > maxSize) {
+      return { valid: false, error: "File size exceeds 50 MB limit" };
+    }
+
+    const imageTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+    const audioTypes = ["audio/mp3", "audio/mpeg", "audio/ogg", "audio/wav", "audio/aac"];
+    const documentTypes = [
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "application/vnd.ms-excel",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "text/plain",
+      "text/csv",
+      "application/zip",
+      "application/x-rar-compressed",
+    ];
+
+    const allTypes = [...imageTypes, ...audioTypes, ...documentTypes];
+    if (!allTypes.includes(file.type)) {
+      return { valid: false, error: "File type not supported" };
+    }
+
+    return { valid: true };
+  };
+
+  // Get media type from file
+  const getMediaTypeFromFile = (file: File): "image" | "audio" | "document" => {
+    if (file.type.startsWith("image/")) return "image";
+    if (file.type.startsWith("audio/")) return "audio";
+    return "document";
+  };
+
+  // Handle file selection
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const validation = validateFile(file);
+    if (!validation.valid) {
+      toast({
+        title: "Invalid file",
+        description: validation.error,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSelectedFile(file);
+    setIsMediaPreviewOpen(true);
+    
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  // Handle send audio
+  const handleSendAudio = async (audioBlob: Blob) => {
+    const tempId = `temp-${Date.now()}-${Math.random()}`;
+    const audioFile = new File([audioBlob], `audio-${Date.now()}.ogg`, {
+      type: "audio/ogg; codecs=opus",
+    });
+
+    const pendingMessage: MessageWithStatus = {
+      id: tempId,
+      tempId,
+      chatId: conversation.id,
+      sender: "human_assistant",
+      content: "Audio message",
+      type: "audio",
+      mediaUrl: URL.createObjectURL(audioBlob),
+      mediaMimetype: "audio/ogg; codecs=opus",
+      createdAt: new Date().toISOString(),
+      status: "pending",
+    };
+
+    // Add to messages immediately
+    setMessages((prev) => [...prev, pendingMessage]);
+    setIsRecordingAudio(false);
+
+    // Scroll to bottom
+    setTimeout(() => {
+      if (scrollAreaRef.current) {
+        scrollAreaRef.current.scrollTo({
+          top: scrollAreaRef.current.scrollHeight,
+          behavior: "smooth",
+        });
+      }
+    }, 100);
+
+    try {
+      const sentMessage = await sendMediaMessage({
+        chatId: conversation.id,
+        type: "audio",
+        file: audioFile,
+      });
+
+      // Update message status to sent
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.tempId === tempId ? { ...sentMessage, status: "sent" } : msg
+        )
+      );
+
+      // Revoke object URL
+      URL.revokeObjectURL(pendingMessage.mediaUrl!);
+    } catch (error) {
+      // Mark message as failed
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.tempId === tempId ? { ...msg, status: "failed" } : msg
+        )
+      );
+
+      toast({
+        title: "Error sending audio",
+        description: "Failed to send audio message. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Handle send media
+  const handleSendMedia = async (caption?: string) => {
+    if (!selectedFile) return;
+
+    const mediaType = getMediaTypeFromFile(selectedFile);
+    const tempId = `temp-${Date.now()}-${Math.random()}`;
+    
+    const pendingMessage: MessageWithStatus = {
+      id: tempId,
+      tempId,
+      chatId: conversation.id,
+      sender: "human_assistant",
+      content: caption || selectedFile.name,
+      type: mediaType,
+      mediaUrl: URL.createObjectURL(selectedFile),
+      mediaMimetype: selectedFile.type,
+      createdAt: new Date().toISOString(),
+      status: "pending",
+    };
+
+    // Add to messages immediately
+    setMessages((prev) => [...prev, pendingMessage]);
+    setIsMediaPreviewOpen(false);
+    setSelectedFile(null);
+
+    // Scroll to bottom
+    setTimeout(() => {
+      if (scrollAreaRef.current) {
+        scrollAreaRef.current.scrollTo({
+          top: scrollAreaRef.current.scrollHeight,
+          behavior: "smooth",
+        });
+      }
+    }, 100);
+
+    try {
+      const sentMessage = await sendMediaMessage({
+        chatId: conversation.id,
+        type: mediaType,
+        file: selectedFile,
+        caption,
+      });
+
+      // Update message status to sent
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.tempId === tempId
+            ? { ...sentMessage, status: "sent" }
+            : msg
+        )
+      );
+
+      // Revoke object URL
+      URL.revokeObjectURL(pendingMessage.mediaUrl!);
+    } catch (error) {
+      // Mark message as failed
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.tempId === tempId
+            ? { ...msg, status: "failed" }
+            : msg
+        )
+      );
+
+      toast({
+        title: "Error sending media",
+        description: "Failed to send media message. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Handle send message
   const handleSendMessage = () => {
     if (!newMessage.trim()) return;
@@ -199,6 +407,9 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       chatId: conversation.id,
       sender: "human_assistant",
       content: newMessage,
+      type: "text",
+      mediaUrl: null,
+      mediaMimetype: null,
       createdAt: new Date().toISOString(),
       status: "pending",
     };
@@ -252,6 +463,9 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       chatId: newMessageEvent.chatId,
       sender: newMessageEvent.sender,
       content: newMessageEvent.content,
+      type: newMessageEvent.type || "text",
+      mediaUrl: newMessageEvent.mediaUrl || null,
+      mediaMimetype: newMessageEvent.mediaMimetype || null,
       createdAt: newMessageEvent.createdAt instanceof Date 
         ? newMessageEvent.createdAt.toISOString() 
         : newMessageEvent.createdAt,
@@ -632,9 +846,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                               {getSenderLabel(message.sender)}
                             </span>
                           </div>
-                          <p className="text-sm whitespace-pre-wrap break-words">
-                            {message.content}
-                          </p>
+                          <MessageContent message={message} />
                           <div className="flex items-center justify-end gap-1 mt-1">
                             {message.status && message.status !== "sent" && (
                               <span className="flex items-center">
@@ -657,36 +869,65 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           </div>
         </ScrollArea>
 
-        {/* Input */}
-        <div className="bg-background border-t p-3">
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="flex-shrink-0">
-              <Paperclip className="h-5 w-5" />
-            </Button>
-            <Textarea
-              ref={textareaRef}
-              placeholder="Digite uma mensagem"
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSendMessage();
-                }
-              }}
-              className="flex-1 min-h-[40px] max-h-[120px] resize-none"
-              rows={1}
-            />
-            <Button
-              size="icon"
-              onClick={handleSendMessage}
-              disabled={!newMessage.trim()}
-              className="flex-shrink-0"
-            >
-              <Send className="h-5 w-5" />
-            </Button>
+        {/* Input or Audio Recorder */}
+        {isRecordingAudio ? (
+          <AudioRecorder
+            onSend={handleSendAudio}
+            onCancel={() => setIsRecordingAudio(false)}
+          />
+        ) : (
+          <div className="bg-background border-t p-3">
+            <div className="flex items-center gap-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                className="hidden"
+                accept="image/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv,.zip,.rar"
+                onChange={handleFileSelect}
+              />
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="flex-shrink-0"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Paperclip className="h-5 w-5" />
+              </Button>
+              <Textarea
+                ref={textareaRef}
+                placeholder="Digite uma mensagem"
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendMessage();
+                  }
+                }}
+                className="flex-1 min-h-[40px] max-h-[120px] resize-none"
+                rows={1}
+              />
+              {newMessage.trim() ? (
+                <Button
+                  size="icon"
+                  onClick={handleSendMessage}
+                  className="flex-shrink-0"
+                >
+                  <Send className="h-5 w-5" />
+                </Button>
+              ) : (
+                <Button
+                  size="icon"
+                  onClick={() => setIsRecordingAudio(true)}
+                  className="flex-shrink-0"
+                  variant="ghost"
+                >
+                  <Mic className="h-5 w-5" />
+                </Button>
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Sidebar */}
@@ -696,6 +937,17 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           setLocalConversation(updatedConversation);
           onUpdateConversation(updatedConversation);
         }}
+      />
+
+      {/* Media Preview Modal */}
+      <MediaPreviewModal
+        open={isMediaPreviewOpen}
+        onClose={() => {
+          setIsMediaPreviewOpen(false);
+          setSelectedFile(null);
+        }}
+        file={selectedFile}
+        onSend={handleSendMedia}
       />
     </div>
   );
