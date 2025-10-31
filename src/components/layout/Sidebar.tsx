@@ -374,11 +374,6 @@ const SidebarMenuContent = () => {
       icon: <BellRing className="h-5 w-5" />,
     },
     {
-      path: "/integrations",
-      label: "WhatsApp",
-      icon: <MessageSquare className="h-5 w-5" />,
-    },
-    {
       path: "/settings",
       label: "Configurações",
       icon: <Settings className="h-5 w-5" />,
