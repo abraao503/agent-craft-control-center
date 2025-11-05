@@ -18,6 +18,8 @@ import {
   DollarSignIcon,
 } from "lucide-react";
 import { useAuth } from "@/contexts/auth/hooks";
+import { usePermissions } from "@/hooks/usePermissions";
+import { Permission } from "@/types/auth";
 import {
   Sidebar as SidebarComponent,
   SidebarContent as SidebarContentComponent,
@@ -334,6 +336,7 @@ const SidebarMenuContent = () => {
   const location = useLocation();
   const { user, logout } = useAuth();
   const { state } = useSidebar();
+  const { has } = usePermissions();
   const isCollapsed = state === "collapsed";
   const { isLoading: isWorkspaceLoading } = useWorkspace();
 
@@ -341,7 +344,14 @@ const SidebarMenuContent = () => {
     return location.pathname === path;
   };
 
-  const menuItems = [
+  interface MenuItem {
+    path: string;
+    label: string;
+    icon: JSX.Element;
+    requiredPermission?: Permission;
+  }
+
+  const allMenuItems: MenuItem[] = [
     {
       path: "/",
       label: "Dashboard",
@@ -378,7 +388,20 @@ const SidebarMenuContent = () => {
       label: "Configurações",
       icon: <Settings className="h-5 w-5" />,
     },
+    {
+      path: "/admin/companies",
+      label: "Empresas",
+      icon: <Building2 className="h-5 w-5" />,
+      requiredPermission: "view:all-companies",
+    },
   ];
+
+  const menuItems = allMenuItems.filter((item) => {
+    if (item.requiredPermission) {
+      return has(item.requiredPermission);
+    }
+    return true;
+  });
 
   const renderMenuItem = (item: {
     path: string;

@@ -37,6 +37,9 @@ import FollowUpEditPage from "./pages/FollowUpEditPage";
 import FollowUpDetailPage from "./pages/FollowUpDetailPage";
 import MessageQueuePage from "./pages/MessageQueuePage";
 import PipelineDetailPage from "./pages/PipelineDetailPage";
+import AdminCompaniesPage from "./pages/AdminCompaniesPage";
+import CompanyDetailsPage from "./pages/CompanyDetailsPage";
+import WorkspaceDetailsPage from "./pages/WorkspaceDetailsPage";
 import Sidebar from "./components/layout/Sidebar";
 import Header from "./components/layout/Header";
 import { SidebarProvider } from "./components/ui/sidebar";
@@ -222,6 +225,9 @@ const FollowUpEditPageView = () => <FollowUpEditPage />;
 const FollowUpDetailViewPage = () => <FollowUpDetailPage />;
 const MessageQueueListPage = () => <MessageQueuePage />;
 const PipelineDetailViewPage = () => <PipelineDetailPage />;
+const AdminCompaniesListPage = () => <AdminCompaniesPage />;
+const CompanyDetailsViewPage = () => <CompanyDetailsPage />;
+const WorkspaceDetailsViewPage = () => <WorkspaceDetailsPage />;
 const NotFoundPage = () => <NotFound />;
 
 const App = () => (
@@ -292,6 +298,18 @@ const App = () => (
                   <Route
                     path="/message-queue"
                     element={<MessageQueueListPage />}
+                  />
+                  <Route
+                    path="/admin/companies"
+                    element={<AdminCompaniesListPage />}
+                  />
+                  <Route
+                    path="/admin/companies/:companyId"
+                    element={<CompanyDetailsViewPage />}
+                  />
+                  <Route
+                    path="/admin/companies/:companyId/workspaces/:workspaceId"
+                    element={<WorkspaceDetailsViewPage />}
                   />
                   <Route path="*" element={<NotFoundPage />} />
                 </Route>

@@ -63,9 +63,11 @@ import { SelectFieldTypeModal } from "./SelectFieldTypeModal";
 import { CreateFieldModal } from "./CreateFieldModal";
 import { EditFieldModal } from "./EditFieldModal";
 import { DealTagsSelector } from "./DealTagsSelector";
+import { UserSelector } from "./UserSelector";
 import { updateStageFormField } from "@/services/stage-form-field/updateStageFormField";
 import { updateDeal } from "@/services/deal/updateDeal";
 import { updateDealTags } from "@/services/deal/updateDealTags";
+import { assignUserToDeal } from "@/services/deal/assignUserToDeal";
 import { listTags } from "@/services/tag/listTags";
 import {
   formatCPF,
@@ -108,6 +110,7 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
   const [description, setDescription] = useState("");
   const [value, setValue] = useState("");
   const [customerName, setCustomerName] = useState("");
+  const [assignedUserId, setAssignedUserId] = useState<string | null>(null);
 
   // Track which field is being saved
   const [savingField, setSavingField] = useState<string | null>(null);
@@ -187,6 +190,7 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
       setDescription(dealDetails.description || "");
       setValue(dealDetails.value?.toString() || "");
       setCustomerName(dealDetails.customer?.name || "");
+      setAssignedUserId(dealDetails.assignedUser?.id || null);
       setSelectedTagIds(dealDetails.tags || []);
     }
   }, [dealDetails]);
@@ -404,6 +408,29 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
     },
   });
 
+  // Assign user mutation
+  const assignUserMutation = useMutation({
+    mutationFn: async (userId: string | null) => {
+      if (!deal || !userId) return;
+      await assignUserToDeal(deal.id, { workspaceId, userId });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["getDealById", deal?.id] });
+      queryClient.invalidateQueries({ queryKey: ["dealsByStage"] });
+      toast({
+        title: "Sucesso",
+        description: "Usuário atribuído com sucesso.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Erro",
+        description: "Falha ao atribuir usuário.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleFieldValueChange = (
     fieldId: string,
     value: string,
@@ -558,6 +585,11 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
 
   const handleTagsChange = (tagIds: string[]) => {
     setSelectedTagIds(tagIds);
+  };
+
+  const handleUserSelect = (userId: string | null) => {
+    setAssignedUserId(userId);
+    assignUserMutation.mutate(userId);
   };
 
   const handleCloseModal = (isOpen: boolean) => {
@@ -868,6 +900,22 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
                           rows={4}
                         />
                       </div>
+
+                      <div className="space-y-2">
+                        <Label className="flex items-center gap-2">
+                          Usuário Responsável
+                          {assignUserMutation.isPending && (
+                            <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                          )}
+                        </Label>
+                        <UserSelector
+                          workspaceId={workspaceId}
+                          selectedUserId={assignedUserId}
+                          selectedUserName={dealDetails?.assignedUser?.name}
+                          onUserSelect={handleUserSelect}
+                          disabled={assignUserMutation.isPending}
+                        />
+                      </div>
                     </div>
                   </div>
 
@@ -1049,73 +1097,73 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
                     </p>
                   ) : (
                     stageFields.map((field) => (
-                        <div key={field.id} className="space-y-2">
-                          {/* Field Header */}
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2">
-                                <p className="text-sm font-medium">
-                                  {field.label}
-                                  {field.isRequired && (
-                                    <span className="text-destructive ml-1">
-                                      *
-                                    </span>
-                                  )}
-                                </p>
-                                {savingField === field.id && (
-                                  <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                      <div key={field.id} className="space-y-2">
+                        {/* Field Header */}
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm font-medium">
+                                {field.label}
+                                {field.isRequired && (
+                                  <span className="text-destructive ml-1">
+                                    *
+                                  </span>
                                 )}
-                              </div>
-                              {field.description && (
-                                <p className="text-xs text-muted-foreground">
-                                  {field.description}
-                                </p>
+                              </p>
+                              {savingField === field.id && (
+                                <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
                               )}
                             </div>
-
-                            {/* Actions Menu */}
-                            <div className="flex items-center gap-1">
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-6 w-6 p-0 cursor-grab"
-                              >
-                                <GripVertical className="h-4 w-4 text-muted-foreground" />
-                              </Button>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="h-6 w-6 p-0"
-                                  >
-                                    <MoreVertical className="h-4 w-4 text-muted-foreground" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem
-                                    onClick={() => handleEditField(field)}
-                                  >
-                                    <Edit2 className="h-3 w-3 mr-2" />
-                                    Editar
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    onClick={() => handleDeleteField(field.id)}
-                                    className="text-destructive"
-                                  >
-                                    <Trash2 className="h-3 w-3 mr-2" />
-                                    Remover
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </div>
+                            {field.description && (
+                              <p className="text-xs text-muted-foreground">
+                                {field.description}
+                              </p>
+                            )}
                           </div>
 
-                          {/* Field Input */}
-                          {renderFieldInput(field)}
+                          {/* Actions Menu */}
+                          <div className="flex items-center gap-1">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 w-6 p-0 cursor-grab"
+                            >
+                              <GripVertical className="h-4 w-4 text-muted-foreground" />
+                            </Button>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-6 w-6 p-0"
+                                >
+                                  <MoreVertical className="h-4 w-4 text-muted-foreground" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                  onClick={() => handleEditField(field)}
+                                >
+                                  <Edit2 className="h-3 w-3 mr-2" />
+                                  Editar
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => handleDeleteField(field.id)}
+                                  className="text-destructive"
+                                >
+                                  <Trash2 className="h-3 w-3 mr-2" />
+                                  Remover
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
                         </div>
-                      ))
-                    )}
+
+                        {/* Field Input */}
+                        {renderFieldInput(field)}
+                      </div>
+                    ))
+                  )}
                 </div>
               </ScrollArea>
             </div>
@@ -1151,69 +1199,69 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
               {/* Comments List with ScrollArea */}
               <ScrollArea className="flex-1 px-4">
                 <div className="space-y-3 pb-4">
-                      {notesLoading && (
-                        <>
-                          {[1, 2].map((i) => (
-                            <div key={i} className="space-y-1">
-                              <div className="flex items-center gap-2">
-                                <Skeleton className="h-6 w-6 rounded-full" />
-                                <div className="flex-1 space-y-1">
-                                  <Skeleton className="h-3 w-24" />
-                                  <Skeleton className="h-3 w-32" />
-                                </div>
-                              </div>
-                              <Skeleton className="h-10 w-full ml-8" />
+                  {notesLoading && (
+                    <>
+                      {[1, 2].map((i) => (
+                        <div key={i} className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <Skeleton className="h-6 w-6 rounded-full" />
+                            <div className="flex-1 space-y-1">
+                              <Skeleton className="h-3 w-24" />
+                              <Skeleton className="h-3 w-32" />
                             </div>
-                          ))}
-                        </>
-                      )}
-
-                      {!notesLoading && notes.length === 0 && (
-                        <p className="text-xs text-muted-foreground text-center py-4">
-                          Nenhum comentário ainda.
-                        </p>
-                      )}
-
-                      {!notesLoading &&
-                        notes.map((note) => (
-                          <div key={note.id} className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <Avatar className="h-6 w-6">
-                                <AvatarFallback className="text-xs">
-                                  {note.user?.name?.charAt(0) || "U"}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-xs font-medium">
-                                  {note.user?.name || "Usuário"}
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                  {(() => {
-                                    const noteDate = new Date(note.createdAt);
-                                    const daysDiff = differenceInDays(
-                                      new Date(),
-                                      noteDate
-                                    );
-                                    
-                                    if (daysDiff >= 7) {
-                                      return format(
-                                        noteDate,
-                                        "dd/MM/yyyy 'às' HH:mm",
-                                        { locale: ptBR }
-                                      );
-                                    }
-                                    
-                                    return formatDistanceToNow(noteDate, {
-                                      addSuffix: true,
-                                      locale: ptBR,
-                                    });
-                                  })()}
-                                </p>
-                              </div>
-                            </div>
-                            <p className="text-sm pl-8">{note.content}</p>
                           </div>
-                        ))}
+                          <Skeleton className="h-10 w-full ml-8" />
+                        </div>
+                      ))}
+                    </>
+                  )}
+
+                  {!notesLoading && notes.length === 0 && (
+                    <p className="text-xs text-muted-foreground text-center py-4">
+                      Nenhum comentário ainda.
+                    </p>
+                  )}
+
+                  {!notesLoading &&
+                    notes.map((note) => (
+                      <div key={note.id} className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-6 w-6">
+                            <AvatarFallback className="text-xs">
+                              {note.user?.name?.charAt(0) || "U"}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium">
+                              {note.user?.name || "Usuário"}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {(() => {
+                                const noteDate = new Date(note.createdAt);
+                                const daysDiff = differenceInDays(
+                                  new Date(),
+                                  noteDate
+                                );
+
+                                if (daysDiff >= 7) {
+                                  return format(
+                                    noteDate,
+                                    "dd/MM/yyyy 'às' HH:mm",
+                                    { locale: ptBR }
+                                  );
+                                }
+
+                                return formatDistanceToNow(noteDate, {
+                                  addSuffix: true,
+                                  locale: ptBR,
+                                });
+                              })()}
+                            </p>
+                          </div>
+                        </div>
+                        <p className="text-sm pl-8">{note.content}</p>
+                      </div>
+                    ))}
                 </div>
               </ScrollArea>
             </div>
