@@ -40,6 +40,9 @@ import PipelineDetailPage from "./pages/PipelineDetailPage";
 import AdminCompaniesPage from "./pages/AdminCompaniesPage";
 import CompanyDetailsPage from "./pages/CompanyDetailsPage";
 import WorkspaceDetailsPage from "./pages/WorkspaceDetailsPage";
+import CompanySettingsPage from "./pages/CompanySettingsPage";
+import CompanyWorkspaceDetailsPage from "./pages/CompanyWorkspaceDetailsPage";
+import WorkspaceSettingsPage from "./pages/WorkspaceSettingsPage";
 import Sidebar from "./components/layout/Sidebar";
 import Header from "./components/layout/Header";
 import { SidebarProvider } from "./components/ui/sidebar";
@@ -228,6 +231,9 @@ const PipelineDetailViewPage = () => <PipelineDetailPage />;
 const AdminCompaniesListPage = () => <AdminCompaniesPage />;
 const CompanyDetailsViewPage = () => <CompanyDetailsPage />;
 const WorkspaceDetailsViewPage = () => <WorkspaceDetailsPage />;
+const CompanySettingsViewPage = () => <CompanySettingsPage />;
+const CompanyWorkspaceDetailsViewPage = () => <CompanyWorkspaceDetailsPage />;
+const WorkspaceSettingsViewPage = () => <WorkspaceSettingsPage />;
 const NotFoundPage = () => <NotFound />;
 
 const App = () => (
@@ -310,6 +316,18 @@ const App = () => (
                   <Route
                     path="/admin/companies/:companyId/workspaces/:workspaceId"
                     element={<WorkspaceDetailsViewPage />}
+                  />
+                  <Route
+                    path="/company/settings"
+                    element={<CompanySettingsViewPage />}
+                  />
+                  <Route
+                    path="/company/workspaces/:workspaceId"
+                    element={<CompanyWorkspaceDetailsViewPage />}
+                  />
+                  <Route
+                    path="/workspace/settings"
+                    element={<WorkspaceSettingsViewPage />}
                   />
                   <Route path="*" element={<NotFoundPage />} />
                 </Route>

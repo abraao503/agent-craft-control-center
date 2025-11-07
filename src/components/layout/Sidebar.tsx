@@ -396,6 +396,27 @@ const SidebarMenuContent = () => {
     },
   ];
 
+  // Adiciona condicionalmente os itens de gestão baseado no nível de permissão
+  // Hierarquia: Platform Admin > Company Admin > Workspace Admin
+  if (has("view:all-companies")) {
+    // PLATFORM_ADMIN - já tem o item "Empresas" acima
+  } else if (has("manage:company") || has("create:workspace")) {
+    // COMPANY_OWNER ou COMPANY_ADMIN
+    allMenuItems.push({
+      path: "/company/settings",
+      label: "Minha Empresa",
+      icon: <Building2 className="h-5 w-5" />,
+    });
+  } else if (has("create:workspace-user")) {
+    // WORKSPACE_OWNER ou WORKSPACE_ADMIN
+    allMenuItems.push({
+      path: "/workspace/settings",
+      label: "Meu Workspace",
+      icon: <Building2 className="h-5 w-5" />,
+    });
+  }
+  // WORKSPACE_MANAGER e SALES_REP não veem nenhum item de gestão
+
   const menuItems = allMenuItems.filter((item) => {
     if (item.requiredPermission) {
       return has(item.requiredPermission);

@@ -1,8 +1,10 @@
-import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { addUserToCompany } from "@/services/user/addUserToCompany";
 import { UserRole } from "@/services/company/listCompanyAdmins";
 import { useToast } from "@/hooks/use-toast";
+import { usePermissions } from "@/hooks/usePermissions";
+import { checkOwnerExists } from "@/services/user/checkOwnerExists";
 import {
   Dialog,
   DialogContent,
@@ -40,7 +42,18 @@ const ROLE_LABELS: Record<UserRole, string> = {
   [UserRole.SALES_REP]: "Vendedor",
 };
 
-const COMPANY_LEVEL_ROLES = [UserRole.COMPANY_ADMIN]; // Removed COMPANY_OWNER
+// Role hierarchy levels (lower number = higher privilege)
+const ROLE_HIERARCHY: Record<UserRole, number> = {
+  [UserRole.PLATFORM_ADMIN]: 1,
+  [UserRole.COMPANY_OWNER]: 2,
+  [UserRole.COMPANY_ADMIN]: 3,
+  [UserRole.WORKSPACE_OWNER]: 4,
+  [UserRole.WORKSPACE_ADMIN]: 5,
+  [UserRole.WORKSPACE_MANAGER]: 6,
+  [UserRole.SALES_REP]: 7,
+};
+
+const COMPANY_LEVEL_ROLES = [UserRole.COMPANY_OWNER, UserRole.COMPANY_ADMIN];
 
 const WORKSPACE_LEVEL_ROLES = [
   UserRole.WORKSPACE_OWNER,
@@ -56,11 +69,30 @@ export function CreateCompanyUserDialog({
   workspaceId,
   workspaces = [],
 }: CreateCompanyUserDialogProps) {
+  const { role: currentUserRole } = usePermissions();
+
   // Detect context: if workspaceId is provided, we're in workspace context
   const isWorkspaceContext = !!workspaceId;
-  const availableRoles = isWorkspaceContext
-    ? WORKSPACE_LEVEL_ROLES
-    : COMPANY_LEVEL_ROLES;
+
+  // Filter roles based on hierarchy - user can only create roles below their level
+  const getAvailableRoles = () => {
+    const baseRoles = isWorkspaceContext
+      ? WORKSPACE_LEVEL_ROLES
+      : COMPANY_LEVEL_ROLES;
+
+    if (!currentUserRole) return baseRoles;
+
+    const currentLevel = ROLE_HIERARCHY[currentUserRole];
+
+    // User can only create roles with higher level number (lower privilege)
+    return baseRoles.filter((role) => {
+      const targetLevel = ROLE_HIERARCHY[role];
+      return targetLevel > currentLevel;
+    });
+  };
+
+  const availableRoles = getAvailableRoles();
+
   const defaultRole = isWorkspaceContext
     ? UserRole.SALES_REP
     : UserRole.COMPANY_ADMIN;
@@ -75,6 +107,25 @@ export function CreateCompanyUserDialog({
 
   const queryClient = useQueryClient();
   const { toast } = useToast();
+
+  // Check if owner exists when role is OWNER
+  const { data: ownerCheck } = useQuery({
+    queryKey: ["checkOwner", companyId, workspaceId, formData.role],
+    queryFn: () => {
+      if (formData.role === UserRole.COMPANY_OWNER && !isWorkspaceContext) {
+        return checkOwnerExists({ companyId });
+      } else if (
+        formData.role === UserRole.WORKSPACE_OWNER &&
+        isWorkspaceContext
+      ) {
+        return checkOwnerExists({ workspaceId });
+      }
+      return Promise.resolve({ exists: false });
+    },
+    enabled:
+      formData.role === UserRole.COMPANY_OWNER ||
+      formData.role === UserRole.WORKSPACE_OWNER,
+  });
 
   const mutation = useMutation({
     mutationFn: addUserToCompany,
@@ -143,6 +194,36 @@ export function CreateCompanyUserDialog({
       toast({
         title: "Erro",
         description: "Senha deve ter no mínimo 8 caracteres",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate hierarchy - prevent creating users at same or higher level
+    if (currentUserRole && formData.role) {
+      const currentLevel = ROLE_HIERARCHY[currentUserRole];
+      const targetLevel = ROLE_HIERARCHY[formData.role as UserRole];
+
+      if (targetLevel <= currentLevel) {
+        toast({
+          title: "Erro",
+          description: "Você só pode criar usuários de nível inferior ao seu.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    // Check if owner already exists
+    if (ownerCheck?.exists) {
+      const ownerType = isWorkspaceContext ? "Workspace" : "Empresa";
+      const ownerName =
+        "ownerName" in ownerCheck ? ownerCheck.ownerName : undefined;
+      toast({
+        title: "Erro",
+        description: `Já existe um dono para este ${ownerType}${
+          ownerName ? `: ${ownerName}` : ""
+        }.`,
         variant: "destructive",
       });
       return;
@@ -228,12 +309,33 @@ export function CreateCompanyUserDialog({
               </SelectTrigger>
               <SelectContent>
                 {availableRoles.map((role) => (
-                  <SelectItem key={role} value={role}>
+                  <SelectItem
+                    key={role}
+                    value={role}
+                    disabled={
+                      (role === UserRole.COMPANY_OWNER && ownerCheck?.exists) ||
+                      (role === UserRole.WORKSPACE_OWNER && ownerCheck?.exists)
+                    }
+                  >
                     {ROLE_LABELS[role]}
+                    {((role === UserRole.COMPANY_OWNER &&
+                      !isWorkspaceContext) ||
+                      (role === UserRole.WORKSPACE_OWNER &&
+                        isWorkspaceContext)) &&
+                      ownerCheck?.exists && (
+                        <span className="text-xs text-muted-foreground ml-2">
+                          (já existe)
+                        </span>
+                      )}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            {availableRoles.length === 0 && (
+              <p className="text-sm text-muted-foreground">
+                Você não tem permissão para criar usuários de nível inferior.
+              </p>
+            )}
           </div>
 
           <DialogFooter>

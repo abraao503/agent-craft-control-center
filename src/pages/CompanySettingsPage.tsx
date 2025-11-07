@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { getCompanyById } from "@/services/company/getCompanyById";
 import { listCompanyAdmins } from "@/services/company/listCompanyAdmins";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useAuth } from "@/contexts/auth/hooks";
 import { CreateCompanyUserDialog } from "@/components/admin/CreateCompanyUserDialog";
 import { DeleteUserDialog } from "@/components/admin/DeleteUserDialog";
 import { Button } from "@/components/ui/button";
@@ -30,7 +31,6 @@ import {
   Building2,
   Users,
   Briefcase,
-  ArrowLeft,
   Calendar,
   ExternalLink,
   Trash2,
@@ -59,10 +59,10 @@ const ROLE_COLORS: Record<UserRole, string> = {
   [UserRole.SALES_REP]: "bg-gray-100 text-gray-800",
 };
 
-export default function CompanyDetailsPage() {
-  const { companyId } = useParams<{ companyId: string }>();
+export default function CompanySettingsPage() {
   const navigate = useNavigate();
   const { has } = usePermissions();
+  const { user } = useAuth();
   const [createUserOpen, setCreateUserOpen] = useState(false);
   const [deleteUserOpen, setDeleteUserOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<{
@@ -73,6 +73,9 @@ export default function CompanyDetailsPage() {
   } | null>(null);
   const [adminPage, setAdminPage] = useState(1);
   const adminLimit = 10;
+
+  // Pega o companyId do usuário logado
+  const companyId = user?.companyId;
 
   const { data: company, isLoading: loadingCompany } = useQuery({
     queryKey: ["companyDetails", companyId],
@@ -113,9 +116,7 @@ export default function CompanyDetailsPage() {
   };
 
   const canDeleteUser = (targetUser: { role: UserRole }): boolean => {
-    const currentUserRole = has("view:all-companies")
-      ? "PLATFORM_ADMIN"
-      : has("manage:company")
+    const currentUserRole = has("manage:company")
       ? "COMPANY_OWNER"
       : has("create:workspace")
       ? "COMPANY_ADMIN"
@@ -128,7 +129,8 @@ export default function CompanyDetailsPage() {
     return targetLevel > currentLevel;
   };
 
-  if (!has("view:all-companies")) {
+  // Verifica se o usuário tem permissão de nível empresa
+  if (!has("manage:company") && !has("create:workspace")) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -154,10 +156,9 @@ export default function CompanyDetailsPage() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <h2 className="text-2xl font-bold mb-2">Empresa não encontrada</h2>
-          <Button onClick={() => navigate("/admin/companies")}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Voltar para lista
-          </Button>
+          <p className="text-muted-foreground">
+            Não foi possível carregar os dados da sua empresa.
+          </p>
         </div>
       </div>
     );
@@ -167,28 +168,19 @@ export default function CompanyDetailsPage() {
     <div className="space-y-6 p-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate("/admin/companies")}
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div>
-            <div className="flex items-center gap-2">
-              <Building2 className="h-6 w-6 text-primary" />
-              <h1 className="text-3xl font-bold">{company.name}</h1>
-            </div>
-            <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
-              <Calendar className="h-3 w-3" />
-              <span>
-                Criada em{" "}
-                {format(new Date(company.createdAt), "dd/MM/yyyy", {
-                  locale: ptBR,
-                })}
-              </span>
-            </div>
+        <div>
+          <div className="flex items-center gap-2">
+            <Building2 className="h-6 w-6 text-primary" />
+            <h1 className="text-3xl font-bold">{company.name}</h1>
+          </div>
+          <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
+            <Calendar className="h-3 w-3" />
+            <span>
+              Criada em{" "}
+              {format(new Date(company.createdAt), "dd/MM/yyyy", {
+                locale: ptBR,
+              })}
+            </span>
           </div>
         </div>
       </div>
@@ -237,12 +229,9 @@ export default function CompanyDetailsPage() {
                           key={workspace.id}
                           className="cursor-pointer hover:bg-muted/50"
                           onClick={() =>
-                            navigate(
-                              `/admin/companies/${companyId}/workspaces/${workspace.id}`,
-                              {
-                                state: { workspace },
-                              }
-                            )
+                            navigate(`/company/workspaces/${workspace.id}`, {
+                              state: { workspace },
+                            })
                           }
                         >
                           <TableCell className="font-medium">
@@ -265,7 +254,7 @@ export default function CompanyDetailsPage() {
                               onClick={(e) => {
                                 e.stopPropagation();
                                 navigate(
-                                  `/admin/companies/${companyId}/workspaces/${workspace.id}`,
+                                  `/company/workspaces/${workspace.id}`,
                                   {
                                     state: { workspace },
                                   }
@@ -297,13 +286,15 @@ export default function CompanyDetailsPage() {
                     Usuários de nível empresa (sem workspace específico)
                   </CardDescription>
                 </div>
-                <Button
-                  onClick={() => setCreateUserOpen(true)}
-                  className="gap-2"
-                >
-                  <Plus className="h-4 w-4" />
-                  Novo Usuário
-                </Button>
+                {has("create:company-user") && (
+                  <Button
+                    onClick={() => setCreateUserOpen(true)}
+                    className="gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Novo Usuário
+                  </Button>
+                )}
               </div>
             </CardHeader>
             <CardContent>
@@ -397,13 +388,15 @@ export default function CompanyDetailsPage() {
                   <p className="text-muted-foreground mb-4">
                     Nenhum usuário cadastrado
                   </p>
-                  <Button
-                    onClick={() => setCreateUserOpen(true)}
-                    className="gap-2"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Criar Primeiro Usuário
-                  </Button>
+                  {has("create:company-user") && (
+                    <Button
+                      onClick={() => setCreateUserOpen(true)}
+                      className="gap-2"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Criar Primeiro Usuário
+                    </Button>
+                  )}
                 </div>
               )}
             </CardContent>
@@ -411,11 +404,13 @@ export default function CompanyDetailsPage() {
         </TabsContent>
       </Tabs>
 
-      <CreateCompanyUserDialog
-        open={createUserOpen}
-        onOpenChange={setCreateUserOpen}
-        companyId={companyId!}
-      />
+      {has("create:company-user") && (
+        <CreateCompanyUserDialog
+          open={createUserOpen}
+          onOpenChange={setCreateUserOpen}
+          companyId={companyId!}
+        />
+      )}
 
       <DeleteUserDialog
         open={deleteUserOpen}

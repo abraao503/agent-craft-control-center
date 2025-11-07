@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { listUsers } from "@/services/user/listUsers";
 import { getCompanyById } from "@/services/company/getCompanyById";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useAuth } from "@/contexts/auth/hooks";
 import { CreateCompanyUserDialog } from "@/components/admin/CreateCompanyUserDialog";
 import { EditWorkspaceUserDialog } from "@/components/admin/EditWorkspaceUserDialog";
 import { DeleteUserDialog } from "@/components/admin/DeleteUserDialog";
@@ -31,13 +32,10 @@ import {
   Briefcase,
   Users,
   ArrowLeft,
-  Calendar,
   Building2,
   Edit2,
   Trash2,
 } from "lucide-react";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { UserRole } from "@/services/company/listCompanyAdmins";
 
 const ROLE_LABELS: Record<UserRole, string> = {
@@ -60,20 +58,23 @@ const ROLE_COLORS: Record<UserRole, string> = {
   [UserRole.SALES_REP]: "bg-gray-100 text-gray-800",
 };
 
-export default function WorkspaceDetailsPage() {
-  const { companyId, workspaceId } = useParams<{
-    companyId: string;
+export default function CompanyWorkspaceDetailsPage() {
+  const { workspaceId } = useParams<{
     workspaceId: string;
   }>();
   const navigate = useNavigate();
   const location = useLocation();
   const { has } = usePermissions();
+  const { user } = useAuth();
   const [createUserOpen, setCreateUserOpen] = useState(false);
   const [editUserOpen, setEditUserOpen] = useState(false);
   const [deleteUserOpen, setDeleteUserOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [userPage, setUserPage] = useState(1);
   const userLimit = 10;
+
+  // Pega o companyId do usuário logado
+  const companyId = user?.companyId;
 
   // Get workspace data from navigation state (already loaded from company page)
   const workspaceFromState = location.state?.workspace as
@@ -124,17 +125,11 @@ export default function WorkspaceDetailsPage() {
   };
 
   const canDeleteUser = (targetUser: User): boolean => {
-    const currentUserRole = has("view:all-companies")
-      ? "PLATFORM_ADMIN"
-      : has("manage:company")
+    const currentUserRole = has("manage:company")
       ? "COMPANY_OWNER"
       : has("create:workspace")
       ? "COMPANY_ADMIN"
-      : has("create:workspace-user")
-      ? targetUser.role === "WORKSPACE_OWNER"
-        ? "WORKSPACE_OWNER"
-        : "WORKSPACE_ADMIN"
-      : "WORKSPACE_MANAGER";
+      : "WORKSPACE_ADMIN";
 
     if (!targetUser.role) return false;
 
@@ -145,7 +140,8 @@ export default function WorkspaceDetailsPage() {
     return targetLevel > currentLevel;
   };
 
-  if (!has("view:all-companies")) {
+  // Verifica se o usuário tem permissão de nível empresa
+  if (!has("manage:company") && !has("create:workspace")) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -171,7 +167,7 @@ export default function WorkspaceDetailsPage() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <h2 className="text-2xl font-bold mb-2">Workspace não encontrado</h2>
-          <Button onClick={() => navigate(`/admin/companies/${companyId}`)}>
+          <Button onClick={() => navigate(`/company/settings`)}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Voltar para empresa
           </Button>
@@ -188,7 +184,7 @@ export default function WorkspaceDetailsPage() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate(`/admin/companies/${companyId}`)}
+            onClick={() => navigate(`/company/settings`)}
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>
@@ -196,7 +192,7 @@ export default function WorkspaceDetailsPage() {
             <div className="flex items-center gap-2 mb-1">
               <Building2 className="h-4 w-4 text-muted-foreground" />
               <button
-                onClick={() => navigate(`/admin/companies/${companyId}`)}
+                onClick={() => navigate(`/company/settings`)}
                 className="text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
                 {company?.name || "Empresa"}
@@ -225,10 +221,12 @@ export default function WorkspaceDetailsPage() {
                 Gerenciar usuários com acesso a este workspace
               </CardDescription>
             </div>
-            <Button onClick={() => setCreateUserOpen(true)} className="gap-2">
-              <Plus className="h-4 w-4" />
-              Novo Usuário
-            </Button>
+            {has("create:workspace-user") && (
+              <Button onClick={() => setCreateUserOpen(true)} className="gap-2">
+                <Plus className="h-4 w-4" />
+                Novo Usuário
+              </Button>
+            )}
           </div>
         </CardHeader>
         <CardContent>
@@ -334,36 +332,45 @@ export default function WorkspaceDetailsPage() {
               <p className="text-muted-foreground mb-4">
                 Nenhum usuário cadastrado neste workspace
               </p>
-              <Button onClick={() => setCreateUserOpen(true)} className="gap-2">
-                <Plus className="h-4 w-4" />
-                Criar Primeiro Usuário
-              </Button>
+              {has("create:workspace-user") && (
+                <Button
+                  onClick={() => setCreateUserOpen(true)}
+                  className="gap-2"
+                >
+                  <Plus className="h-4 w-4" />
+                  Criar Primeiro Usuário
+                </Button>
+              )}
             </div>
           )}
         </CardContent>
       </Card>
 
-      <CreateCompanyUserDialog
-        open={createUserOpen}
-        onOpenChange={setCreateUserOpen}
-        companyId={companyId!}
-        workspaceId={workspaceId!}
-      />
+      {has("create:workspace-user") && (
+        <>
+          <CreateCompanyUserDialog
+            open={createUserOpen}
+            onOpenChange={setCreateUserOpen}
+            companyId={companyId!}
+            workspaceId={workspaceId!}
+          />
 
-      <EditWorkspaceUserDialog
-        open={editUserOpen}
-        onOpenChange={setEditUserOpen}
-        user={selectedUser}
-        workspaceId={workspaceId!}
-      />
+          <EditWorkspaceUserDialog
+            open={editUserOpen}
+            onOpenChange={setEditUserOpen}
+            user={selectedUser}
+            workspaceId={workspaceId!}
+          />
 
-      <DeleteUserDialog
-        open={deleteUserOpen}
-        onOpenChange={setDeleteUserOpen}
-        user={selectedUser}
-        workspaceId={workspaceId}
-        companyId={companyId}
-      />
+          <DeleteUserDialog
+            open={deleteUserOpen}
+            onOpenChange={setDeleteUserOpen}
+            user={selectedUser}
+            workspaceId={workspaceId}
+            companyId={companyId}
+          />
+        </>
+      )}
     </div>
   );
 }

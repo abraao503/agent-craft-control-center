@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { DealListItem } from "@/types/deal";
 import { PipelineStageMinimal } from "@/types/pipeline";
 import { cn, isColorDark } from "@/lib/utils";
@@ -44,6 +45,14 @@ const formatCurrency = (value: number | null | undefined, currency = "BRL") => {
       maximumFractionDigits: 2,
     }).format(safe);
   }
+};
+
+const getInitials = (name: string) => {
+  const parts = name.trim().split(" ");
+  if (parts.length === 1) {
+    return parts[0].substring(0, 2).toUpperCase();
+  }
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 };
 
 const DealTagsPopover: React.FC<{
@@ -266,7 +275,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                   <div
                     key={deal.id}
                     className={cn(
-                      "rounded-md border p-3 bg-card shadow-sm hover:shadow transition group",
+                      "rounded-md border p-3 bg-card shadow-sm hover:shadow transition group relative",
                       isMoving && "opacity-70"
                     )}
                     draggable
@@ -289,19 +298,31 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                     }}
                     aria-grabbed="true"
                   >
-                    <div className="font-medium text-sm truncate text-foreground/90">
+                    {/* User Avatar in top-right corner */}
+                    {deal.assignedUser && (
+                      <div
+                        className="absolute top-2 right-2"
+                        title={deal.assignedUser.name}
+                      >
+                        <Avatar className="h-8 w-8 border border-border/50">
+                          <AvatarFallback className="text-[10px] font-medium bg-primary/10 text-primary">
+                            {getInitials(deal.assignedUser.name)}
+                          </AvatarFallback>
+                        </Avatar>
+                      </div>
+                    )}
+
+                    <div className="font-medium text-sm truncate text-foreground/90 pr-8">
                       {deal.title}
                     </div>
                     {deal.description && (
-                      <div className="text-xs text-muted-foreground/70 line-clamp-2 mt-1">
+                      <div className="text-xs text-muted-foreground line-clamp-2 mt-1">
                         {deal.description}
                       </div>
                     )}
                     {deal.dueDate && (
                       <div className="mt-2 space-y-1">
-                        <div className="text-xs text-muted-foreground/70">
-                          data de vencimento
-                        </div>
+                        <div className="text-xs">Data de vencimento</div>
                         <div
                           className={cn(
                             "inline-block px-2 py-0.5 rounded text-xs font-medium",
@@ -327,7 +348,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                           deal.currency ?? "BRL"
                         )}
                       </span>
-                      <span className="text-muted-foreground/75 truncate">
+                      <span className="text-xs text-foreground/90 font-medium">
                         {deal.customer?.name || "Cliente"}
                       </span>
                     </div>
