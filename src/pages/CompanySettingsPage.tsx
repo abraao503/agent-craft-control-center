@@ -7,6 +7,9 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { useAuth } from "@/contexts/auth/hooks";
 import { CreateCompanyUserDialog } from "@/components/admin/CreateCompanyUserDialog";
 import { DeleteUserDialog } from "@/components/admin/DeleteUserDialog";
+import { EditWorkspaceDialog } from "@/components/admin/EditWorkspaceDialog";
+import { DeleteWorkspaceDialog } from "@/components/admin/DeleteWorkspaceDialog";
+import { CreateWorkspaceDialog } from "@/components/admin/CreateWorkspaceDialog";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -34,6 +37,7 @@ import {
   Calendar,
   ExternalLink,
   Trash2,
+  Edit2,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -65,11 +69,20 @@ export default function CompanySettingsPage() {
   const { user } = useAuth();
   const [createUserOpen, setCreateUserOpen] = useState(false);
   const [deleteUserOpen, setDeleteUserOpen] = useState(false);
+  const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<{
     id: string;
     name: string;
     email: string;
     role: UserRole;
+  } | null>(null);
+  const [editWorkspaceOpen, setEditWorkspaceOpen] = useState(false);
+  const [deleteWorkspaceOpen, setDeleteWorkspaceOpen] = useState(false);
+  const [selectedWorkspace, setSelectedWorkspace] = useState<{
+    id: string;
+    name: string;
+    isDefault: boolean;
+    companyId: string;
   } | null>(null);
   const [adminPage, setAdminPage] = useState(1);
   const adminLimit = 10;
@@ -102,6 +115,24 @@ export default function CompanySettingsPage() {
   }) => {
     setSelectedUser(user);
     setDeleteUserOpen(true);
+  };
+
+  const handleEditWorkspace = (workspace: {
+    id: string;
+    name: string;
+    isDefault: boolean;
+  }) => {
+    setSelectedWorkspace({ ...workspace, companyId: companyId! });
+    setEditWorkspaceOpen(true);
+  };
+
+  const handleDeleteWorkspace = (workspace: {
+    id: string;
+    name: string;
+    isDefault: boolean;
+  }) => {
+    setSelectedWorkspace({ ...workspace, companyId: companyId! });
+    setDeleteWorkspaceOpen(true);
   };
 
   // Role hierarchy to check if user can delete
@@ -202,15 +233,39 @@ export default function CompanySettingsPage() {
         <TabsContent value="workspaces" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Workspaces da Empresa</CardTitle>
-              <CardDescription>
-                Lista de todos os workspaces disponíveis nesta empresa
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Workspaces da Empresa</CardTitle>
+                  <CardDescription>
+                    Lista de todos os workspaces disponíveis nesta empresa
+                  </CardDescription>
+                </div>
+                {has("create:workspace") && (
+                  <Button
+                    onClick={() => setCreateWorkspaceOpen(true)}
+                    className="gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Novo Workspace
+                  </Button>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
               {company.workspaces.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  Nenhum workspace encontrado
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground mb-4">
+                    Nenhum workspace encontrado
+                  </p>
+                  {has("create:workspace") && (
+                    <Button
+                      onClick={() => setCreateWorkspaceOpen(true)}
+                      className="gap-2"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Criar Primeiro Workspace
+                    </Button>
+                  )}
                 </div>
               ) : (
                 <div className="border rounded-lg overflow-hidden">
@@ -248,22 +303,46 @@ export default function CompanySettingsPage() {
                             {workspace.id}
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                navigate(
-                                  `/company/workspaces/${workspace.id}`,
-                                  {
-                                    state: { workspace },
-                                  }
-                                );
-                              }}
-                              title="Ver detalhes e usuários do workspace"
-                            >
-                              <ExternalLink className="h-4 w-4" />
-                            </Button>
+                            <div className="flex items-center justify-end gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEditWorkspace(workspace);
+                                }}
+                                title="Editar workspace"
+                              >
+                                <Edit2 className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteWorkspace(workspace);
+                                }}
+                                title="Apagar workspace"
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(
+                                    `/company/workspaces/${workspace.id}`,
+                                    {
+                                      state: { workspace },
+                                    }
+                                  );
+                                }}
+                                title="Ver detalhes e usuários do workspace"
+                              >
+                                <ExternalLink className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -412,12 +491,36 @@ export default function CompanySettingsPage() {
         />
       )}
 
+      {has("create:workspace") && (
+        <CreateWorkspaceDialog
+          open={createWorkspaceOpen}
+          onOpenChange={setCreateWorkspaceOpen}
+          companyId={companyId}
+        />
+      )}
+
       <DeleteUserDialog
         open={deleteUserOpen}
         onOpenChange={setDeleteUserOpen}
         user={selectedUser}
         companyId={companyId}
       />
+
+      {selectedWorkspace && (
+        <>
+          <EditWorkspaceDialog
+            open={editWorkspaceOpen}
+            onOpenChange={setEditWorkspaceOpen}
+            workspace={selectedWorkspace}
+          />
+
+          <DeleteWorkspaceDialog
+            open={deleteWorkspaceOpen}
+            onOpenChange={setDeleteWorkspaceOpen}
+            workspace={selectedWorkspace}
+          />
+        </>
+      )}
     </div>
   );
 }

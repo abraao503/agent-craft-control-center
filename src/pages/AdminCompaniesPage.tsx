@@ -5,6 +5,7 @@ import { listCompanies } from "@/services/company/listCompanies";
 import { usePermissions } from "@/hooks/usePermissions";
 import { CreateCompanyDialog } from "@/components/admin/CreateCompanyDialog";
 import { EditCompanyDialog } from "@/components/admin/EditCompanyDialog";
+import { CreateWorkspaceDialog } from "@/components/admin/CreateWorkspaceDialog";
 import { Company } from "@/types/company";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,6 +26,7 @@ export default function AdminCompaniesPage() {
   const { has } = usePermissions();
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
   const limit = 10;
@@ -73,10 +75,21 @@ export default function AdminCompaniesPage() {
         </div>
 
         {has("create:company") && (
-          <Button onClick={() => setCreateOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Nova Empresa
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={() => setCreateOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Nova Empresa
+            </Button>
+            {has("create:workspace") && (
+              <Button
+                variant="outline"
+                onClick={() => setCreateWorkspaceOpen(true)}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Novo Workspace
+              </Button>
+            )}
+          </div>
         )}
       </div>
 
@@ -180,6 +193,13 @@ export default function AdminCompaniesPage() {
         onOpenChange={setEditOpen}
         company={selectedCompany}
       />
+      {has("create:workspace") && data && (
+        <CreateWorkspaceDialog
+          open={createWorkspaceOpen}
+          onOpenChange={setCreateWorkspaceOpen}
+          companies={data.companies.map((c) => ({ id: c.id, name: c.name }))}
+        />
+      )}
     </div>
   );
 }
