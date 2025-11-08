@@ -11,6 +11,7 @@ interface KanbanBoardProps {
   stageMeta?: Record<string, { color?: string; winProbability?: number }>;
   workspaceId?: string;
   onDealUpdated?: () => void;
+  assignedUserId?: string;
 }
 
 export const KanbanBoard: React.FC<KanbanBoardProps> = ({
@@ -19,6 +20,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   isMoving,
   stageMeta,
   workspaceId,
+  assignedUserId,
 }) => {
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
   const [selectedDeal, setSelectedDeal] = useState<DealListItem | null>(null);
@@ -52,6 +54,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
               dragOverStage={dragOverStage}
               onDragEnter={() => setDragOverStage(stage.id)}
               onDragLeave={handleDragLeave(stage.id)}
+              assignedUserId={assignedUserId}
             />
           ))}
         </div>

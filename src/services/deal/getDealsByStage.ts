@@ -34,12 +34,16 @@ export const getDealsByStage = async ({
   workspaceId,
   limit = 10,
   offset = 0,
+  search,
+  assignedUserId,
 }: GetDealsByStageParams): Promise<GetDealsByStageResponse> => {
   const { data } = await api.get<ApiResponse>(`/deal/stage/${stageId}`, {
     params: {
       workspaceId,
       limit,
       offset,
+      search,
+      assignedUserId,
     },
   });
 

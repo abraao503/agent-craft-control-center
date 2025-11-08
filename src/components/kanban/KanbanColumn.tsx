@@ -1,13 +1,14 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
 import { DealListItem } from "@/types/deal";
 import { PipelineStageMinimal } from "@/types/pipeline";
 import { cn, isColorDark } from "@/lib/utils";
-import { MessageCircle, Tag as TagIcon, Loader2 } from "lucide-react";
+import { MessageCircle, Tag as TagIcon, Loader2, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
   Popover,
@@ -28,6 +29,7 @@ interface KanbanColumnProps {
   dragOverStage: string | null;
   onDragEnter: () => void;
   onDragLeave: (e: React.DragEvent) => void;
+  assignedUserId?: string;
 }
 
 const formatCurrency = (value: number | null | undefined, currency = "BRL") => {
@@ -142,20 +144,40 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
   dragOverStage,
   onDragEnter,
   onDragLeave,
+  assignedUserId,
 }) => {
   const navigate = useNavigate();
   const viewportRef = useRef<HTMLDivElement | null>(null);
+  const [localSearchTerm, setLocalSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(localSearchTerm);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [localSearchTerm]);
 
   // Infinite query for this stage
   const { data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage } =
     useInfiniteQuery({
-      queryKey: ["dealsByStage", stage.id, workspaceId],
+      queryKey: [
+        "dealsByStage",
+        stage.id,
+        workspaceId,
+        debouncedSearchTerm,
+        assignedUserId,
+      ],
       queryFn: ({ pageParam = 0 }) =>
         getDealsByStage({
           stageId: stage.id,
           workspaceId: workspaceId!,
           limit: 10,
           offset: pageParam,
+          search: debouncedSearchTerm || undefined,
+          assignedUserId: assignedUserId || undefined,
         }),
       getNextPageParam: (lastPage) => {
         const nextOffset = lastPage.offset + lastPage.limit;
@@ -257,6 +279,15 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
               )}
             </div>
           </CardTitle>
+          <div className="relative mt-2">
+            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+            <Input
+              placeholder="Buscar negócios..."
+              value={localSearchTerm}
+              onChange={(e) => setLocalSearchTerm(e.target.value)}
+              className="h-8 pl-8 text-xs"
+            />
+          </div>
         </CardHeader>
         <CardContent className="p-2">
           <div

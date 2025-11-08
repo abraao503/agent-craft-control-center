@@ -122,4 +122,6 @@ export interface GetDealsByStageParams {
   workspaceId: string;
   limit?: number;
   offset?: number;
+  search?: string;
+  assignedUserId?: string;
 }

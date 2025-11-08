@@ -9,6 +9,7 @@ import { moveDealStage } from "@/services/deal/moveDealStage";
 import { DealListItem, GetDealsByStageResponse } from "@/types/deal";
 import KanbanBoard from "@/components/kanban/KanbanBoard";
 import { CreateDealModal } from "@/components/deals/CreateDealModal";
+import { UserFilter } from "@/components/deals/UserFilter";
 import { useToast } from "@/components/ui/use-toast";
 import PipelineSwitcher from "@/components/pipelines/PipelineSwitcher";
 import PipelineEditor from "@/components/pipelines/PipelineEditor";
@@ -50,6 +51,9 @@ const PipelineDetailPage = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isMoving, setIsMoving] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<string | undefined>(
+    undefined
+  );
 
   // Helper functions for conditional logic
   const isDataReady = () => {
@@ -164,11 +168,13 @@ const PipelineDetailPage = () => {
     // Optimistic update: Move deal immediately in the UI
     stages.forEach((stage) => {
       const queryKey = ["dealsByStage", stage.id, workspaceId];
-      const currentData = queryClient.getQueryData<{ pages: GetDealsByStageResponse[] }>(queryKey);
-      
+      const currentData = queryClient.getQueryData<{
+        pages: GetDealsByStageResponse[];
+      }>(queryKey);
+
       if (currentData) {
         previousData[stage.id] = currentData;
-        
+
         // Check if this stage has the deal
         const pages = currentData.pages || [];
         for (const page of pages) {
@@ -185,49 +191,55 @@ const PipelineDetailPage = () => {
     if (movedDeal && fromStageId) {
       // Remove from old stage
       const fromQueryKey = ["dealsByStage", fromStageId, workspaceId];
-      queryClient.setQueryData<{ pages: GetDealsByStageResponse[] }>(fromQueryKey, (old) => {
-        if (!old) return old;
-        return {
-          ...old,
-          pages: old.pages.map((page) => ({
-            ...page,
-            deals: page.deals.filter((d: DealListItem) => d.id !== dealId),
-            total: page.total - 1,
-          })),
-        };
-      });
+      queryClient.setQueryData<{ pages: GetDealsByStageResponse[] }>(
+        fromQueryKey,
+        (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            pages: old.pages.map((page) => ({
+              ...page,
+              deals: page.deals.filter((d: DealListItem) => d.id !== dealId),
+              total: page.total - 1,
+            })),
+          };
+        }
+      );
 
       // Add to new stage
       const toQueryKey = ["dealsByStage", toStageId, workspaceId];
-      queryClient.setQueryData<{ pages: GetDealsByStageResponse[] }>(toQueryKey, (old) => {
-        if (!old) return old;
-        return {
-          ...old,
-          pages: old.pages.map((page, index: number) => {
-            // Add to first page
-            if (index === 0) {
-              return {
-                ...page,
-                deals: [movedDeal!, ...page.deals],
-                total: page.total + 1,
-              };
-            }
-            return page;
-          }),
-        };
-      });
+      queryClient.setQueryData<{ pages: GetDealsByStageResponse[] }>(
+        toQueryKey,
+        (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            pages: old.pages.map((page, index: number) => {
+              // Add to first page
+              if (index === 0) {
+                return {
+                  ...page,
+                  deals: [movedDeal!, ...page.deals],
+                  total: page.total + 1,
+                };
+              }
+              return page;
+            }),
+          };
+        }
+      );
     }
 
     try {
       await moveDealStage(dealId, { workspaceId, stageId: toStageId });
-      
+
       // Revalidate to ensure data consistency
       stages.forEach((stage) => {
         queryClient.invalidateQueries({
           queryKey: ["dealsByStage", stage.id, workspaceId],
         });
       });
-      
+
       toast({ title: "Sucesso", description: "Negócio movido com sucesso." });
     } catch (e: unknown) {
       // Rollback optimistic update on error
@@ -493,6 +505,7 @@ const PipelineDetailPage = () => {
       onMoveDeal={onMoveDeal}
       isMoving={isMoving}
       workspaceId={workspaceId}
+      assignedUserId={selectedUserId}
       onDealUpdated={() => {
         stages.forEach((stage) => {
           queryClient.invalidateQueries({
@@ -518,9 +531,17 @@ const PipelineDetailPage = () => {
         <div className="flex items-center gap-3">
           <h1 className="text-3xl font-bold tracking-tight">Negócios</h1>
           {canShowActions() && (
-            <Button onClick={() => setOpenCreateDeal(true)}>
+            <Button onClick={() => setOpenCreateDeal(true)} className="mr-2">
               Novo Negócio
             </Button>
+          )}
+          {/* User filter next to title */}
+          {workspaceId && !isEditing && !isCreating && stages.length > 0 && (
+            <UserFilter
+              workspaceId={workspaceId}
+              selectedUserId={selectedUserId}
+              onSelectUser={setSelectedUserId}
+            />
           )}
         </div>
         <div className="flex items-center gap-2">
