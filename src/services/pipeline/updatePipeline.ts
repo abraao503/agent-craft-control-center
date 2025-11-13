@@ -1,5 +1,8 @@
 import { api } from "../api";
-import { AssistantPipelineStage, WhatsAppIntegrationConfig } from "@/types/pipeline";
+import {
+  AssistantPipelineStage,
+  WhatsAppIntegrationConfig,
+} from "@/types/pipeline";
 
 // Item structure for updating existing stages within a pipeline
 export interface UpdatePipelineStageItem {
@@ -17,7 +20,30 @@ export interface UpdatePipelineInput {
   name?: string;
   description?: string | null;
   stages?: UpdatePipelineStageItem[];
-  assistantId?: string | null;
+  assistant?: {
+    name: string;
+    description: string;
+    avatarFileId: string | null;
+    timeZone: string;
+    language: string;
+    initialMessage: string;
+    skipMessages: string[];
+    iaModelId: string;
+    iaProviderApiKey: string;
+    prompt: {
+      identity: string;
+      function: string;
+      goal: string;
+      style: string;
+      instructions: string;
+      blacklist: string | null;
+      links: { name: string; url: string }[] | null;
+    };
+    contentsIds: string[];
+    customFields: unknown[];
+    entryTags: string[];
+  } | null;
+  assistantId?: string | null; // DEPRECATED: for backwards compatibility
   whatsappIntegration?: WhatsAppIntegrationConfig | null;
 }
 
