@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Bot, AlertCircle, Loader2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AgentWizard } from "@/components/pipelines/agent-wizard";
@@ -31,6 +32,7 @@ interface AgentTabProps {
   pipelineId?: string; // ID da pipeline para buscar agente deletado
   workspaceId?: string; // ID do workspace
   onLoadDeletedAgent?: (agentData: AgentFormData) => void; // Callback para carregar dados do agente deletado
+  isLoading?: boolean; // Indica se os dados do agente estão sendo carregados
 }
 
 export const AgentTab: React.FC<AgentTabProps> = ({
@@ -43,6 +45,7 @@ export const AgentTab: React.FC<AgentTabProps> = ({
   pipelineId,
   workspaceId,
   onLoadDeletedAgent,
+  isLoading = false,
 }) => {
   const [showWizard, setShowWizard] = useState(false);
   const [wizardCompleted, setWizardCompleted] = useState(false); // Track if wizard was completed
@@ -215,7 +218,26 @@ export const AgentTab: React.FC<AgentTabProps> = ({
 
       {/* Mostrar wizard ou tabs baseado no estado */}
       {useAgent ? (
-        showWizard ? (
+        isLoading || isLoadingDeleted ? (
+          // Skeleton loading state
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-48 mb-2" />
+              <Skeleton className="h-4 w-96" />
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-4">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <div className="space-y-4">
+                <Skeleton className="h-32 w-full" />
+                <Skeleton className="h-32 w-full" />
+              </div>
+            </CardContent>
+          </Card>
+        ) : showWizard ? (
           <AgentWizard
             formData={formData}
             updateFormData={updateFormData}

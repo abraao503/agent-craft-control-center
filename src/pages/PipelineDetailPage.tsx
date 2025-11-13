@@ -103,62 +103,102 @@ const PipelineDetailPage = () => {
   const onMoveDeal = async (dealId: string, toStageId: string) => {
     if (!pipelineId || !workspaceId) return;
 
-    setIsMoving(true);
-
+    // Find the deal and its current stage
     let fromStageId: string | null = null;
     let movedDeal: DealListItem | null = null;
-    const previousData: Record<string, unknown> = {};
 
+    // Store previous data for rollback - get all queries for each stage
+    const previousData: Map<string, unknown> = new Map();
+
+    // Find which stage the deal is currently in by checking all query variations
     stages.forEach((stage) => {
-      const queryKey = ["dealsByStage", stage.id, workspaceId];
-      const currentData = queryClient.getQueryData<{
+      // Get all queries that match the stage pattern
+      const queries = queryClient.getQueriesData<{
         pages: GetDealsByStageResponse[];
-      }>(queryKey);
+      }>({
+        queryKey: ["dealsByStage", stage.id, workspaceId],
+      });
 
-      if (currentData) {
-        previousData[stage.id] = currentData;
+      queries.forEach(([queryKey, currentData]) => {
+        if (currentData) {
+          // Store for potential rollback
+          const key = JSON.stringify(queryKey);
+          previousData.set(key, currentData);
 
-        const pages = currentData.pages || [];
-        for (const page of pages) {
-          const deal = page.deals?.find((d: DealListItem) => d.id === dealId);
-          if (deal) {
-            fromStageId = stage.id;
-            movedDeal = { ...deal, stageId: toStageId };
-            break;
+          // Check if this stage has the deal
+          if (!fromStageId) {
+            const pages = currentData.pages || [];
+            for (const page of pages) {
+              const deal = page.items?.find(
+                (d: DealListItem) => d.id === dealId
+              );
+              if (deal) {
+                fromStageId = stage.id;
+                movedDeal = { ...deal, stageId: toStageId };
+                break;
+              }
+            }
           }
         }
-      }
+      });
     });
 
-    if (movedDeal && fromStageId) {
-      const fromQueryKey = ["dealsByStage", fromStageId, workspaceId];
+    // Se o deal já está na coluna de destino, não faça nada
+    if (fromStageId === toStageId) {
+      return;
+    }
+
+    if (!fromStageId || !movedDeal) {
+      return;
+    }
+
+    setIsMoving(true);
+
+    // Optimistic update: Move deal immediately in the UI
+    // Remove from old stage - update all query variations
+    const fromQueries = queryClient.getQueriesData<{
+      pages: GetDealsByStageResponse[];
+    }>({
+      queryKey: ["dealsByStage", fromStageId, workspaceId],
+    });
+
+    fromQueries.forEach(([queryKey]) => {
       queryClient.setQueryData<{ pages: GetDealsByStageResponse[] }>(
-        fromQueryKey,
+        queryKey,
         (old) => {
           if (!old) return old;
           return {
             ...old,
             pages: old.pages.map((page) => ({
               ...page,
-              deals: page.deals.filter((d: DealListItem) => d.id !== dealId),
+              items: page.items.filter((d: DealListItem) => d.id !== dealId),
               total: page.total - 1,
             })),
           };
         }
       );
+    });
 
-      const toQueryKey = ["dealsByStage", toStageId, workspaceId];
+    // Add to new stage - update all query variations
+    const toQueries = queryClient.getQueriesData<{
+      pages: GetDealsByStageResponse[];
+    }>({
+      queryKey: ["dealsByStage", toStageId, workspaceId],
+    });
+
+    toQueries.forEach(([queryKey]) => {
       queryClient.setQueryData<{ pages: GetDealsByStageResponse[] }>(
-        toQueryKey,
+        queryKey,
         (old) => {
           if (!old) return old;
           return {
             ...old,
             pages: old.pages.map((page, index: number) => {
+              // Add to first page
               if (index === 0) {
                 return {
                   ...page,
-                  deals: [movedDeal!, ...page.deals],
+                  items: [movedDeal!, ...page.items],
                   total: page.total + 1,
                 };
               }
@@ -167,11 +207,12 @@ const PipelineDetailPage = () => {
           };
         }
       );
-    }
+    });
 
     try {
       await moveDealStage(dealId, { workspaceId, stageId: toStageId });
 
+      // Revalidate to ensure data consistency
       stages.forEach((stage) => {
         queryClient.invalidateQueries({
           queryKey: ["dealsByStage", stage.id, workspaceId],
@@ -180,10 +221,13 @@ const PipelineDetailPage = () => {
 
       toast({ title: "Sucesso", description: "Negócio movido com sucesso." });
     } catch (e: unknown) {
-      Object.entries(previousData).forEach(([stageId, data]) => {
-        queryClient.setQueryData(["dealsByStage", stageId, workspaceId], data);
+      // Rollback optimistic update on error - restore all queries
+      previousData.forEach((data, key) => {
+        const queryKey = JSON.parse(key);
+        queryClient.setQueryData(queryKey, data);
       });
 
+      // Handle validation error for required fields
       if (
         e &&
         e instanceof AxiosError &&
@@ -192,6 +236,7 @@ const PipelineDetailPage = () => {
       ) {
         const errorMessage = e.response.data.message;
 
+        // Extract field names from error message
         const match = errorMessage.match(
           /Required fields must be filled: (.+)/
         );

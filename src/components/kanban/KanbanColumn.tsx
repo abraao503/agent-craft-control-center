@@ -170,24 +170,25 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
         debouncedSearchTerm,
         assignedUserId,
       ],
-      queryFn: ({ pageParam = 0 }) =>
+      queryFn: ({ pageParam = 1 }) =>
         getDealsByStage({
           stageId: stage.id,
           workspaceId: workspaceId!,
           limit: 10,
-          offset: pageParam,
+          page: pageParam,
           search: debouncedSearchTerm || undefined,
           assignedUserId: assignedUserId || undefined,
         }),
       getNextPageParam: (lastPage) => {
-        const nextOffset = lastPage.offset + lastPage.limit;
-        return nextOffset < lastPage.total ? nextOffset : undefined;
+        return lastPage.page < lastPage.totalPages
+          ? lastPage.page + 1
+          : undefined;
       },
-      initialPageParam: 0,
+      initialPageParam: 1,
       enabled: !!workspaceId,
     });
 
-  const stageDeals = data?.pages.flatMap((page) => page.deals) || [];
+  const stageDeals = data?.pages.flatMap((page) => page.items) || [];
   const totalDeals = data?.pages[0]?.total || 0;
 
   // Handle scroll for infinite loading

@@ -16,10 +16,11 @@ export interface ListUsersParams {
 }
 
 export interface ListUsersResponse {
-  users: User[];
+  items: User[];
   total: number;
   page: number;
   limit: number;
+  totalPages: number;
 }
 
 export interface AssignUserToDealInput {

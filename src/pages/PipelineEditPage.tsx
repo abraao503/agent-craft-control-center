@@ -630,6 +630,11 @@ const PipelineEditPage = () => {
           : null, // Se agente desabilitado, sempre null
       }));
 
+      console.log(
+        "🔍 DEBUG - Stages antes de enviar:",
+        JSON.stringify(stagesInput, null, 2)
+      );
+
       // 4. Create or update pipeline with embedded assistant
       if (isCreating) {
         const response = await createPipeline({
@@ -772,6 +777,10 @@ const PipelineEditPage = () => {
             assistantConfigured={isAgentConfigured}
             assistantLoading={agentQuery.isLoading}
             onSave={async ({ stages: newStages }) => {
+              console.log(
+                "💾 PipelineEditPage - Recebendo stages do StagesTab:",
+                newStages
+              );
               setStages(newStages);
             }}
             onCancel={() => {}}
@@ -789,6 +798,7 @@ const PipelineEditPage = () => {
             hasExistingAgent={!!currentPipeline?.assistantId}
             pipelineId={pipelineId}
             workspaceId={workspaceId}
+            isLoading={agentQuery.isLoading}
             onLoadDeletedAgent={(deletedAgentData) => {
               // Carregar todos os dados do agente deletado
               setAgentFormData(deletedAgentData);

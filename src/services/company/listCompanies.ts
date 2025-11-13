@@ -3,7 +3,7 @@ import { ListCompaniesResponse } from "@/types/company";
 
 export interface ListCompaniesParams {
   limit?: number;
-  offset?: number;
+  page?: number;
 }
 
 export async function listCompanies(
@@ -12,7 +12,7 @@ export async function listCompanies(
   const { data } = await api.get<ListCompaniesResponse>("/company", {
     params: {
       limit: params?.limit || 10,
-      offset: params?.offset || 0,
+      page: params?.page || 1,
     },
   });
   return data;

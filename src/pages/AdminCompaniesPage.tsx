@@ -28,7 +28,7 @@ export default function AdminCompaniesPage() {
   const [editOpen, setEditOpen] = useState(false);
   const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
-  const [currentPage, setCurrentPage] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
   const limit = 10;
 
   const { data, isLoading, error } = useQuery({
@@ -36,7 +36,7 @@ export default function AdminCompaniesPage() {
     queryFn: () =>
       listCompanies({
         limit,
-        offset: currentPage * limit,
+        page: currentPage,
       }),
   });
 
@@ -105,7 +105,7 @@ export default function AdminCompaniesPage() {
         <div className="flex items-center justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
-      ) : data && data.companies.length > 0 ? (
+      ) : data && data.items.length > 0 ? (
         <>
           <div className="border rounded-lg overflow-hidden">
             <Table>
@@ -119,7 +119,7 @@ export default function AdminCompaniesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {data.companies.map((company) => (
+                {data.items.map((company) => (
                   <TableRow key={company.id}>
                     <TableCell className="font-medium">
                       {company.name}
@@ -197,7 +197,7 @@ export default function AdminCompaniesPage() {
         <CreateWorkspaceDialog
           open={createWorkspaceOpen}
           onOpenChange={setCreateWorkspaceOpen}
-          companies={data.companies.map((c) => ({ id: c.id, name: c.name }))}
+          companies={data.items.map((c) => ({ id: c.id, name: c.name }))}
         />
       )}
     </div>

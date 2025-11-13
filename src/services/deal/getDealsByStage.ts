@@ -23,17 +23,18 @@ type DealApiItem = {
 };
 
 type ApiResponse = {
-  deals: DealApiItem[];
+  items: DealApiItem[];
   total: number;
+  page: number;
   limit: number;
-  offset: number;
+  totalPages: number;
 };
 
 export const getDealsByStage = async ({
   stageId,
   workspaceId,
   limit = 10,
-  offset = 0,
+  page = 1,
   search,
   assignedUserId,
 }: GetDealsByStageParams): Promise<GetDealsByStageResponse> => {
@@ -41,14 +42,14 @@ export const getDealsByStage = async ({
     params: {
       workspaceId,
       limit,
-      offset,
+      page,
       search,
       assignedUserId,
     },
   });
 
   // Normalize deals data
-  const normalizedDeals: DealListItem[] = data.deals.map((apiDeal) => ({
+  const normalizedDeals: DealListItem[] = data.items.map((apiDeal) => ({
     id: apiDeal.id,
     stageId: apiDeal.currentStageId || apiDeal.stageId || stageId,
     title: apiDeal.title,
@@ -64,9 +65,10 @@ export const getDealsByStage = async ({
   }));
 
   return {
-    deals: normalizedDeals,
+    items: normalizedDeals,
     total: data.total,
+    page: data.page,
     limit: data.limit,
-    offset: data.offset,
+    totalPages: data.totalPages,
   };
 };

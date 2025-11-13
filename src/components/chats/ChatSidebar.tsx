@@ -113,7 +113,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
           <div className="p-3 border-b flex items-center justify-between">
             <h3 className="font-semibold text-sm">
               {activeView === "contact" && "Contato"}
-              {activeView === "deals" && "Deals"}
+              {activeView === "deals" && "Negócios"}
               {activeView === "tags" && "Tags"}
               {activeView === "tasks" && "Tarefas"}
             </h3>

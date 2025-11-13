@@ -9,6 +9,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { PipelineStageMinimal, AssistantPipelineStage } from "@/types/pipeline";
 import { Agent } from "@/types/agent";
 import { CompanyWhatsAppIntegration } from "@/types/whatsapp";
@@ -202,7 +203,16 @@ const SortableStage: React.FC<SortableStageProps> = ({
             </div>
           </div>
 
-          {assistantEnabled && assistantConfigured && (
+          {assistantEnabled && assistantLoading && (
+            <div className="mt-4 space-y-3">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-24 w-full" />
+              <Skeleton className="h-4 w-48" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          )}
+
+          {assistantEnabled && !assistantLoading && assistantConfigured && (
             <div className="mt-4">
               <AssistantStageConfig
                 stageId={stage.id}
@@ -221,16 +231,7 @@ const SortableStage: React.FC<SortableStageProps> = ({
             </div>
           )}
 
-          {assistantEnabled && assistantLoading && (
-            <div className="mt-4 p-3 rounded-lg bg-muted/50 border">
-              <p className="text-xs text-muted-foreground flex items-center gap-2">
-                <span className="animate-spin h-3 w-3 border-2 border-primary border-t-transparent rounded-full inline-block"></span>
-                Carregando configurações do agente...
-              </p>
-            </div>
-          )}
-
-          {assistantEnabled && !assistantConfigured && !assistantLoading && (
+          {assistantEnabled && !assistantLoading && !assistantConfigured && (
             <div className="mt-4 p-3 rounded-lg bg-muted/50 border border-dashed">
               <p className="text-xs text-muted-foreground">
                 Configure o agente na aba "Agente" para habilitar automações
@@ -302,21 +303,38 @@ export const StagesTab: React.FC<StagesTabProps> = ({
         const newIndex = items.findIndex((item) => item.id === over?.id);
 
         const newItems = arrayMove(items, oldIndex, newIndex);
-        return newItems.map((s, i) => ({ ...s, order: i }));
+        const updated = newItems.map((s, i) => ({ ...s, order: i }));
+
+        // Sync changes to parent immediately
+        onSave({ stages: updated });
+
+        return updated;
       });
     }
   };
 
   const setStage = (index: number, patch: Partial<EditableStage>) => {
-    setDraftStages((prev) =>
-      prev.map((s, i) => (i === index ? { ...s, ...patch } : s))
-    );
+    console.log("📝 StagesTab - Atualizando stage:", { index, patch });
+    setDraftStages((prev) => {
+      const updated = prev.map((s, i) =>
+        i === index ? { ...s, ...patch } : s
+      );
+      console.log("📝 StagesTab - Sincronizando com parent:", updated);
+      // Sync changes to parent immediately
+      onSave({ stages: updated.map((s, i) => ({ ...s, order: i })) });
+      return updated;
+    });
   };
 
   const handleRemove = (index: number) => {
-    setDraftStages((prev) =>
-      prev.filter((_, i) => i !== index).map((s, i) => ({ ...s, order: i }))
-    );
+    setDraftStages((prev) => {
+      const updated = prev
+        .filter((_, i) => i !== index)
+        .map((s, i) => ({ ...s, order: i }));
+      // Sync changes to parent immediately
+      onSave({ stages: updated });
+      return updated;
+    });
   };
 
   const handleAdd = () => {
@@ -328,7 +346,10 @@ export const StagesTab: React.FC<StagesTabProps> = ({
         winProbability: 100,
         order: prev.length,
       };
-      return [...prev, next];
+      const updated = [...prev, next];
+      // Sync changes to parent immediately
+      onSave({ stages: updated });
+      return updated;
     });
   };
 

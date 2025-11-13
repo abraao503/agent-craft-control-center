@@ -34,10 +34,11 @@ export interface UpdateCompanyResponse {
 }
 
 export interface ListCompaniesResponse {
-  companies: Company[];
+  items: Company[];
   total: number;
+  page: number;
   limit: number;
-  offset: number;
+  totalPages: number;
 }
 
 export interface CompanyWorkspace {
@@ -60,10 +61,10 @@ export interface GetCompanyByIdResponse {
 }
 
 export enum UserRole {
-  ADMIN = 'ADMIN',
-  MANAGER = 'MANAGER',
-  AGENT = 'AGENT',
-  USER = 'USER',
+  ADMIN = "ADMIN",
+  MANAGER = "MANAGER",
+  AGENT = "AGENT",
+  USER = "USER",
 }
 
 export interface CompanyAdminUser {
@@ -77,7 +78,7 @@ export interface CompanyAdminUser {
 export interface ListCompanyAdminsResponse {
   success: true;
   data: {
-    users: CompanyAdminUser[];
+    items: CompanyAdminUser[];
     total: number;
     page: number;
     limit: number;
