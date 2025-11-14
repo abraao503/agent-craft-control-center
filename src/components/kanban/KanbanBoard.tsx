@@ -10,6 +10,7 @@ interface KanbanBoardProps {
   isMoving?: boolean;
   stageMeta?: Record<string, { color?: string; winProbability?: number }>;
   workspaceId?: string;
+  pipelineId?: string;
   onDealUpdated?: () => void;
   assignedUserId?: string;
 }
@@ -20,6 +21,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   isMoving,
   stageMeta,
   workspaceId,
+  pipelineId,
   assignedUserId,
 }) => {
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
@@ -66,6 +68,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
           onOpenChange={setDetailsModalOpen}
           deal={selectedDeal}
           workspaceId={workspaceId}
+          pipelineId={pipelineId}
         />
       )}
     </>

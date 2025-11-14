@@ -50,6 +50,7 @@ export interface StageFormFieldHistory {
   stageId: string;
   stageName: string;
   stageOrder: number;
+  stageColor: string;
   fields: StageFormField[];
 }
 

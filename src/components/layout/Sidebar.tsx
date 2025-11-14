@@ -373,16 +373,11 @@ const SidebarMenuContent = () => {
       label: "Dashboard",
       icon: <LayoutDashboard className="h-5 w-5" />,
     },
-    { path: "/agents", label: "Agents", icon: <Bot className="h-5 w-5" /> },
+    // { path: "/agents", label: "Agents", icon: <Bot className="h-5 w-5" /> },
     {
       path: "/chats",
       label: "Conversas",
       icon: <MessagesSquare className="h-5 w-5" />,
-    },
-    {
-      path: "/customers",
-      label: "Clientes",
-      icon: <Users className="h-5 w-5" />,
     },
     {
       path: "/deals",
@@ -390,20 +385,25 @@ const SidebarMenuContent = () => {
       icon: <DollarSignIcon className="h-5 w-5" />,
     },
     {
-      path: "/contents",
-      label: "Conteúdos",
-      icon: <Database className="h-5 w-5" />,
+      path: "/customers",
+      label: "Clientes",
+      icon: <Users className="h-5 w-5" />,
     },
-    {
-      path: "/follow-ups",
-      label: "Follow-Ups",
-      icon: <BellRing className="h-5 w-5" />,
-    },
-    {
-      path: "/settings",
-      label: "Configurações",
-      icon: <Settings className="h-5 w-5" />,
-    },
+    // {
+    //   path: "/contents",
+    //   label: "Conteúdos",
+    //   icon: <Database className="h-5 w-5" />,
+    // },
+    // {
+    //   path: "/follow-ups",
+    //   label: "Follow-Ups",
+    //   icon: <BellRing className="h-5 w-5" />,
+    // },
+    // {
+    //   path: "/settings",
+    //   label: "Configurações",
+    //   icon: <Settings className="h-5 w-5" />,
+    // },
     {
       path: "/admin/companies",
       label: "Empresas",

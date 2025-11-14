@@ -316,6 +316,7 @@ const PipelineDetailPage = () => {
       onMoveDeal={onMoveDeal}
       isMoving={isMoving}
       workspaceId={workspaceId}
+      pipelineId={pipelineId}
       assignedUserId={selectedUserId}
       onDealUpdated={() => {
         stages.forEach((stage) => {

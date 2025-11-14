@@ -42,6 +42,7 @@ import {
   FieldType,
   DocumentType,
 } from "@/types/stage-form-field";
+import { PipelineStageMinimal } from "@/types/pipeline";
 import { getDealById } from "@/services/deal/getDealById";
 import { getDealFormFields } from "@/services/deal/getDealFormFields";
 import { saveDealFormValues } from "@/services/deal/saveDealFormValues";
@@ -52,6 +53,8 @@ import { deleteStageFormField } from "@/services/stage-form-field/deleteStageFor
 import { getDealNotes } from "@/services/deal/getDealNotes";
 import { createDealNote } from "@/services/deal/createDealNote";
 import { useToast } from "@/components/ui/use-toast";
+import { listPipelineStages } from "@/services/pipeline/listPipelineStages";
+import { moveDealStage } from "@/services/deal/moveDealStage";
 import { formatDistanceToNow, format, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
@@ -82,6 +85,7 @@ interface DealViewModalProps {
   onOpenChange: (open: boolean) => void;
   deal: DealListItem | null;
   workspaceId: string;
+  pipelineId?: string; // Optional pipeline ID to fetch stages
 }
 
 export const DealViewModal: React.FC<DealViewModalProps> = ({
@@ -89,6 +93,7 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
   onOpenChange,
   deal,
   workspaceId,
+  pipelineId: pipelineIdProp,
 }) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -164,6 +169,64 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
     queryFn: () => listTags(workspaceId),
     enabled: !!workspaceId,
   });
+
+  // Fetch pipeline stages for moving the deal between stages (if pipelineId available)
+  type MaybeWithPipeline = { pipelineId?: string; pipeline?: { id?: string } };
+  const pipelineId =
+    pipelineIdProp ||
+    ((dealDetails as MaybeWithPipeline)?.pipelineId as string | undefined) ||
+    ((deal as MaybeWithPipeline)?.pipelineId as string | undefined) ||
+    ((deal as MaybeWithPipeline)?.pipeline?.id as string | undefined);
+  const { data: pipelineStages = [], isLoading: pipelineStagesLoading } =
+    useQuery({
+      queryKey: ["listPipelineStages", pipelineId, workspaceId],
+      queryFn: () => {
+        if (!pipelineId) throw new Error("pipelineId is required");
+        return listPipelineStages(pipelineId, workspaceId);
+      },
+      enabled: open && !!pipelineId && !!workspaceId,
+    });
+
+  const moveDealMutation = useMutation({
+    mutationFn: async (toStageId: string) => {
+      if (!deal) return;
+      await moveDealStage(deal.id, { workspaceId, stageId: toStageId });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["getDealById", deal?.id] });
+      queryClient.invalidateQueries({ queryKey: ["dealsByStage"] });
+      toast({ title: "Sucesso", description: "Negócio movido de etapa." });
+    },
+    onError: () => {
+      toast({
+        title: "Erro",
+        description: "Falha ao mover negócio.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  useEffect(() => {
+    console.log("DealViewModal - Debug Info:", {
+      dealDetails,
+      deal,
+      pipelineId,
+      workspaceId,
+      pipelineStagesCount: pipelineStages.length,
+      pipelineStagesLoading,
+    });
+  }, [
+    dealDetails,
+    deal,
+    pipelineId,
+    workspaceId,
+    pipelineStages,
+    pipelineStagesLoading,
+  ]);
+
+  useEffect(() => {
+    console.log("pipelineStages", pipelineStages);
+  }, [pipelineStages]);
 
   // Initialize field values
   useEffect(() => {
@@ -751,8 +814,9 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={handleCloseModal}>
-      <DialogContent className="max-w-7xl max-h-[90vh]">
-        <div className="grid grid-cols-[1fr,400px] h-full">
+      <DialogContent className="max-w-7xl max-h-[90vh] p-0 gap-0 [&>button]:right-2 [&>button]:top-2 [&>button]:z-50">
+        {/* three columns: left (slightly narrower), center for fields/comments, right for moving card */}
+        <div className="grid grid-cols-[1fr,400px,280px] h-full">
           {/* Left Column - Deal Details */}
           <div className="border-r">
             <DialogHeader className="p-6 pb-4">
@@ -964,8 +1028,6 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
                       <div className="space-y-2">
                         {fieldHistory.map((stage) => {
                           const isExpanded = expandedStages.has(stage.stageId);
-                          const stageColor =
-                            stage.stageOrder === 1 ? "#f59e0b" : "#ef4444";
 
                           return (
                             <div
@@ -973,7 +1035,7 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
                               className="border rounded-lg overflow-hidden"
                               style={{
                                 borderLeftWidth: "4px",
-                                borderLeftColor: stageColor,
+                                borderLeftColor: stage.stageColor || "#000",
                               }}
                             >
                               <button
@@ -1264,6 +1326,62 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
                     ))}
                 </div>
               </ScrollArea>
+            </div>
+          </div>
+
+          {/* Extra Right Column - Move card between pipeline stages */}
+          <div className="border-l bg-transparent flex flex-col">
+            <div className="p-4 border-b h-[65px] flex items-center">
+              <h3 className="font-semibold text-sm">Mover negócio para...</h3>
+            </div>
+
+            <div className="p-4 flex-1 overflow-auto">
+              {pipelineStagesLoading ? (
+                <div className="space-y-2">
+                  {[1, 2, 3].map((i) => (
+                    <Skeleton key={i} className="h-8 w-full" />
+                  ))}
+                </div>
+              ) : pipelineStages && pipelineStages.length > 0 ? (
+                <div className="space-y-2">
+                  {pipelineStages.map((stage: PipelineStageMinimal) => {
+                    const isCurrent =
+                      dealDetails?.currentStage?.id === stage.id;
+                    const stageColor = stage.color || "#6b7280"; // fallback to gray
+                    return (
+                      <Button
+                        key={stage.id}
+                        size="sm"
+                        variant={isCurrent ? "outline" : "ghost"}
+                        className={`w-full justify-between border-l-4 ${
+                          isCurrent ? "opacity-60" : ""
+                        }`}
+                        style={{
+                          borderLeftColor: stageColor,
+                        }}
+                        onClick={() => {
+                          if (!isCurrent && moveDealMutation)
+                            moveDealMutation.mutate(stage.id);
+                        }}
+                        disabled={isCurrent || moveDealMutation.isPending}
+                      >
+                        <span className="flex items-center gap-2">
+                          <span
+                            className="w-2 h-2 rounded-full flex-shrink-0"
+                            style={{ backgroundColor: stageColor }}
+                          />
+                          <span className="text-left">{stage.name}</span>
+                        </span>
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Nenhuma etapa disponível.
+                </p>
+              )}
             </div>
           </div>
         </div>
