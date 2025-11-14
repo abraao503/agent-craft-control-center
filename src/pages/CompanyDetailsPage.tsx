@@ -396,7 +396,7 @@ export default function CompanyDetailsPage() {
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="h-6 w-6 animate-spin text-primary" />
                 </div>
-              ) : admins && admins.users.length > 0 ? (
+              ) : admins && admins.items.length > 0 ? (
                 <>
                   <div className="border rounded-lg overflow-hidden">
                     <Table>
@@ -410,7 +410,7 @@ export default function CompanyDetailsPage() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {admins.users.map((user) => (
+                        {admins.items.map((user) => (
                           <TableRow key={user.id}>
                             <TableCell className="font-medium">
                               {user.name}

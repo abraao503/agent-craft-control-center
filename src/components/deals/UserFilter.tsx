@@ -1,9 +1,10 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { listUsers } from "@/services/user/listUsers";
-import { Loader2, Users } from "lucide-react";
+import { Users } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -64,13 +65,13 @@ export const UserFilter: React.FC<UserFilterProps> = ({
   const [showAllUsers, setShowAllUsers] = useState(false);
   const maxVisibleUsers = 6;
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ["users", workspaceId],
     queryFn: () => listUsers({ workspaceId, limit: 100 }),
     enabled: !!workspaceId,
   });
 
-  const users = data?.users || [];
+  const users = data?.items || [];
   const visibleUsers = users.slice(0, maxVisibleUsers);
   const remainingUsers = users.slice(maxVisibleUsers);
   const hasMoreUsers = remainingUsers.length > 0;
@@ -86,16 +87,17 @@ export const UserFilter: React.FC<UserFilterProps> = ({
 
   if (isLoading) {
     return (
-      <div className="flex items-center gap-2 py-2">
-        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-        <span className="text-sm text-muted-foreground">
-          Carregando usuários...
-        </span>
+      <div className="flex items-center gap-1">
+        <Skeleton className="h-8 w-8 rounded-full" />
+        <Skeleton className="h-8 w-8 rounded-full" />
+        <Skeleton className="h-8 w-8 rounded-full" />
+        <Skeleton className="h-8 w-8 rounded-full" />
       </div>
     );
   }
 
-  if (users.length === 0) {
+  // Se houve erro ou não há usuários, não mostra o filtro
+  if (isError || users.length === 0) {
     return null;
   }
 

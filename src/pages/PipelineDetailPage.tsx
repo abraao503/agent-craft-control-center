@@ -2,12 +2,12 @@ import { useState, useMemo, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useWorkspaceManager } from "@/hooks/useWorkspaceManager";
 import { listPipelineStages } from "@/services/pipeline/listPipelineStages";
 import { moveDealStage } from "@/services/deal/moveDealStage";
 import { DealListItem, GetDealsByStageResponse } from "@/types/deal";
 import KanbanBoard from "@/components/kanban/KanbanBoard";
+import { KanbanSkeleton } from "@/components/kanban/KanbanSkeleton";
 import { CreateDealModal } from "@/components/deals/CreateDealModal";
 import { UserFilter } from "@/components/deals/UserFilter";
 import { useToast } from "@/components/ui/use-toast";
@@ -279,16 +279,7 @@ const PipelineDetailPage = () => {
     navigate(`/deals/pipeline/${id}`);
   };
 
-  const renderLoadingState = () => (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-      {Array.from({ length: 4 }).map((_, i) => (
-        <div key={i} className="space-y-2">
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-[300px] w-full" />
-        </div>
-      ))}
-    </div>
-  );
+  const renderLoadingState = () => <KanbanSkeleton columns={4} />;
 
   const renderNoPipelineState = () => {
     if (hasPipelines) {
@@ -351,7 +342,7 @@ const PipelineDetailPage = () => {
           <Button onClick={() => setOpenCreateDeal(true)} className="mr-2">
             Novo Negócio
           </Button>
-          {workspaceId && stages.length > 0 && (
+          {workspaceId && (
             <UserFilter
               workspaceId={workspaceId}
               selectedUserId={selectedUserId}

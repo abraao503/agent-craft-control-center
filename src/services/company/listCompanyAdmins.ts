@@ -25,7 +25,7 @@ export interface ListCompanyAdminsParams {
 }
 
 export interface ListCompanyAdminsResponse {
-  users: CompanyAdminUser[];
+  items: CompanyAdminUser[];
   total: number;
   page: number;
   limit: number;

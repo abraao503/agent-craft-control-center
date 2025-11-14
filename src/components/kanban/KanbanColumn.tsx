@@ -5,10 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { DealListItem } from "@/types/deal";
 import { PipelineStageMinimal } from "@/types/pipeline";
 import { cn, isColorDark } from "@/lib/utils";
-import { MessageCircle, Tag as TagIcon, Loader2, Search } from "lucide-react";
+import { MessageCircle, Tag as TagIcon, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
   Popover,
@@ -18,6 +19,7 @@ import {
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { listTags } from "@/services/tag/listTags";
 import { getDealsByStage } from "@/services/deal/getDealsByStage";
+import { DealCardSkeleton } from "./DealCardSkeleton";
 
 interface KanbanColumnProps {
   stage: PipelineStageMinimal;
@@ -426,14 +428,16 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                 )}
 
                 {isLoading && stageDeals.length === 0 && (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  <div className="space-y-2">
+                    <DealCardSkeleton />
+                    <DealCardSkeleton />
+                    <DealCardSkeleton />
                   </div>
                 )}
 
                 {isFetchingNextPage && (
-                  <div className="flex items-center justify-center py-2">
-                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  <div className="space-y-2">
+                    <DealCardSkeleton />
                   </div>
                 )}
               </div>
