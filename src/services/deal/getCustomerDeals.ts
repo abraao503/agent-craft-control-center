@@ -4,7 +4,6 @@ import { DealListItem } from "@/types/deal";
 export interface CustomerDealApiResponse {
   id: string;
   customerId: string;
-  pipelineId: string;
   stageId: string;
   isPrimaryDeal: boolean;
   title: string;

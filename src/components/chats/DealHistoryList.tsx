@@ -24,24 +24,34 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { DealViewModal } from "@/components/deals/DealViewModal";
 import { CustomerDealApiResponse } from "@/services/deal/getCustomerDeals";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface DealHistoryListProps {
   deals: CustomerDealApiResponse[];
   onArchive: (dealId: string) => void;
   isArchiving?: boolean;
+  workspaceId?: string;
+  customerId?: string;
 }
 
 const DealHistoryListComponent: React.FC<DealHistoryListProps> = ({
   deals,
   onArchive,
   isArchiving = false,
+  workspaceId,
+  customerId,
 }) => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [dealToArchive, setDealToArchive] = React.useState<string | null>(null);
+  const [selectedDeal, setSelectedDeal] =
+    React.useState<CustomerDealApiResponse | null>(null);
+  const [modalOpen, setModalOpen] = React.useState(false);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
@@ -80,6 +90,23 @@ const DealHistoryListComponent: React.FC<DealHistoryListProps> = ({
     if (dealToArchive) {
       onArchive(dealToArchive);
       setDealToArchive(null);
+    }
+  };
+
+  const handleViewDeal = (deal: CustomerDealApiResponse) => {
+    setSelectedDeal(deal);
+    setModalOpen(true);
+  };
+
+  const handleModalClose = (open: boolean) => {
+    setModalOpen(open);
+    if (!open) {
+      // Invalidate queries to refresh the deals list
+      if (customerId && workspaceId) {
+        queryClient.invalidateQueries({
+          queryKey: ["getCustomerDeals", customerId, workspaceId],
+        });
+      }
     }
   };
 
@@ -122,9 +149,7 @@ const DealHistoryListComponent: React.FC<DealHistoryListProps> = ({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem
-                    onClick={() => navigate(`/pipelines/${deal.pipelineId}`)}
-                  >
+                  <DropdownMenuItem onClick={() => handleViewDeal(deal)}>
                     <ExternalLink className="h-4 w-4 mr-2" />
                     Ver detalhes
                   </DropdownMenuItem>
@@ -181,6 +206,25 @@ const DealHistoryListComponent: React.FC<DealHistoryListProps> = ({
           </div>
         ))}
       </div>
+
+      {workspaceId && selectedDeal && (
+        <DealViewModal
+          open={modalOpen}
+          onOpenChange={handleModalClose}
+          deal={{
+            id: selectedDeal.id,
+            stageId: selectedDeal.stageId,
+            title: selectedDeal.title,
+            description: selectedDeal.description,
+            value: selectedDeal.value,
+            createdAt: selectedDeal.createdAt,
+            updatedAt: selectedDeal.updatedAt,
+            assignedUser: selectedDeal.assignedUser,
+          }}
+          workspaceId={workspaceId}
+          pipelineId={selectedDeal.pipeline.id}
+        />
+      )}
 
       <AlertDialog
         open={dealToArchive !== null}

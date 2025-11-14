@@ -1,5 +1,5 @@
 import React from "react";
-import { DollarSign, TrendingUp, Calendar, AlertCircle } from "lucide-react";
+import { DollarSign, TrendingUp, Calendar, AlertCircle, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -9,15 +9,37 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { DealViewModal } from "@/components/deals/DealViewModal";
 import { CustomerDealApiResponse } from "@/services/deal/getCustomerDeals";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface DealPrimaryCardProps {
   deal: CustomerDealApiResponse;
+  workspaceId?: string;
+  customerId?: string;
 }
 
-const DealPrimaryCardComponent: React.FC<DealPrimaryCardProps> = ({ deal }) => {
+const DealPrimaryCardComponent: React.FC<DealPrimaryCardProps> = ({ 
+  deal,
+  workspaceId,
+  customerId,
+}) => {
+  const queryClient = useQueryClient();
+  const [modalOpen, setModalOpen] = React.useState(false);
+
+  const handleModalClose = (open: boolean) => {
+    setModalOpen(open);
+    if (!open) {
+      // Invalidate queries to refresh the deals list
+      if (customerId && workspaceId) {
+        queryClient.invalidateQueries({
+          queryKey: ["getCustomerDeals", customerId, workspaceId],
+        });
+      }
+    }
+  };
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
       style: "currency",
@@ -52,73 +74,92 @@ const DealPrimaryCardComponent: React.FC<DealPrimaryCardProps> = ({ deal }) => {
   };
 
   return (
-    <Card className="border-primary/50 shadow-sm">
-      <CardHeader className="pb-3">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <CardTitle className="text-base">{deal.title}</CardTitle>
-            <Badge variant="outline" className="text-xs">
-              Principal
-            </Badge>
-          </div>
-          <CardDescription className="text-xs">
-            {deal.pipeline?.name || "Pipeline"}
-          </CardDescription>
-        </div>
-      </CardHeader>
-
-      <CardContent className="space-y-3">
-        {/* Description */}
-        {deal.description && (
-          <p className="text-sm text-muted-foreground line-clamp-2">
-            {deal.description}
-          </p>
-        )}
-
-        {/* Stage */}
-        {deal.currentStage && (
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2 text-sm">
-              <div
-                className="w-2 h-2 rounded-full"
-                style={{ backgroundColor: "#3b82f6" }}
-              />
-              <span className="font-medium">{deal.currentStage.name}</span>
+    <>
+      <Card className="border-primary/50 shadow-sm">
+        <CardHeader className="pb-3">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-base">{deal.title}</CardTitle>
+              <Badge variant="outline" className="text-xs">
+                Principal
+              </Badge>
             </div>
+            <CardDescription className="text-xs">
+              {deal.pipeline?.name || "Pipeline"}
+            </CardDescription>
           </div>
-        )}
+        </CardHeader>
 
-        {/* Value */}
-        {deal.value !== null && deal.value !== undefined && (
-          <div className="flex items-center gap-2">
-            <DollarSign className="h-4 w-4 text-green-600" />
-            <span className="text-sm font-semibold text-green-600">
-              {formatCurrency(deal.value)}
-            </span>
-          </div>
-        )}
+        <CardContent className="space-y-3">
+          {/* Description */}
+          {deal.description && (
+            <p className="text-sm text-muted-foreground line-clamp-2">
+              {deal.description}
+            </p>
+          )}
 
-        {/* Expected Close Date */}
-        {/* {deal.expectedCloseDate && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Calendar className="h-4 w-4" />
-            <span>
-              Previsão:{" "}
-              {format(new Date(deal.expectedCloseDate), "dd/MM/yyyy", {
-                locale: ptBR,
-              })}
-            </span>
-          </div>
-        )} */}
+          {/* Stage */}
+          {deal.currentStage && (
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 text-sm">
+                <div
+                  className="w-2 h-2 rounded-full"
+                  style={{ backgroundColor: "#3b82f6" }}
+                />
+                <span className="font-medium">{deal.currentStage.name}</span>
+              </div>
+            </div>
+          )}
 
-        {/* Assigned To */}
-        {deal.assignedUser && (
-          <div className="text-xs text-muted-foreground">
-            Responsável: {deal.assignedUser.name}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+          {/* Value */}
+          {deal.value !== null && deal.value !== undefined && (
+            <div className="flex items-center gap-2">
+              <DollarSign className="h-4 w-4 text-green-600" />
+              <span className="text-sm font-semibold text-green-600">
+                {formatCurrency(deal.value)}
+              </span>
+            </div>
+          )}
+
+          {/* Assigned To */}
+          {deal.assignedUser && (
+            <div className="text-xs text-muted-foreground">
+              Responsável: {deal.assignedUser.name}
+            </div>
+          )}
+
+          {/* View Details Button */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setModalOpen(true)}
+            className="w-full mt-2"
+          >
+            <ExternalLink className="h-4 w-4 mr-2" />
+            Ver detalhes
+          </Button>
+        </CardContent>
+      </Card>
+
+      {workspaceId && (
+        <DealViewModal
+          open={modalOpen}
+          onOpenChange={handleModalClose}
+          deal={{
+            id: deal.id,
+            stageId: deal.stageId,
+            title: deal.title,
+            description: deal.description,
+            value: deal.value,
+            createdAt: deal.createdAt,
+            updatedAt: deal.updatedAt,
+            assignedUser: deal.assignedUser,
+          }}
+          workspaceId={workspaceId}
+          pipelineId={deal.pipeline?.id}
+        />
+      )}
+    </>
   );
 };
 

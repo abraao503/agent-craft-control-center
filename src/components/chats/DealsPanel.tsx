@@ -160,7 +160,11 @@ export const DealsPanel: React.FC<DealsPanelProps> = ({ conversation }) => {
                     Mudar Funil
                   </Button>
                 </div>
-                <DealPrimaryCard deal={primaryDeal} />
+                <DealPrimaryCard 
+                  deal={primaryDeal} 
+                  workspaceId={currentWorkspace?.id}
+                  customerId={conversation.customer?.id}
+                />
               </div>
 
               {otherDeals.length > 0 && (
@@ -174,6 +178,8 @@ export const DealsPanel: React.FC<DealsPanelProps> = ({ conversation }) => {
                       deals={otherDeals}
                       onArchive={handleArchiveDeal}
                       isArchiving={isArchiving}
+                      workspaceId={currentWorkspace?.id}
+                      customerId={conversation.customer?.id}
                     />
                   </div>
                 </>
@@ -202,7 +208,7 @@ export const DealsPanel: React.FC<DealsPanelProps> = ({ conversation }) => {
       <ChangePipelineDialog
         open={isChangingPipeline}
         onOpenChange={setIsChangingPipeline}
-        currentPipelineId={primaryDeal?.pipelineId}
+        currentPipelineId={primaryDeal?.pipeline?.id || null}
         onConfirm={handleChangePipeline}
       />
     </>
