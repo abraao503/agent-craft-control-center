@@ -160,8 +160,8 @@ export const DealsPanel: React.FC<DealsPanelProps> = ({ conversation }) => {
                     Mudar Funil
                   </Button>
                 </div>
-                <DealPrimaryCard 
-                  deal={primaryDeal} 
+                <DealPrimaryCard
+                  deal={primaryDeal}
                   workspaceId={currentWorkspace?.id}
                   customerId={conversation.customer?.id}
                 />

@@ -1,5 +1,11 @@
 import React from "react";
-import { DollarSign, TrendingUp, Calendar, AlertCircle, ExternalLink } from "lucide-react";
+import {
+  DollarSign,
+  TrendingUp,
+  Calendar,
+  AlertCircle,
+  ExternalLink,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -21,7 +27,7 @@ interface DealPrimaryCardProps {
   customerId?: string;
 }
 
-const DealPrimaryCardComponent: React.FC<DealPrimaryCardProps> = ({ 
+const DealPrimaryCardComponent: React.FC<DealPrimaryCardProps> = ({
   deal,
   workspaceId,
   customerId,
