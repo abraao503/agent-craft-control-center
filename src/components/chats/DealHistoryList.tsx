@@ -232,10 +232,10 @@ const DealHistoryListComponent: React.FC<DealHistoryListProps> = ({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Arquivar deal?</AlertDialogTitle>
+            <AlertDialogTitle>Arquivar negócio?</AlertDialogTitle>
             <AlertDialogDescription>
-              O deal será arquivado e não aparecerá mais nas listagens normais.
-              Você poderá visualizá-lo na lista de deals arquivados.
+              O negócio será arquivado e não aparecerá mais nas listagens
+              normais. Você poderá visualizá-lo na lista de negócios arquivados.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

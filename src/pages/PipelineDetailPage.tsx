@@ -15,6 +15,8 @@ import PipelineSwitcher from "@/components/pipelines/PipelineSwitcher";
 import { PipelineWhatsAppConnection } from "@/components/pipelines/PipelineWhatsAppConnection";
 import { listPipelines } from "@/services/pipeline/listPipelines";
 import { AxiosError } from "axios";
+import { Clock } from "lucide-react";
+import { ActivitiesSidebar } from "@/components/deals/ActivitiesSidebar";
 
 const PipelineDetailPage = () => {
   const { pipelineId } = useParams();
@@ -33,6 +35,7 @@ const PipelineDetailPage = () => {
   const [selectedUserId, setSelectedUserId] = useState<string | undefined>(
     undefined
   );
+  const [activitiesSidebarOpen, setActivitiesSidebarOpen] = useState(false);
 
   const isDataReady = () => {
     return !!pipelineId && !!workspaceId;
@@ -371,6 +374,16 @@ const PipelineDetailPage = () => {
               onCreateNew={() => navigate("/deals/pipeline/create")}
             />
           )}
+          {workspaceId && (
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setActivitiesSidebarOpen(!activitiesSidebarOpen)}
+              title="Atividades"
+            >
+              <Clock className="h-5 w-5" />
+            </Button>
+          )}
         </div>
       </div>
 
@@ -390,6 +403,14 @@ const PipelineDetailPage = () => {
               });
             });
           }}
+        />
+      )}
+
+      {workspaceId && (
+        <ActivitiesSidebar
+          workspaceId={workspaceId}
+          isOpen={activitiesSidebarOpen}
+          onClose={() => setActivitiesSidebarOpen(false)}
         />
       )}
     </div>
