@@ -15,8 +15,11 @@ import PipelineSwitcher from "@/components/pipelines/PipelineSwitcher";
 import { PipelineWhatsAppConnection } from "@/components/pipelines/PipelineWhatsAppConnection";
 import { listPipelines } from "@/services/pipeline/listPipelines";
 import { AxiosError } from "axios";
-import { Clock } from "lucide-react";
 import { ActivitiesSidebar } from "@/components/deals/ActivitiesSidebar";
+import { ActivitiesButton } from "@/components/deals/ActivitiesButton";
+import { useWebSocket } from "@/hooks/useWebSocket";
+import { useDealStageWebSocket } from "@/hooks/useDealStageWebSocket";
+import { useActivityWebSocket } from "@/hooks/useActivityWebSocket";
 
 const PipelineDetailPage = () => {
   const { pipelineId } = useParams();
@@ -36,6 +39,28 @@ const PipelineDetailPage = () => {
     undefined
   );
   const [activitiesSidebarOpen, setActivitiesSidebarOpen] = useState(false);
+
+  // WebSocket connection
+  const token = localStorage.getItem("token") || "";
+  const { socket } = useWebSocket({
+    workspaceId: workspaceId || "",
+    token,
+    enabled: !!workspaceId && !!token,
+  });
+
+  // WebSocket event handlers
+  useDealStageWebSocket({
+    socket,
+    workspaceId: workspaceId || "",
+    pipelineId: pipelineId || "",
+    enabled: !!socket && !!workspaceId && !!pipelineId,
+  });
+
+  useActivityWebSocket({
+    socket,
+    workspaceId: workspaceId || "",
+    enabled: !!socket && !!workspaceId,
+  });
 
   const isDataReady = () => {
     return !!pipelineId && !!workspaceId;
@@ -375,14 +400,12 @@ const PipelineDetailPage = () => {
             />
           )}
           {workspaceId && (
-            <Button
-              variant="outline"
-              size="icon"
+            <ActivitiesButton
+              workspaceId={workspaceId}
               onClick={() => setActivitiesSidebarOpen(!activitiesSidebarOpen)}
-              title="Atividades"
-            >
-              <Clock className="h-5 w-5" />
-            </Button>
+              isOpen={activitiesSidebarOpen}
+              socket={socket}
+            />
           )}
         </div>
       </div>

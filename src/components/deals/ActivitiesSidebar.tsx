@@ -1,5 +1,6 @@
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { listActivities } from "@/services/activity/listActivities";
+import { markActivitiesAsRead } from "@/services/activity/markActivitiesAsRead";
 import { ActivityItem } from "./ActivityItem";
 import { ActivityListSkeleton } from "./ActivityItemSkeleton";
 import { X, Clock } from "lucide-react";
@@ -21,6 +22,7 @@ export function ActivitiesSidebar({
 }: ActivitiesSidebarProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const observerTarget = useRef<HTMLDivElement>(null);
+  const queryClient = useQueryClient();
 
   const {
     data,
@@ -46,6 +48,18 @@ export function ActivitiesSidebar({
     },
     enabled: isOpen && !!workspaceId,
   });
+
+  // Mark activities as read when sidebar opens
+  useEffect(() => {
+    if (isOpen && workspaceId) {
+      // Mark as read when opening
+      markActivitiesAsRead({ workspaceId }).then(() => {
+        queryClient.invalidateQueries({
+          queryKey: ["unreadActivitiesCount", workspaceId],
+        });
+      });
+    }
+  }, [isOpen, workspaceId, queryClient]);
 
   // Infinite scroll observer
   const handleObserver = useCallback(
