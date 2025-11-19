@@ -18,6 +18,8 @@ import {
   DollarSignIcon,
 } from "lucide-react";
 import { useAuth } from "@/contexts/auth/hooks";
+import { usePermissions } from "@/hooks/usePermissions";
+import { Permission } from "@/types/auth";
 import {
   Sidebar as SidebarComponent,
   SidebarContent as SidebarContentComponent,
@@ -59,6 +61,7 @@ import { AxiosError } from "axios";
 const useWorkspace = () => {
   const queryClient = useQueryClient();
   const { currentWorkspace, setCurrentWorkspace } = useWorkspaceContext();
+  const { user } = useAuth();
 
   const {
     data: workspaces,
@@ -67,31 +70,54 @@ const useWorkspace = () => {
   } = useQuery({
     queryKey: ["workspaces"],
     queryFn: listWorkspaces,
+    // Refetch quando a janela recebe foco para garantir dados atualizados
+    refetchOnWindowFocus: true,
   });
 
   // Mutation para criar um novo workspace
   const createWorkspaceMutation = useMutation({
     mutationFn: createWorkspace,
-    onSuccess: () => {
+    onSuccess: (newWorkspace) => {
       // Invalidar a query para recarregar a lista de workspaces
       queryClient.invalidateQueries({ queryKey: ["workspaces"] });
+
+      // Se o workspace criado é da mesma empresa do usuário, seleciona-o
+      if (newWorkspace.companyId === user?.companyId) {
+        setCurrentWorkspace(newWorkspace);
+      }
     },
   });
 
   useEffect(() => {
-    if (workspaces?.length > 0 && !currentWorkspace) {
-      const defaultWorkspace =
-        workspaces.find((w) => w.isDefault) || workspaces[0];
-      setCurrentWorkspace(defaultWorkspace);
-    } else if (workspaces?.length > 0 && currentWorkspace) {
-      // Verifica se o workspace selecionado ainda existe na lista
-      const workspaceExists = workspaces.some(
-        (w) => w.id === currentWorkspace.id
-      );
-      if (!workspaceExists) {
+    if (workspaces && workspaces.length > 0) {
+      // Se não há workspace selecionado, seleciona o padrão ou o primeiro
+      if (!currentWorkspace) {
         const defaultWorkspace =
           workspaces.find((w) => w.isDefault) || workspaces[0];
         setCurrentWorkspace(defaultWorkspace);
+      } else {
+        // Verifica se o workspace atual ainda existe na lista
+        const workspaceExists = workspaces.some(
+          (w) => w.id === currentWorkspace.id
+        );
+
+        if (!workspaceExists) {
+          // Se o workspace foi deletado, seleciona o padrão
+          const defaultWorkspace =
+            workspaces.find((w) => w.isDefault) || workspaces[0];
+          setCurrentWorkspace(defaultWorkspace);
+        } else {
+          // Atualiza os dados do workspace atual (caso o nome tenha sido editado)
+          const updatedWorkspace = workspaces.find(
+            (w) => w.id === currentWorkspace.id
+          );
+          if (
+            updatedWorkspace &&
+            updatedWorkspace.name !== currentWorkspace.name
+          ) {
+            setCurrentWorkspace(updatedWorkspace);
+          }
+        }
       }
     }
   }, [workspaces, currentWorkspace, setCurrentWorkspace]);
@@ -111,7 +137,7 @@ const useWorkspace = () => {
   };
 
   return {
-    workspaces,
+    workspaces: workspaces || [],
     selectedWorkspace: currentWorkspace,
     selectWorkspace,
     addWorkspace,
@@ -286,14 +312,6 @@ const WorkspaceSelector = ({ isCollapsed }: { isCollapsed: boolean }) => {
     <div className="px-4 py-2">
       <div className="flex justify-between items-center mb-1">
         <p className="text-sm text-muted-foreground">Workspace</p>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-5 w-5"
-          onClick={() => setIsDialogOpen(true)}
-        >
-          <Plus className="h-4 w-4 text-muted-foreground" />
-        </Button>
       </div>
       {isLoading ? (
         <div className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm flex items-center text-muted-foreground">
@@ -334,6 +352,7 @@ const SidebarMenuContent = () => {
   const location = useLocation();
   const { user, logout } = useAuth();
   const { state } = useSidebar();
+  const { has } = usePermissions();
   const isCollapsed = state === "collapsed";
   const { isLoading: isWorkspaceLoading } = useWorkspace();
 
@@ -341,22 +360,24 @@ const SidebarMenuContent = () => {
     return location.pathname === path;
   };
 
-  const menuItems = [
+  interface MenuItem {
+    path: string;
+    label: string;
+    icon: JSX.Element;
+    requiredPermission?: Permission;
+  }
+
+  const allMenuItems: MenuItem[] = [
     {
       path: "/",
       label: "Dashboard",
       icon: <LayoutDashboard className="h-5 w-5" />,
     },
-    { path: "/agents", label: "Agents", icon: <Bot className="h-5 w-5" /> },
+    // { path: "/agents", label: "Agents", icon: <Bot className="h-5 w-5" /> },
     {
       path: "/chats",
       label: "Conversas",
       icon: <MessagesSquare className="h-5 w-5" />,
-    },
-    {
-      path: "/customers",
-      label: "Clientes",
-      icon: <Users className="h-5 w-5" />,
     },
     {
       path: "/deals",
@@ -364,21 +385,60 @@ const SidebarMenuContent = () => {
       icon: <DollarSignIcon className="h-5 w-5" />,
     },
     {
-      path: "/contents",
-      label: "Conteúdos",
-      icon: <Database className="h-5 w-5" />,
+      path: "/customers",
+      label: "Clientes",
+      icon: <Users className="h-5 w-5" />,
     },
+    // {
+    //   path: "/contents",
+    //   label: "Conteúdos",
+    //   icon: <Database className="h-5 w-5" />,
+    // },
+    // {
+    //   path: "/follow-ups",
+    //   label: "Follow-Ups",
+    //   icon: <BellRing className="h-5 w-5" />,
+    // },
+    // {
+    //   path: "/settings",
+    //   label: "Configurações",
+    //   icon: <Settings className="h-5 w-5" />,
+    // },
     {
-      path: "/follow-ups",
-      label: "Follow-Ups",
-      icon: <BellRing className="h-5 w-5" />,
-    },
-    {
-      path: "/settings",
-      label: "Configurações",
-      icon: <Settings className="h-5 w-5" />,
+      path: "/admin/companies",
+      label: "Empresas",
+      icon: <Building2 className="h-5 w-5" />,
+      requiredPermission: "view:all-companies",
     },
   ];
+
+  // Adiciona condicionalmente os itens de gestão baseado no nível de permissão
+  // Hierarquia: Platform Admin > Company Admin > Workspace Admin
+  if (has("view:all-companies")) {
+    // PLATFORM_ADMIN - já tem o item "Empresas" acima
+  } else if (has("manage:company") || has("create:workspace")) {
+    // COMPANY_OWNER ou COMPANY_ADMIN
+    allMenuItems.push({
+      path: "/company/settings",
+      label: "Minha Empresa",
+      icon: <Building2 className="h-5 w-5" />,
+    });
+  } else if (has("create:workspace-user")) {
+    // WORKSPACE_OWNER ou WORKSPACE_ADMIN
+    allMenuItems.push({
+      path: "/workspace/settings",
+      label: "Meu Workspace",
+      icon: <Building2 className="h-5 w-5" />,
+    });
+  }
+  // WORKSPACE_MANAGER e SALES_REP não veem nenhum item de gestão
+
+  const menuItems = allMenuItems.filter((item) => {
+    if (item.requiredPermission) {
+      return has(item.requiredPermission);
+    }
+    return true;
+  });
 
   const renderMenuItem = (item: {
     path: string;

@@ -1,127 +1,216 @@
-import React from "react";
-import {
-  DollarSign,
-  User,
-  ExternalLink,
-} from "lucide-react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
+import { Loader2, AlertCircle } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
 import { Conversation } from "@/types/conversation";
-import { DealListItem } from "@/types/deal";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { useNavigate } from "react-router-dom";
+import { DealPrimaryCard } from "./DealPrimaryCard";
+import { DealHistoryList } from "./DealHistoryList";
+import { ChangePipelineDialog } from "./ChangePipelineDialog";
+import {
+  getCustomerDeals,
+  CustomerDealApiResponse,
+} from "@/services/deal/getCustomerDeals";
+import { setPrimaryDeal } from "@/services/deal/setPrimaryDeal";
+import { archiveDeal } from "@/services/deal/archiveDeal";
+import { useWorkspaceManager } from "@/hooks/useWorkspaceManager";
+import { useToast } from "@/hooks/use-toast";
 
 type DealsPanelProps = {
   conversation: Conversation;
 };
 
 export const DealsPanel: React.FC<DealsPanelProps> = ({ conversation }) => {
-  const navigate = useNavigate();
+  const { currentWorkspace } = useWorkspaceManager();
+  const { toast } = useToast();
 
-  // Mock data for deals - will be replaced with real API call
-  const mockDeals: DealListItem[] = [
-    {
-      id: "1",
-      stageId: "stage-1",
-      title: "Proposta Comercial",
-      description: "Proposta para implementação do sistema",
-      value: 15000,
-      currency: "BRL",
-      createdAt: new Date("2025-01-15"),
-      updatedAt: new Date("2025-01-20"),
-      customer: {
-        id: conversation.customer.id,
-        name: conversation.customer.identifier || conversation.customer.phone,
-      },
-      assignedUser: {
-        id: "user-1",
-        name: "João Silva",
-      },
+  const [deals, setDeals] = useState<CustomerDealApiResponse[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isChangingPipeline, setIsChangingPipeline] = useState(false);
+  const [isArchiving, setIsArchiving] = useState(false);
+
+  const loadDeals = useCallback(async () => {
+    if (!currentWorkspace?.id) return;
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await getCustomerDeals({
+        customerId: conversation.customer.id,
+        workspaceId: currentWorkspace.id,
+        limit: 50,
+      });
+
+      setDeals(response.items);
+    } catch (err) {
+      console.error("Error loading deals:", err);
+      setError("Erro ao carregar deals. Tente novamente.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [conversation.customer.id, currentWorkspace?.id]);
+
+  useEffect(() => {
+    loadDeals();
+  }, [loadDeals]);
+
+  const handleChangePipeline = useCallback(
+    async (pipelineId: string) => {
+      if (!currentWorkspace?.id) return;
+
+      try {
+        await setPrimaryDeal({
+          customerId: conversation.customer.id,
+          pipelineId,
+          workspaceId: currentWorkspace.id,
+        });
+
+        toast({
+          title: "Funil alterado com sucesso",
+          description: "O negócio principal foi atualizado.",
+        });
+
+        await loadDeals();
+      } catch (err) {
+        console.error("Error changing pipeline:", err);
+        throw err;
+      }
     },
-    {
-      id: "2",
-      stageId: "stage-2",
-      title: "Renovação Anual",
-      description: "Renovação do contrato anual",
-      value: 8500,
-      currency: "BRL",
-      createdAt: new Date("2025-02-01"),
-      updatedAt: new Date("2025-02-05"),
-      customer: {
-        id: conversation.customer.id,
-        name: conversation.customer.identifier || conversation.customer.phone,
-      },
+    [conversation.customer.id, currentWorkspace?.id, loadDeals, toast]
+  );
+
+  const handleArchiveDeal = useCallback(
+    async (dealId: string) => {
+      if (!currentWorkspace?.id) return;
+
+      setIsArchiving(true);
+
+      try {
+        await archiveDeal({
+          dealId,
+          workspaceId: currentWorkspace.id,
+        });
+
+        toast({
+          title: "Negócio arquivado",
+          description: "O negócio foi arquivado com sucesso.",
+        });
+
+        await loadDeals();
+      } catch (err) {
+        console.error("Error archiving deal:", err);
+        toast({
+          title: "Erro ao arquivar negócio",
+          description: "Não foi possível arquivar o negócio. Tente novamente.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsArchiving(false);
+      }
     },
-  ];
+    [currentWorkspace?.id, loadDeals, toast]
+  );
 
-  const formatCurrency = (value: number, currency: string = "BRL") => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: currency,
-    }).format(value);
-  };
+  // Memoize separated deals to avoid recalculating on every render
+  const { primaryDeal, otherDeals } = useMemo(() => {
+    const primary = deals.find((deal) => deal.isPrimaryDeal);
+    const others = deals.filter((deal) => !deal.isPrimaryDeal);
+    return { primaryDeal: primary, otherDeals: others };
+  }, [deals]);
 
-  const handleDealClick = (dealId: string) => {
-    // Navigate to deal details - adjust route as needed
-    navigate(`/deals/${dealId}`);
-  };
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-4">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
 
   return (
-    <ScrollArea className="h-full">
-      <div className="p-4 space-y-3">
-        {mockDeals.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-8">
-            Nenhum deal associado
-          </p>
-        ) : (
-          mockDeals.map((deal) => (
-            <div
-              key={deal.id}
-              className="border rounded-lg p-3 hover:bg-accent/50 transition-colors cursor-pointer"
-              onClick={() => handleDealClick(deal.id)}
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex-1 min-w-0">
-                  <h4 className="text-sm font-semibold truncate">
-                    {deal.title}
-                  </h4>
-                  {deal.description && (
-                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                      {deal.description}
-                    </p>
-                  )}
+    <>
+      <ScrollArea className="h-full">
+        <div className="p-4 space-y-4">
+          {primaryDeal ? (
+            <>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase">
+                    Funil Atual
+                  </h3>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsChangingPipeline(true)}
+                    className="h-7 text-xs"
+                  >
+                    Mudar Funil
+                  </Button>
                 </div>
-                <ExternalLink className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                <DealPrimaryCard
+                  deal={primaryDeal}
+                  workspaceId={currentWorkspace?.id}
+                  customerId={conversation.customer?.id}
+                />
               </div>
 
-              {deal.value && (
-                <div className="mt-2 flex items-center gap-1">
-                  <DollarSign className="h-3 w-3 text-green-600" />
-                  <span className="text-sm font-medium text-green-600">
-                    {formatCurrency(deal.value, deal.currency)}
-                  </span>
-                </div>
+              {otherDeals.length > 0 && (
+                <>
+                  <Separator />
+                  <div>
+                    <h3 className="text-xs font-semibold text-muted-foreground uppercase mb-3">
+                      Histórico de Negócios
+                    </h3>
+                    <DealHistoryList
+                      deals={otherDeals}
+                      onArchive={handleArchiveDeal}
+                      isArchiving={isArchiving}
+                      workspaceId={currentWorkspace?.id}
+                      customerId={conversation.customer?.id}
+                    />
+                  </div>
+                </>
               )}
-
-              {deal.assignedUser && (
-                <div className="mt-2 flex items-center gap-1">
-                  <User className="h-3 w-3 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">
-                    {deal.assignedUser.name}
-                  </span>
-                </div>
-              )}
-
-              <div className="mt-2 text-xs text-muted-foreground">
-                Criado em{" "}
-                {format(new Date(deal.createdAt), "dd/MM/yyyy", {
-                  locale: ptBR,
-                })}
-              </div>
+            </>
+          ) : (
+            <div className="text-center py-8 space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Cliente ainda não está em nenhum funil.
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Selecione um funil para iniciar o atendimento
+              </p>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => setIsChangingPipeline(true)}
+              >
+                Selecionar Funil
+              </Button>
             </div>
-          ))
-        )}
-      </div>
-    </ScrollArea>
+          )}
+        </div>
+      </ScrollArea>
+
+      <ChangePipelineDialog
+        open={isChangingPipeline}
+        onOpenChange={setIsChangingPipeline}
+        currentPipelineId={primaryDeal?.pipeline?.id || null}
+        onConfirm={handleChangePipeline}
+      />
+    </>
   );
 };

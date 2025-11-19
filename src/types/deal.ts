@@ -111,15 +111,18 @@ export interface DealDetails {
 }
 
 export interface GetDealsByStageResponse {
-  deals: DealListItem[];
+  items: DealListItem[];
   total: number;
+  page: number;
   limit: number;
-  offset: number;
+  totalPages: number;
 }
 
 export interface GetDealsByStageParams {
   stageId: string;
   workspaceId: string;
   limit?: number;
-  offset?: number;
+  page?: number;
+  search?: string;
+  assignedUserId?: string;
 }

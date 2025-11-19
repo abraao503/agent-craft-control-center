@@ -1,20 +1,22 @@
 import { api } from "../api";
-import { CreatePipelineStageInput } from "@/types/pipeline";
+import {
+  CreatePipelineStageInput,
+  AssistantPipelineStage,
+} from "@/types/pipeline";
 
 export interface UpdatePipelineStagesInput {
   workspaceId: string;
-  stages: Array<
-    {
-      id: string;
-      name?: string;
-      description?: string | null;
-      order: number;
-      color?: string;
-      winProbability?: number; // 0-100
-      isWonStage?: boolean;
-      isLostStage?: boolean;
-    }
-  >;
+  stages: Array<{
+    id: string;
+    name?: string;
+    description?: string | null;
+    order: number;
+    color?: string;
+    winProbability?: number; // 0-100
+    isWonStage?: boolean;
+    isLostStage?: boolean;
+    assistantPipelineStage?: AssistantPipelineStage | null;
+  }>;
 }
 
 export interface UpdatePipelineStagesResponse {

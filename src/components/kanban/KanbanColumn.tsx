@@ -1,12 +1,15 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { DealListItem } from "@/types/deal";
 import { PipelineStageMinimal } from "@/types/pipeline";
 import { cn, isColorDark } from "@/lib/utils";
-import { MessageCircle, Tag as TagIcon, Loader2 } from "lucide-react";
+import { MessageCircle, Tag as TagIcon, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
   Popover,
@@ -16,6 +19,7 @@ import {
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { listTags } from "@/services/tag/listTags";
 import { getDealsByStage } from "@/services/deal/getDealsByStage";
+import { DealCardSkeleton } from "./DealCardSkeleton";
 
 interface KanbanColumnProps {
   stage: PipelineStageMinimal;
@@ -27,6 +31,7 @@ interface KanbanColumnProps {
   dragOverStage: string | null;
   onDragEnter: () => void;
   onDragLeave: (e: React.DragEvent) => void;
+  assignedUserId?: string;
 }
 
 const formatCurrency = (value: number | null | undefined, currency = "BRL") => {
@@ -44,6 +49,14 @@ const formatCurrency = (value: number | null | undefined, currency = "BRL") => {
       maximumFractionDigits: 2,
     }).format(safe);
   }
+};
+
+const getInitials = (name: string) => {
+  const parts = name.trim().split(" ");
+  if (parts.length === 1) {
+    return parts[0].substring(0, 2).toUpperCase();
+  }
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 };
 
 const DealTagsPopover: React.FC<{
@@ -133,30 +146,51 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
   dragOverStage,
   onDragEnter,
   onDragLeave,
+  assignedUserId,
 }) => {
   const navigate = useNavigate();
   const viewportRef = useRef<HTMLDivElement | null>(null);
+  const [localSearchTerm, setLocalSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(localSearchTerm);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [localSearchTerm]);
 
   // Infinite query for this stage
   const { data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage } =
     useInfiniteQuery({
-      queryKey: ["dealsByStage", stage.id, workspaceId],
-      queryFn: ({ pageParam = 0 }) =>
+      queryKey: [
+        "dealsByStage",
+        stage.id,
+        workspaceId,
+        debouncedSearchTerm,
+        assignedUserId,
+      ],
+      queryFn: ({ pageParam = 1 }) =>
         getDealsByStage({
           stageId: stage.id,
           workspaceId: workspaceId!,
           limit: 10,
-          offset: pageParam,
+          page: pageParam,
+          search: debouncedSearchTerm || undefined,
+          assignedUserId: assignedUserId || undefined,
         }),
       getNextPageParam: (lastPage) => {
-        const nextOffset = lastPage.offset + lastPage.limit;
-        return nextOffset < lastPage.total ? nextOffset : undefined;
+        return lastPage.page < lastPage.totalPages
+          ? lastPage.page + 1
+          : undefined;
       },
-      initialPageParam: 0,
+      initialPageParam: 1,
       enabled: !!workspaceId,
     });
 
-  const stageDeals = data?.pages.flatMap((page) => page.deals) || [];
+  const stageDeals = data?.pages.flatMap((page) => page.items) || [];
   const totalDeals = data?.pages[0]?.total || 0;
 
   // Handle scroll for infinite loading
@@ -248,6 +282,15 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
               )}
             </div>
           </CardTitle>
+          <div className="relative mt-2">
+            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+            <Input
+              placeholder="Buscar negócios..."
+              value={localSearchTerm}
+              onChange={(e) => setLocalSearchTerm(e.target.value)}
+              className="h-8 pl-8 text-xs"
+            />
+          </div>
         </CardHeader>
         <CardContent className="p-2">
           <div
@@ -266,7 +309,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                   <div
                     key={deal.id}
                     className={cn(
-                      "rounded-md border p-3 bg-card shadow-sm hover:shadow transition group",
+                      "rounded-md border p-3 bg-card shadow-sm hover:shadow transition group relative",
                       isMoving && "opacity-70"
                     )}
                     draggable
@@ -289,19 +332,31 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                     }}
                     aria-grabbed="true"
                   >
-                    <div className="font-medium text-sm truncate text-foreground/90">
+                    {/* User Avatar in top-right corner */}
+                    {deal.assignedUser && (
+                      <div
+                        className="absolute top-2 right-2"
+                        title={deal.assignedUser.name}
+                      >
+                        <Avatar className="h-8 w-8 border border-border/50">
+                          <AvatarFallback className="text-[10px] font-medium bg-primary/10 text-primary">
+                            {getInitials(deal.assignedUser.name)}
+                          </AvatarFallback>
+                        </Avatar>
+                      </div>
+                    )}
+
+                    <div className="font-medium text-sm truncate text-foreground/90 pr-8">
                       {deal.title}
                     </div>
                     {deal.description && (
-                      <div className="text-xs text-muted-foreground/70 line-clamp-2 mt-1">
+                      <div className="text-xs text-muted-foreground line-clamp-2 mt-1">
                         {deal.description}
                       </div>
                     )}
                     {deal.dueDate && (
                       <div className="mt-2 space-y-1">
-                        <div className="text-xs text-muted-foreground/70">
-                          data de vencimento
-                        </div>
+                        <div className="text-xs">Data de vencimento</div>
                         <div
                           className={cn(
                             "inline-block px-2 py-0.5 rounded text-xs font-medium",
@@ -327,7 +382,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                           deal.currency ?? "BRL"
                         )}
                       </span>
-                      <span className="text-muted-foreground/75 truncate">
+                      <span className="text-xs text-foreground/90 font-medium">
                         {deal.customer?.name || "Cliente"}
                       </span>
                     </div>
@@ -373,14 +428,16 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                 )}
 
                 {isLoading && stageDeals.length === 0 && (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  <div className="space-y-2">
+                    <DealCardSkeleton />
+                    <DealCardSkeleton />
+                    <DealCardSkeleton />
                   </div>
                 )}
 
                 {isFetchingNextPage && (
-                  <div className="flex items-center justify-center py-2">
-                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  <div className="space-y-2">
+                    <DealCardSkeleton />
                   </div>
                 )}
               </div>

@@ -42,6 +42,7 @@ import {
   FieldType,
   DocumentType,
 } from "@/types/stage-form-field";
+import { PipelineStageMinimal } from "@/types/pipeline";
 import { getDealById } from "@/services/deal/getDealById";
 import { getDealFormFields } from "@/services/deal/getDealFormFields";
 import { saveDealFormValues } from "@/services/deal/saveDealFormValues";
@@ -52,6 +53,8 @@ import { deleteStageFormField } from "@/services/stage-form-field/deleteStageFor
 import { getDealNotes } from "@/services/deal/getDealNotes";
 import { createDealNote } from "@/services/deal/createDealNote";
 import { useToast } from "@/components/ui/use-toast";
+import { listPipelineStages } from "@/services/pipeline/listPipelineStages";
+import { moveDealStage } from "@/services/deal/moveDealStage";
 import { formatDistanceToNow, format, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
@@ -63,9 +66,11 @@ import { SelectFieldTypeModal } from "./SelectFieldTypeModal";
 import { CreateFieldModal } from "./CreateFieldModal";
 import { EditFieldModal } from "./EditFieldModal";
 import { DealTagsSelector } from "./DealTagsSelector";
+import { UserSelector } from "./UserSelector";
 import { updateStageFormField } from "@/services/stage-form-field/updateStageFormField";
 import { updateDeal } from "@/services/deal/updateDeal";
 import { updateDealTags } from "@/services/deal/updateDealTags";
+import { assignUserToDeal } from "@/services/deal/assignUserToDeal";
 import { listTags } from "@/services/tag/listTags";
 import {
   formatCPF,
@@ -80,6 +85,7 @@ interface DealViewModalProps {
   onOpenChange: (open: boolean) => void;
   deal: DealListItem | null;
   workspaceId: string;
+  pipelineId?: string; // Optional pipeline ID to fetch stages
 }
 
 export const DealViewModal: React.FC<DealViewModalProps> = ({
@@ -87,6 +93,7 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
   onOpenChange,
   deal,
   workspaceId,
+  pipelineId: pipelineIdProp,
 }) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -108,6 +115,7 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
   const [description, setDescription] = useState("");
   const [value, setValue] = useState("");
   const [customerName, setCustomerName] = useState("");
+  const [assignedUserId, setAssignedUserId] = useState<string | null>(null);
 
   // Track which field is being saved
   const [savingField, setSavingField] = useState<string | null>(null);
@@ -162,6 +170,64 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
     enabled: !!workspaceId,
   });
 
+  // Fetch pipeline stages for moving the deal between stages (if pipelineId available)
+  type MaybeWithPipeline = { pipelineId?: string; pipeline?: { id?: string } };
+  const pipelineId =
+    pipelineIdProp ||
+    ((dealDetails as MaybeWithPipeline)?.pipelineId as string | undefined) ||
+    ((deal as MaybeWithPipeline)?.pipelineId as string | undefined) ||
+    ((deal as MaybeWithPipeline)?.pipeline?.id as string | undefined);
+  const { data: pipelineStages = [], isLoading: pipelineStagesLoading } =
+    useQuery({
+      queryKey: ["listPipelineStages", pipelineId, workspaceId],
+      queryFn: () => {
+        if (!pipelineId) throw new Error("pipelineId is required");
+        return listPipelineStages(pipelineId, workspaceId);
+      },
+      enabled: open && !!pipelineId && !!workspaceId,
+    });
+
+  const moveDealMutation = useMutation({
+    mutationFn: async (toStageId: string) => {
+      if (!deal) return;
+      await moveDealStage(deal.id, { workspaceId, stageId: toStageId });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["getDealById", deal?.id] });
+      queryClient.invalidateQueries({ queryKey: ["dealsByStage"] });
+      toast({ title: "Sucesso", description: "Negócio movido de etapa." });
+    },
+    onError: () => {
+      toast({
+        title: "Erro",
+        description: "Falha ao mover negócio.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  useEffect(() => {
+    console.log("DealViewModal - Debug Info:", {
+      dealDetails,
+      deal,
+      pipelineId,
+      workspaceId,
+      pipelineStagesCount: pipelineStages.length,
+      pipelineStagesLoading,
+    });
+  }, [
+    dealDetails,
+    deal,
+    pipelineId,
+    workspaceId,
+    pipelineStages,
+    pipelineStagesLoading,
+  ]);
+
+  useEffect(() => {
+    console.log("pipelineStages", pipelineStages);
+  }, [pipelineStages]);
+
   // Initialize field values
   useEffect(() => {
     if (currentFields.length > 0) {
@@ -187,6 +253,7 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
       setDescription(dealDetails.description || "");
       setValue(dealDetails.value?.toString() || "");
       setCustomerName(dealDetails.customer?.name || "");
+      setAssignedUserId(dealDetails.assignedUser?.id || null);
       setSelectedTagIds(dealDetails.tags || []);
     }
   }, [dealDetails]);
@@ -404,6 +471,29 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
     },
   });
 
+  // Assign user mutation
+  const assignUserMutation = useMutation({
+    mutationFn: async (userId: string | null) => {
+      if (!deal || !userId) return;
+      await assignUserToDeal(deal.id, { workspaceId, userId });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["getDealById", deal?.id] });
+      queryClient.invalidateQueries({ queryKey: ["dealsByStage"] });
+      toast({
+        title: "Sucesso",
+        description: "Usuário atribuído com sucesso.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Erro",
+        description: "Falha ao atribuir usuário.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleFieldValueChange = (
     fieldId: string,
     value: string,
@@ -558,6 +648,11 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
 
   const handleTagsChange = (tagIds: string[]) => {
     setSelectedTagIds(tagIds);
+  };
+
+  const handleUserSelect = (userId: string | null) => {
+    setAssignedUserId(userId);
+    assignUserMutation.mutate(userId);
   };
 
   const handleCloseModal = (isOpen: boolean) => {
@@ -719,8 +814,9 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={handleCloseModal}>
-      <DialogContent className="max-w-7xl max-h-[90vh]">
-        <div className="grid grid-cols-[1fr,400px] h-full">
+      <DialogContent className="max-w-7xl max-h-[90vh] p-0 gap-0 [&>button]:right-2 [&>button]:top-2 [&>button]:z-50">
+        {/* three columns: left (slightly narrower), center for fields/comments, right for moving card */}
+        <div className="grid grid-cols-[1fr,400px,280px] h-full">
           {/* Left Column - Deal Details */}
           <div className="border-r">
             <DialogHeader className="p-6 pb-4">
@@ -868,6 +964,22 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
                           rows={4}
                         />
                       </div>
+
+                      <div className="space-y-2">
+                        <Label className="flex items-center gap-2">
+                          Usuário Responsável
+                          {assignUserMutation.isPending && (
+                            <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                          )}
+                        </Label>
+                        <UserSelector
+                          workspaceId={workspaceId}
+                          selectedUserId={assignedUserId}
+                          selectedUserName={dealDetails?.assignedUser?.name}
+                          onUserSelect={handleUserSelect}
+                          disabled={assignUserMutation.isPending}
+                        />
+                      </div>
                     </div>
                   </div>
 
@@ -916,8 +1028,6 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
                       <div className="space-y-2">
                         {fieldHistory.map((stage) => {
                           const isExpanded = expandedStages.has(stage.stageId);
-                          const stageColor =
-                            stage.stageOrder === 1 ? "#f59e0b" : "#ef4444";
 
                           return (
                             <div
@@ -925,7 +1035,7 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
                               className="border rounded-lg overflow-hidden"
                               style={{
                                 borderLeftWidth: "4px",
-                                borderLeftColor: stageColor,
+                                borderLeftColor: stage.stageColor || "#000",
                               }}
                             >
                               <button
@@ -1049,73 +1159,73 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
                     </p>
                   ) : (
                     stageFields.map((field) => (
-                        <div key={field.id} className="space-y-2">
-                          {/* Field Header */}
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2">
-                                <p className="text-sm font-medium">
-                                  {field.label}
-                                  {field.isRequired && (
-                                    <span className="text-destructive ml-1">
-                                      *
-                                    </span>
-                                  )}
-                                </p>
-                                {savingField === field.id && (
-                                  <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                      <div key={field.id} className="space-y-2">
+                        {/* Field Header */}
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm font-medium">
+                                {field.label}
+                                {field.isRequired && (
+                                  <span className="text-destructive ml-1">
+                                    *
+                                  </span>
                                 )}
-                              </div>
-                              {field.description && (
-                                <p className="text-xs text-muted-foreground">
-                                  {field.description}
-                                </p>
+                              </p>
+                              {savingField === field.id && (
+                                <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
                               )}
                             </div>
-
-                            {/* Actions Menu */}
-                            <div className="flex items-center gap-1">
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-6 w-6 p-0 cursor-grab"
-                              >
-                                <GripVertical className="h-4 w-4 text-muted-foreground" />
-                              </Button>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="h-6 w-6 p-0"
-                                  >
-                                    <MoreVertical className="h-4 w-4 text-muted-foreground" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem
-                                    onClick={() => handleEditField(field)}
-                                  >
-                                    <Edit2 className="h-3 w-3 mr-2" />
-                                    Editar
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    onClick={() => handleDeleteField(field.id)}
-                                    className="text-destructive"
-                                  >
-                                    <Trash2 className="h-3 w-3 mr-2" />
-                                    Remover
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </div>
+                            {field.description && (
+                              <p className="text-xs text-muted-foreground">
+                                {field.description}
+                              </p>
+                            )}
                           </div>
 
-                          {/* Field Input */}
-                          {renderFieldInput(field)}
+                          {/* Actions Menu */}
+                          <div className="flex items-center gap-1">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 w-6 p-0 cursor-grab"
+                            >
+                              <GripVertical className="h-4 w-4 text-muted-foreground" />
+                            </Button>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-6 w-6 p-0"
+                                >
+                                  <MoreVertical className="h-4 w-4 text-muted-foreground" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                  onClick={() => handleEditField(field)}
+                                >
+                                  <Edit2 className="h-3 w-3 mr-2" />
+                                  Editar
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => handleDeleteField(field.id)}
+                                  className="text-destructive"
+                                >
+                                  <Trash2 className="h-3 w-3 mr-2" />
+                                  Remover
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
                         </div>
-                      ))
-                    )}
+
+                        {/* Field Input */}
+                        {renderFieldInput(field)}
+                      </div>
+                    ))
+                  )}
                 </div>
               </ScrollArea>
             </div>
@@ -1151,71 +1261,127 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
               {/* Comments List with ScrollArea */}
               <ScrollArea className="flex-1 px-4">
                 <div className="space-y-3 pb-4">
-                      {notesLoading && (
-                        <>
-                          {[1, 2].map((i) => (
-                            <div key={i} className="space-y-1">
-                              <div className="flex items-center gap-2">
-                                <Skeleton className="h-6 w-6 rounded-full" />
-                                <div className="flex-1 space-y-1">
-                                  <Skeleton className="h-3 w-24" />
-                                  <Skeleton className="h-3 w-32" />
-                                </div>
-                              </div>
-                              <Skeleton className="h-10 w-full ml-8" />
+                  {notesLoading && (
+                    <>
+                      {[1, 2].map((i) => (
+                        <div key={i} className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <Skeleton className="h-6 w-6 rounded-full" />
+                            <div className="flex-1 space-y-1">
+                              <Skeleton className="h-3 w-24" />
+                              <Skeleton className="h-3 w-32" />
                             </div>
-                          ))}
-                        </>
-                      )}
-
-                      {!notesLoading && notes.length === 0 && (
-                        <p className="text-xs text-muted-foreground text-center py-4">
-                          Nenhum comentário ainda.
-                        </p>
-                      )}
-
-                      {!notesLoading &&
-                        notes.map((note) => (
-                          <div key={note.id} className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <Avatar className="h-6 w-6">
-                                <AvatarFallback className="text-xs">
-                                  {note.user?.name?.charAt(0) || "U"}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-xs font-medium">
-                                  {note.user?.name || "Usuário"}
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                  {(() => {
-                                    const noteDate = new Date(note.createdAt);
-                                    const daysDiff = differenceInDays(
-                                      new Date(),
-                                      noteDate
-                                    );
-                                    
-                                    if (daysDiff >= 7) {
-                                      return format(
-                                        noteDate,
-                                        "dd/MM/yyyy 'às' HH:mm",
-                                        { locale: ptBR }
-                                      );
-                                    }
-                                    
-                                    return formatDistanceToNow(noteDate, {
-                                      addSuffix: true,
-                                      locale: ptBR,
-                                    });
-                                  })()}
-                                </p>
-                              </div>
-                            </div>
-                            <p className="text-sm pl-8">{note.content}</p>
                           </div>
-                        ))}
+                          <Skeleton className="h-10 w-full ml-8" />
+                        </div>
+                      ))}
+                    </>
+                  )}
+
+                  {!notesLoading && notes.length === 0 && (
+                    <p className="text-xs text-muted-foreground text-center py-4">
+                      Nenhum comentário ainda.
+                    </p>
+                  )}
+
+                  {!notesLoading &&
+                    notes.map((note) => (
+                      <div key={note.id} className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-6 w-6">
+                            <AvatarFallback className="text-xs">
+                              {note.user?.name?.charAt(0) || "U"}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium">
+                              {note.user?.name || "Usuário"}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {(() => {
+                                const noteDate = new Date(note.createdAt);
+                                const daysDiff = differenceInDays(
+                                  new Date(),
+                                  noteDate
+                                );
+
+                                if (daysDiff >= 7) {
+                                  return format(
+                                    noteDate,
+                                    "dd/MM/yyyy 'às' HH:mm",
+                                    { locale: ptBR }
+                                  );
+                                }
+
+                                return formatDistanceToNow(noteDate, {
+                                  addSuffix: true,
+                                  locale: ptBR,
+                                });
+                              })()}
+                            </p>
+                          </div>
+                        </div>
+                        <p className="text-sm pl-8">{note.content}</p>
+                      </div>
+                    ))}
                 </div>
               </ScrollArea>
+            </div>
+          </div>
+
+          {/* Extra Right Column - Move card between pipeline stages */}
+          <div className="border-l bg-transparent flex flex-col">
+            <div className="p-4 border-b h-[65px] flex items-center">
+              <h3 className="font-semibold text-sm">Mover negócio para...</h3>
+            </div>
+
+            <div className="p-4 flex-1 overflow-auto">
+              {pipelineStagesLoading ? (
+                <div className="space-y-2">
+                  {[1, 2, 3].map((i) => (
+                    <Skeleton key={i} className="h-8 w-full" />
+                  ))}
+                </div>
+              ) : pipelineStages && pipelineStages.length > 0 ? (
+                <div className="space-y-2">
+                  {pipelineStages.map((stage: PipelineStageMinimal) => {
+                    const isCurrent =
+                      dealDetails?.currentStage?.id === stage.id;
+                    const stageColor = stage.color || "#6b7280"; // fallback to gray
+                    return (
+                      <Button
+                        key={stage.id}
+                        size="sm"
+                        variant={isCurrent ? "outline" : "ghost"}
+                        className={`w-full justify-between border-l-4 ${
+                          isCurrent ? "opacity-60" : ""
+                        }`}
+                        style={{
+                          borderLeftColor: stageColor,
+                        }}
+                        onClick={() => {
+                          if (!isCurrent && moveDealMutation)
+                            moveDealMutation.mutate(stage.id);
+                        }}
+                        disabled={isCurrent || moveDealMutation.isPending}
+                      >
+                        <span className="flex items-center gap-2">
+                          <span
+                            className="w-2 h-2 rounded-full flex-shrink-0"
+                            style={{ backgroundColor: stageColor }}
+                          />
+                          <span className="text-left">{stage.name}</span>
+                        </span>
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Nenhuma etapa disponível.
+                </p>
+              )}
             </div>
           </div>
         </div>

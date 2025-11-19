@@ -1,7 +1,7 @@
 // Types for Sales Pipeline and Deals
 // Comments in English as per project rules
 
-import { WhatsAppIntegrationName } from './whatsapp-integration';
+import { WhatsAppIntegrationName } from "./whatsapp-integration";
 
 export interface PipelineListItem {
   id: string;
@@ -21,6 +21,7 @@ export interface AssistantAllowedTargetStage {
 }
 
 export interface AssistantPipelineStage {
+  canActInStage: boolean;
   assistantAllowedTargetStages: AssistantAllowedTargetStage[];
 }
 
@@ -46,7 +47,30 @@ export interface CreatePipelineInput {
   name: string;
   description?: string;
   stages: CreatePipelineStageInput[]; // at least 1
-  assistantId?: string | null; // UUID of assistant to use in this pipeline
+  assistant?: {
+    name: string;
+    description: string;
+    avatarFileId: string | null;
+    timeZone: string;
+    language: string;
+    initialMessage: string;
+    skipMessages: string[];
+    iaModelId: string;
+    iaProviderApiKey: string;
+    prompt: {
+      identity: string;
+      function: string;
+      goal: string;
+      style: string;
+      instructions: string;
+      blacklist: string | null;
+      links: { name: string; url: string }[] | null;
+    };
+    contentsIds: string[];
+    customFields: unknown[];
+    entryTags: string[];
+  } | null;
+  assistantId?: string | null; // DEPRECATED: UUID of assistant to use in this pipeline (for backwards compatibility)
   whatsappIntegration?: WhatsAppIntegrationConfig | null;
 }
 
