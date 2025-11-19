@@ -19,6 +19,8 @@ export function ActivityItem({ activity }: ActivityItemProps) {
       addSuffix: true,
       locale: ptBR,
     });
+
+    return format(date, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR });
   };
 
   const renderDealStageTransition = (

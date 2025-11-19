@@ -365,13 +365,17 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                               : "bg-muted text-foreground/80"
                           )}
                         >
-                          {new Date(deal.dueDate).toLocaleString("pt-BR", {
-                            day: "2-digit",
-                            month: "2-digit",
-                            year: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
+                          {(() => {
+                            // Parse UTC date and display in local time
+                            const date = new Date(deal.dueDate);
+                            return date.toLocaleString("pt-BR", {
+                              day: "2-digit",
+                              month: "2-digit",
+                              year: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            });
+                          })()}
                         </div>
                       </div>
                     )}

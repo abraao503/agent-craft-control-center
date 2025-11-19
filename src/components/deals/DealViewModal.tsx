@@ -80,6 +80,48 @@ import {
 } from "@brazilian-utils/brazilian-utils";
 import { AxiosError } from "axios";
 
+// Utility functions for datetime conversion
+// Converts UTC datetime to local datetime-local input format
+const utcToLocalDatetimeString = (utcDateString: string): string => {
+  if (!utcDateString) return "";
+  const date = new Date(utcDateString);
+  // Get local datetime in format YYYY-MM-DDTHH:mm
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+};
+
+// Converts local datetime-local input value to UTC ISO string
+const localDatetimeStringToUTC = (localDatetimeString: string): string => {
+  if (!localDatetimeString) return "";
+  // Create date from local datetime string (browser interprets as local time)
+  const date = new Date(localDatetimeString);
+  // Return ISO string (which is in UTC)
+  return date.toISOString();
+};
+
+// Formats datetime field value for display (converts UTC to local formatted string)
+const formatDatetimeForDisplay = (
+  utcDateString: string,
+  fieldType: FieldType
+): string => {
+  if (!utcDateString) return "";
+  const date = new Date(utcDateString);
+
+  if (fieldType === "date") {
+    return format(date, "dd/MM/yyyy", { locale: ptBR });
+  }
+
+  if (fieldType === "datetime" || fieldType === "due_date") {
+    return format(date, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR });
+  }
+
+  return utcDateString;
+};
+
 interface DealViewModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -238,7 +280,15 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
           if (modifiedFieldsRef.current.has(field.id)) {
             values[field.id] = prevValues[field.id] || "";
           } else {
-            values[field.id] = field.value || "";
+            // Convert UTC to local time for datetime fields
+            if (
+              (field.type === "datetime" || field.type === "due_date") &&
+              field.value
+            ) {
+              values[field.id] = utcToLocalDatetimeString(field.value);
+            } else {
+              values[field.id] = field.value || "";
+            }
           }
         });
         return values;
@@ -298,7 +348,18 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
     mutationFn: async (fieldId: string) => {
       if (!deal) return;
       // Send only the field being edited
-      const value = fieldValues[fieldId];
+      let value = fieldValues[fieldId];
+
+      // Convert local datetime to UTC for datetime fields
+      const field = currentFields.find((f) => f.id === fieldId);
+      if (
+        field &&
+        (field.type === "datetime" || field.type === "due_date") &&
+        value
+      ) {
+        value = localDatetimeStringToUTC(value);
+      }
+
       await saveDealFormValues(deal.id, { values: [{ fieldId, value }] });
     },
     onSuccess: () => {
@@ -1072,24 +1133,41 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
 
                               {isExpanded && stage.fields.length > 0 && (
                                 <div className="px-3 pb-3 space-y-2 bg-muted/20">
-                                  {stage.fields.map((field) => (
-                                    <div
-                                      key={field.id}
-                                      className="flex items-start gap-2"
-                                    >
-                                      <span className="text-muted-foreground mt-0.5">
-                                        {getFieldIcon(field.type)}
-                                      </span>
-                                      <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium">
-                                          {field.label}
-                                        </p>
-                                        <p className="text-sm text-muted-foreground break-words">
-                                          {field.value || "Não preenchido"}
-                                        </p>
+                                  {stage.fields.map((field) => {
+                                    // Format datetime values for display
+                                    let displayValue =
+                                      field.value || "Não preenchido";
+                                    if (
+                                      field.value &&
+                                      (field.type === "datetime" ||
+                                        field.type === "due_date" ||
+                                        field.type === "date")
+                                    ) {
+                                      displayValue = formatDatetimeForDisplay(
+                                        field.value,
+                                        field.type
+                                      );
+                                    }
+
+                                    return (
+                                      <div
+                                        key={field.id}
+                                        className="flex items-start gap-2"
+                                      >
+                                        <span className="text-muted-foreground mt-0.5">
+                                          {getFieldIcon(field.type)}
+                                        </span>
+                                        <div className="flex-1 min-w-0">
+                                          <p className="text-sm font-medium">
+                                            {field.label}
+                                          </p>
+                                          <p className="text-sm text-muted-foreground break-words">
+                                            {displayValue}
+                                          </p>
+                                        </div>
                                       </div>
-                                    </div>
-                                  ))}
+                                    );
+                                  })}
                                 </div>
                               )}
                             </div>
