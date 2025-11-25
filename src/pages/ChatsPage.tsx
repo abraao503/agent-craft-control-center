@@ -39,8 +39,8 @@ const ChatsPage = () => {
     agentId: undefined,
     tagId: undefined,
     tagIds: [],
-    initialDate: null,
-    finalDate: null,
+    initialDate: undefined,
+    finalDate: undefined,
     sortBy: "updatedAt",
     sortOrder: "desc",
     handledBy: undefined,
@@ -62,20 +62,20 @@ const ChatsPage = () => {
   // Query to fetch conversations
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["conversations", filters, workspaceId],
-    queryFn: () => listConversations(filters, workspaceId),
+    queryFn: () => listConversations(filters, workspaceId || ""),
   });
 
   // Query to fetch tags
   const { data: tags = [] } = useQuery({
     queryKey: ["tags", workspaceId],
-    queryFn: () => listTags(workspaceId),
+    queryFn: () => listTags(workspaceId || ""),
     enabled: !!workspaceId,
   });
 
   // Query to fetch agents
   const { data: agentsData } = useQuery({
     queryKey: ["agents", workspaceId],
-    queryFn: () => listAgent(workspaceId),
+    queryFn: () => listAgent(workspaceId || ""),
     enabled: !!workspaceId,
   });
 

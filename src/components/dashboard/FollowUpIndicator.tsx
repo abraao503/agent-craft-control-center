@@ -10,27 +10,36 @@ import {
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useWorkspaceManager } from "@/hooks/useWorkspaceManager";
-import { FollowUpStatsResponse, getFollowUpStats } from "@/services/dashboard/getFollowUpStats";
+import {
+  FollowUpStatsResponse,
+  getFollowUpStats,
+} from "@/services/dashboard/getFollowUpStats";
 
 const FollowUpIndicator = () => {
   const { workspaceId } = useWorkspaceManager();
-  
+
   const { data: followUpStats, isLoading } = useQuery<FollowUpStatsResponse>({
     queryKey: ["followUpStats", workspaceId],
     queryFn: async () => {
-      if (!workspaceId) return null;
-      
+      if (!workspaceId) {
+        throw new Error("Workspace ID is required");
+      }
+
       return getFollowUpStats({
         workspaceId,
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "America/Sao_Paulo"
+        timezone:
+          Intl.DateTimeFormat().resolvedOptions().timeZone ||
+          "America/Sao_Paulo",
       });
     },
-    enabled: !!workspaceId
+    enabled: !!workspaceId,
   });
 
-  const responseRate = followUpStats && followUpStats.messagesThisWeek > 0 
-    ? (followUpStats.messagesWithResponse / followUpStats.messagesThisWeek) * 100 
-    : 0;
+  const responseRate =
+    followUpStats && followUpStats.messagesThisWeek > 0
+      ? (followUpStats.messagesWithResponse / followUpStats.messagesThisWeek) *
+        100
+      : 0;
 
   return (
     <Card>
@@ -96,10 +105,14 @@ const FollowUpIndicator = () => {
             <div className="flex items-center gap-1">
               <CheckCircle className="w-3 h-3" />
               <span className="text-sm">
-                {isLoading ? "..." : followUpStats?.messagesWithResponse || 0} respostas
+                {isLoading ? "..." : followUpStats?.messagesWithResponse || 0}{" "}
+                respostas
               </span>
             </div>
-            <span className="text-sm">{isLoading ? "..." : followUpStats?.messagesThisWeek || 0} enviadas</span>
+            <span className="text-sm">
+              {isLoading ? "..." : followUpStats?.messagesThisWeek || 0}{" "}
+              enviadas
+            </span>
           </div>
         </div>
       </CardContent>

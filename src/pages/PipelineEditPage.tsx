@@ -160,7 +160,7 @@ const PipelineEditPage = () => {
   // Query for agent data when pipeline has an assistant
   const agentQuery = useQuery({
     queryKey: ["getAgent", currentPipeline?.assistantId, workspaceId],
-    queryFn: () => getAgent(currentPipeline!.assistantId!, workspaceId),
+    queryFn: () => getAgent(currentPipeline!.assistantId!, workspaceId!),
     enabled: !!currentPipeline?.assistantId && !!workspaceId,
   });
 
@@ -641,7 +641,12 @@ const PipelineEditPage = () => {
           workspaceId: workspaceId!,
           name: pipelineName,
           stages: stagesInput,
-          assistant,
+          assistant: assistant
+            ? {
+                ...assistant,
+                iaProviderApiKey: agentFormData.iaProviderApiKey || "",
+              }
+            : null,
           whatsappIntegration,
         });
 

@@ -38,7 +38,7 @@ const AgentsPage = () => {
 
   const { isLoading, data, error } = useQuery({
     queryKey: ["listAgent", workspaceId],
-    queryFn: () => listAgent(workspaceId),
+    queryFn: () => listAgent(workspaceId || ""),
   });
 
   const { mutate: deleteAgentMutation, isPending: isDeleting } = useMutation({
@@ -86,7 +86,7 @@ const AgentsPage = () => {
     if (agentToDelete) {
       deleteAgentMutation({
         agentId: agentToDelete,
-        workspaceId,
+        workspaceId: workspaceId || "",
       });
     }
   };
@@ -125,7 +125,9 @@ const AgentsPage = () => {
           <div className="text-center py-12 border rounded-lg">
             {searchQuery ? (
               <>
-                <h3 className="font-medium text-lg">Nenhum agente encontrado</h3>
+                <h3 className="font-medium text-lg">
+                  Nenhum agente encontrado
+                </h3>
                 <p className="text-muted-foreground">
                   Nenhum agente corresponde à sua pesquisa. Tente usar
                   palavras-chave diferentes.
@@ -169,7 +171,9 @@ const AgentsPage = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel disabled={isDeleting}>
+              Cancelar
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDelete}
               className="bg-red-500 hover:bg-red-600"

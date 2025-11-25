@@ -1,6 +1,12 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MultiSelect } from "@/components/ui/multi-select";
 import { AgentFormData } from "@/types/agent";
@@ -14,13 +20,16 @@ interface EntryTagsTabProps {
   updateFormData: (data: Partial<AgentFormData>) => void;
 }
 
-const EntryTagsTab: React.FC<EntryTagsTabProps> = ({ formData, updateFormData }) => {
+const EntryTagsTab: React.FC<EntryTagsTabProps> = ({
+  formData,
+  updateFormData,
+}) => {
   const { workspaceId } = useWorkspaceManager();
-  
+
   // Buscar todas as tags disponíveis
   const { data: tags = [] } = useQuery<Tag[]>({
     queryKey: ["tags", workspaceId],
-    queryFn: () => listTags(workspaceId),
+    queryFn: () => listTags(workspaceId || ""),
     enabled: !!workspaceId,
   });
 
@@ -34,7 +43,8 @@ const EntryTagsTab: React.FC<EntryTagsTabProps> = ({ formData, updateFormData })
         <CardHeader>
           <CardTitle>Tags de Entrada</CardTitle>
           <CardDescription>
-            Selecione as tags que serão automaticamente adicionadas aos novos chats criados por este agente.
+            Selecione as tags que serão automaticamente adicionadas aos novos
+            chats criados por este agente.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -81,7 +91,8 @@ const EntryTagsTab: React.FC<EntryTagsTabProps> = ({ formData, updateFormData })
               )}
             />
             <p className="text-sm text-muted-foreground mt-1">
-              Essas tags serão automaticamente adicionadas aos novos chats criados por este agente.
+              Essas tags serão automaticamente adicionadas aos novos chats
+              criados por este agente.
             </p>
           </div>
         </CardContent>

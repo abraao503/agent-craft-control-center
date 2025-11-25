@@ -6,6 +6,7 @@ import { User, UserLoginResponse } from "./types";
 import { SessionRecorder } from "@/components/SessionRecorder";
 import { UserProfile } from "@/types/auth";
 import { getUserProfile } from "@/services/auth/getUserProfile";
+import { AxiosError } from "axios";
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -48,12 +49,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         description: `Bem-vindo, ${data.user.name}!`,
       });
     } catch (error) {
-      toast({
-        title: "Erro ao realizar login",
-        description:
-          error.response?.data?.message || error.message || "Erro inesperado",
-        variant: "destructive",
-      });
+      if (error instanceof AxiosError) {
+        toast({
+          title: "Erro ao realizar login",
+          description:
+            error.response?.data?.message || error.message || "Erro inesperado",
+          variant: "destructive",
+        });
+      }
+
       throw error;
     }
   };
@@ -71,12 +75,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         description: "Conta criada com sucesso. Você pode agora fazer login.",
       });
     } catch (error) {
-      toast({
-        title: "Erro ao realizar cadastro",
-        description:
-          error.response?.data?.message || error.message || "Erro inesperado",
-        variant: "destructive",
-      });
+      if (error instanceof AxiosError) {
+        toast({
+          title: "Erro ao realizar cadastro",
+          description:
+            error.response?.data?.message || error.message || "Erro inesperado",
+          variant: "destructive",
+        });
+      }
       throw error;
     }
   };
@@ -123,6 +129,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             name: user.name,
             email: user.email,
             companyId: user.companyId,
+            role: user.role,
           }}
         />
       )}

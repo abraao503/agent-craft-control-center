@@ -6,17 +6,16 @@ export interface MentionListRef {
   onKeyDown: (props: { event: KeyboardEvent }) => boolean;
 }
 
-export const MentionList = forwardRef<MentionListRef>(
-  (
-    props: {
-      items: {
-        id: string;
-        label: string;
-      }[];
-      command: (props: { id: string; label: string }) => void;
-    },
-    ref
-  ) => {
+interface MentionListProps {
+  items: {
+    id: string;
+    label: string;
+  }[];
+  command: (props: { id: string; label: string }) => void;
+}
+
+export const MentionList = forwardRef<MentionListRef, MentionListProps>(
+  (props, ref) => {
     const [selectedIndex, setSelectedIndex] = useState(0);
 
     const selectItem = (index: number) => {

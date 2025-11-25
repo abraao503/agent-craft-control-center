@@ -25,7 +25,7 @@ import { useWorkspaceManager } from "@/hooks/useWorkspaceManager";
 interface ChangePipelineDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  currentPipelineId?: string;
+  currentPipelineId: string | null;
   onConfirm: (pipelineId: string) => Promise<void>;
 }
 

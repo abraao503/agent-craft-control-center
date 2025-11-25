@@ -46,7 +46,7 @@ const WhatsAppIntegrationsPage = () => {
 
   const { data: integrations = [], isLoading } = useQuery({
     queryKey: ["company-whatsapp-integrations", workspaceId],
-    queryFn: () => listCompanyWhatsAppIntegrations(workspaceId),
+    queryFn: () => listCompanyWhatsAppIntegrations(workspaceId || ""),
   });
 
   const deleteMutation = useMutation({
@@ -136,7 +136,7 @@ const WhatsAppIntegrationsPage = () => {
             {integrations.map((integration) => (
               <WhatsAppIntegrationCard
                 key={integration.id}
-                workspaceId={workspaceId}
+                workspaceId={workspaceId || ""}
                 integration={integration}
                 onDelete={handleDeleteClick}
               />

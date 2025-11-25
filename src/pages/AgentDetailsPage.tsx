@@ -31,7 +31,7 @@ const AgentDetailsPage = () => {
 
   const { isLoading, data, error } = useQuery({
     queryKey: ["getAgent", id, workspaceId],
-    queryFn: () => getAgent(id, workspaceId),
+    queryFn: () => getAgent(id || "", workspaceId || ""),
     enabled: !!id,
   });
 
@@ -71,7 +71,7 @@ const AgentDetailsPage = () => {
     if (id) {
       deleteAgentMutation({
         agentId: id,
-        workspaceId,
+        workspaceId: workspaceId || "",
       });
     }
   };

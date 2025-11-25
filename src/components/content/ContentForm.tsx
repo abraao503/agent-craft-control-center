@@ -62,7 +62,7 @@ const ContentForm = ({ contentId, onComplete }: ContentFormProps) => {
     try {
       const formData = new FormData();
 
-      formData.append("file", selectedFile);
+      formData.append("file", selectedFile as Blob);
 
       const { data: file } = await api.post<UploadDocumentResponse>(
         "file/document/upload",
@@ -133,13 +133,13 @@ const ContentForm = ({ contentId, onComplete }: ContentFormProps) => {
   };
 
   return (
-    <FormErrorTracker 
-      form={form} 
-      formId="content-form" 
+    <FormErrorTracker
+      form={form}
+      formId="content-form"
       formName="Content Upload Form"
       contextInfo={{
         contentId: contentId || "new",
-        pageType: "content-management"
+        pageType: "content-management",
       }}
     >
       <Form {...form}>

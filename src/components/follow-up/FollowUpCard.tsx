@@ -110,7 +110,7 @@ export function FollowUpCard({
                 hours: number;
                 minutes: number;
               }) => {
-                const parts = [];
+                const parts: string[] = [];
                 if (timeValue.days > 0) {
                   parts.push(
                     `${timeValue.days} ${timeValue.days === 1 ? "dia" : "dias"}`

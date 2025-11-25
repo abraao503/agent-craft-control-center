@@ -301,7 +301,7 @@ export const DealDetailsModal: React.FC<DealDetailsModalProps> = ({
                     <div className="space-y-2">
                       <Label>Telefone principal</Label>
                       <Input
-                        value={dealDetails?.customer.phone || ""}
+                        value={dealDetails?.customer?.phone || ""}
                         disabled
                         placeholder="Telefone"
                       />

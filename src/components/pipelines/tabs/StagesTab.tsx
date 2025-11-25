@@ -225,7 +225,9 @@ const SortableStage: React.FC<SortableStageProps> = ({
                   order: s.order,
                 }))}
                 onConfigChange={(stageId, config) => {
-                  onUpdate(index, { assistantPipelineStage: config });
+                  onUpdate(index, {
+                    assistantPipelineStage: config ?? undefined,
+                  });
                 }}
               />
             </div>
@@ -275,7 +277,7 @@ export const StagesTab: React.FC<StagesTabProps> = ({
       color: s.color,
       winProbability: s.winProbability ?? 0,
       order: idx,
-      assistantPipelineStage: s.assistantPipelineStage,
+      assistantPipelineStage: s.assistantPipelineStage ?? undefined,
     }));
 
   const [draftStages, setDraftStages] = useState<EditableStage[]>(() =>

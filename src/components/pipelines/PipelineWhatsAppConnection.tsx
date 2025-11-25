@@ -149,7 +149,7 @@ export const PipelineWhatsAppConnection = ({
     if (!integration) return "";
 
     const frontendUrl = import.meta.env.VITE_API_URL || window.location.origin;
-    const companyId = user.companyId;
+    const companyId = user?.companyId;
     const integrationName = integration.whatsappIntegrationName;
     const integrationId = integration.id;
 

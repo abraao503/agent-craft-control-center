@@ -4,23 +4,32 @@ import { Progress } from "@/components/ui/progress";
 import { BarChart3, Bot, User } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useWorkspaceManager } from "@/hooks/useWorkspaceManager";
-import { ConversationsStatsResponse, getConversationsStats } from "@/services/dashboard/getConversationsStats";
+import {
+  ConversationsStatsResponse,
+  getConversationsStats,
+} from "@/services/dashboard/getConversationsStats";
 
 const ConversationStats = () => {
   const { workspaceId } = useWorkspaceManager();
-  
+
   const { data: stats, isLoading } = useQuery<ConversationsStatsResponse>({
     queryKey: ["conversationsStats", workspaceId],
     queryFn: async () => {
-      if (!workspaceId) return null;
-      
+      if (!workspaceId) {
+        throw new Error("Workspace ID is required");
+      }
+
       return getConversationsStats({ workspaceId });
     },
-    enabled: !!workspaceId
+    enabled: !!workspaceId,
   });
 
-  const aiPercentage = stats ? (stats.handledByAssistant / stats.total) * 100 : 0;
-  const humanPercentage = stats ? (stats.handledByHuman / stats.total) * 100 : 0;
+  const aiPercentage = stats
+    ? (stats.handledByAssistant / stats.total) * 100
+    : 0;
+  const humanPercentage = stats
+    ? (stats.handledByHuman / stats.total) * 100
+    : 0;
 
   return (
     <Card>

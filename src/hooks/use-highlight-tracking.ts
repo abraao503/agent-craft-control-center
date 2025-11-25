@@ -6,14 +6,6 @@ interface TrackEventOptions {
   metadata?: Record<string, string>;
 }
 
-interface EventMetadata {
-  timestamp: string;
-  userId?: string;
-  userName?: string;
-  userEmail?: string;
-  [key: string]: string;
-}
-
 /**
  * Hook for tracking user interactions with Highlight
  */
@@ -29,7 +21,7 @@ export function useHighlightTracking() {
     const { includeUserData = true, metadata = {} } = options;
 
     // Build event metadata
-    const eventMetadata: EventMetadata = {
+    const eventMetadata: Record<string, string | number | boolean> = {
       ...metadata,
       timestamp: new Date().toISOString(),
     };
@@ -51,30 +43,32 @@ export function useHighlightTracking() {
    * @param callback Optional callback function to run after tracking
    * @param options Additional options for the event
    */
-  const createTrackingCallback = <T extends Array<string>, R>(
+  const createTrackingCallback = <T extends unknown[], R>(
     eventName: string,
     callback?: (...args: T) => R,
     options: TrackEventOptions = {}
   ) => {
     return (...args: T): R | undefined => {
+      // Build args metadata
+      const argsMetadata: Record<string, string> = {};
+      args.forEach((arg, index) => {
+        if (
+          arg === null ||
+          arg === undefined ||
+          typeof arg === "string" ||
+          typeof arg === "number" ||
+          typeof arg === "boolean"
+        ) {
+          argsMetadata[`arg${index}`] = String(arg);
+        }
+      });
+
       // Track the event
       trackEvent(eventName, {
         ...options,
         metadata: {
           ...(options.metadata || {}),
-          // Include args if they're primitives that can be serialized
-          ...args.reduce((acc, arg, index) => {
-            if (
-              arg === null ||
-              arg === undefined ||
-              typeof arg === "string" ||
-              typeof arg === "number" ||
-              typeof arg === "boolean"
-            ) {
-              acc[`arg${index}`] = arg;
-            }
-            return acc;
-          }, {} as Record<string, string>),
+          ...argsMetadata,
         },
       });
 

@@ -1,17 +1,19 @@
-import { Link } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Bot, MessageSquare, Activity, Users } from 'lucide-react';
-import { AGENTS, WHATSAPP_INTEGRATIONS } from '@/services/mockData';
+import { Link } from "react-router-dom";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Bot, MessageSquare, Activity, Users } from "lucide-react";
 
 const DashboardCards = () => {
-  const totalAgents = AGENTS.length;
-  const totalIntegrations = WHATSAPP_INTEGRATIONS.length;
-  
   // Placeholder metrics for the demo
   const totalMessages = 145;
   const activeUsers = 32;
-  
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       <Card>
@@ -20,7 +22,6 @@ const DashboardCards = () => {
           <Bot className="w-4 h-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{totalAgents}</div>
           <p className="text-xs text-muted-foreground">
             +{Math.floor(Math.random() * 5) + 1} from last month
           </p>
@@ -33,14 +34,15 @@ const DashboardCards = () => {
           </div>
         </CardContent>
       </Card>
-      
+
       <Card>
         <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-          <CardTitle className="text-sm font-medium">WhatsApp Integrations</CardTitle>
+          <CardTitle className="text-sm font-medium">
+            WhatsApp Integrations
+          </CardTitle>
           <MessageSquare className="w-4 h-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{totalIntegrations}</div>
           <p className="text-xs text-muted-foreground">
             +{Math.floor(Math.random() * 5) + 1} from last month
           </p>
@@ -53,10 +55,12 @@ const DashboardCards = () => {
           </div>
         </CardContent>
       </Card>
-      
+
       <Card>
         <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-          <CardTitle className="text-sm font-medium">Messages Handled</CardTitle>
+          <CardTitle className="text-sm font-medium">
+            Messages Handled
+          </CardTitle>
           <Activity className="w-4 h-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
@@ -71,7 +75,7 @@ const DashboardCards = () => {
           </div>
         </CardContent>
       </Card>
-      
+
       <Card>
         <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
           <CardTitle className="text-sm font-medium">Active Users</CardTitle>

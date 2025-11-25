@@ -35,7 +35,6 @@ import FollowUpPage from "./pages/FollowUpPage";
 import FollowUpCreatePage from "./pages/FollowUpCreatePage";
 import FollowUpEditPage from "./pages/FollowUpEditPage";
 import FollowUpDetailPage from "./pages/FollowUpDetailPage";
-import MessageQueuePage from "./pages/MessageQueuePage";
 import PipelineDetailPage from "./pages/PipelineDetailPage";
 import PipelineEditPage from "./pages/PipelineEditPage";
 import AdminCompaniesPage from "./pages/AdminCompaniesPage";
@@ -227,7 +226,6 @@ const FollowUpListPage = () => <FollowUpPage />;
 const FollowUpCreatePageView = () => <FollowUpCreatePage />;
 const FollowUpEditPageView = () => <FollowUpEditPage />;
 const FollowUpDetailViewPage = () => <FollowUpDetailPage />;
-const MessageQueueListPage = () => <MessageQueuePage />;
 const PipelineDetailViewPage = () => <PipelineDetailPage />;
 const PipelineEditViewPage = () => <PipelineEditPage />;
 const AdminCompaniesListPage = () => <AdminCompaniesPage />;
@@ -310,10 +308,6 @@ const App = () => (
                   <Route
                     path="/follow-ups/:id"
                     element={<FollowUpDetailViewPage />}
-                  />
-                  <Route
-                    path="/message-queue"
-                    element={<MessageQueueListPage />}
                   />
                   <Route
                     path="/admin/companies"

@@ -29,7 +29,7 @@ export interface UpdatePipelineInput {
     initialMessage: string;
     skipMessages: string[];
     iaModelId: string;
-    iaProviderApiKey: string;
+    iaProviderApiKey: string | undefined;
     prompt: {
       identity: string;
       function: string;

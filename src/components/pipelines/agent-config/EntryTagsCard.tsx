@@ -29,7 +29,7 @@ export const EntryTagsCard: React.FC<EntryTagsCardProps> = ({
 
   const { data: tags = [] } = useQuery<Tag[]>({
     queryKey: ["tags", workspaceId],
-    queryFn: () => listTags(workspaceId),
+    queryFn: () => listTags(workspaceId || ""),
     enabled: !!workspaceId,
   });
 

@@ -14,7 +14,7 @@ export interface CustomerDealApiResponse {
   updatedAt: string;
   deletedAt?: string | null;
   archivedAt?: string | null;
-  pipeline?: {
+  pipeline: {
     id: string;
     name: string;
     workspaceId: string;

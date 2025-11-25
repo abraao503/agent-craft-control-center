@@ -45,7 +45,7 @@ const CustomersPage = () => {
 
   const { isLoading, data, error, refetch } = useQuery({
     queryKey: ["listCustomers", queryParams, workspaceId],
-    queryFn: () => listCustomers(queryParams, workspaceId),
+    queryFn: () => listCustomers(queryParams, workspaceId || ""),
   });
 
   useEffect(() => {

@@ -42,13 +42,13 @@ export const ChatTagManager: React.FC<ChatTagManagerProps> = ({
 
   const { data: allTags = [] } = useQuery({
     queryKey: ["tags", workspaceId],
-    queryFn: () => listTags(workspaceId),
+    queryFn: () => listTags(workspaceId || ""),
     enabled: !!workspaceId,
   });
 
   const { data: fetchedChatTags, isLoading: isLoadingChatTags } = useQuery({
     queryKey: ["chatTags", chatId, workspaceId],
-    queryFn: () => getChatTags(chatId, workspaceId),
+    queryFn: () => getChatTags(chatId, workspaceId || ""),
     enabled: !!chatId && !!workspaceId,
   });
 
@@ -79,7 +79,7 @@ export const ChatTagManager: React.FC<ChatTagManagerProps> = ({
       const updatedTags = chatTags.filter((tag) => tag.id !== variables.tagId);
       setChatTags(updatedTags);
       onTagsChange(updatedTags);
-      setRemovingTagIds(prev => prev.filter(id => id !== variables.tagId));
+      setRemovingTagIds((prev) => prev.filter((id) => id !== variables.tagId));
       queryClient.invalidateQueries({ queryKey: ["chatTags", chatId] });
     },
     onError: () => {
@@ -88,26 +88,28 @@ export const ChatTagManager: React.FC<ChatTagManagerProps> = ({
         description: "Não foi possível remover a tag da conversa.",
         variant: "destructive",
       });
-      setRemovingTagIds(prev => prev.filter(id => id !== unlinkTagMutation.variables?.tagId));
+      setRemovingTagIds((prev) =>
+        prev.filter((id) => id !== unlinkTagMutation.variables?.tagId)
+      );
     },
   });
 
   const handleAddTag = () => {
     if (!selectedTagId) return;
-    
+
     linkTagMutation.mutate({
       tagId: selectedTagId,
       chatId,
-      workspaceId,
+      workspaceId: workspaceId || "",
     });
   };
 
   const handleRemoveTag = (tagId: string) => {
-    setRemovingTagIds(prev => [...prev, tagId]);
+    setRemovingTagIds((prev) => [...prev, tagId]);
     unlinkTagMutation.mutate({
       tagId,
       chatId,
-      workspaceId,
+      workspaceId: workspaceId || "",
     });
   };
 
@@ -127,7 +129,7 @@ export const ChatTagManager: React.FC<ChatTagManagerProps> = ({
   return (
     <div className="space-y-4">
       <h4 className="text-sm font-medium">Tags</h4>
-      
+
       <div className="flex flex-wrap gap-2 mb-4">
         {isLoadingChatTags && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -139,8 +141,10 @@ export const ChatTagManager: React.FC<ChatTagManagerProps> = ({
           chatTags.map((tag) => (
             <Badge
               key={tag.id}
-              style={{ backgroundColor: tag.color,
-                color: isColorDark(tag.color) ? "white" : "black" }}
+              style={{
+                backgroundColor: tag.color,
+                color: isColorDark(tag.color) ? "white" : "black",
+              }}
               className="flex items-center gap-1"
             >
               {tag.name}
@@ -167,10 +171,7 @@ export const ChatTagManager: React.FC<ChatTagManagerProps> = ({
 
       {availableTags.length > 0 && (
         <div className="flex gap-2">
-          <Select
-            value={selectedTagId}
-            onValueChange={setSelectedTagId}
-          >
+          <Select value={selectedTagId} onValueChange={setSelectedTagId}>
             <SelectTrigger className="w-[200px]">
               <SelectValue placeholder="Selecionar tag" />
             </SelectTrigger>

@@ -1,5 +1,5 @@
-import { Component, ErrorInfo, ReactNode } from 'react';
-import { H } from 'highlight.run';
+import { Component, ErrorInfo, ReactNode } from "react";
+import { H } from "highlight.run";
 
 interface Props {
   children: ReactNode;
@@ -21,8 +21,8 @@ export class HighlightErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     // Report the error to Highlight
-    H.consumeError(error, 'Error caught in error boundary', {
-      componentStack: errorInfo.componentStack,
+    H.consumeError(error, "Error caught in error boundary", {
+      componentStack: errorInfo.componentStack || "",
     });
   }
 
@@ -38,4 +38,4 @@ export class HighlightErrorBoundary extends Component<Props, State> {
 
     return this.props.children;
   }
-} 
+}

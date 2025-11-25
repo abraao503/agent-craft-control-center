@@ -234,7 +234,7 @@ export default function CompanyWorkspaceDetailsPage() {
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
             </div>
-          ) : usersData && usersData.users.length > 0 ? (
+          ) : usersData && usersData.items.length > 0 ? (
             <>
               <div className="border rounded-lg overflow-hidden">
                 <Table>
@@ -248,7 +248,7 @@ export default function CompanyWorkspaceDetailsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {usersData.users.map((user) => (
+                    {usersData.items.map((user) => (
                       <TableRow key={user.id}>
                         <TableCell className="font-medium">
                           {user.name}

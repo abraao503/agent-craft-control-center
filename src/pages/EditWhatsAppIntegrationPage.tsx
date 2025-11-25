@@ -19,7 +19,7 @@ const EditWhatsAppIntegrationPage = () => {
 
   const { data: integration, isLoading } = useQuery({
     queryKey: ["get-whatsapp-integration", id],
-    queryFn: () => getCompanyWhatsAppIntegration(id),
+    queryFn: () => getCompanyWhatsAppIntegration(id || ""),
   });
 
   useEffect(() => {

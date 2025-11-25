@@ -64,7 +64,7 @@ const useWorkspace = () => {
   const { user } = useAuth();
 
   const {
-    data: workspaces,
+    data: workspaces = [],
     isLoading,
     error,
   } = useQuery({

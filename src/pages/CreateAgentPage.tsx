@@ -26,7 +26,7 @@ const STEPS = [
 const defaultFormData: AgentFormData = {
   name: "",
   description: "",
-  avatarUrl: null,
+  avatarUrl: undefined,
   iaModelId: "",
   iaProviderApiKey: "",
   initialMessage: "",
@@ -71,14 +71,18 @@ const CreateAgentPage = () => {
       navigate("/agents");
     },
     onError: (error: unknown) => {
-      const apiError = error as { response?: { data?: { statusCode?: number; message?: string } } };
-      const isInvalidApiKey = 
-        apiError?.response?.data?.statusCode === 422 && 
+      const apiError = error as {
+        response?: { data?: { statusCode?: number; message?: string } };
+      };
+      const isInvalidApiKey =
+        apiError?.response?.data?.statusCode === 422 &&
         apiError?.response?.data?.message === "Invalid API key";
 
       toast({
-        title: isInvalidApiKey ? "Chave de API Inválida" : "Erro ao criar agente",
-        description: isInvalidApiKey 
+        title: isInvalidApiKey
+          ? "Chave de API Inválida"
+          : "Erro ao criar agente",
+        description: isInvalidApiKey
           ? "A chave de API fornecida é inválida. Verifique sua chave de API e tente novamente."
           : "Ocorreu um erro ao criar o agente.",
         variant: "destructive",
@@ -119,7 +123,7 @@ const CreateAgentPage = () => {
       iaProviderApiKey: formData.iaProviderApiKey,
       skipMessages: formData.skipMessages,
       entryTags: formData.entryTags,
-      workspaceId: workspaceId,
+      workspaceId: workspaceId || "",
     });
   };
 

@@ -50,7 +50,7 @@ const ContentTable = ({
           title: "Content deleted",
           description: `${deletingContent?.name} has been deleted successfully`,
         });
-        onDeleted(deletingContent.id);
+        onDeleted(deletingContent?.id || "");
         setDeletingContent(null);
       },
       onError: (error) => {

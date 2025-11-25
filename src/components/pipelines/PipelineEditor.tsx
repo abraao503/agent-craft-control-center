@@ -50,7 +50,15 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { getCompanyWhatsAppIntegration } from "@/services/whatsapp/getCompanyWhatsAppIntegration";
 import { cn } from "@/lib/utils";
-import { GripVertical, Bot, MessageSquare, Settings, Pencil, Check, X } from "lucide-react";
+import {
+  GripVertical,
+  Bot,
+  MessageSquare,
+  Settings,
+  Pencil,
+  Check,
+  X,
+} from "lucide-react";
 import { AssistantStageConfig } from "./AssistantStageConfig";
 import {
   DndContext,
@@ -144,9 +152,9 @@ const SortableStage: React.FC<SortableStageProps> = ({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       handleSaveName();
-    } else if (e.key === 'Escape') {
+    } else if (e.key === "Escape") {
       handleCancelEdit();
     }
   };
@@ -157,17 +165,13 @@ const SortableStage: React.FC<SortableStageProps> = ({
       style={style}
       className={cn("min-w-[320px] w-[320px] max-w-[360px]")}
     >
-      <Card 
+      <Card
         className="flex flex-col bg-background/60 border-border h-[calc(100vh-350px)] overflow-hidden"
         style={
-          stage.color
-            ? { borderTop: `3px solid ${stage.color}` }
-            : undefined
+          stage.color ? { borderTop: `3px solid ${stage.color}` } : undefined
         }
       >
-        <CardHeader
-          className="py-3 bg-muted/40 border-b border-border"
-        >
+        <CardHeader className="py-3 bg-muted/40 border-b border-border">
           <CardTitle className="text-sm flex items-center justify-between gap-2">
             {isEditingName ? (
               <div className="flex items-center gap-1 flex-1">
@@ -237,7 +241,9 @@ const SortableStage: React.FC<SortableStageProps> = ({
                   onChange={(e) => onUpdate(index, { color: e.target.value })}
                   className="h-8 w-12 rounded border border-input cursor-pointer"
                 />
-                <span className="text-xs text-muted-foreground">{stage.color || "#64748b"}</span>
+                <span className="text-xs text-muted-foreground">
+                  {stage.color || "#64748b"}
+                </span>
               </div>
             </div>
           </div>
@@ -254,7 +260,9 @@ const SortableStage: React.FC<SortableStageProps> = ({
                 order: s.order,
               }))}
               onConfigChange={(stageId, config) => {
-                onUpdate(index, { assistantPipelineStage: config });
+                onUpdate(index, {
+                  assistantPipelineStage: config ?? undefined,
+                });
               }}
             />
           )}
@@ -294,7 +302,7 @@ export const PipelineEditor: React.FC<PipelineEditorProps> = ({
       color: s.color,
       winProbability: s.winProbability ?? 0,
       order: idx,
-      assistantPipelineStage: s.assistantPipelineStage,
+      assistantPipelineStage: s.assistantPipelineStage ?? undefined,
     }));
 
   const [name, setName] = useState(pipelineName);

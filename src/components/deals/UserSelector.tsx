@@ -51,7 +51,7 @@ export function UserSelector({
     enabled: open, // Only fetch when popover is open
   });
 
-  const users = usersData?.users || [];
+  const users = usersData?.items || [];
   const selectedUser = users.find((u) => u.id === selectedUserId);
 
   const getInitials = (name: string) => {

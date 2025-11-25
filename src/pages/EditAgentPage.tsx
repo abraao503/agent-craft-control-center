@@ -59,7 +59,7 @@ const EditAgentPage = () => {
 
   const { isLoading, data, error } = useQuery({
     queryKey: ["getAgent", id, workspaceId],
-    queryFn: () => getAgent(id, workspaceId),
+    queryFn: () => getAgent(id || "", workspaceId || ""),
   });
 
   const { mutateAsync: updateAgentMutation, isPending: isUpdating } =
@@ -81,14 +81,19 @@ const EditAgentPage = () => {
         navigate(`/agents/${id}`);
       },
       onError: (error: unknown) => {
-        const apiError = error as { response?: { data?: { statusCode?: number; message?: string } }; message?: string };
-        const isInvalidApiKey = 
-          apiError?.response?.data?.statusCode === 422 && 
+        const apiError = error as {
+          response?: { data?: { statusCode?: number; message?: string } };
+          message?: string;
+        };
+        const isInvalidApiKey =
+          apiError?.response?.data?.statusCode === 422 &&
           apiError?.response?.data?.message === "Invalid API key";
 
         toast({
-          title: isInvalidApiKey ? "Chave de API Inválida" : "Erro ao atualizar agente",
-          description: isInvalidApiKey 
+          title: isInvalidApiKey
+            ? "Chave de API Inválida"
+            : "Erro ao atualizar agente",
+          description: isInvalidApiKey
             ? "A chave de API fornecida é inválida. Verifique sua chave de API e tente novamente."
             : apiError.message || "Ocorreu um erro ao atualizar o agente.",
           variant: "destructive",
@@ -102,7 +107,7 @@ const EditAgentPage = () => {
       setFormData({
         name: data.name,
         description: data.description,
-        avatarUrl: data.avatar?.url || null,
+        avatarUrl: data.avatar?.url || undefined,
         timeZone: data.timeZone,
         language: data.language,
         initialMessage: data.initialMessage,
@@ -161,7 +166,7 @@ const EditAgentPage = () => {
     );
 
     await updateAgentMutation({
-      agentId: id,
+      agentId: id || "",
       agentData: {
         name: formData.name,
         description: formData.description,
@@ -185,7 +190,7 @@ const EditAgentPage = () => {
         iaProviderApiKey: formData.iaProviderApiKey,
         entryTags: formData.entryTags,
       },
-      workspaceId,
+      workspaceId: workspaceId || "",
     });
 
     toast({
