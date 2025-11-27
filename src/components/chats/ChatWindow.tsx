@@ -716,10 +716,10 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 xl:gap-3">
             {/* Handler Status Badge */}
             <div
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border-2 ${
+              className={`flex items-center gap-1.5 xl:gap-2 px-2 xl:px-3 py-1.5 rounded-lg border-2 ${
                 localConversation.handledBy === "ai"
                   ? "bg-blue-50 border-blue-200 text-blue-700"
                   : "bg-green-50 border-green-200 text-green-700"
@@ -728,12 +728,14 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
               {localConversation.handledBy === "ai" ? (
                 <>
                   <Bot className="h-4 w-4" />
-                  <span className="text-sm font-medium">Atendimento por IA</span>
+                  <span className="text-xs xl:text-sm font-medium xl:hidden">IA</span>
+                  <span className="text-sm font-medium hidden xl:inline">Atendimento por IA</span>
                 </>
               ) : (
                 <>
                   <UserCog className="h-4 w-4" />
-                  <span className="text-sm font-medium">Atendimento Humano</span>
+                  <span className="text-xs xl:text-sm font-medium xl:hidden">Humano</span>
+                  <span className="text-sm font-medium hidden xl:inline">Atendimento Humano</span>
                 </>
               )}
             </div>
@@ -744,16 +746,18 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
               size="sm"
               onClick={handleToggleHandler}
               disabled={updateHandlerMutation.isPending}
-              className="gap-2"
+              className="gap-1.5 xl:gap-2 px-2 xl:px-3"
             >
               {updateHandlerMutation.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <ArrowRightLeft className="h-4 w-4" />
               )}
-              {localConversation.handledBy === "ai"
-                ? "Transferir para Humano"
-                : "Transferir para IA"}
+              <span className="hidden lg:inline">
+                {localConversation.handledBy === "ai"
+                  ? "Transferir para Humano"
+                  : "Transferir para IA"}
+              </span>
             </Button>
 
             {/* More Options Menu */}

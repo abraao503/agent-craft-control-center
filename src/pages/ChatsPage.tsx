@@ -300,7 +300,7 @@ const ChatsPage = () => {
         {!isError && (
           <>
             {/* Chat List - Left Side */}
-            <div className="w-[200px] md:w-[380px] flex-shrink-0">
+            <div className="w-[200px] sm:w-[220px] md:w-[240px] lg:w-[260px] xl:w-[300px] 2xl:w-[340px] flex-shrink-0">
               <ChatList
                 conversations={conversations}
                 selectedConversationId={selectedConversation?.id || null}

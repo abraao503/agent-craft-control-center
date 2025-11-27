@@ -37,9 +37,9 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
   };
 
   return (
-    <div className="flex h-full">
+    <div className="flex h-full relative">
       {/* Icon Bar */}
-      <div className="w-14 bg-background border-l flex flex-col items-center py-4 gap-2">
+      <div className="w-14 bg-background border-l flex flex-col items-center py-4 gap-2 z-10">
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -107,9 +107,9 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
         </TooltipProvider>
       </div>
 
-      {/* Content Panel */}
+      {/* Content Panel - Overlay on small screens, inline on large screens */}
       {activeView && (
-        <div className="w-80 border-l bg-background flex flex-col">
+        <div className="absolute lg:relative right-14 lg:right-0 top-0 h-full w-72 lg:w-64 xl:w-72 2xl:w-80 border-l bg-background flex flex-col shadow-lg lg:shadow-none z-20">
           <div className="p-3 border-b flex items-center justify-between">
             <h3 className="font-semibold text-sm">
               {activeView === "contact" && "Contato"}
