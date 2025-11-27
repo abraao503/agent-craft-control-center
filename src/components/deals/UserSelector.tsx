@@ -1,5 +1,11 @@
-import React, { useState, useEffect } from "react";
-import { Check, ChevronsUpDown, User as UserIcon, Loader2 } from "lucide-react";
+import React, { useState, useMemo } from "react";
+import {
+  Check,
+  ChevronsUpDown,
+  User as UserIcon,
+  Loader2,
+  Shield,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,6 +25,17 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { User } from "@/types/user";
 import { useQuery } from "@tanstack/react-query";
 import { listUsers } from "@/services/user/listUsers";
+import {
+  listCompanyAdmins,
+  UserRole,
+} from "@/services/company/listCompanyAdmins";
+import { usePermissions } from "@/hooks/usePermissions";
+import { useAuth } from "@/contexts/auth/hooks";
+
+// Extended User type to include role info for display
+interface ExtendedUser extends User {
+  isCompanyAdmin?: boolean;
+}
 
 interface UserSelectorProps {
   workspaceId: string;
@@ -27,6 +44,13 @@ interface UserSelectorProps {
   onUserSelect: (userId: string | null) => void;
   disabled?: boolean;
 }
+
+// Roles that can see company admins in the list
+const ROLES_WITH_COMPANY_ADMIN_ACCESS = [
+  UserRole.PLATFORM_ADMIN,
+  UserRole.COMPANY_OWNER,
+  UserRole.COMPANY_ADMIN,
+];
 
 export function UserSelector({
   workspaceId,
@@ -37,9 +61,17 @@ export function UserSelector({
 }: UserSelectorProps) {
   const [open, setOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
+  const { role } = usePermissions();
+  const { userProfile } = useAuth();
 
-  // Fetch users with search
-  const { data: usersData, isLoading } = useQuery({
+  const companyId = userProfile?.companyId;
+
+  // Check if current user can see company admins
+  const canSeeCompanyAdmins =
+    role && ROLES_WITH_COMPANY_ADMIN_ACCESS.includes(role as UserRole);
+
+  // Fetch workspace users with search
+  const { data: usersData, isLoading: isLoadingUsers } = useQuery({
     queryKey: ["listUsers", workspaceId, searchValue],
     queryFn: () =>
       listUsers({
@@ -48,10 +80,64 @@ export function UserSelector({
         limit: 50,
         page: 1,
       }),
-    enabled: open, // Only fetch when popover is open
+    enabled: open,
   });
 
-  const users = usersData?.items || [];
+  // Fetch company admins (only for authorized roles)
+  const { data: adminsData, isLoading: isLoadingAdmins } = useQuery({
+    queryKey: ["companyAdmins", companyId, searchValue],
+    queryFn: () =>
+      listCompanyAdmins({
+        companyId: companyId!,
+        page: 1,
+        limit: 50,
+      }),
+    enabled: open && canSeeCompanyAdmins && !!companyId,
+  });
+
+  const isLoading = isLoadingUsers || (canSeeCompanyAdmins && isLoadingAdmins);
+
+  // Merge and deduplicate users, with company admins first
+  const users = useMemo(() => {
+    const workspaceUsers: ExtendedUser[] = (usersData?.items || []).map(
+      (u) => ({
+        ...u,
+        isCompanyAdmin: false,
+      })
+    );
+
+    if (!canSeeCompanyAdmins || !adminsData?.items) {
+      return workspaceUsers;
+    }
+
+    // Filter company admins by search if needed
+    const companyAdmins: ExtendedUser[] = adminsData.items
+      .filter((admin) => {
+        if (!searchValue) return true;
+        const searchLower = searchValue.toLowerCase();
+        return (
+          admin.name.toLowerCase().includes(searchLower) ||
+          admin.email.toLowerCase().includes(searchLower)
+        );
+      })
+      .map((admin) => ({
+        id: admin.id,
+        name: admin.name,
+        email: admin.email,
+        role: admin.role,
+        isCompanyAdmin: true,
+      }));
+
+    // Deduplicate: remove workspace users that are also company admins
+    const adminIds = new Set(companyAdmins.map((a) => a.id));
+    const filteredWorkspaceUsers = workspaceUsers.filter(
+      (u) => !adminIds.has(u.id)
+    );
+
+    // Company admins first, then workspace users
+    return [...companyAdmins, ...filteredWorkspaceUsers];
+  }, [usersData, adminsData, canSeeCompanyAdmins, searchValue]);
+
   const selectedUser = users.find((u) => u.id === selectedUserId);
 
   const getInitials = (name: string) => {
@@ -149,7 +235,14 @@ export function UserSelector({
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1">
-                        <p className="text-sm font-medium">{user.name}</p>
+                        <div className="flex items-center gap-1.5">
+                          <p className="text-sm font-medium">{user.name}</p>
+                          {user.isCompanyAdmin && (
+                            <span title="Admin da Empresa">
+                              <Shield className="h-3 w-3 text-primary" />
+                            </span>
+                          )}
+                        </div>
                         <p className="text-xs text-muted-foreground">
                           {user.email}
                         </p>
