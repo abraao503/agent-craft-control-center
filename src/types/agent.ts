@@ -1,9 +1,7 @@
 export type AgentLanguage = "en-US" | "es-ES" | "pt-BR";
 
 type Prompt = {
-  identity: string;
   function: string;
-  goal: string;
   style: string;
   instructions: string;
   blacklist: string | null;
@@ -50,16 +48,13 @@ export interface FullAgent {
   } | null;
   timeZone: string;
   language: AgentLanguage;
-  initialMessage: string;
   skipMessages: string[];
   iaModel: {
     id: string;
     name: string;
   };
   prompt: {
-    identity: string;
     function: string;
-    goal: string;
     style: string;
     instructions: string;
     blacklist: string | null;
@@ -126,15 +121,12 @@ export interface AgentFormData {
   avatarUrl?: string;
   timeZone: string;
   language: AgentLanguage;
-  initialMessage: string;
   skipMessages: string[];
   iaModelId: string;
   iaProviderApiKey: string;
 
   // Step 2: Prompt & Context
-  identity: string;
   function: string;
-  goal: string;
   style: string;
   instructions: string;
   blacklist: string | null;
@@ -195,7 +187,6 @@ export type UpdateAgentResquest = {
   avatarFileId: string | null;
   timeZone: string;
   language: string;
-  initialMessage: string;
   skipMessages: string[];
   iaModelId: string;
   iaProviderApiKey: string;
@@ -211,7 +202,6 @@ export type CreateAgentRequest = {
   avatarFileId: string | null;
   timeZone: string;
   language: string;
-  initialMessage: string;
   skipMessages: string[];
   iaModelId: string;
   iaProviderApiKey: string;

@@ -43,13 +43,10 @@ const defaultAgentFormData: AgentFormData = {
   avatarUrl: undefined,
   timeZone: "America/Sao_Paulo",
   language: "pt-BR",
-  initialMessage: "",
   skipMessages: [],
   iaModelId: "",
   iaProviderApiKey: "",
-  identity: "",
   function: "",
-  goal: "",
   style: "",
   instructions: "",
   blacklist: "",
@@ -221,13 +218,10 @@ const PipelineEditPage = () => {
         avatarUrl: agent.avatar?.url || undefined,
         timeZone: agent.timeZone,
         language: agent.language,
-        initialMessage: agent.initialMessage,
         skipMessages: agent.skipMessages,
         iaModelId: agent.iaModel.id,
         iaProviderApiKey: "", // Not sent from backend
-        identity: agent.prompt.identity,
         function: agent.prompt.function,
-        goal: agent.prompt.goal,
         style: agent.prompt.style,
         instructions: agent.prompt.instructions,
         blacklist: agent.prompt.blacklist,
@@ -279,13 +273,10 @@ const PipelineEditPage = () => {
       agentFormData.description.trim() !== "" &&
       agentFormData.timeZone.trim() !== "" &&
       agentFormData.language.trim() !== "" &&
-      agentFormData.initialMessage.trim() !== "" &&
       agentFormData.iaModelId.trim() !== "";
 
     const isPromptValid =
-      agentFormData.identity.trim() !== "" &&
-      agentFormData.function.trim() !== "" &&
-      agentFormData.goal.trim() !== "";
+      agentFormData.function.trim() !== "" && agentFormData.style.trim() !== "";
 
     return isBasicValid && isPromptValid;
   }, [useAgent, agentFormData]);
@@ -315,12 +306,6 @@ const PipelineEditPage = () => {
     ) {
       errors.push("Idioma inválido (pt-BR, en-US ou es-ES)");
     }
-    if (
-      !agentFormData.initialMessage ||
-      agentFormData.initialMessage.trim() === ""
-    ) {
-      errors.push("Mensagem inicial é obrigatória");
-    }
     if (!agentFormData.iaModelId || agentFormData.iaModelId.trim() === "") {
       errors.push("Modelo de IA é obrigatório");
     }
@@ -336,14 +321,8 @@ const PipelineEditPage = () => {
     }
 
     // Prompt validation (min 3 chars)
-    if (!agentFormData.identity || agentFormData.identity.trim().length < 3) {
-      errors.push("Identidade do agente deve ter no mínimo 3 caracteres");
-    }
     if (!agentFormData.function || agentFormData.function.trim().length < 3) {
       errors.push("Função do agente deve ter no mínimo 3 caracteres");
-    }
-    if (!agentFormData.goal || agentFormData.goal.trim().length < 3) {
-      errors.push("Objetivo do agente deve ter no mínimo 3 caracteres");
     }
     if (!agentFormData.style || agentFormData.style.trim().length < 3) {
       errors.push("Estilo do agente deve ter no mínimo 3 caracteres");
@@ -580,7 +559,6 @@ const PipelineEditPage = () => {
             avatarFileId: null,
             timeZone: agentFormData.timeZone,
             language: agentFormData.language,
-            initialMessage: agentFormData.initialMessage,
             skipMessages: agentFormData.skipMessages,
             iaModelId: agentFormData.iaModelId,
             // Only send API key if it was manually changed (prevents sending autocompleted value)
@@ -588,9 +566,7 @@ const PipelineEditPage = () => {
               ? agentFormData.iaProviderApiKey
               : undefined,
             prompt: {
-              identity: agentFormData.identity,
               function: agentFormData.function,
-              goal: agentFormData.goal,
               style: agentFormData.style,
               instructions: convertHtmlStringToText(agentFormData.instructions),
               blacklist: agentFormData.blacklist,

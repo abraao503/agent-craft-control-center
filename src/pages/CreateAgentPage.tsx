@@ -29,14 +29,11 @@ const defaultFormData: AgentFormData = {
   avatarUrl: undefined,
   iaModelId: "",
   iaProviderApiKey: "",
-  initialMessage: "",
   skipMessages: [],
   timeZone: "America/Sao_Paulo",
   language: "pt-BR",
-  goal: "",
   contents: [],
   customFields: [],
-  identity: "",
   function: "",
   style: "",
   instructions: "",
@@ -112,8 +109,6 @@ const CreateAgentPage = () => {
       avatarFileId: null,
       contentsIds: formData.contents.map((content) => content.id),
       prompt: {
-        goal: formData.goal,
-        identity: formData.identity,
         function: formData.function,
         style: formData.style,
         instructions: formattedInstructions,
@@ -173,11 +168,7 @@ const CreateAgentPage = () => {
         return true; // Custom fields are optional
       case 3:
         return (
-          !!formData.identity &&
-          !!formData.function &&
-          !!formData.goal &&
-          !!formData.style &&
-          !!formData.instructions
+          !!formData.function && !!formData.style && !!formData.instructions
         );
       case 4:
         return true; // Knowledge content is optional

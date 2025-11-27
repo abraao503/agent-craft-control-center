@@ -180,14 +180,6 @@ const SortableStage: React.FC<SortableStageProps> = ({
         <CardContent className="p-3 flex-1 overflow-auto">
           <div className="space-y-3">
             <div className="space-y-2">
-              <Label>Nome</Label>
-              <Input
-                value={stage.name}
-                onChange={(e) => onUpdate(index, { name: e.target.value })}
-              />
-            </div>
-
-            <div className="space-y-2">
               <Label>Cor</Label>
               <div className="flex items-center gap-2">
                 <input

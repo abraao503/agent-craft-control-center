@@ -26,14 +26,11 @@ export interface UpdatePipelineInput {
     avatarFileId: string | null;
     timeZone: string;
     language: string;
-    initialMessage: string;
     skipMessages: string[];
     iaModelId: string;
     iaProviderApiKey: string | undefined;
     prompt: {
-      identity: string;
       function: string;
-      goal: string;
       style: string;
       instructions: string;
       blacklist: string | null;

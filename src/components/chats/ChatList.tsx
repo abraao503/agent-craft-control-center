@@ -90,7 +90,7 @@ export const ChatList: React.FC<ChatListProps> = ({
           </div>
           <Input
             type="search"
-            placeholder="Buscar ou começar uma nova conversa"
+            placeholder="Buscar conversas"
             className="pl-10"
             value={localSearchValue}
             onChange={(e) => setLocalSearchValue(e.target.value)}

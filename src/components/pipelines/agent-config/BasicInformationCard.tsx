@@ -18,17 +18,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  X,
-  Plus,
-  User,
-  Globe,
-  Clock,
-  MessageSquare,
-  Brain,
-  Key,
-  Ban,
-} from "lucide-react";
+import { X, Plus, User, Globe, Clock, Brain, Key, Ban } from "lucide-react";
 import { BRAZILIAN_TIMEZONES } from "@/constants/timezones";
 import { LANGUAGES } from "@/constants/languages";
 import { listIaModels } from "@/services/iaModel/listIaModel";
@@ -205,34 +195,6 @@ export const BasicInformationCard = ({
               </SelectContent>
             </Select>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Mensagem Inicial */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <MessageSquare className="h-5 w-5 text-primary" />
-            <div>
-              <CardTitle>Mensagem Inicial</CardTitle>
-              <CardDescription>
-                Primeira mensagem enviada ao iniciar uma conversa
-              </CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <Textarea
-            id="initialMessage"
-            placeholder="Ex: Olá! Sou o assistente virtual. Como posso ajudar você hoje?"
-            value={formData.initialMessage}
-            onChange={(e) => updateFormData({ initialMessage: e.target.value })}
-            required
-            className="min-h-[100px] resize-none"
-          />
-          <p className="text-xs text-muted-foreground">
-            Use uma saudação amigável e profissional que convide à interação
-          </p>
         </CardContent>
       </Card>
 

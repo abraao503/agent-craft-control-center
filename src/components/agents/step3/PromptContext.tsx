@@ -47,20 +47,6 @@ const PromptContext = ({ formData, updateFormData }: PromptContextProps) => {
   return (
     <div className="form-container space-y-6">
       <div className="space-y-2">
-        <Label htmlFor="identity">Identidade</Label>
-        <Input
-          id="identity"
-          placeholder="Agente de Suporte"
-          value={formData.identity || ""}
-          onChange={(e) => updateFormData({ identity: e.target.value })}
-          required
-        />
-        <p className="text-sm text-muted-foreground">
-          Nome ou identidade do seu agente
-        </p>
-      </div>
-
-      <div className="space-y-2">
         <Label htmlFor="function">Função</Label>
         <Textarea
           id="function"
@@ -72,21 +58,6 @@ const PromptContext = ({ formData, updateFormData }: PromptContextProps) => {
         />
         <p className="text-sm text-muted-foreground">
           Qual é a função ou o papel específico do seu agente?
-        </p>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="goal">Objetivo</Label>
-        <Textarea
-          id="goal"
-          placeholder="Ajudar usuários a encontrar o produto certo para suas necessidades e resolver quaisquer problemas"
-          value={formData.goal || ""}
-          onChange={(e) => updateFormData({ goal: e.target.value })}
-          required
-          className="min-h-[100px]"
-        />
-        <p className="text-sm text-muted-foreground">
-          O que seu agente deve ajudar os usuários a alcançar?
         </p>
       </div>
 

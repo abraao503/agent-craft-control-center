@@ -13,7 +13,6 @@ import { Progress } from "@/components/ui/progress";
 import { Bot, ArrowRight, ArrowLeft, Check } from "lucide-react";
 import { BasicInformationCard } from "@/components/pipelines/agent-config/BasicInformationCard";
 import { PromptContextCard } from "@/components/pipelines/agent-config/PromptContextCard";
-import { CustomFieldsCard } from "@/components/pipelines/agent-config/CustomFieldsCard";
 import { EntryTagsCard } from "@/components/pipelines/agent-config/EntryTagsCard";
 
 interface AgentWizardProps {
@@ -50,7 +49,6 @@ export const AgentWizard: React.FC<AgentWizardProps> = ({
       formData.description.trim().length >= 3 &&
       formData.timeZone.trim() &&
       ["pt-BR", "en-US", "es-ES"].includes(formData.language) &&
-      formData.initialMessage.trim() &&
       formData.iaModelId.trim() &&
       formData.iaProviderApiKey.trim()
     );
@@ -58,9 +56,7 @@ export const AgentWizard: React.FC<AgentWizardProps> = ({
 
   const isPromptValid = () => {
     return !!(
-      formData.identity.trim().length >= 3 &&
       formData.function.trim().length >= 3 &&
-      formData.goal.trim().length >= 3 &&
       formData.style.trim().length >= 3 &&
       formData.instructions.trim().length >= 3
     );
@@ -273,10 +269,6 @@ export const AgentWizard: React.FC<AgentWizardProps> = ({
               </p>
             </div>
             <div className="space-y-6">
-              <CustomFieldsCard
-                formData={formData}
-                updateFormData={updateFormData}
-              />
               <EntryTagsCard
                 formData={formData}
                 updateFormData={updateFormData}
@@ -335,16 +327,12 @@ export const AgentWizard: React.FC<AgentWizardProps> = ({
                   <h4 className="mb-2 font-medium">Prompt</h4>
                   <dl className="space-y-2 text-sm">
                     <div>
-                      <dt className="text-muted-foreground">Identidade:</dt>
-                      <dd className="font-medium">{formData.identity}</dd>
-                    </div>
-                    <div>
                       <dt className="text-muted-foreground">Função:</dt>
                       <dd className="font-medium">{formData.function}</dd>
                     </div>
                     <div>
-                      <dt className="text-muted-foreground">Objetivo:</dt>
-                      <dd className="font-medium">{formData.goal}</dd>
+                      <dt className="text-muted-foreground">Estilo:</dt>
+                      <dd className="font-medium">{formData.style}</dd>
                     </div>
                   </dl>
                 </div>

@@ -14,8 +14,6 @@ import {
   PlusCircle,
   X,
   User,
-  Target,
-  MessageCircle,
   Palette,
   FileText,
   Shield,
@@ -71,36 +69,21 @@ export const PromptContextCard = ({
 
   return (
     <div className="space-y-6">
-      {/* Identidade e Função */}
+      {/* Função */}
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
             <User className="h-5 w-5 text-primary" />
             <div>
-              <CardTitle>Identidade e Função</CardTitle>
+              <CardTitle>Função</CardTitle>
               <CardDescription>
-                Defina quem é o agente e qual seu papel principal
+                Defina qual o papel principal do agente
               </CardDescription>
             </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="identity">Identidade</Label>
-            <Input
-              id="identity"
-              placeholder="Ex: Especialista em Vendas, Consultor Técnico, Assistente de Suporte..."
-              value={formData.identity || ""}
-              onChange={(e) => updateFormData({ identity: e.target.value })}
-              required
-            />
-            <p className="text-xs text-muted-foreground">
-              Como o agente deve se apresentar nas conversas
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="function">Função Principal</Label>
             <Textarea
               id="function"
               placeholder="Ex: Atender clientes, qualificar leads, fornecer suporte técnico, processar pedidos..."
@@ -113,34 +96,6 @@ export const PromptContextCard = ({
               Descreva as responsabilidades e atividades principais do agente
             </p>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Objetivo */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Target className="h-5 w-5 text-primary" />
-            <div>
-              <CardTitle>Objetivo</CardTitle>
-              <CardDescription>
-                O que o agente deve alcançar nas interações
-              </CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <Textarea
-            id="goal"
-            placeholder="Ex: Ajudar clientes a encontrar o produto ideal, resolver problemas rapidamente, gerar interesse em nossos serviços..."
-            value={formData.goal || ""}
-            onChange={(e) => updateFormData({ goal: e.target.value })}
-            required
-            className="min-h-[100px] resize-none"
-          />
-          <p className="text-xs text-muted-foreground">
-            Defina o resultado desejado de cada conversa com o agente
-          </p>
         </CardContent>
       </Card>
 

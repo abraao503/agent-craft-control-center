@@ -16,7 +16,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AgentWizard } from "@/components/pipelines/agent-wizard";
 import {
   BasicInformationCard,
-  CustomFieldsCard,
   PromptContextCard,
   EntryTagsCard,
 } from "@/components/pipelines/agent-config";
@@ -76,13 +75,10 @@ export const AgentTab: React.FC<AgentTabProps> = ({
             avatarUrl: deletedAgent.avatar?.url || undefined,
             timeZone: deletedAgent.timeZone,
             language: deletedAgent.language,
-            initialMessage: deletedAgent.initialMessage,
             skipMessages: deletedAgent.skipMessages,
             iaModelId: deletedAgent.iaModel.id,
             iaProviderApiKey: "", // Não vem do backend por segurança
-            identity: deletedAgent.prompt.identity,
             function: deletedAgent.prompt.function,
-            goal: deletedAgent.prompt.goal,
             style: deletedAgent.prompt.style,
             instructions: deletedAgent.prompt.instructions,
             blacklist: deletedAgent.prompt.blacklist,
@@ -111,11 +107,7 @@ export const AgentTab: React.FC<AgentTabProps> = ({
   useEffect(() => {
     if (useAgent && !hasExistingAgent && !wizardCompleted) {
       // Verifica se o agente está "vazio" (não foi configurado ainda)
-      const isEmptyAgent =
-        !formData.name ||
-        !formData.identity ||
-        !formData.function ||
-        !formData.goal;
+      const isEmptyAgent = !formData.name || !formData.function;
       if (isEmptyAgent) {
         setShowWizard(true);
       }
@@ -125,9 +117,7 @@ export const AgentTab: React.FC<AgentTabProps> = ({
     hasExistingAgent,
     wizardCompleted,
     formData.name,
-    formData.identity,
     formData.function,
-    formData.goal,
   ]);
 
   // Reset wizard state when agent is disabled
@@ -144,19 +134,12 @@ export const AgentTab: React.FC<AgentTabProps> = ({
       formData.name &&
       formData.description &&
       formData.iaModelId &&
-      formData.initialMessage &&
       (isCreating ? formData.iaProviderApiKey : true)
     );
   };
 
   const isPromptValid = () => {
-    return !!(
-      formData.identity &&
-      formData.function &&
-      formData.goal &&
-      formData.style &&
-      formData.instructions
-    );
+    return !!(formData.function && formData.style && formData.instructions);
   };
 
   const getTabIndicator = (tabName: "basic" | "custom" | "prompt" | "tags") => {
@@ -273,13 +256,6 @@ export const AgentTab: React.FC<AgentTabProps> = ({
 
             <TabsContent value="basic" className="mt-6">
               <BasicInformationCard
-                formData={formData}
-                updateFormData={updateFormData}
-              />
-            </TabsContent>
-
-            <TabsContent value="custom" className="mt-6">
-              <CustomFieldsCard
                 formData={formData}
                 updateFormData={updateFormData}
               />

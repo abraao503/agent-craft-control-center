@@ -110,13 +110,10 @@ const EditAgentPage = () => {
         avatarUrl: data.avatar?.url || undefined,
         timeZone: data.timeZone,
         language: data.language,
-        initialMessage: data.initialMessage,
         skipMessages: data.skipMessages,
         iaModelId: data.iaModel.id,
         iaProviderApiKey: "", // Não enviamos a chave de volta para o frontend
-        identity: data.prompt.identity,
         function: data.prompt.function,
-        goal: data.prompt.goal,
         style: data.prompt.style,
         instructions: data.prompt.instructions,
         blacklist: data.prompt.blacklist,
@@ -174,9 +171,7 @@ const EditAgentPage = () => {
         timeZone: formData.timeZone,
         language: formData.language,
         prompt: {
-          identity: formData.identity,
           function: formData.function,
-          goal: formData.goal,
           style: formData.style,
           instructions: formattedInstructions,
           blacklist: formData.blacklist,
@@ -184,7 +179,6 @@ const EditAgentPage = () => {
         },
         contents: contentsToUpdate,
         customFields: customFieldsToUpdate,
-        initialMessage: formData.initialMessage,
         skipMessages: formData.skipMessages,
         iaModelId: formData.iaModelId,
         iaProviderApiKey: formData.iaProviderApiKey,
@@ -253,11 +247,7 @@ const EditAgentPage = () => {
         return true; // Custom fields are optional
       case 3:
         return (
-          !!formData.identity &&
-          !!formData.function &&
-          !!formData.goal &&
-          !!formData.style &&
-          !!formData.instructions
+          !!formData.function && !!formData.style && !!formData.instructions
         );
       case 4:
         return true; // Knowledge content is optional
