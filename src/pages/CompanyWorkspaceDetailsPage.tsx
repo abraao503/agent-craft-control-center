@@ -95,6 +95,7 @@ export default function CompanyWorkspaceDetailsPage() {
         workspaceId: workspaceId!,
         page: userPage,
         limit: userLimit,
+        companyId,
       }),
     enabled: !!workspaceId,
   });

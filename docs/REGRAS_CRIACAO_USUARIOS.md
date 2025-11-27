@@ -202,6 +202,63 @@ Response: { exists: boolean, ownerName?: string }
 - Se `workspaceId` fornecido: busca usuário com role WORKSPACE_OWNER naquele workspace
 - Retorna `exists: true` se encontrar, opcionalmente com nome do owner
 
+### Regras Especiais para PLATFORM_ADMIN
+
+#### Criação de Usuários
+
+Quando um **PLATFORM_ADMIN** cria um usuário, ele **DEVE** enviar o campo `companyId` no corpo da requisição para especificar em qual empresa o usuário será criado.
+
+```typescript
+// Payload para PLATFORM_ADMIN criar usuário
+{
+  name: string;
+  email: string;
+  password: string;
+  role: UserRole;
+  companyId: string; // Obrigatório para PLATFORM_ADMIN
+  workspaceId?: string; // Se for criar usuário de nível workspace
+}
+```
+
+**Implementação no Frontend:**
+```typescript
+const payload = {
+  name: formData.name,
+  email: formData.email,
+  password: formData.password,
+  role: formData.role,
+  ...(isWorkspaceContext && workspaceId && { workspaceId }),
+  // PLATFORM_ADMIN must send companyId to create users in a specific company
+  ...(currentUserRole === UserRole.PLATFORM_ADMIN && { companyId }),
+};
+```
+
+> **Nota:** Outras roles (COMPANY_OWNER, COMPANY_ADMIN, etc.) não precisam enviar `companyId`, pois já estão associados a uma empresa específica.
+
+#### Listagem de Usuários
+
+Quando um **PLATFORM_ADMIN** lista usuários, ele **pode** enviar o campo `companyId` como query parameter para filtrar usuários de uma empresa específica.
+
+```typescript
+// Parâmetros de listagem
+interface ListUsersParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  workspaceId?: string; // Filtrar por workspace
+  companyId?: string; // PLATFORM_ADMIN pode filtrar por empresa
+}
+```
+
+**Uso:**
+```typescript
+// PLATFORM_ADMIN listando usuários de uma empresa específica
+listUsers({ companyId: 'company-id-123', page: 1, limit: 10 });
+
+// PLATFORM_ADMIN listando todos os usuários
+listUsers({ page: 1, limit: 10 });
+```
+
 ### Validação Adicional no Backend
 
 Embora o frontend valide, o backend **DEVE** também validar:
@@ -210,6 +267,7 @@ Embora o frontend valide, o backend **DEVE** também validar:
 2. ✅ Unicidade de COMPANY_OWNER por empresa
 3. ✅ Unicidade de WORKSPACE_OWNER por workspace
 4. ✅ Permissões do usuário que está criando
+5. ✅ PLATFORM_ADMIN deve enviar `companyId` ao criar usuários
 
 ## Casos de Teste
 

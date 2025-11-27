@@ -7,6 +7,7 @@ export interface AddUserToCompanyRequest {
   password: string;
   role: UserRole;
   workspaceId?: string;
+  companyId?: string; // Required for PLATFORM_ADMIN when creating users in a specific company
 }
 
 export interface AddUserToCompanyResponse {

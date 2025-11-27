@@ -12,7 +12,8 @@ export interface ListUsersParams {
   page?: number;
   limit?: number;
   search?: string;
-  workspaceId: string;
+  workspaceId?: string; // Required for workspace-level users
+  companyId?: string; // Optional: PLATFORM_ADMIN can use this to filter by company
 }
 
 export interface ListUsersResponse {

@@ -236,6 +236,8 @@ export function CreateCompanyUserDialog({
       password: formData.password,
       role: formData.role,
       ...(isWorkspaceContext && workspaceId && { workspaceId }),
+      // PLATFORM_ADMIN must send companyId to create users in a specific company
+      ...(currentUserRole === UserRole.PLATFORM_ADMIN && { companyId }),
     };
 
     mutation.mutate(payload);

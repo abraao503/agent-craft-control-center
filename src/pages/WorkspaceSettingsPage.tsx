@@ -69,6 +69,7 @@ export default function WorkspaceSettingsPage() {
         workspaceId: workspaceId!,
         page: userPage,
         limit: userLimit,
+        companyId,
       }),
     enabled: !!workspaceId,
   });
