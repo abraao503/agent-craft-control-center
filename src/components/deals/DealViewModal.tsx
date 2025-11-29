@@ -22,6 +22,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   Plus,
   Save,
   Trash2,
@@ -34,6 +40,7 @@ import {
   ChevronRight,
   Loader2,
   X,
+  Bot,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { DealListItem, DealNote } from "@/types/deal";
@@ -1421,40 +1428,55 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
                   ))}
                 </div>
               ) : pipelineStages && pipelineStages.length > 0 ? (
-                <div className="space-y-2">
-                  {pipelineStages.map((stage: PipelineStageMinimal) => {
-                    const isCurrent =
-                      dealDetails?.currentStage?.id === stage.id;
-                    const stageColor = stage.color || "#6b7280"; // fallback to gray
-                    return (
-                      <Button
-                        key={stage.id}
-                        size="sm"
-                        variant={isCurrent ? "outline" : "ghost"}
-                        className={`w-full justify-between border-l-4 ${
-                          isCurrent ? "opacity-60" : ""
-                        }`}
-                        style={{
-                          borderLeftColor: stageColor,
-                        }}
-                        onClick={() => {
-                          if (!isCurrent && moveDealMutation)
-                            moveDealMutation.mutate(stage.id);
-                        }}
-                        disabled={isCurrent || moveDealMutation.isPending}
-                      >
-                        <span className="flex items-center gap-2">
-                          <span
-                            className="w-2 h-2 rounded-full flex-shrink-0"
-                            style={{ backgroundColor: stageColor }}
-                          />
-                          <span className="text-left">{stage.name}</span>
-                        </span>
-                        <ChevronRight className="h-4 w-4" />
-                      </Button>
-                    );
-                  })}
-                </div>
+                <TooltipProvider>
+                  <div className="space-y-2">
+                    {pipelineStages.map((stage: PipelineStageMinimal) => {
+                      const isCurrent =
+                        dealDetails?.currentStage?.id === stage.id;
+                      const stageColor = stage.color || "#6b7280"; // fallback to gray
+                      const hasAssistant = !!stage.assistantPipelineStage;
+                      return (
+                        <Button
+                          key={stage.id}
+                          size="sm"
+                          variant={isCurrent ? "outline" : "ghost"}
+                          className={`w-full justify-between border-l-4 ${
+                            isCurrent ? "opacity-60" : ""
+                          }`}
+                          style={{
+                            borderLeftColor: stageColor,
+                          }}
+                          onClick={() => {
+                            if (!isCurrent && moveDealMutation)
+                              moveDealMutation.mutate(stage.id);
+                          }}
+                          disabled={isCurrent || moveDealMutation.isPending}
+                        >
+                          <span className="flex items-center gap-2">
+                            <span
+                              className="w-2 h-2 rounded-full flex-shrink-0"
+                              style={{ backgroundColor: stageColor }}
+                            />
+                            <span className="text-left">{stage.name}</span>
+                            {hasAssistant && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span className="inline-flex">
+                                    <Bot className="h-3.5 w-3.5 text-primary flex-shrink-0" />
+                                  </span>
+                                </TooltipTrigger>
+                                <TooltipContent side="top">
+                                  <p>Assistente de IA ativo nesta etapa</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
+                          </span>
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      );
+                    })}
+                  </div>
+                </TooltipProvider>
               ) : (
                 <p className="text-xs text-muted-foreground">
                   Nenhuma etapa disponível.

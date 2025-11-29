@@ -53,7 +53,6 @@ export const AssistantStageConfig: React.FC<AssistantStageConfigProps> = ({
       onConfigChange(stageId, null);
     } else {
       onConfigChange(stageId, {
-        canActInStage: true,
         assistantAllowedTargetStages: [],
       });
     }
@@ -68,7 +67,6 @@ export const AssistantStageConfig: React.FC<AssistantStageConfigProps> = ({
     };
 
     const updatedConfig: AssistantPipelineStage = {
-      canActInStage: assistantConfig.canActInStage ?? true,
       assistantAllowedTargetStages: [...allowedTargetStages, newTargetStage],
     };
 
@@ -82,7 +80,6 @@ export const AssistantStageConfig: React.FC<AssistantStageConfigProps> = ({
       (_, i) => i !== index
     );
     const updatedConfig: AssistantPipelineStage = {
-      canActInStage: assistantConfig.canActInStage ?? true,
       assistantAllowedTargetStages: updatedTargetStages,
     };
     onConfigChange(stageId, updatedConfig);
@@ -100,7 +97,6 @@ export const AssistantStageConfig: React.FC<AssistantStageConfigProps> = ({
     );
 
     const updatedConfig: AssistantPipelineStage = {
-      canActInStage: assistantConfig.canActInStage ?? true,
       assistantAllowedTargetStages: updatedTargetStages,
     };
 

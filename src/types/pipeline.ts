@@ -21,7 +21,6 @@ export interface AssistantAllowedTargetStage {
 }
 
 export interface AssistantPipelineStage {
-  canActInStage: boolean;
   assistantAllowedTargetStages: AssistantAllowedTargetStage[];
 }
 

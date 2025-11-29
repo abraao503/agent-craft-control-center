@@ -9,13 +9,19 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { DealListItem } from "@/types/deal";
 import { PipelineStageMinimal } from "@/types/pipeline";
 import { cn, isColorDark } from "@/lib/utils";
-import { MessageCircle, Tag as TagIcon, Search } from "lucide-react";
+import { MessageCircle, Tag as TagIcon, Search, Bot } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { listTags } from "@/services/tag/listTags";
 import { getDealsByStage } from "@/services/deal/getDealsByStage";
@@ -267,10 +273,25 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
       >
         <CardHeader className={cn("py-3 bg-muted/40 border-b border-border")}>
           <CardTitle className="flex flex-col justify-between text-sm">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between gap-2">
               <span className="font-semibold truncate text-foreground/90">
                 {stage.name}
               </span>
+              {stage.assistantPipelineStage && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-primary/10 text-primary">
+                        <Bot className="h-3.5 w-3.5 flex-shrink-0" />
+                        <span className="text-[10px] font-medium">IA</span>
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">
+                      <p>Assistente de IA ativo nesta etapa</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
             </div>
             <div className="flex items-center gap-1 text-xs text-muted-foreground/80">
               <span>{formatCurrency(totalValue)}</span>
