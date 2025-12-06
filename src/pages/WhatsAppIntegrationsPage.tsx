@@ -22,6 +22,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useWorkspaceManager } from "@/hooks/useWorkspaceManager";
 import { useWebSocket } from "@/hooks/useWebSocket";
+import { usePermissions } from "@/hooks/usePermissions";
 
 const WhatsAppIntegrationsPage = () => {
   const [integrationToDelete, setIntegrationToDelete] = useState<string | null>(
@@ -29,6 +30,7 @@ const WhatsAppIntegrationsPage = () => {
   );
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { has } = usePermissions();
 
   // Usar o hook de gerenciamento de workspace
   const { workspaceId, isChangingWorkspace } = useWorkspaceManager({
@@ -81,6 +83,9 @@ const WhatsAppIntegrationsPage = () => {
     }
   };
 
+  // Verifica se o usuário tem permissão para gerenciar integrações
+  const canManageIntegrations = has("manage:integrations");
+
   const IntegrationSkeletons = () => (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {Array.from({ length: 3 }, (_, index) => (
@@ -108,12 +113,14 @@ const WhatsAppIntegrationsPage = () => {
               Conecte seus agentes de IA ao WhatsApp
             </p>
           </div>
-          <Link to="/integrations/new">
-            <Button className="flex items-center">
-              <Plus className="mr-2 h-5 w-5" />
-              Nova Integração
-            </Button>
-          </Link>
+          {canManageIntegrations && (
+            <Link to="/integrations/new">
+              <Button className="flex items-center">
+                <Plus className="mr-2 h-5 w-5" />
+                Nova Integração
+              </Button>
+            </Link>
+          )}
         </div>
 
         {isLoading || isChangingWorkspace ? (
@@ -127,9 +134,11 @@ const WhatsAppIntegrationsPage = () => {
               Conecte seus agentes de IA ao WhatsApp para começar a interagir
               com usuários
             </p>
-            <Link to="/integrations/new">
-              <Button>Criar Integração</Button>
-            </Link>
+            {canManageIntegrations && (
+              <Link to="/integrations/new">
+                <Button>Criar Integração</Button>
+              </Link>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -139,6 +148,8 @@ const WhatsAppIntegrationsPage = () => {
                 workspaceId={workspaceId || ""}
                 integration={integration}
                 onDelete={handleDeleteClick}
+                canEdit={canManageIntegrations}
+                canDelete={canManageIntegrations}
               />
             ))}
           </div>

@@ -21,6 +21,8 @@ interface PipelineSwitcherProps {
   onSelect: (pipelineId: string) => void;
   onEditCurrent: () => void;
   onCreateNew: () => void;
+  canEdit?: boolean;
+  canCreate?: boolean;
 }
 
 export const PipelineSwitcher: React.FC<PipelineSwitcherProps> = ({
@@ -29,6 +31,8 @@ export const PipelineSwitcher: React.FC<PipelineSwitcherProps> = ({
   onSelect,
   onEditCurrent,
   onCreateNew,
+  canEdit = false,
+  canCreate = false,
 }) => {
   const { data: pipelines = [] } = useQuery({
     queryKey: ["listPipelines", workspaceId],
@@ -66,22 +70,26 @@ export const PipelineSwitcher: React.FC<PipelineSwitcherProps> = ({
           </DropdownMenuRadioGroup>
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
-            <DropdownMenuItem onClick={onCreateNew}>
-              <Plus className="h-4 w-4 mr-2" /> Novo funil
-            </DropdownMenuItem>
+            {canCreate && (
+              <DropdownMenuItem onClick={onCreateNew}>
+                <Plus className="h-4 w-4 mr-2" /> Novo funil
+              </DropdownMenuItem>
+            )}
           </DropdownMenuGroup>
         </DropdownMenuContent>
       </DropdownMenu>
-      <Button
-        variant="outline"
-        size="icon"
-        className="rounded-l-none border-l"
-        onClick={onEditCurrent}
-        aria-label="Editar funil"
-        title="Editar funil"
-      >
-        <Pencil className="h-4 w-4" />
-      </Button>
+      {canEdit && (
+        <Button
+          variant="outline"
+          size="icon"
+          className="rounded-l-none border-l"
+          onClick={onEditCurrent}
+          aria-label="Editar funil"
+          title="Editar funil"
+        >
+          <Pencil className="h-4 w-4" />
+        </Button>
+      )}
     </div>
   );
 };

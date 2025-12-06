@@ -86,6 +86,7 @@ import {
   isValidCNPJ,
 } from "@brazilian-utils/brazilian-utils";
 import { AxiosError } from "axios";
+import { usePermissions } from "@/hooks/usePermissions";
 
 // Utility functions for datetime conversion
 // Converts UTC datetime to local datetime-local input format
@@ -146,6 +147,7 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
 }) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { has } = usePermissions();
 
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -723,6 +725,9 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
     assignUserMutation.mutate(userId);
   };
 
+  // Verifica se o usuário tem permissão para atribuir deals
+  const canAssignDeal = has("assign:deal");
+
   const handleCloseModal = (isOpen: boolean) => {
     if (!isOpen) {
       // Save any pending changes before closing
@@ -1045,8 +1050,13 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
                           selectedUserId={assignedUserId}
                           selectedUserName={dealDetails?.assignedUser?.name}
                           onUserSelect={handleUserSelect}
-                          disabled={assignUserMutation.isPending}
+                          disabled={!canAssignDeal || assignUserMutation.isPending}
                         />
+                        {!canAssignDeal && (
+                          <p className="text-xs text-muted-foreground">
+                            Você não tem permissão para atribuir usuários a este negócio.
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>

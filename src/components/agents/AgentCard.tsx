@@ -15,9 +15,16 @@ import { Link } from "react-router-dom";
 interface AgentCardProps {
   agent: Agent;
   onDelete: (id: string) => void;
+  canEdit?: boolean;
+  canDelete?: boolean;
 }
 
-const AgentCard = ({ agent, onDelete }: AgentCardProps) => {
+const AgentCard = ({
+  agent,
+  onDelete,
+  canEdit = false,
+  canDelete = false,
+}: AgentCardProps) => {
   return (
     <Card className="h-full flex flex-col min-w-[380px]">
       <CardHeader className="pb-2">
@@ -60,23 +67,29 @@ const AgentCard = ({ agent, onDelete }: AgentCardProps) => {
             Visualizar
           </Button>
         </Link>
-        <div className="flex space-x-2">
-          <Link to={`/agents/edit/${agent.id}`}>
-            <Button variant="outline" size="sm">
-              <Edit className="w-4 h-4 mr-1" />
-              Editar
-            </Button>
-          </Link>
-          <Button
-            variant="outline"
-            size="sm"
-            className="text-red-500 hover:text-red-700 hover:bg-red-50"
-            onClick={() => onDelete(agent.id)}
-          >
-            <Trash2 className="w-4 h-4 mr-1" />
-            Apagar
-          </Button>
-        </div>
+        {(canEdit || canDelete) && (
+          <div className="flex space-x-2">
+            {canEdit && (
+              <Link to={`/agents/edit/${agent.id}`}>
+                <Button variant="outline" size="sm">
+                  <Edit className="w-4 h-4 mr-1" />
+                  Editar
+                </Button>
+              </Link>
+            )}
+            {canDelete && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                onClick={() => onDelete(agent.id)}
+              >
+                <Trash2 className="w-4 h-4 mr-1" />
+                Apagar
+              </Button>
+            )}
+          </div>
+        )}
       </CardFooter>
     </Card>
   );

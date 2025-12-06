@@ -43,12 +43,16 @@ interface WhatsAppIntegrationCardProps {
   integration: CompanyWhatsAppIntegration;
   workspaceId: string;
   onDelete: (id: string) => void;
+  canEdit?: boolean;
+  canDelete?: boolean;
 }
 
 const WhatsAppIntegrationCard = ({
   integration,
   workspaceId,
   onDelete,
+  canEdit = false,
+  canDelete = false,
 }: WhatsAppIntegrationCardProps) => {
   const [copied, setCopied] = useState(false);
   const [qrCodeOpen, setQrCodeOpen] = useState(false);
@@ -333,21 +337,25 @@ const WhatsAppIntegrationCard = ({
                 {qrCodeMutation.isPending ? "Gerando..." : "Gerar QR Code"}
               </Button>
             )}
-          <Link to={`/integrations/edit/${integration.id}`}>
-            <Button variant="outline" size="sm">
-              <Edit className="w-4 h-4 mr-1" />
-              Editar
+          {canEdit && (
+            <Link to={`/integrations/edit/${integration.id}`}>
+              <Button variant="outline" size="sm">
+                <Edit className="w-4 h-4 mr-1" />
+                Editar
+              </Button>
+            </Link>
+          )}
+          {canDelete && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-red-500 hover:text-red-700 hover:bg-red-50"
+              onClick={() => onDelete(integration.id)}
+            >
+              <Trash2 className="w-4 h-4 mr-1" />
+              Excluir
             </Button>
-          </Link>
-          <Button
-            variant="outline"
-            size="sm"
-            className="text-red-500 hover:text-red-700 hover:bg-red-50"
-            onClick={() => onDelete(integration.id)}
-          >
-            <Trash2 className="w-4 h-4 mr-1" />
-            Excluir
-          </Button>
+          )}
         </div>
       </CardFooter>
 

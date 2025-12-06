@@ -20,12 +20,14 @@ import { ActivitiesButton } from "@/components/deals/ActivitiesButton";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { useDealStageWebSocket } from "@/hooks/useDealStageWebSocket";
 import { useActivityWebSocket } from "@/hooks/useActivityWebSocket";
+import { usePermissions } from "@/hooks/usePermissions";
 
 const PipelineDetailPage = () => {
   const { pipelineId } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { has } = usePermissions();
 
   const { workspaceId, isChangingWorkspace } = useWorkspaceManager({
     queryKeys: ["listPipelineStages", "listPipelines"],
@@ -307,6 +309,12 @@ const PipelineDetailPage = () => {
     navigate(`/deals/pipeline/${id}`);
   };
 
+  // Verifica se o usuário tem permissão para editar pipelines
+  const canUpdatePipeline = has("update:pipeline");
+  const canCreatePipeline = has("create:pipeline");
+  const canListUsers = has("list:users");
+  const canCreateDeal = has("create:deal");
+
   const renderLoadingState = () => <KanbanSkeleton columns={4} />;
 
   const renderNoPipelineState = () => {
@@ -368,10 +376,12 @@ const PipelineDetailPage = () => {
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <h1 className="text-3xl font-bold tracking-tight">Negócios</h1>
-          <Button onClick={() => setOpenCreateDeal(true)} className="mr-2">
-            Novo Negócio
-          </Button>
-          {workspaceId && (
+          {canCreateDeal && (
+            <Button onClick={() => setOpenCreateDeal(true)} className="mr-2">
+              Novo Negócio
+            </Button>
+          )}
+          {workspaceId && canListUsers && (
             <UserFilter
               workspaceId={workspaceId}
               selectedUserId={selectedUserId}
@@ -397,6 +407,8 @@ const PipelineDetailPage = () => {
                 navigate(`/deals/pipeline/${pipelineId}/edit`)
               }
               onCreateNew={() => navigate("/deals/pipeline/create")}
+              canEdit={canUpdatePipeline}
+              canCreate={canCreatePipeline}
             />
           )}
           {workspaceId && (

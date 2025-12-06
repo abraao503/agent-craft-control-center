@@ -77,12 +77,19 @@ O sistema implementa um modelo **SaaS B2B2C multi-tenant com reseller/white-labe
 
 **Escopo:** Todas as empresas e workspaces.
 
-**Permissões:**
-- Gerenciar plataforma completa
-- Criar e remover empresas
-- Visualizar todas as empresas
-- Gerenciar billing de empresas
-- Todas as permissões de níveis inferiores
+**Permissões:** Todas as 47 permissões do sistema
+- `manage:platform`, `create:company`, `delete:company`, `view:all-companies`
+- `manage:company`, `update:company`, `view:company-billing`
+- `create:workspace`, `update:workspace`, `delete:workspace`, `view:all-workspaces`
+- `create:company-user`, `delete:company-user`, `create:workspace-user`, `delete:workspace-user`
+- `list:users`, `assign:user-to-workspace`
+- `create:pipeline`, `update:pipeline`, `delete:pipeline`, `view:pipeline`
+- `create:assistant`, `update:assistant`, `delete:assistant`, `view:assistant`
+- `manage:integrations`, `connect:whatsapp`, `view:integrations`
+- `create:deal`, `update:deal`, `delete:deal`, `view:deal`
+- `view:all-deals`, `view:team-deals`, `view:own-deals`, `assign:deal`, `move:deal`
+- `view:chat`, `send:message`
+- `view:workspace-reports`, `view:company-reports`, `view:platform-reports`
 
 **Uso:** Equipe interna da plataforma.
 
@@ -93,18 +100,18 @@ O sistema implementa um modelo **SaaS B2B2C multi-tenant com reseller/white-labe
 
 **Escopo:** Própria empresa e todos os workspaces.
 
-**Permissões:**
-- Gerenciar empresa (configurações, billing)
-- Criar, editar e remover workspaces
-- Visualizar todos os workspaces
-- Criar e remover usuários da empresa
-- Criar usuários de workspace
-- Atribuir usuários a workspaces
-- **Configurar pipelines** para cada workspace
-- **Configurar assistentes** para cada workspace
-- **Configurar integrações** (Evolux, etc)
-- Gerenciar deals de todos os workspaces
-- Visualizar relatórios da empresa
+**Permissões:** 40 permissões (todas exceto platform management)
+- `manage:company`, `update:company`, `view:company-billing`
+- `create:workspace`, `update:workspace`, `delete:workspace`, `view:all-workspaces`
+- `create:company-user`, `delete:company-user`, `create:workspace-user`, `delete:workspace-user`
+- `list:users`, `assign:user-to-workspace`
+- `create:pipeline`, `update:pipeline`, `delete:pipeline`, `view:pipeline`
+- `create:assistant`, `update:assistant`, `delete:assistant`, `view:assistant`
+- `manage:integrations`, `connect:whatsapp`, `view:integrations`
+- `create:deal`, `update:deal`, `delete:deal`, `view:deal`
+- `view:all-deals`, `view:team-deals`, `assign:deal`, `move:deal`
+- `view:chat`, `send:message`
+- `view:workspace-reports`, `view:company-reports`
 
 **Uso:** Proprietário que configura workspaces customizados e os revende.
 
@@ -115,17 +122,17 @@ O sistema implementa um modelo **SaaS B2B2C multi-tenant com reseller/white-labe
 
 **Escopo:** Própria empresa e todos os workspaces.
 
-**Permissões:**
-- Criar, editar e remover workspaces
-- Criar e remover usuários da empresa e workspace
-- Atribuir usuários a workspaces
-- **Configurar pipelines** para cada workspace
-- **Configurar assistentes** para cada workspace
-- **Configurar integrações** (Evolux, etc)
-- Criar, editar e atribuir deals
-- Visualizar todos os deals de todos os workspaces
-- Visualizar relatórios da empresa
-- **Não pode:** Gerenciar billing
+**Permissões:** 37 permissões (sem manage:company e view:company-billing)
+- `create:workspace`, `update:workspace`, `delete:workspace`, `view:all-workspaces`
+- `create:company-user`, `delete:company-user`, `create:workspace-user`, `delete:workspace-user`
+- `list:users`, `assign:user-to-workspace`
+- `create:pipeline`, `update:pipeline`, `delete:pipeline`, `view:pipeline`
+- `create:assistant`, `update:assistant`, `delete:assistant`, `view:assistant`
+- `manage:integrations`, `connect:whatsapp`, `view:integrations`
+- `create:deal`, `update:deal`, `delete:deal`, `view:deal`
+- `view:all-deals`, `view:team-deals`, `assign:deal`, `move:deal`
+- `view:chat`, `send:message`
+- `view:workspace-reports`, `view:company-reports`
 
 **Uso:** Administrador técnico que configura workspaces para revenda.
 
@@ -136,15 +143,15 @@ O sistema implementa um modelo **SaaS B2B2C multi-tenant com reseller/white-labe
 
 **Escopo:** Apenas o próprio workspace.
 
-**Permissões:**
-- Editar configurações básicas do workspace
-- Criar e remover usuários do workspace
-- **Visualizar** pipelines e assistentes (somente leitura)
-- **Conectar/desconectar** conta WhatsApp (Evolux)
-- Visualizar status de integrações
-- Criar, editar e atribuir deals
-- Visualizar todos os deals do workspace
-- Visualizar relatórios do workspace
+**Permissões:** 24 permissões (workspace level apenas)
+- `update:workspace` (apenas configurações básicas do próprio workspace)
+- `create:workspace-user`, `delete:workspace-user`, `list:users`
+- `view:pipeline`, `view:assistant` (somente visualização)
+- `connect:whatsapp`, `view:integrations`
+- `create:deal`, `update:deal`, `delete:deal`, `view:deal`
+- `view:all-deals`, `view:team-deals`, `assign:deal`, `move:deal`
+- `view:chat`, `send:message`
+- `view:workspace-reports`
 
 **Restrições:**
 - ❌ Não pode criar ou editar pipelines
@@ -160,14 +167,14 @@ O sistema implementa um modelo **SaaS B2B2C multi-tenant com reseller/white-labe
 
 **Escopo:** Apenas o próprio workspace.
 
-**Permissões:**
-- Criar e remover usuários do workspace
-- **Visualizar** pipelines e assistentes (somente leitura)
-- **Conectar/desconectar** conta WhatsApp (Evolux)
-- Visualizar status de integrações
-- Criar, editar e atribuir deals
-- Visualizar todos os deals do workspace
-- Visualizar relatórios do workspace
+**Permissões:** 23 permissões (sem update:workspace)
+- `create:workspace-user`, `delete:workspace-user`, `list:users`
+- `view:pipeline`, `view:assistant` (somente visualização)
+- `connect:whatsapp`, `view:integrations`
+- `create:deal`, `update:deal`, `delete:deal`, `view:deal`
+- `view:all-deals`, `view:team-deals`, `assign:deal`, `move:deal`
+- `view:chat`, `send:message`
+- `view:workspace-reports`
 
 **Restrições:**
 - ❌ Não pode criar ou editar pipelines
@@ -183,13 +190,15 @@ O sistema implementa um modelo **SaaS B2B2C multi-tenant com reseller/white-labe
 
 **Escopo:** Apenas o próprio workspace.
 
-**Permissões:**
-- Criar vendedores (SALES_REP)
-- Criar, editar e atribuir deals
-- Visualizar todos os deals do workspace
-- Visualizar deals da equipe
-- Visualizar relatórios do workspace
-- **Não pode:** Gerenciar pipelines ou assistentes
+**Permissões:** 18 permissões (gestão de equipe de vendas)
+- `create:workspace-user` (pode criar vendedores), `list:users`
+- `view:pipeline`, `view:assistant`
+- `create:deal`, `update:deal`, `delete:deal`, `view:deal`
+- `view:all-deals` (vê todos os deals do workspace)
+- `view:team-deals`, `assign:deal` (pode atribuir deals a vendedores)
+- `move:deal`
+- `view:chat`, `send:message`
+- `view:workspace-reports`
 
 **Uso:** Gerente que supervisiona equipe de vendas.
 
@@ -200,12 +209,18 @@ O sistema implementa um modelo **SaaS B2B2C multi-tenant com reseller/white-labe
 
 **Escopo:** Apenas o próprio workspace e deals atribuídos.
 
-**Permissões:**
-- Visualizar pipelines e assistentes (somente leitura)
-- Visualizar apenas deals atribuídos a ele
-- Editar e mover deals atribuídos
-- Interagir via chat
-- **Não pode:** Ver deals de outros vendedores
+**Permissões:** 8 permissões (mínimas para operação)
+- `view:pipeline`, `view:assistant`
+- `view:deal`, `view:own-deals` (vê apenas seus próprios deals)
+- `update:deal`, `move:deal` (apenas deals atribuídos a ele)
+- `view:chat`, `send:message`
+
+**Restrições:**
+- ❌ Não pode criar deals
+- ❌ Não pode deletar deals
+- ❌ Não pode ver deals de outros vendedores
+- ❌ Não pode criar usuários
+- ❌ Não pode visualizar relatórios
 
 **Uso:** Vendedor que trabalha com leads/deals.
 
@@ -258,31 +273,91 @@ O sistema implementa um modelo **SaaS B2B2C multi-tenant com reseller/white-labe
 
 ## Permissões Detalhadas
 
-### Gerenciamento de Plataforma
-- `manage:platform` - Gerenciar plataforma (PLATFORM_ADMIN)
-- `view:platform-reports` - Visualizar relatórios da plataforma (PLATFORM_ADMIN)
+### Todas as Permissões Disponíveis
 
-### Gerenciamento de Empresas
+```typescript
+export type Permission =
+  // Platform Management (PLATFORM_ADMIN only)
+  | 'manage:platform'
+  | 'create:company'
+  | 'delete:company'
+  | 'view:all-companies'
+  // Company Management (COMPANY_OWNER, COMPANY_ADMIN)
+  | 'manage:company'
+  | 'update:company'
+  | 'view:company-billing'
+  // Workspace Management (COMPANY_OWNER, COMPANY_ADMIN)
+  | 'create:workspace'
+  | 'update:workspace'
+  | 'delete:workspace'
+  | 'view:all-workspaces'
+  // User Management
+  | 'create:company-user'
+  | 'delete:company-user'
+  | 'create:workspace-user'
+  | 'delete:workspace-user'
+  | 'list:users'
+  | 'assign:user-to-workspace'
+  // Pipeline Management (Company level only)
+  | 'create:pipeline'
+  | 'update:pipeline'
+  | 'delete:pipeline'
+  | 'view:pipeline'
+  // Assistant Management (Company level only)
+  | 'create:assistant'
+  | 'update:assistant'
+  | 'delete:assistant'
+  | 'view:assistant'
+  // Integration Management
+  | 'manage:integrations'
+  | 'connect:whatsapp'
+  | 'view:integrations'
+  // Deal Management
+  | 'create:deal'
+  | 'update:deal'
+  | 'delete:deal'
+  | 'view:deal'
+  | 'view:all-deals'
+  | 'view:team-deals'
+  | 'view:own-deals'
+  | 'assign:deal'
+  | 'move:deal'
+  // Chat Management
+  | 'view:chat'
+  | 'send:message'
+  // Reports
+  | 'view:workspace-reports'
+  | 'view:company-reports'
+  | 'view:platform-reports';
+```
+
+### Gerenciamento de Plataforma
+- `manage:platform` - Gerenciar plataforma completa (PLATFORM_ADMIN)
 - `create:company` - Criar empresas (PLATFORM_ADMIN)
 - `delete:company` - Remover empresas (PLATFORM_ADMIN)
 - `view:all-companies` - Visualizar todas as empresas (PLATFORM_ADMIN)
+- `view:platform-reports` - Visualizar relatórios da plataforma (PLATFORM_ADMIN)
+
+### Gerenciamento de Empresas
 - `manage:company` - Gerenciar empresa (PLATFORM_ADMIN, COMPANY_OWNER)
 - `update:company` - Atualizar empresa (PLATFORM_ADMIN, COMPANY_OWNER)
 - `view:company-billing` - Visualizar billing (PLATFORM_ADMIN, COMPANY_OWNER)
+- `view:company-reports` - Visualizar relatórios da empresa (PLATFORM_ADMIN, COMPANY_OWNER, COMPANY_ADMIN)
 
 ### Gerenciamento de Workspaces
-- `create:workspace` - Criar workspaces (COMPANY_OWNER, COMPANY_ADMIN)
-- `update:workspace` - Editar workspaces (COMPANY_OWNER, COMPANY_ADMIN)
-- `delete:workspace` - Remover workspaces (COMPANY_OWNER, COMPANY_ADMIN)
-- `view:all-workspaces` - Visualizar todos os workspaces (COMPANY_OWNER, COMPANY_ADMIN)
+- `create:workspace` - Criar workspaces (PLATFORM_ADMIN, COMPANY_OWNER, COMPANY_ADMIN)
+- `update:workspace` - Editar workspaces (PLATFORM_ADMIN, COMPANY_OWNER, COMPANY_ADMIN, WORKSPACE_OWNER)
+- `delete:workspace` - Remover workspaces (PLATFORM_ADMIN, COMPANY_OWNER, COMPANY_ADMIN)
+- `view:all-workspaces` - Visualizar todos os workspaces (PLATFORM_ADMIN, COMPANY_OWNER, COMPANY_ADMIN)
+- `view:workspace-reports` - Visualizar relatórios do workspace (Todos exceto SALES_REP)
 
 ### Gerenciamento de Usuários
-- `create:company-user` - Criar usuários no nível empresa (COMPANY_OWNER, COMPANY_ADMIN)
-- `delete:company-user` - Remover usuários no nível empresa (COMPANY_OWNER, COMPANY_ADMIN)
-- `create:workspace-user` - Criar usuários no nível workspace (WORKSPACE_OWNER, WORKSPACE_ADMIN, WORKSPACE_MANAGER)
-- `delete:workspace-user` - Remover usuários no nível workspace (WORKSPACE_OWNER, WORKSPACE_ADMIN)
-- `list:users` - Listar usuários
-- `assign:user-to-workspace` - Atribuir usuários a workspaces
+- `create:company-user` - Criar usuários no nível empresa (PLATFORM_ADMIN, COMPANY_OWNER, COMPANY_ADMIN)
+- `delete:company-user` - Remover usuários no nível empresa (PLATFORM_ADMIN, COMPANY_OWNER, COMPANY_ADMIN)
+- `create:workspace-user` - Criar usuários no nível workspace (Todos exceto SALES_REP)
+- `delete:workspace-user` - Remover usuários no nível workspace (PLATFORM_ADMIN, COMPANY_OWNER, COMPANY_ADMIN, WORKSPACE_OWNER, WORKSPACE_ADMIN)
+- `list:users` - Listar usuários (Todos exceto SALES_REP)
+- `assign:user-to-workspace` - Atribuir usuários a workspaces (PLATFORM_ADMIN, COMPANY_OWNER, COMPANY_ADMIN)
 
 ### Gerenciamento de Pipelines (Company level only)
 - `create:pipeline` - Criar pipelines (PLATFORM_ADMIN, COMPANY_OWNER, COMPANY_ADMIN)
@@ -302,28 +377,27 @@ O sistema implementa um modelo **SaaS B2B2C multi-tenant com reseller/white-labe
 
 ### Gerenciamento de Integrações
 - `manage:integrations` - Gerenciar todas as integrações (PLATFORM_ADMIN, COMPANY_OWNER, COMPANY_ADMIN)
-- `connect:whatsapp` - Conectar/desconectar WhatsApp (Todos workspace-level roles)
-- `view:integrations` - Visualizar status de integrações (Todos)
+- `connect:whatsapp` - Conectar/desconectar WhatsApp (Todos exceto SALES_REP)
+- `view:integrations` - Visualizar status de integrações (Todos exceto SALES_REP)
 
 **Modelo de Integração Evolux:**
 - **Company level:** Configura credenciais e parâmetros da integração
 - **Workspace level:** Apenas conecta/desconecta conta WhatsApp específica
 
 ### Gerenciamento de Deals
-- `create:deal` - Criar deals
-- `update:deal` - Editar deals
-- `delete:deal` - Remover deals
-- `view:deal` - Visualizar deals
-- `view:all-deals` - Visualizar todos os deals do workspace
-- `view:team-deals` - Visualizar deals da equipe
-- `view:own-deals` - Visualizar apenas próprios deals
-- `assign:deal` - Atribuir deals a usuários
-- `move:deal` - Mover deals entre etapas
+- `create:deal` - Criar deals (Todos exceto SALES_REP)
+- `update:deal` - Editar deals (Todos)
+- `delete:deal` - Remover deals (Todos exceto SALES_REP)
+- `view:deal` - Visualizar deals (Todos)
+- `view:all-deals` - Visualizar todos os deals do workspace (Todos exceto SALES_REP)
+- `view:team-deals` - Visualizar deals da equipe (Todos exceto SALES_REP)
+- `view:own-deals` - Visualizar apenas próprios deals (Todos)
+- `assign:deal` - Atribuir deals a usuários (Todos exceto SALES_REP)
+- `move:deal` - Mover deals entre etapas (Todos)
 
-### Chat e Relatórios
-- `view:chat` - Visualizar chats
-- `send:message` - Enviar mensagens
-- `view:workspace-reports` - Visualizar relatórios do workspace
+### Chat Management
+- `view:chat` - Visualizar chats (Todos)
+- `send:message` - Enviar mensagens (Todos)
 
 ---
 
@@ -486,6 +560,85 @@ private isValidRoleForContext(role: UserRole, workspaceId?: string): boolean {
 
 ## Implementação Técnica
 
+### Localização no Código
+
+O sistema de roles e permissões está implementado em:
+```
+src/app/common/types/user-role.type.ts
+```
+
+### Funções Utilitárias
+
+```typescript
+export function hasPermission(role: UserRole, permission: Permission): boolean {
+  return ROLE_PERMISSIONS[role].includes(permission);
+}
+
+export function hasAnyPermission(
+  role: UserRole,
+  permissions: Permission[],
+): boolean {
+  return permissions.some((permission) =>
+    ROLE_PERMISSIONS[role].includes(permission),
+  );
+}
+
+export function hasAllPermissions(
+  role: UserRole,
+  permissions: Permission[],
+): boolean {
+  return permissions.every((permission) =>
+    ROLE_PERMISSIONS[role].includes(permission),
+  );
+}
+```
+
+### Guards e Decorators
+
+#### PermissionsGuard
+```typescript
+// src/app/common/guards/permissions.guard.ts
+@Injectable()
+export class PermissionsGuard implements CanActivate {
+  canActivate(context: ExecutionContext): boolean {
+    const requiredPermissions = this.reflector.get<Permission[]>(
+      'permissions',
+      context.getHandler(),
+    );
+
+    if (!requiredPermissions) {
+      return true;
+    }
+
+    const request = context.switchToHttp().getRequest();
+    const user = request.user;
+
+    return hasAnyPermission(user.role, requiredPermissions);
+  }
+}
+```
+
+#### @RequirePermissions Decorator
+```typescript
+// src/app/common/decorators/permissions.decorator.ts
+export const RequirePermissions = (...permissions: Permission[]) =>
+  SetMetadata('permissions', permissions);
+```
+
+### Uso nos Controllers
+
+```typescript
+@Controller('pipeline')
+export class CreatePipelineController {
+  @Post()
+  @UseGuards(PermissionsGuard)
+  @RequirePermissions('create:pipeline')
+  async execute(@Body() body: CreatePipelineDto) {
+    // ...
+  }
+}
+```
+
 ### Schema Prisma
 
 ```prisma
@@ -598,14 +751,14 @@ Response: {
 export class UpdateDealService {
   async execute(params: UpdateDealParams) {
     const deal = await this.dealRepository.getById(params.dealId);
-    
+
     // SALES_REP só pode editar deals atribuídos a ele
     if (params.userRole === UserRole.SALES_REP) {
       if (deal.assignedUserId !== params.userId) {
         return { success: false, error: 'Unauthorized' };
       }
     }
-    
+
     // Workspace-level roles só podem editar deals do próprio workspace
     const workspaceLevelRoles = [
       UserRole.WORKSPACE_OWNER,
@@ -613,13 +766,13 @@ export class UpdateDealService {
       UserRole.WORKSPACE_MANAGER,
       UserRole.SALES_REP,
     ];
-    
+
     if (workspaceLevelRoles.includes(params.userRole)) {
       if (deal.workspaceId !== params.workspaceId) {
         return { success: false, error: 'Unauthorized' };
       }
     }
-    
+
     // Lógica de atualização
   }
 }
