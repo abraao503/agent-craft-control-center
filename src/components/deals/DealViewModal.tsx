@@ -1050,11 +1050,14 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
                           selectedUserId={assignedUserId}
                           selectedUserName={dealDetails?.assignedUser?.name}
                           onUserSelect={handleUserSelect}
-                          disabled={!canAssignDeal || assignUserMutation.isPending}
+                          disabled={
+                            !canAssignDeal || assignUserMutation.isPending
+                          }
                         />
                         {!canAssignDeal && (
                           <p className="text-xs text-muted-foreground">
-                            Você não tem permissão para atribuir usuários a este negócio.
+                            Você não tem permissão para atribuir usuários a este
+                            negócio.
                           </p>
                         )}
                       </div>
