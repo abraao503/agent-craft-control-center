@@ -77,13 +77,14 @@ O sistema implementa um modelo **SaaS B2B2C multi-tenant com reseller/white-labe
 
 **Escopo:** Todas as empresas e workspaces.
 
-**Permissões:** Todas as 47 permissões do sistema
+**Permissões:** Todas as 52 permissões do sistema
 - `manage:platform`, `create:company`, `delete:company`, `view:all-companies`
 - `manage:company`, `update:company`, `view:company-billing`
 - `create:workspace`, `update:workspace`, `delete:workspace`, `view:all-workspaces`
 - `create:company-user`, `delete:company-user`, `create:workspace-user`, `delete:workspace-user`
 - `list:users`, `assign:user-to-workspace`
 - `create:pipeline`, `update:pipeline`, `delete:pipeline`, `view:pipeline`
+- `create:stage-form-field`, `update:stage-form-field`, `delete:stage-form-field`, `view:stage-form-field`, `save:form-field-values`
 - `create:assistant`, `update:assistant`, `delete:assistant`, `view:assistant`
 - `manage:integrations`, `connect:whatsapp`, `view:integrations`
 - `create:deal`, `update:deal`, `delete:deal`, `view:deal`
@@ -100,12 +101,13 @@ O sistema implementa um modelo **SaaS B2B2C multi-tenant com reseller/white-labe
 
 **Escopo:** Própria empresa e todos os workspaces.
 
-**Permissões:** 40 permissões (todas exceto platform management)
+**Permissões:** 45 permissões (todas exceto platform management)
 - `manage:company`, `update:company`, `view:company-billing`
 - `create:workspace`, `update:workspace`, `delete:workspace`, `view:all-workspaces`
 - `create:company-user`, `delete:company-user`, `create:workspace-user`, `delete:workspace-user`
 - `list:users`, `assign:user-to-workspace`
 - `create:pipeline`, `update:pipeline`, `delete:pipeline`, `view:pipeline`
+- `create:stage-form-field`, `update:stage-form-field`, `delete:stage-form-field`, `view:stage-form-field`, `save:form-field-values`
 - `create:assistant`, `update:assistant`, `delete:assistant`, `view:assistant`
 - `manage:integrations`, `connect:whatsapp`, `view:integrations`
 - `create:deal`, `update:deal`, `delete:deal`, `view:deal`
@@ -122,11 +124,12 @@ O sistema implementa um modelo **SaaS B2B2C multi-tenant com reseller/white-labe
 
 **Escopo:** Própria empresa e todos os workspaces.
 
-**Permissões:** 37 permissões (sem manage:company e view:company-billing)
+**Permissões:** 42 permissões (sem manage:company e view:company-billing)
 - `create:workspace`, `update:workspace`, `delete:workspace`, `view:all-workspaces`
 - `create:company-user`, `delete:company-user`, `create:workspace-user`, `delete:workspace-user`
 - `list:users`, `assign:user-to-workspace`
 - `create:pipeline`, `update:pipeline`, `delete:pipeline`, `view:pipeline`
+- `create:stage-form-field`, `update:stage-form-field`, `delete:stage-form-field`, `view:stage-form-field`, `save:form-field-values`
 - `create:assistant`, `update:assistant`, `delete:assistant`, `view:assistant`
 - `manage:integrations`, `connect:whatsapp`, `view:integrations`
 - `create:deal`, `update:deal`, `delete:deal`, `view:deal`
@@ -143,10 +146,11 @@ O sistema implementa um modelo **SaaS B2B2C multi-tenant com reseller/white-labe
 
 **Escopo:** Apenas o próprio workspace.
 
-**Permissões:** 24 permissões (workspace level apenas)
+**Permissões:** 26 permissões (workspace level apenas)
 - `update:workspace` (apenas configurações básicas do próprio workspace)
 - `create:workspace-user`, `delete:workspace-user`, `list:users`
-- `view:pipeline`, `view:assistant` (somente visualização)
+- `view:pipeline`, `view:stage-form-field`, `save:form-field-values` (somente visualização de configuração, pode salvar valores)
+- `view:assistant` (somente visualização)
 - `connect:whatsapp`, `view:integrations`
 - `create:deal`, `update:deal`, `delete:deal`, `view:deal`
 - `view:all-deals`, `view:team-deals`, `assign:deal`, `move:deal`
@@ -155,6 +159,7 @@ O sistema implementa um modelo **SaaS B2B2C multi-tenant com reseller/white-labe
 
 **Restrições:**
 - ❌ Não pode criar ou editar pipelines
+- ❌ Não pode criar ou editar campos de formulário de stages
 - ❌ Não pode criar ou editar assistentes
 - ❌ Não pode configurar integrações (apenas conectar WhatsApp)
 
@@ -167,9 +172,10 @@ O sistema implementa um modelo **SaaS B2B2C multi-tenant com reseller/white-labe
 
 **Escopo:** Apenas o próprio workspace.
 
-**Permissões:** 23 permissões (sem update:workspace)
+**Permissões:** 25 permissões (sem update:workspace)
 - `create:workspace-user`, `delete:workspace-user`, `list:users`
-- `view:pipeline`, `view:assistant` (somente visualização)
+- `view:pipeline`, `view:stage-form-field`, `save:form-field-values` (somente visualização de configuração, pode salvar valores)
+- `view:assistant` (somente visualização)
 - `connect:whatsapp`, `view:integrations`
 - `create:deal`, `update:deal`, `delete:deal`, `view:deal`
 - `view:all-deals`, `view:team-deals`, `assign:deal`, `move:deal`
@@ -178,6 +184,7 @@ O sistema implementa um modelo **SaaS B2B2C multi-tenant com reseller/white-labe
 
 **Restrições:**
 - ❌ Não pode criar ou editar pipelines
+- ❌ Não pode criar ou editar campos de formulário de stages
 - ❌ Não pode criar ou editar assistentes
 - ❌ Não pode configurar integrações (apenas conectar WhatsApp)
 
@@ -190,9 +197,10 @@ O sistema implementa um modelo **SaaS B2B2C multi-tenant com reseller/white-labe
 
 **Escopo:** Apenas o próprio workspace.
 
-**Permissões:** 18 permissões (gestão de equipe de vendas)
+**Permissões:** 20 permissões (gestão de equipe de vendas)
 - `create:workspace-user` (pode criar vendedores), `list:users`
-- `view:pipeline`, `view:assistant`
+- `view:pipeline`, `view:stage-form-field`, `save:form-field-values`
+- `view:assistant`
 - `create:deal`, `update:deal`, `delete:deal`, `view:deal`
 - `view:all-deals` (vê todos os deals do workspace)
 - `view:team-deals`, `assign:deal` (pode atribuir deals a vendedores)
@@ -209,8 +217,9 @@ O sistema implementa um modelo **SaaS B2B2C multi-tenant com reseller/white-labe
 
 **Escopo:** Apenas o próprio workspace e deals atribuídos.
 
-**Permissões:** 8 permissões (mínimas para operação)
-- `view:pipeline`, `view:assistant`
+**Permissões:** 10 permissões (mínimas para operação)
+- `view:pipeline`, `view:stage-form-field`, `save:form-field-values`
+- `view:assistant`
 - `view:deal`, `view:own-deals` (vê apenas seus próprios deals)
 - `update:deal`, `move:deal` (apenas deals atribuídos a ele)
 - `view:chat`, `send:message`
@@ -303,6 +312,12 @@ export type Permission =
   | 'update:pipeline'
   | 'delete:pipeline'
   | 'view:pipeline'
+  // Stage Form Field Management (Company level only - part of pipeline configuration)
+  | 'create:stage-form-field'
+  | 'update:stage-form-field'
+  | 'delete:stage-form-field'
+  | 'view:stage-form-field'
+  | 'save:form-field-values' // Save form field values for deals (all workspace users)
   // Assistant Management (Company level only)
   | 'create:assistant'
   | 'update:assistant'
@@ -356,8 +371,13 @@ export type Permission =
 - `delete:company-user` - Remover usuários no nível empresa (PLATFORM_ADMIN, COMPANY_OWNER, COMPANY_ADMIN)
 - `create:workspace-user` - Criar usuários no nível workspace (Todos exceto SALES_REP)
 - `delete:workspace-user` - Remover usuários no nível workspace (PLATFORM_ADMIN, COMPANY_OWNER, COMPANY_ADMIN, WORKSPACE_OWNER, WORKSPACE_ADMIN)
-- `list:users` - Listar usuários (Todos exceto SALES_REP)
+- `list:users` - Listar usuários da própria empresa/workspace (Todos exceto SALES_REP)
 - `assign:user-to-workspace` - Atribuir usuários a workspaces (PLATFORM_ADMIN, COMPANY_OWNER, COMPANY_ADMIN)
+
+**Nota sobre `list:users`:**
+- **PLATFORM_ADMIN**: Pode listar usuários de qualquer empresa (com companyId na query)
+- **COMPANY_OWNER/ADMIN**: Pode listar usuários apenas da própria empresa
+- **WORKSPACE_OWNER/ADMIN/MANAGER**: Pode listar usuários apenas do próprio workspace
 
 ### Gerenciamento de Pipelines (Company level only)
 - `create:pipeline` - Criar pipelines (PLATFORM_ADMIN, COMPANY_OWNER, COMPANY_ADMIN)
@@ -366,6 +386,18 @@ export type Permission =
 - `view:pipeline` - Visualizar pipelines (Todos)
 
 **Nota:** Workspace-level roles só podem **visualizar** pipelines configurados pela empresa.
+
+### Gerenciamento de Campos de Formulário de Stage (Company level only)
+- `create:stage-form-field` - Criar campos de formulário (PLATFORM_ADMIN, COMPANY_OWNER, COMPANY_ADMIN)
+- `update:stage-form-field` - Editar campos de formulário (PLATFORM_ADMIN, COMPANY_OWNER, COMPANY_ADMIN)
+- `delete:stage-form-field` - Remover campos de formulário (PLATFORM_ADMIN, COMPANY_OWNER, COMPANY_ADMIN)
+- `view:stage-form-field` - Visualizar campos de formulário (Todos)
+- `save:form-field-values` - Salvar valores de campos em deals (Todos)
+
+**Nota:**
+- Campos de formulário fazem parte da configuração de pipeline, portanto são gerenciados apenas no nível Company
+- Workspace-level roles podem **visualizar** campos e **salvar valores** em deals, mas não podem criar/editar/deletar campos
+- A permissão `save:form-field-values` permite que todos os usuários (incluindo SALES_REP) preencham os campos ao trabalhar com deals
 
 ### Gerenciamento de Assistentes (Company level only)
 - `create:assistant` - Criar assistentes (PLATFORM_ADMIN, COMPANY_OWNER, COMPANY_ADMIN)

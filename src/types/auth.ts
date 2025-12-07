@@ -30,6 +30,11 @@ export type Permission =
   | "update:pipeline"
   | "delete:pipeline"
   | "view:pipeline"
+  | "create:stage-form-field"
+  | "update:stage-form-field"
+  | "delete:stage-form-field"
+  | "view:stage-form-field"
+  | "save:form-field-values"
   | "create:assistant"
   | "update:assistant"
   | "delete:assistant"
@@ -48,7 +53,8 @@ export type Permission =
   | "move:deal"
   | "view:chat"
   | "send:message"
-  | "view:workspace-reports";
+  | "view:workspace-reports"
+  | "view:company-reports";
 
 export interface UserProfile {
   id: string;

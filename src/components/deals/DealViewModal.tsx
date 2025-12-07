@@ -248,12 +248,40 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
       queryClient.invalidateQueries({ queryKey: ["dealsByStage"] });
       toast({ title: "Sucesso", description: "Negócio movido de etapa." });
     },
-    onError: () => {
-      toast({
-        title: "Erro",
-        description: "Falha ao mover negócio.",
-        variant: "destructive",
-      });
+    onError: (e: unknown) => {
+      if (
+        e &&
+        e instanceof AxiosError &&
+        e?.response?.status === 422 &&
+        e?.response?.data?.message
+      ) {
+        const errorMessage = e.response.data.message;
+
+        // Extract field names from error message
+        const match = errorMessage.match(
+          /Required fields must be filled: (.+)/
+        );
+        if (match) {
+          const fields = match[1];
+          toast({
+            title: "Campos obrigatórios não preenchidos",
+            description: `Preencha os seguintes campos antes de mover o negócio: ${fields}`,
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Erro de validação",
+            description: errorMessage,
+            variant: "destructive",
+          });
+        }
+      } else {
+        toast({
+          title: "Erro",
+          description: "Falha ao mover negócio.",
+          variant: "destructive",
+        });
+      }
     },
   });
 
@@ -1212,15 +1240,17 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
                   {dealDetails?.currentStage?.name || "Etapa Atual"}
                 </h3>
               )}
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setShowSelectTypeModal(true)}
-                className="h-8 gap-1.5 text-xs font-medium"
-              >
-                <Plus className="h-4 w-4" />
-                Novo Campo
-              </Button>
+              {has("create:stage-form-field") && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setShowSelectTypeModal(true)}
+                  className="h-8 gap-1.5 text-xs font-medium"
+                >
+                  <Plus className="h-4 w-4" />
+                  Novo Campo
+                </Button>
+              )}
             </div>
 
             {/* Fields Section */}
@@ -1281,42 +1311,51 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
                             )}
                           </div>
 
-                          {/* Actions Menu */}
-                          <div className="flex items-center gap-1">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-6 w-6 p-0 cursor-grab"
-                            >
-                              <GripVertical className="h-4 w-4 text-muted-foreground" />
-                            </Button>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="h-6 w-6 p-0"
-                                >
-                                  <MoreVertical className="h-4 w-4 text-muted-foreground" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem
-                                  onClick={() => handleEditField(field)}
-                                >
-                                  <Edit2 className="h-3 w-3 mr-2" />
-                                  Editar
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() => handleDeleteField(field.id)}
-                                  className="text-destructive"
-                                >
-                                  <Trash2 className="h-3 w-3 mr-2" />
-                                  Remover
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
+                          {/* Actions Menu - Only for users with edit/delete permissions */}
+                          {(has("update:stage-form-field") ||
+                            has("delete:stage-form-field")) && (
+                            <div className="flex items-center gap-1">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 w-6 p-0 cursor-grab"
+                              >
+                                <GripVertical className="h-4 w-4 text-muted-foreground" />
+                              </Button>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-6 w-6 p-0"
+                                  >
+                                    <MoreVertical className="h-4 w-4 text-muted-foreground" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  {has("update:stage-form-field") && (
+                                    <DropdownMenuItem
+                                      onClick={() => handleEditField(field)}
+                                    >
+                                      <Edit2 className="h-3 w-3 mr-2" />
+                                      Editar
+                                    </DropdownMenuItem>
+                                  )}
+                                  {has("delete:stage-form-field") && (
+                                    <DropdownMenuItem
+                                      onClick={() =>
+                                        handleDeleteField(field.id)
+                                      }
+                                      className="text-destructive"
+                                    >
+                                      <Trash2 className="h-3 w-3 mr-2" />
+                                      Remover
+                                    </DropdownMenuItem>
+                                  )}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
+                          )}
                         </div>
 
                         {/* Field Input */}
