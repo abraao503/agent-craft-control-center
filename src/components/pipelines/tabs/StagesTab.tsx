@@ -10,11 +10,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PipelineStageMinimal, AssistantPipelineStage } from "@/types/pipeline";
+import {
+  PipelineStageMinimal,
+  AssistantPipelineStage,
+  ReengagementConfigInput,
+} from "@/types/pipeline";
 import { Agent } from "@/types/agent";
 import { CompanyWhatsAppIntegration } from "@/types/whatsapp";
 import { GripVertical, Pencil, Check, X } from "lucide-react";
 import { AssistantStageConfig } from "../AssistantStageConfig";
+import { ReengagementConfigSection } from "../ReengagementConfigSection";
 import {
   DndContext,
   closestCenter,
@@ -34,11 +39,13 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@/lib/utils";
 
-export interface EditableStage extends PipelineStageMinimal {
+export interface EditableStage
+  extends Omit<PipelineStageMinimal, "reengagementConfig"> {
   order: number;
   color?: string;
   winProbability?: number;
   assistantPipelineStage?: AssistantPipelineStage;
+  reengagementConfig?: ReengagementConfigInput | null;
 }
 
 interface StagesTabProps {
@@ -51,6 +58,7 @@ interface StagesTabProps {
   assistantEnabled?: boolean;
   assistantConfigured?: boolean; // Indica se o agente foi configurado (tem campos obrigatórios)
   assistantLoading?: boolean; // Indica se o agente está sendo carregado
+  workspaceId?: string; // Required for ReengagementConfigSection
   onSave: (args: { stages: EditableStage[] }) => Promise<void> | void;
   onCancel: () => void;
   saveLabel?: string;
@@ -65,6 +73,7 @@ interface SortableStageProps {
   assistantConfigured: boolean; // Indica se o agente foi configurado
   assistantLoading: boolean; // Indica se o agente está sendo carregado
   allStages: EditableStage[];
+  workspaceId?: string; // Required for ReengagementConfigSection
 }
 
 const SortableStage: React.FC<SortableStageProps> = ({
@@ -76,6 +85,7 @@ const SortableStage: React.FC<SortableStageProps> = ({
   assistantConfigured,
   assistantLoading,
   allStages,
+  workspaceId,
 }) => {
   const {
     attributes,
@@ -233,6 +243,19 @@ const SortableStage: React.FC<SortableStageProps> = ({
               </p>
             </div>
           )}
+
+          {/* Reengagement Configuration */}
+          {workspaceId && (
+            <div className="mt-4 pt-4 border-t">
+              <ReengagementConfigSection
+                workspaceId={workspaceId}
+                config={stage.reengagementConfig ?? null}
+                onChange={(config) => {
+                  onUpdate(index, { reengagementConfig: config });
+                }}
+              />
+            </div>
+          )}
         </CardContent>
         <CardFooter className="mt-auto flex items-center justify-between">
           <div className="flex items-center justify-between">
@@ -258,6 +281,7 @@ export const StagesTab: React.FC<StagesTabProps> = ({
   assistantEnabled = false,
   assistantConfigured = false,
   assistantLoading = false,
+  workspaceId,
   onSave,
   onCancel,
   saveLabel = "Aplicar",
@@ -270,6 +294,21 @@ export const StagesTab: React.FC<StagesTabProps> = ({
       winProbability: s.winProbability ?? 0,
       order: idx,
       assistantPipelineStage: s.assistantPipelineStage ?? undefined,
+      reengagementConfig: s.reengagementConfig
+        ? {
+            minInactiveChatTimeHours:
+              s.reengagementConfig.minInactiveChatTimeHours,
+            maxMessages: s.reengagementConfig.maxMessages,
+            intervalBetweenMessagesHours:
+              s.reengagementConfig.messagingIntervalHours ||
+              s.reengagementConfig.intervalBetweenMessagesHours ||
+              48,
+            messages: s.reengagementConfig.messages,
+            includeTags: s.reengagementConfig.includeTags || [],
+            excludeTags: s.reengagementConfig.excludeTags || [],
+            isActive: s.reengagementConfig.isActive ?? true,
+          }
+        : undefined,
     }));
 
   const [draftStages, setDraftStages] = useState<EditableStage[]>(() =>
@@ -377,6 +416,7 @@ export const StagesTab: React.FC<StagesTabProps> = ({
                   assistantConfigured={assistantConfigured}
                   assistantLoading={assistantLoading}
                   allStages={draftStages}
+                  workspaceId={workspaceId}
                 />
               ))}
             </SortableContext>

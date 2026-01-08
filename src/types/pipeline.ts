@@ -24,6 +24,28 @@ export interface AssistantPipelineStage {
   assistantAllowedTargetStages: AssistantAllowedTargetStage[];
 }
 
+export interface ReengagementConfig {
+  id?: string; // Present when fetched from API
+  minInactiveChatTimeHours: number; // >= 1
+  maxMessages: number; // >= 1
+  messagingIntervalHours?: number; // Returned by API (renamed from intervalBetweenMessagesHours)
+  intervalBetweenMessagesHours?: number; // Sent to API (used in create/update)
+  messages: string[]; // min 1 item, each item min 1 char
+  includeTags: string[]; // UUIDs of tags to include (empty = all deals)
+  excludeTags: string[]; // UUIDs of tags to exclude
+  isActive: boolean; // default: true
+}
+
+export interface ReengagementConfigInput {
+  minInactiveChatTimeHours: number; // >= 1
+  maxMessages: number; // >= 1
+  intervalBetweenMessagesHours: number; // >= 1
+  messages: string[]; // min 1 item, each item min 1 char
+  includeTags?: string[]; // optional, array of UUIDs, default: []
+  excludeTags?: string[]; // optional, array of UUIDs, default: []
+  isActive?: boolean; // optional, default: true
+}
+
 export interface CreatePipelineStageInput {
   name: string;
   description?: string;
@@ -31,6 +53,7 @@ export interface CreatePipelineStageInput {
   color: string; // hex color string e.g. #FF0000
   winProbability: number; // 0-100
   assistantPipelineStage?: AssistantPipelineStage | null;
+  reengagementConfig?: ReengagementConfigInput | null;
 }
 
 export interface WhatsAppIntegrationConfig {
@@ -82,4 +105,5 @@ export interface PipelineStageMinimal {
   color?: string;
   winProbability?: number;
   assistantPipelineStage?: AssistantPipelineStage | null;
+  reengagementConfig?: ReengagementConfig | null;
 }
