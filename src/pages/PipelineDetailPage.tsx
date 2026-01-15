@@ -21,6 +21,7 @@ import { useWebSocket } from "@/hooks/useWebSocket";
 import { useDealStageWebSocket } from "@/hooks/useDealStageWebSocket";
 import { useActivityWebSocket } from "@/hooks/useActivityWebSocket";
 import { usePermissions } from "@/hooks/usePermissions";
+import { Inbox } from "lucide-react";
 
 const PipelineDetailPage = () => {
   const { pipelineId } = useParams();
@@ -314,6 +315,7 @@ const PipelineDetailPage = () => {
   const canCreatePipeline = has("create:pipeline");
   const canListUsers = has("list:users");
   const canCreateDeal = has("create:deal");
+  const canViewPipeline = has("view:pipeline");
 
   const renderLoadingState = () => <KanbanSkeleton columns={4} />;
 
@@ -390,6 +392,15 @@ const PipelineDetailPage = () => {
           )}
         </div>
         <div className="flex items-center gap-2">
+          {pipelineId && canViewPipeline && (
+            <Button
+              variant="outline"
+              onClick={() => navigate(`/deals/pipeline/${pipelineId}/queue`)}
+            >
+              <Inbox className="h-4 w-4 mr-2" />
+              Fila de Mensagens
+            </Button>
+          )}
           {currentPipelineWhatsappIntegrationId && workspaceId && (
             <PipelineWhatsAppConnection
               companyWhatsappIntegrationId={

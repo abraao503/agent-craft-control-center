@@ -1,3 +1,13 @@
+/**
+ * IMPORTANTE: Este arquivo contém tipos para o recurso de mensagens em fila
+ * que no backend é chamado de "follow-up" mas no frontend chamamos de
+ * "Agendamento de Mensagens" para melhor UX.
+ *
+ * Este é um recurso diferente do "reengagementConfig" (Follow-up) nas pipelines.
+ *
+ * API endpoints: /follow-ups, /message-queues
+ */
+
 export type FollowUp = {
   id: string; // UUID
   name: string;

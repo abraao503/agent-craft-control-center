@@ -80,33 +80,6 @@ export function TagSelector({
         <label className="text-sm font-medium text-foreground">{label}</label>
       )}
 
-      {/* Selected Tags Display */}
-      <div className="flex flex-wrap gap-2 min-h-[2.5rem] p-2 border rounded-md bg-background">
-        {selectedTags.length === 0 ? (
-          <span className="text-sm text-muted-foreground">{emptyMessage}</span>
-        ) : (
-          selectedTags.map((tag) => (
-            <Badge
-              key={tag.id}
-              style={{ backgroundColor: tag.color }}
-              className="gap-1 pr-1"
-            >
-              <span>{tag.name}</span>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  removeTag(tag.id);
-                }}
-                className="ml-1 hover:bg-white/20 rounded-full p-0.5"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </Badge>
-          ))
-        )}
-      </div>
-
       {/* Tag Selection Popover */}
       <div className="flex gap-2">
         <Popover open={open} onOpenChange={setOpen}>
@@ -177,6 +150,33 @@ export function TagSelector({
           >
             Limpar tudo
           </Button>
+        )}
+      </div>
+
+      {/* Selected Tags Display */}
+      <div className="flex flex-wrap gap-2 min-h-[2.5rem] p-2 border rounded-md bg-background">
+        {selectedTags.length === 0 ? (
+          <span className="text-sm text-muted-foreground">{emptyMessage}</span>
+        ) : (
+          selectedTags.map((tag) => (
+            <Badge
+              key={tag.id}
+              style={{ backgroundColor: tag.color }}
+              className="gap-1 pr-1"
+            >
+              <span>{tag.name}</span>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  removeTag(tag.id);
+                }}
+                className="ml-1 hover:bg-white/20 rounded-full p-0.5"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          ))
         )}
       </div>
     </div>

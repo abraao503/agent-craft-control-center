@@ -244,7 +244,7 @@ const SortableStage: React.FC<SortableStageProps> = ({
             </div>
           )}
 
-          {/* Reengagement Configuration */}
+          {/* Follow-up Configuration */}
           {workspaceId && (
             <div className="mt-4 pt-4 border-t">
               <ReengagementConfigSection
@@ -286,30 +286,59 @@ export const StagesTab: React.FC<StagesTabProps> = ({
   onCancel,
   saveLabel = "Aplicar",
 }) => {
-  const normalize = (arr: PipelineStageMinimal[]): EditableStage[] =>
-    arr.map((s, idx) => ({
-      id: s.id,
-      name: s.name,
-      color: s.color,
-      winProbability: s.winProbability ?? 0,
-      order: idx,
-      assistantPipelineStage: s.assistantPipelineStage ?? undefined,
-      reengagementConfig: s.reengagementConfig
-        ? {
-            minInactiveChatTimeHours:
-              s.reengagementConfig.minInactiveChatTimeHours,
-            maxMessages: s.reengagementConfig.maxMessages,
-            intervalBetweenMessagesHours:
-              s.reengagementConfig.messagingIntervalHours ||
-              s.reengagementConfig.intervalBetweenMessagesHours ||
-              48,
-            messages: s.reengagementConfig.messages,
-            includeTags: s.reengagementConfig.includeTags || [],
-            excludeTags: s.reengagementConfig.excludeTags || [],
-            isActive: s.reengagementConfig.isActive ?? true,
-          }
-        : undefined,
-    }));
+  const normalize = (arr: PipelineStageMinimal[]): EditableStage[] => {
+    const result = arr.map((s, idx) => {
+      const order = s.order ?? idx;
+
+      // Convert assistantPipelineStage: targetStageId -> targetStageOrder
+      let assistantPipelineStage = s.assistantPipelineStage;
+      if (assistantPipelineStage?.assistantAllowedTargetStages) {
+        assistantPipelineStage = {
+          assistantAllowedTargetStages:
+            assistantPipelineStage.assistantAllowedTargetStages.map(
+              (target) => {
+                // Find the order of the target stage by its ID
+                const targetStageIndex = arr.findIndex(
+                  (stage) => stage.id === target.targetStageId
+                );
+                const targetStageOrder =
+                  targetStageIndex !== -1 ? targetStageIndex : -1;
+
+                return {
+                  targetStageOrder,
+                  targetStageId: target.targetStageId,
+                  moveCondition: target.moveCondition,
+                };
+              }
+            ),
+        };
+      }
+
+      return {
+        id: s.id,
+        name: s.name,
+        color: s.color,
+        winProbability: s.winProbability ?? 0,
+        order,
+        assistantPipelineStage: assistantPipelineStage ?? undefined,
+        reengagementConfig: s.reengagementConfig
+          ? {
+              minInactiveChatTimeHours:
+                s.reengagementConfig.minInactiveChatTimeHours,
+              maxMessages: s.reengagementConfig.maxMessages,
+              messages: s.reengagementConfig.messages,
+              includeTags: s.reengagementConfig.includeTags || [],
+              excludeTags: s.reengagementConfig.excludeTags || [],
+              isActive: s.reengagementConfig.isActive ?? true,
+              startTime: s.reengagementConfig.startTime,
+              endTime: s.reengagementConfig.endTime,
+            }
+          : undefined,
+      };
+    });
+
+    return result;
+  };
 
   const [draftStages, setDraftStages] = useState<EditableStage[]>(() =>
     normalize(stages)
@@ -347,12 +376,10 @@ export const StagesTab: React.FC<StagesTabProps> = ({
   };
 
   const setStage = (index: number, patch: Partial<EditableStage>) => {
-    console.log("📝 StagesTab - Atualizando stage:", { index, patch });
     setDraftStages((prev) => {
       const updated = prev.map((s, i) =>
         i === index ? { ...s, ...patch } : s
       );
-      console.log("📝 StagesTab - Sincronizando com parent:", updated);
       // Sync changes to parent immediately
       onSave({ stages: updated.map((s, i) => ({ ...s, order: i })) });
       return updated;

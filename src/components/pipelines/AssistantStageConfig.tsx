@@ -61,8 +61,9 @@ export const AssistantStageConfig: React.FC<AssistantStageConfigProps> = ({
   const handleAddTargetStage = () => {
     if (!assistantConfig) return;
 
+    // Use -1 to indicate "not selected" instead of 0 (which is a valid stage order)
     const newTargetStage: AssistantAllowedTargetStage = {
-      targetStageOrder: 0,
+      targetStageOrder: -1,
       moveCondition: "",
     };
 
@@ -172,13 +173,19 @@ export const AssistantStageConfig: React.FC<AssistantStageConfigProps> = ({
             {allowedTargetStages.length > 0 && (
               <div className="space-y-2.5">
                 {allowedTargetStages.map((targetStage, index) => {
-                  const targetStageName =
-                    availableStages.find(
-                      (s) => s.order === targetStage.targetStageOrder
-                    )?.name || "Selecione";
                   const hasCondition =
                     targetStage.moveCondition.trim().length > 0;
-                  const isStageSelected = targetStage.targetStageOrder !== 0;
+                  const isStageSelected = targetStage.targetStageOrder >= 0;
+
+                  const foundStage = availableStages.find(
+                    (s) => s.order === targetStage.targetStageOrder
+                  );
+                  const targetStageName = foundStage?.name || "Não encontrada";
+
+                  const selectValue =
+                    targetStage.targetStageOrder >= 0
+                      ? String(targetStage.targetStageOrder)
+                      : "";
 
                   return (
                     <div
@@ -204,7 +211,7 @@ export const AssistantStageConfig: React.FC<AssistantStageConfigProps> = ({
 
                           <div className="flex-1 min-w-0">
                             <Select
-                              value={String(targetStage.targetStageOrder)}
+                              value={selectValue}
                               onValueChange={(value) =>
                                 handleTargetStageChange(
                                   index,

@@ -16,8 +16,25 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { TagSelector } from "./TagSelector";
 import { ReengagementConfigInput } from "@/types/pipeline";
-import { Trash2, Plus, Settings2, CheckCircle2 } from "lucide-react";
+import { Plus, Settings2, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+
+// Helper function to convert time string (HH:MM) to ISO datetime
+const timeToISO = (timeString: string): string => {
+  const now = new Date();
+  const [hours, minutes] = timeString.split(":").map(Number);
+  now.setHours(hours, minutes, 0, 0);
+  return now.toISOString();
+};
+
+// Helper function to extract time (HH:MM) from ISO datetime
+const isoToTime = (isoString: string): string => {
+  const date = new Date(isoString);
+  const hours = date.getHours().toString().padStart(2, "0");
+  const minutes = date.getMinutes().toString().padStart(2, "0");
+  return `${hours}:${minutes}`;
+};
 
 interface ReengagementConfigSectionProps {
   workspaceId: string;
@@ -32,16 +49,39 @@ export function ReengagementConfigSection({
   onChange,
   className,
 }: ReengagementConfigSectionProps) {
+  const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [draftConfig, setDraftConfig] =
     useState<ReengagementConfigInput | null>(config);
+  const [maxMessagesInput, setMaxMessagesInput] = useState<string>("");
+  const [startTimeInput, setStartTimeInput] = useState<string>("08:00");
+  const [endTimeInput, setEndTimeInput] = useState<string>("17:00");
 
-  // Sync draft with prop changes when modal is closed
+  // Sync draft with prop changes (sempre que config muda)
   useEffect(() => {
-    if (!open) {
-      setDraftConfig(config);
+    setDraftConfig(config);
+
+    // Extract time from ISO if config exists
+    if (config?.startTime) {
+      setStartTimeInput(isoToTime(config.startTime));
+    } else {
+      setStartTimeInput("08:00");
     }
-  }, [config, open]);
+
+    if (config?.endTime) {
+      setEndTimeInput(isoToTime(config.endTime));
+    } else {
+      setEndTimeInput("17:00");
+    }
+  }, [config]);
+
+  // Sync maxMessagesInput with draftConfig when modal opens or config changes
+  useEffect(() => {
+    if (draftConfig) {
+      setMaxMessagesInput(draftConfig.maxMessages.toString());
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftConfig?.maxMessages]);
 
   const isEnabled = !!config;
 
@@ -49,18 +89,22 @@ export function ReengagementConfigSection({
   const defaultConfig: ReengagementConfigInput = {
     minInactiveChatTimeHours: 24,
     maxMessages: 3,
-    intervalBetweenMessagesHours: 48,
     messages: [""],
     includeTags: [],
     excludeTags: [],
     isActive: true,
+    startTime: timeToISO("08:00"),
+    endTime: timeToISO("17:00"),
   };
 
   const handleOpenModal = () => {
     // If not enabled, set default config in draft
     if (!isEnabled) {
       setDraftConfig(defaultConfig);
+      setStartTimeInput("08:00");
+      setEndTimeInput("17:00");
     }
+    // Se já tem config, os valores já foram sincronizados pelo useEffect
     setOpen(true);
   };
 
@@ -70,17 +114,58 @@ export function ReengagementConfigSection({
   };
 
   const handleSave = () => {
-    if (draftConfig) {
-      // Filter out empty messages before saving
-      const cleanedConfig = {
-        ...draftConfig,
-        messages: draftConfig.messages.filter((m) => m.trim() !== ""),
-      };
-      // Only save if there's at least one valid message
-      if (cleanedConfig.messages.length > 0) {
-        onChange(cleanedConfig);
-      }
+    if (!draftConfig) return;
+
+    // Validação: verificar se todas as mensagens estão preenchidas
+    const emptyMessages = draftConfig.messages.filter(
+      (m) => m.trim() === ""
+    ).length;
+
+    if (emptyMessages > 0) {
+      toast({
+        title: "Campos obrigatórios",
+        description: `Por favor, preencha todas as ${draftConfig.maxMessages} mensagens configuradas.`,
+        variant: "destructive",
+      });
+      return;
     }
+
+    // Validação: verificar se o número de mensagens corresponde ao máximo
+    if (draftConfig.messages.length !== draftConfig.maxMessages) {
+      toast({
+        title: "Configuração inválida",
+        description: `O número de mensagens (${draftConfig.messages.length}) não corresponde ao máximo configurado (${draftConfig.maxMessages}).`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validação: verificar horários de funcionamento
+    const [startHour, startMin] = startTimeInput.split(":").map(Number);
+    const [endHour, endMin] = endTimeInput.split(":").map(Number);
+
+    const startMinutes = startHour * 60 + startMin;
+    const endMinutes = endHour * 60 + endMin;
+
+    if (endMinutes <= startMinutes) {
+      toast({
+        title: "Horário inválido",
+        description:
+          "O horário de término deve ser maior que o horário de início.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Converter horários para ISO antes de salvar
+    const configToSave: ReengagementConfigInput = {
+      ...draftConfig,
+      startTime: timeToISO(startTimeInput),
+      endTime: timeToISO(endTimeInput),
+    };
+
+    // Se passou todas as validações, salvar
+    onChange(configToSave);
     setOpen(false);
   };
 
@@ -94,23 +179,10 @@ export function ReengagementConfigSection({
     setDraftConfig({ ...draftConfig, ...updates });
   };
 
-  const addMessage = () => {
-    if (!draftConfig) return;
-    updateDraftConfig({
-      messages: [...draftConfig.messages, ""],
-    });
-  };
-
   const updateMessage = (index: number, value: string) => {
     if (!draftConfig) return;
     const newMessages = [...draftConfig.messages];
     newMessages[index] = value;
-    updateDraftConfig({ messages: newMessages });
-  };
-
-  const removeMessage = (index: number) => {
-    if (!draftConfig || draftConfig.messages.length <= 1) return;
-    const newMessages = draftConfig.messages.filter((_, i) => i !== index);
     updateDraftConfig({ messages: newMessages });
   };
 
@@ -145,6 +217,30 @@ export function ReengagementConfigSection({
           </p>
         </div>
 
+        {/* Operating Hours */}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="startTime">Início do expediente</Label>
+            <Input
+              id="startTime"
+              type="time"
+              value={startTimeInput}
+              onChange={(e) => setStartTimeInput(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">Horário de início</p>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="endTime">Fim do expediente</Label>
+            <Input
+              id="endTime"
+              type="time"
+              value={endTimeInput}
+              onChange={(e) => setEndTimeInput(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">Horário de término</p>
+          </div>
+        </div>
+
         {/* Max Messages */}
         <div className="space-y-2">
           <Label htmlFor="maxMessages">Máximo de mensagens</Label>
@@ -152,55 +248,65 @@ export function ReengagementConfigSection({
             id="maxMessages"
             type="number"
             min={1}
-            value={draftConfig.maxMessages}
-            onChange={(e) =>
-              updateDraftConfig({
-                maxMessages: Math.max(1, parseInt(e.target.value) || 1),
-              })
-            }
-          />
-          <p className="text-xs text-muted-foreground">
-            Quantidade máxima de tentativas de reengajamento
-          </p>
-        </div>
+            max={10}
+            value={maxMessagesInput}
+            onChange={(e) => {
+              const inputValue = e.target.value;
+              setMaxMessagesInput(inputValue);
 
-        {/* Interval Between Messages */}
-        <div className="space-y-2">
-          <Label htmlFor="intervalBetweenMessagesHours">
-            Intervalo entre mensagens (horas)
-          </Label>
-          <Input
-            id="intervalBetweenMessagesHours"
-            type="number"
-            min={1}
-            value={draftConfig.intervalBetweenMessagesHours}
-            onChange={(e) =>
+              // Allow empty field temporarily
+              if (inputValue === "") {
+                return;
+              }
+
+              const value = parseInt(inputValue);
+              if (isNaN(value)) return;
+
+              const newMax = Math.min(10, Math.max(1, value));
+              const currentMessages = draftConfig.messages;
+
+              // Adjust messages array to match the new max
+              let newMessages = [...currentMessages];
+              if (newMax > currentMessages.length) {
+                // Add empty messages to reach the max
+                newMessages = [
+                  ...currentMessages,
+                  ...Array(newMax - currentMessages.length).fill(""),
+                ];
+              } else if (newMax < currentMessages.length) {
+                // Remove excess messages
+                newMessages = currentMessages.slice(0, newMax);
+              }
+
               updateDraftConfig({
-                intervalBetweenMessagesHours: Math.max(
-                  1,
-                  parseInt(e.target.value) || 1
-                ),
-              })
-            }
+                maxMessages: newMax,
+                messages: newMessages,
+              });
+            }}
+            onBlur={() => {
+              // If empty on blur, set to 1
+              if (maxMessagesInput === "") {
+                setMaxMessagesInput("1");
+                updateDraftConfig({
+                  maxMessages: 1,
+                  messages: [""],
+                });
+              }
+            }}
           />
           <p className="text-xs text-muted-foreground">
-            Tempo de espera entre cada mensagem de reengajamento
+            Quantidade de mensagens que serão enviadas (máximo 10). Configure
+            exatamente {draftConfig.maxMessages} mensagem(ns) abaixo.
           </p>
         </div>
 
         {/* Messages */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label>Mensagens de Reengajamento</Label>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={addMessage}
-            >
-              <Plus className="h-3 w-3 mr-1" />
-              Adicionar
-            </Button>
+            <Label>
+              Mensagens de Follow-up ({draftConfig.messages.length}/
+              {draftConfig.maxMessages})
+            </Label>
           </div>
 
           <div className="space-y-3">
@@ -210,18 +316,6 @@ export function ReengagementConfigSection({
                   <Label className="text-xs text-muted-foreground">
                     Mensagem {index + 1}
                   </Label>
-                  {draftConfig.messages.length > 1 && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeMessage(index)}
-                      className="h-6 px-2 text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="h-3 w-3 mr-1" />
-                      Remover
-                    </Button>
-                  )}
                 </div>
                 <Textarea
                   value={message}
@@ -234,7 +328,8 @@ export function ReengagementConfigSection({
           </div>
 
           <p className="text-xs text-muted-foreground">
-            Mensagens serão enviadas em sequência conforme a ordem acima
+            As mensagens serão enviadas de forma aleatória a cada tentativa de
+            follow-up
           </p>
         </div>
 
@@ -246,13 +341,14 @@ export function ReengagementConfigSection({
             onSelectionChange={(tagIds) =>
               updateDraftConfig({ includeTags: tagIds })
             }
-            label="Tags para Incluir"
+            label="Tags enviar mensagens"
             placeholder="Adicionar tags"
-            emptyMessage="Todos os deals serão incluídos (nenhum filtro)"
+            emptyMessage="Todos os negócios serão incluídos (nenhum filtro)"
           />
           <p className="text-xs text-muted-foreground">
-            Se vazio, todos os deals inativos serão considerados. Se preenchido,
-            apenas deals com pelo menos uma dessas tags serão reengajados.
+            Se vazio, todos os negócios inativos serão considerados. Se
+            preenchido, apenas negócios com pelo menos uma dessas tags serão
+            incluídos.
           </p>
         </div>
 
@@ -264,13 +360,13 @@ export function ReengagementConfigSection({
             onSelectionChange={(tagIds) =>
               updateDraftConfig({ excludeTags: tagIds })
             }
-            label="Tags para Excluir"
+            label="Tags bloquear mensagens"
             placeholder="Adicionar tags"
-            emptyMessage="Nenhum deal será excluído"
+            emptyMessage="Nenhum negócio será excluído"
           />
           <p className="text-xs text-muted-foreground">
-            Deals com qualquer uma dessas tags NÃO receberão mensagens de
-            reengajamento.
+            negócios com qualquer uma dessas tags NÃO receberão mensagens de
+            follow-up.
           </p>
         </div>
 
@@ -281,7 +377,7 @@ export function ReengagementConfigSection({
               Status da Configuração
             </Label>
             <p className="text-xs text-muted-foreground">
-              Ativar ou desativar o reengajamento sem perder as configurações
+              Ativar ou desativar o follow-up sem perder as configurações
             </p>
           </div>
           <Switch
@@ -301,9 +397,7 @@ export function ReengagementConfigSection({
       <div className="flex items-center justify-between">
         <div className="space-y-0.5">
           <div className="flex items-center gap-2">
-            <Label className="text-sm font-medium">
-              Reengajamento Automático
-            </Label>
+            <Label className="text-sm font-medium">Follow-up Automático</Label>
             {isEnabled && (
               <Badge
                 variant="outline"
@@ -339,7 +433,7 @@ export function ReengagementConfigSection({
               ) : (
                 <>
                   <Plus className="h-4 w-4 mr-2" />
-                  Ativar Reengajamento
+                  Ativar Follow-up
                 </>
               )}
             </Button>
@@ -347,9 +441,10 @@ export function ReengagementConfigSection({
 
           <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Configuração de Reengajamento</DialogTitle>
+              <DialogTitle>Configuração de Follow-up</DialogTitle>
               <DialogDescription>
-                Configure mensagens automáticas para deals inativos nesta etapa
+                Configure mensagens automáticas para negócios inativos nesta
+                etapa
               </DialogDescription>
             </DialogHeader>
 
@@ -384,7 +479,12 @@ export function ReengagementConfigSection({
         <div className="text-xs text-muted-foreground space-y-1 pt-2 border-t">
           <p>• {config.minInactiveChatTimeHours}h de inatividade</p>
           <p>• {config.maxMessages} mensagem(ns) máxima(s)</p>
-          <p>• Intervalo: {config.intervalBetweenMessagesHours}h</p>
+          {config.startTime && config.endTime && (
+            <p>
+              • Horário: {isoToTime(config.startTime)} às{" "}
+              {isoToTime(config.endTime)}
+            </p>
+          )}
           {config.includeTags && config.includeTags.length > 0 && (
             <p>• {config.includeTags.length} tag(s) para incluir</p>
           )}

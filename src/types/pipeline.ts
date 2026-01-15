@@ -24,26 +24,39 @@ export interface AssistantPipelineStage {
   assistantAllowedTargetStages: AssistantAllowedTargetStage[];
 }
 
+/**
+ * IMPORTANTE: No backend este recurso é chamado de "reengagementConfig"
+ * mas no frontend chamamos de "Follow-up" para melhor UX
+ *
+ * API: reengagementConfig em pipeline stages
+ */
+
+// Type aliases para melhor legibilidade no frontend
+export type FollowUpConfig = ReengagementConfig;
+export type FollowUpConfigInput = ReengagementConfigInput;
+
 export interface ReengagementConfig {
   id?: string; // Present when fetched from API
   minInactiveChatTimeHours: number; // >= 1
   maxMessages: number; // >= 1
-  messagingIntervalHours?: number; // Returned by API (renamed from intervalBetweenMessagesHours)
-  intervalBetweenMessagesHours?: number; // Sent to API (used in create/update)
+  messagingIntervalHours?: number; // Returned by API
   messages: string[]; // min 1 item, each item min 1 char
   includeTags: string[]; // UUIDs of tags to include (empty = all deals)
   excludeTags: string[]; // UUIDs of tags to exclude
   isActive: boolean; // default: true
+  startTime?: string; // optional, ISO 8601 datetime string
+  endTime?: string; // optional, ISO 8601 datetime string
 }
 
 export interface ReengagementConfigInput {
   minInactiveChatTimeHours: number; // >= 1
   maxMessages: number; // >= 1
-  intervalBetweenMessagesHours: number; // >= 1
   messages: string[]; // min 1 item, each item min 1 char
   includeTags?: string[]; // optional, array of UUIDs, default: []
   excludeTags?: string[]; // optional, array of UUIDs, default: []
   isActive?: boolean; // optional, default: true
+  startTime?: string; // optional, ISO 8601 datetime string (e.g., "2024-01-15T08:00:00.000Z")
+  endTime?: string; // optional, ISO 8601 datetime string (e.g., "2024-01-15T17:00:00.000Z")
 }
 
 export interface CreatePipelineStageInput {

@@ -467,8 +467,8 @@ const PipelineEditPage = () => {
         }
 
         if (
-          config.intervalBetweenMessagesHours &&
-          config.intervalBetweenMessagesHours < 1
+          config.messagingIntervalHours &&
+          config.messagingIntervalHours < 1
         ) {
           errors.push(
             `Etapa #${
@@ -480,9 +480,7 @@ const PipelineEditPage = () => {
         const validMessages = config.messages.filter((m) => m.trim() !== "");
         if (validMessages.length === 0) {
           errors.push(
-            `Etapa #${
-              index + 1
-            }: Adicione pelo menos uma mensagem de reengajamento`
+            `Etapa #${index + 1}: Adicione pelo menos uma mensagem de follow-up`
           );
         }
       }
@@ -650,16 +648,14 @@ const PipelineEditPage = () => {
               minInactiveChatTimeHours:
                 s.reengagementConfig.minInactiveChatTimeHours,
               maxMessages: s.reengagementConfig.maxMessages,
-              intervalBetweenMessagesHours:
-                s.reengagementConfig.intervalBetweenMessagesHours ||
-                s.reengagementConfig.messagingIntervalHours ||
-                48,
               messages: s.reengagementConfig.messages.filter(
                 (m) => m.trim() !== ""
               ), // Remove empty messages
               includeTags: s.reengagementConfig.includeTags || [],
               excludeTags: s.reengagementConfig.excludeTags || [],
               isActive: s.reengagementConfig.isActive ?? true,
+              startTime: s.reengagementConfig.startTime,
+              endTime: s.reengagementConfig.endTime,
             }
           : null,
       }));
@@ -818,10 +814,6 @@ const PipelineEditPage = () => {
             assistantLoading={agentQuery.isLoading}
             workspaceId={workspaceId}
             onSave={async ({ stages: newStages }) => {
-              console.log(
-                "💾 PipelineEditPage - Recebendo stages do StagesTab:",
-                newStages
-              );
               // Convert EditableStage to PipelineStageMinimal
               const convertedStages: PipelineStageMinimal[] = newStages.map(
                 (s) => ({
@@ -836,12 +828,12 @@ const PipelineEditPage = () => {
                         minInactiveChatTimeHours:
                           s.reengagementConfig.minInactiveChatTimeHours,
                         maxMessages: s.reengagementConfig.maxMessages,
-                        intervalBetweenMessagesHours:
-                          s.reengagementConfig.intervalBetweenMessagesHours,
                         messages: s.reengagementConfig.messages,
                         includeTags: s.reengagementConfig.includeTags || [],
                         excludeTags: s.reengagementConfig.excludeTags || [],
                         isActive: s.reengagementConfig.isActive ?? true,
+                        startTime: s.reengagementConfig.startTime,
+                        endTime: s.reengagementConfig.endTime,
                       }
                     : null,
                 })
