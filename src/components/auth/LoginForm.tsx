@@ -12,10 +12,13 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useAuth } from "@/contexts/auth/hooks";
+import { AxiosError } from "axios";
+import { translateAuthError } from "@/utils/authErrorTranslations";
 
 const LoginForm = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -23,12 +26,27 @@ const LoginForm = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setError("");
 
     try {
       await login(email, password);
       navigate("/");
     } catch (error) {
       console.error("Login error:", error);
+
+      // Traduz mensagens de erro do backend
+      let errorMessage = "Ocorreu um erro ao fazer login";
+
+      if (error instanceof AxiosError && error.response?.data?.message) {
+        errorMessage = translateAuthError(
+          error.response.data.message,
+          "Email ou senha incorretos"
+        );
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+
+      setError(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -46,6 +64,12 @@ const LoginForm = () => {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {error && (
+            <div className="p-3 bg-red-50 border border-red-200 text-red-600 rounded-md text-sm">
+              {error}
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -109,6 +133,17 @@ const LoginForm = () => {
           </Button>
         </form>
       </CardContent>
+      <CardFooter className="flex flex-col space-y-2">
+        <div className="text-sm text-center text-muted-foreground">
+          Não tem uma conta?{" "}
+          <Link
+            to="/signup"
+            className="text-primary hover:underline font-medium"
+          >
+            Cadastre sua empresa
+          </Link>
+        </div>
+      </CardFooter>
     </Card>
   );
 };
