@@ -37,6 +37,7 @@ import FollowUpEditPage from "./pages/FollowUpEditPage";
 import FollowUpDetailPage from "./pages/FollowUpDetailPage";
 import PipelineDetailPage from "./pages/PipelineDetailPage";
 import PipelineEditPage from "./pages/PipelineEditPage";
+import MessageQueuePage from "./pages/MessageQueuePage";
 import AdminCompaniesPage from "./pages/AdminCompaniesPage";
 import CompanyDetailsPage from "./pages/CompanyDetailsPage";
 import WorkspaceDetailsPage from "./pages/WorkspaceDetailsPage";
@@ -228,6 +229,7 @@ const FollowUpEditPageView = () => <FollowUpEditPage />;
 const FollowUpDetailViewPage = () => <FollowUpDetailPage />;
 const PipelineDetailViewPage = () => <PipelineDetailPage />;
 const PipelineEditViewPage = () => <PipelineEditPage />;
+const MessageQueueViewPage = () => <MessageQueuePage />;
 const AdminCompaniesListPage = () => <AdminCompaniesPage />;
 const CompanyDetailsViewPage = () => <CompanyDetailsPage />;
 const WorkspaceDetailsViewPage = () => <WorkspaceDetailsPage />;
@@ -291,6 +293,10 @@ const App = () => (
                   <Route
                     path="/deals/pipeline/:pipelineId/edit"
                     element={<PipelineEditViewPage />}
+                  />
+                  <Route
+                    path="/deals/pipeline/:pipelineId/queue"
+                    element={<MessageQueueViewPage />}
                   />
                   <Route
                     path="/customers/export-xlsx"

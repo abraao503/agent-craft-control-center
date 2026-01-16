@@ -13,37 +13,51 @@ import { useAuth } from "@/contexts/auth/hooks";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { FormErrorTracker } from "@/components/ui/form-error-tracker";
 import { HighlightService } from "@/lib/highlight";
+import { signupCompany } from "@/services/company/signupCompany";
+import { AxiosError } from "axios";
+import { translateAuthError } from "@/utils/authErrorTranslations";
 
 // Esquema de validação para o formulário de cadastro
-const signupSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  email: z.string().email("Invalid email address"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
-  confirmPassword: z.string()
-}).refine(data => data.password === data.confirmPassword, {
-  message: "Passwords do not match",
-  path: ["confirmPassword"]
-});
+const signupSchema = z
+  .object({
+    ownerName: z.string().min(1, "Nome é obrigatório"),
+    ownerEmail: z.string().email("Email inválido"),
+    ownerPassword: z.string().min(8, "Senha deve ter no mínimo 8 caracteres"),
+    confirmPassword: z.string(),
+    companyName: z.string().min(1, "Nome da empresa é obrigatório"),
+  })
+  .refine((data) => data.ownerPassword === data.confirmPassword, {
+    message: "As senhas não coincidem",
+    path: ["confirmPassword"],
+  });
 
 type SignupFormData = z.infer<typeof signupSchema>;
 
 const SignupForm = () => {
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { signup } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
 
   const form = useForm<SignupFormData>({
     resolver: zodResolver(signupSchema),
     defaultValues: {
-      name: "",
-      email: "",
-      password: "",
-      confirmPassword: ""
-    }
+      ownerName: "",
+      ownerEmail: "",
+      ownerPassword: "",
+      confirmPassword: "",
+      companyName: "",
+    },
   });
 
   const onSubmit = async (data: SignupFormData) => {
@@ -51,18 +65,43 @@ const SignupForm = () => {
     setError("");
 
     try {
-      await signup(data.name, data.email, data.password);
+      // Cria a empresa e o usuário owner
+      const response = await signupCompany({
+        ownerName: data.ownerName,
+        ownerEmail: data.ownerEmail,
+        ownerPassword: data.ownerPassword,
+        companyName: data.companyName,
+      });
+
+      // Salva o token no localStorage
+      localStorage.setItem("token", response.token);
+
+      // Faz login automático após signup
+      await login(data.ownerEmail, data.ownerPassword);
+
       navigate("/");
     } catch (error) {
       console.error("Signup error:", error);
-      const errorMessage = error instanceof Error ? error.message : "An error occurred";
+
+      // Traduz mensagens de erro do backend
+      let errorMessage = "Ocorreu um erro ao criar a conta";
+
+      if (error instanceof AxiosError && error.response?.data?.message) {
+        errorMessage = translateAuthError(
+          error.response.data.message,
+          "Ocorreu um erro ao criar a conta"
+        );
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+
       setError(errorMessage);
-      
+
       // Report signup error to Highlight
       if (error instanceof Error) {
         HighlightService.reportError(error, "Signup failed", {
-          email: data.email, // Safe to include for debugging
-          name: data.name
+          email: data.ownerEmail,
+          companyName: data.companyName,
         });
       }
     } finally {
@@ -74,10 +113,10 @@ const SignupForm = () => {
     <Card className="w-full max-w-md">
       <CardHeader>
         <CardTitle className="text-2xl font-bold text-center">
-          Create Account
+          Criar Conta
         </CardTitle>
         <CardDescription className="text-center">
-          Join 7 Agentes to create and manage your AI agents
+          Cadastre sua empresa e comece a usar o 7 Agentes
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -87,7 +126,7 @@ const SignupForm = () => {
           formName="User Registration Form"
           contextInfo={{
             pageType: "auth",
-            formType: "signup"
+            formType: "signup",
           }}
         >
           <Form {...form}>
@@ -100,15 +139,12 @@ const SignupForm = () => {
 
               <FormField
                 control={form.control}
-                name="name"
+                name="companyName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Full Name</FormLabel>
+                    <FormLabel>Nome da Empresa</FormLabel>
                     <FormControl>
-                      <Input
-                        placeholder="John Doe"
-                        {...field}
-                      />
+                      <Input placeholder="Minha Empresa Ltda" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -117,14 +153,28 @@ const SignupForm = () => {
 
               <FormField
                 control={form.control}
-                name="email"
+                name="ownerName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Seu Nome Completo</FormLabel>
+                    <FormControl>
+                      <Input placeholder="João Silva" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="ownerEmail"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
                       <Input
                         type="email"
-                        placeholder="youremail@example.com"
+                        placeholder="seu@email.com"
                         {...field}
                       />
                     </FormControl>
@@ -135,10 +185,10 @@ const SignupForm = () => {
 
               <FormField
                 control={form.control}
-                name="password"
+                name="ownerPassword"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Password</FormLabel>
+                    <FormLabel>Senha</FormLabel>
                     <FormControl>
                       <Input
                         type="password"
@@ -156,7 +206,7 @@ const SignupForm = () => {
                 name="confirmPassword"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Confirm Password</FormLabel>
+                    <FormLabel>Confirmar Senha</FormLabel>
                     <FormControl>
                       <Input
                         type="password"
@@ -169,21 +219,17 @@ const SignupForm = () => {
                 )}
               />
 
-              <Button 
-                type="submit" 
-                className="w-full" 
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? "Creating Account..." : "Create Account"}
+              <Button type="submit" className="w-full" disabled={isSubmitting}>
+                {isSubmitting ? "Criando Conta..." : "Criar Conta"}
               </Button>
             </form>
           </Form>
         </FormErrorTracker>
 
         <div className="mt-4 text-center text-sm">
-          Already have an account?{" "}
+          Já tem uma conta?{" "}
           <Link to="/login" className="text-primary hover:underline">
-            Log in
+            Faça login
           </Link>
         </div>
       </CardContent>
@@ -191,4 +237,4 @@ const SignupForm = () => {
   );
 };
 
-export default SignupForm; 
+export default SignupForm;

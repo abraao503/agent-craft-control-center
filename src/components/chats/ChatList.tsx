@@ -79,7 +79,7 @@ export const ChatList: React.FC<ChatListProps> = ({
     <div className="flex flex-col h-full border-r bg-background">
       {/* Header */}
       <div className="p-4 border-b">
-        <h2 className="text-xl font-semibold mb-3">Chats</h2>
+        <h2 className="text-xl font-semibold mb-3">Conversas</h2>
         <div className="relative">
           <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
             {isLoading && localSearchValue ? (

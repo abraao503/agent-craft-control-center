@@ -2,6 +2,7 @@ import { api } from "../api";
 import {
   AssistantPipelineStage,
   WhatsAppIntegrationConfig,
+  ReengagementConfigInput,
 } from "@/types/pipeline";
 
 // Item structure for updating existing stages within a pipeline
@@ -13,6 +14,7 @@ export interface UpdatePipelineStageItem {
   color?: string;
   winProbability?: number; // 0-100
   assistantPipelineStage?: AssistantPipelineStage | null;
+  reengagementConfig?: ReengagementConfigInput | null;
 }
 
 export interface UpdatePipelineInput {

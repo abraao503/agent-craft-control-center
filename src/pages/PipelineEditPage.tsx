@@ -445,6 +445,45 @@ const PipelineEditPage = () => {
           }
         });
       }
+
+      // Reengagement config validation
+      if (stage.reengagementConfig) {
+        const config = stage.reengagementConfig;
+
+        if (config.minInactiveChatTimeHours < 1) {
+          errors.push(
+            `Etapa #${
+              index + 1
+            }: Tempo de inatividade deve ser no mínimo 1 hora`
+          );
+        }
+
+        if (config.maxMessages < 1) {
+          errors.push(
+            `Etapa #${
+              index + 1
+            }: Número máximo de mensagens deve ser no mínimo 1`
+          );
+        }
+
+        if (
+          config.messagingIntervalHours &&
+          config.messagingIntervalHours < 1
+        ) {
+          errors.push(
+            `Etapa #${
+              index + 1
+            }: Intervalo entre mensagens deve ser no mínimo 1 hora`
+          );
+        }
+
+        const validMessages = config.messages.filter((m) => m.trim() !== "");
+        if (validMessages.length === 0) {
+          errors.push(
+            `Etapa #${index + 1}: Adicione pelo menos uma mensagem de follow-up`
+          );
+        }
+      }
     });
 
     // Validate that all targetStageOrder references exist
@@ -604,6 +643,21 @@ const PipelineEditPage = () => {
         assistantPipelineStage: useAgent
           ? s.assistantPipelineStage || null // Se agente habilitado, usar config ou null
           : null, // Se agente desabilitado, sempre null
+        reengagementConfig: s.reengagementConfig
+          ? {
+              minInactiveChatTimeHours:
+                s.reengagementConfig.minInactiveChatTimeHours,
+              maxMessages: s.reengagementConfig.maxMessages,
+              messages: s.reengagementConfig.messages.filter(
+                (m) => m.trim() !== ""
+              ), // Remove empty messages
+              includeTags: s.reengagementConfig.includeTags || [],
+              excludeTags: s.reengagementConfig.excludeTags || [],
+              isActive: s.reengagementConfig.isActive ?? true,
+              startTime: s.reengagementConfig.startTime,
+              endTime: s.reengagementConfig.endTime,
+            }
+          : null,
       }));
 
       console.log(
@@ -645,6 +699,7 @@ const PipelineEditPage = () => {
               color: s.color,
               winProbability: s.winProbability,
               assistantPipelineStage: s.assistantPipelineStage || null,
+              reengagementConfig: s.reengagementConfig || null,
             };
             const originalStage = stages[idx];
             if (originalStage && !originalStage.id.startsWith("tmp-")) {
@@ -757,12 +812,33 @@ const PipelineEditPage = () => {
             assistantEnabled={useAgent}
             assistantConfigured={isAgentConfigured}
             assistantLoading={agentQuery.isLoading}
+            workspaceId={workspaceId}
             onSave={async ({ stages: newStages }) => {
-              console.log(
-                "💾 PipelineEditPage - Recebendo stages do StagesTab:",
-                newStages
+              // Convert EditableStage to PipelineStageMinimal
+              const convertedStages: PipelineStageMinimal[] = newStages.map(
+                (s) => ({
+                  id: s.id,
+                  name: s.name,
+                  order: s.order,
+                  color: s.color,
+                  winProbability: s.winProbability,
+                  assistantPipelineStage: s.assistantPipelineStage,
+                  reengagementConfig: s.reengagementConfig
+                    ? {
+                        minInactiveChatTimeHours:
+                          s.reengagementConfig.minInactiveChatTimeHours,
+                        maxMessages: s.reengagementConfig.maxMessages,
+                        messages: s.reengagementConfig.messages,
+                        includeTags: s.reengagementConfig.includeTags || [],
+                        excludeTags: s.reengagementConfig.excludeTags || [],
+                        isActive: s.reengagementConfig.isActive ?? true,
+                        startTime: s.reengagementConfig.startTime,
+                        endTime: s.reengagementConfig.endTime,
+                      }
+                    : null,
+                })
               );
-              setStages(newStages);
+              setStages(convertedStages);
             }}
             onCancel={() => {}}
             saveLabel="Aplicar"

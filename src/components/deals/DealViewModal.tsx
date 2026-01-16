@@ -41,6 +41,7 @@ import {
   Loader2,
   X,
   Bot,
+  Clock,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { DealListItem, DealNote } from "@/types/deal";
@@ -87,6 +88,7 @@ import {
 } from "@brazilian-utils/brazilian-utils";
 import { AxiosError } from "axios";
 import { usePermissions } from "@/hooks/usePermissions";
+import { DealFollowUpListDialog } from "./follow-up/DealFollowUpListDialog";
 
 // Utility functions for datetime conversion
 // Converts UTC datetime to local datetime-local input format
@@ -155,6 +157,7 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
   const [showSelectTypeModal, setShowSelectTypeModal] = useState(false);
   const [showCreateFieldModal, setShowCreateFieldModal] = useState(false);
   const [showEditFieldModal, setShowEditFieldModal] = useState(false);
+  const [showFollowUpListDialog, setShowFollowUpListDialog] = useState(false);
   const [selectedFieldType, setSelectedFieldType] = useState<
     FieldType | "document" | null
   >(null);
@@ -921,9 +924,20 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
           {/* Left Column - Deal Details */}
           <div className="border-r">
             <DialogHeader className="p-6 pb-4">
-              <DialogTitle className="text-2xl">
-                {dealDetails?.title || deal.title}
-              </DialogTitle>
+              <div className="flex items-center justify-between">
+                <DialogTitle className="text-2xl">
+                  {dealDetails?.title || deal.title}
+                </DialogTitle>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowFollowUpListDialog(true)}
+                  className="gap-2"
+                >
+                  <Clock className="h-4 w-4" />
+                  Agendamentos
+                </Button>
+              </div>
             </DialogHeader>
 
             <ScrollArea className="h-[calc(90vh-100px)] px-6">
@@ -1560,6 +1574,14 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
         field={editingField}
         onUpdateField={handleUpdateField}
         isUpdating={updateFieldMutation.isPending}
+      />
+
+      {/* Scheduled messages list dialog */}
+      <DealFollowUpListDialog
+        open={showFollowUpListDialog}
+        onOpenChange={setShowFollowUpListDialog}
+        dealId={deal?.id || ""}
+        dealTitle={dealDetails?.title || deal?.title || ""}
       />
     </Dialog>
   );

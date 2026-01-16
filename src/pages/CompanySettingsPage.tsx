@@ -274,7 +274,6 @@ export default function CompanySettingsPage() {
                       <TableRow>
                         <TableHead>Nome</TableHead>
                         <TableHead>Status</TableHead>
-                        <TableHead>ID</TableHead>
                         <TableHead className="text-right">Ações</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -298,9 +297,6 @@ export default function CompanySettingsPage() {
                             ) : (
                               <Badge variant="outline">Workspace</Badge>
                             )}
-                          </TableCell>
-                          <TableCell className="font-mono text-xs text-muted-foreground">
-                            {workspace.id}
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-2">
