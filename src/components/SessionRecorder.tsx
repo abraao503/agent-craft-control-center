@@ -4,9 +4,9 @@ import { HighlightService } from "@/lib/highlight";
 interface SessionRecorderProps {
   userId?: string;
   userData?: {
-    email?: string;
-    name?: string;
-    role?: string;
+    email: string;
+    name: string;
+    role: string;
     [key: string]: string;
   };
 }

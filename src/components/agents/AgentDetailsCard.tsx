@@ -62,30 +62,11 @@ const AgentDetailsCard = ({ agent }: AgentDetailsCardProps) => {
           <Separator />
 
           <div>
-            <h3 className="text-lg font-medium mb-2">Mensagem Inicial</h3>
-            <div className="p-4 bg-muted/50 rounded-lg">
-              <p className="italic">"{agent.initialMessage}"</p>
-            </div>
-          </div>
-
-          <Separator />
-
-          <div>
             <h3 className="text-lg font-medium mb-2">Prompt e Contexto</h3>
             <div className="space-y-4">
               <div>
-                <p className="text-sm text-muted-foreground">Identidade</p>
-                <p>{agent.prompt.identity}</p>
-              </div>
-
-              <div>
                 <p className="text-sm text-muted-foreground">Função</p>
                 <p>{agent.prompt.function}</p>
-              </div>
-
-              <div>
-                <p className="text-sm text-muted-foreground">Objetivo</p>
-                <p>{agent.prompt.goal}</p>
               </div>
 
               <div>
@@ -100,7 +81,9 @@ const AgentDetailsCard = ({ agent }: AgentDetailsCardProps) => {
 
               {agent.prompt.blacklist && (
                 <div>
-                  <p className="text-sm text-muted-foreground">Mensagens a Ignorar</p>
+                  <p className="text-sm text-muted-foreground">
+                    Mensagens a Ignorar
+                  </p>
                   <p>{agent.prompt.blacklist}</p>
                 </div>
               )}
@@ -129,9 +112,13 @@ const AgentDetailsCard = ({ agent }: AgentDetailsCardProps) => {
           <Separator />
 
           <div>
-            <h3 className="text-lg font-medium mb-2">Conteúdo de Conhecimento</h3>
+            <h3 className="text-lg font-medium mb-2">
+              Conteúdo de Conhecimento
+            </h3>
             {agent.contents.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Nenhum conteúdo adicionado</p>
+              <p className="text-sm text-muted-foreground">
+                Nenhum conteúdo adicionado
+              </p>
             ) : (
               <div className="flex flex-wrap gap-2">
                 {agent.contents.map((content) => (

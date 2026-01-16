@@ -77,7 +77,7 @@ export default function EditorWithMention({
         suggestion: {
           char: "{",
           items: ({ query }) => {
-            return mentionItems
+            return (mentionItems || [])
               .filter((item) =>
                 item.label.toLowerCase().startsWith(query.toLowerCase())
               )
@@ -86,7 +86,7 @@ export default function EditorWithMention({
 
           render: () => {
             let reactRenderer: ReactRenderer<MentionListRef> | null = null;
-            let popup: Instance[] | null = null;
+            let popup: Instance | null = null;
 
             return {
               onStart: (props) => {
@@ -99,42 +99,52 @@ export default function EditorWithMention({
                   editor: props.editor,
                 });
 
+                const clientRect = props.clientRect();
                 popup = tippy("body", {
-                  getReferenceClientRect: props.clientRect,
+                  getReferenceClientRect: () => clientRect || new DOMRect(),
                   appendTo: () => document.body,
                   content: reactRenderer.element,
                   showOnCreate: true,
                   interactive: true,
                   trigger: "manual",
                   placement: "bottom-start",
-                });
+                })[0];
               },
 
               onUpdate(props) {
-                reactRenderer.updateProps(props);
+                if (reactRenderer) {
+                  reactRenderer.updateProps(props);
+                }
 
                 if (!props.clientRect) {
                   return;
                 }
 
-                popup[0].setProps({
-                  getReferenceClientRect: props.clientRect,
-                });
+                const clientRect = props.clientRect();
+                if (popup) {
+                  popup.setProps({
+                    getReferenceClientRect: () => clientRect || new DOMRect(),
+                  });
+                }
               },
 
               onKeyDown(props) {
                 if (props.event.key === "Escape") {
-                  popup[0].hide();
+                  if (popup) {
+                    popup.hide();
+                  }
 
                   return true;
                 }
 
-                return reactRenderer.ref?.onKeyDown(props);
+                return reactRenderer?.ref?.onKeyDown(props) ?? false;
               },
 
               onExit() {
                 if (popup) {
-                  popup[0].destroy();
+                  popup.destroy();
+                }
+                if (reactRenderer) {
                   reactRenderer.destroy();
                 }
               },

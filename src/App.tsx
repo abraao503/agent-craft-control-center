@@ -27,7 +27,7 @@ import EditWhatsAppIntegrationPage from "./pages/EditWhatsAppIntegrationPage";
 import SettingsPage from "./pages/SettingsPage";
 import NotFound from "./pages/NotFound";
 import ContentManagementPage from "./pages/ContentManagementPage";
-import ConversationsPage from "./pages/ConversationsPage";
+import ChatsPage from "./pages/ChatsPage";
 import CustomersPage from "./pages/CustomersPage";
 import CustomerDetailsPage from "./pages/CustomerDetailsPage";
 import CustomersExportXlsxPage from "./pages/CustomersExportXlsxPage";
@@ -35,7 +35,15 @@ import FollowUpPage from "./pages/FollowUpPage";
 import FollowUpCreatePage from "./pages/FollowUpCreatePage";
 import FollowUpEditPage from "./pages/FollowUpEditPage";
 import FollowUpDetailPage from "./pages/FollowUpDetailPage";
+import PipelineDetailPage from "./pages/PipelineDetailPage";
+import PipelineEditPage from "./pages/PipelineEditPage";
 import MessageQueuePage from "./pages/MessageQueuePage";
+import AdminCompaniesPage from "./pages/AdminCompaniesPage";
+import CompanyDetailsPage from "./pages/CompanyDetailsPage";
+import WorkspaceDetailsPage from "./pages/WorkspaceDetailsPage";
+import CompanySettingsPage from "./pages/CompanySettingsPage";
+import CompanyWorkspaceDetailsPage from "./pages/CompanyWorkspaceDetailsPage";
+import WorkspaceSettingsPage from "./pages/WorkspaceSettingsPage";
 import Sidebar from "./components/layout/Sidebar";
 import Header from "./components/layout/Header";
 import { SidebarProvider } from "./components/ui/sidebar";
@@ -44,6 +52,7 @@ import { MainContainerRefContext } from "./contexts/mainContainer";
 import { PageViewTracker } from "./components/PageViewTracker";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { WorkspaceProvider } from "./contexts/workspace/WorkspaceContext";
+import { Loader2 } from "lucide-react";
 
 const queryClient = new QueryClient();
 
@@ -65,7 +74,7 @@ const getInitialSidebarState = (): boolean => {
 
 // Componente de layout persistente
 const AppLayout = () => {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const isMobile = useIsMobile();
   const location = useLocation();
   const initialState = getInitialSidebarState();
@@ -74,8 +83,6 @@ const AppLayout = () => {
 
   // Detect dev environment
   const isDev = import.meta.env.VITE_APP_ENV === "development";
-
-  console.log("isDev", isDev);
 
   // Apply a global dev theme class on <html>
   useEffect(() => {
@@ -158,8 +165,16 @@ const AppLayout = () => {
     return () => clearTimeout(timer);
   }, [location.pathname]);
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
   if (!user) {
-    return <Navigate to="/login" />;
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   return (
@@ -178,7 +193,8 @@ const AppLayout = () => {
             <main
               ref={mainContainerRef}
               className={cn(
-                "flex-1 p-6 bg-background overflow-y-auto dark:text-gray-200 transition-opacity",
+                "flex-1 bg-background overflow-y-auto dark:text-gray-200 transition-opacity",
+                location.pathname !== "/chats" && "p-6",
                 pageTransitioning ? "opacity-95" : "opacity-100",
                 isMobile ? "pl-[60px]" : ""
               )}
@@ -203,7 +219,7 @@ const IntegrationsCreatePage = () => <CreateWhatsAppIntegrationPage />;
 const IntegrationsEditPage = () => <EditWhatsAppIntegrationPage />;
 const SettingsConfigPage = () => <SettingsPage />;
 const ContentsPage = () => <ContentManagementPage />;
-const ConversationsListPage = () => <ConversationsPage />;
+const ChatsListPage = () => <ChatsPage />;
 const CustomersListPage = () => <CustomersPage />;
 const CustomerDetailsViewPage = () => <CustomerDetailsPage />;
 const CustomersExportPage = () => <CustomersExportXlsxPage />;
@@ -211,7 +227,15 @@ const FollowUpListPage = () => <FollowUpPage />;
 const FollowUpCreatePageView = () => <FollowUpCreatePage />;
 const FollowUpEditPageView = () => <FollowUpEditPage />;
 const FollowUpDetailViewPage = () => <FollowUpDetailPage />;
-const MessageQueueListPage = () => <MessageQueuePage />;
+const PipelineDetailViewPage = () => <PipelineDetailPage />;
+const PipelineEditViewPage = () => <PipelineEditPage />;
+const MessageQueueViewPage = () => <MessageQueuePage />;
+const AdminCompaniesListPage = () => <AdminCompaniesPage />;
+const CompanyDetailsViewPage = () => <CompanyDetailsPage />;
+const WorkspaceDetailsViewPage = () => <WorkspaceDetailsPage />;
+const CompanySettingsViewPage = () => <CompanySettingsPage />;
+const CompanyWorkspaceDetailsViewPage = () => <CompanyWorkspaceDetailsPage />;
+const WorkspaceSettingsViewPage = () => <WorkspaceSettingsPage />;
 const NotFoundPage = () => <NotFound />;
 
 const App = () => (
@@ -251,14 +275,28 @@ const App = () => (
                   />
                   <Route path="/settings" element={<SettingsConfigPage />} />
                   <Route path="/contents" element={<ContentsPage />} />
-                  <Route
-                    path="/conversations"
-                    element={<ConversationsListPage />}
-                  />
+                  <Route path="/chats" element={<ChatsListPage />} />
                   <Route path="/customers" element={<CustomersListPage />} />
                   <Route
                     path="/customers/:id"
                     element={<CustomerDetailsViewPage />}
+                  />
+                  <Route path="/deals" element={<PipelineDetailViewPage />} />
+                  <Route
+                    path="/deals/pipeline/:pipelineId"
+                    element={<PipelineDetailViewPage />}
+                  />
+                  <Route
+                    path="/deals/pipeline/create"
+                    element={<PipelineEditViewPage />}
+                  />
+                  <Route
+                    path="/deals/pipeline/:pipelineId/edit"
+                    element={<PipelineEditViewPage />}
+                  />
+                  <Route
+                    path="/deals/pipeline/:pipelineId/queue"
+                    element={<MessageQueueViewPage />}
                   />
                   <Route
                     path="/customers/export-xlsx"
@@ -278,8 +316,28 @@ const App = () => (
                     element={<FollowUpDetailViewPage />}
                   />
                   <Route
-                    path="/message-queue"
-                    element={<MessageQueueListPage />}
+                    path="/admin/companies"
+                    element={<AdminCompaniesListPage />}
+                  />
+                  <Route
+                    path="/admin/companies/:companyId"
+                    element={<CompanyDetailsViewPage />}
+                  />
+                  <Route
+                    path="/admin/companies/:companyId/workspaces/:workspaceId"
+                    element={<WorkspaceDetailsViewPage />}
+                  />
+                  <Route
+                    path="/company/settings"
+                    element={<CompanySettingsViewPage />}
+                  />
+                  <Route
+                    path="/company/workspaces/:workspaceId"
+                    element={<CompanyWorkspaceDetailsViewPage />}
+                  />
+                  <Route
+                    path="/workspace/settings"
+                    element={<WorkspaceSettingsViewPage />}
                   />
                   <Route path="*" element={<NotFoundPage />} />
                 </Route>

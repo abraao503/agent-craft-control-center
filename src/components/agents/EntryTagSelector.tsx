@@ -29,7 +29,7 @@ const EntryTagSelector: React.FC<EntryTagSelectorProps> = ({
 
   const { data: allTags = [] } = useQuery({
     queryKey: ["tags", workspaceId],
-    queryFn: () => listTags(workspaceId),
+    queryFn: () => listTags(workspaceId || ""),
     enabled: !!workspaceId,
   });
 
@@ -39,9 +39,7 @@ const EntryTagSelector: React.FC<EntryTagSelectorProps> = ({
   );
 
   // Obter as tags selecionadas completas (com nome, cor, etc.)
-  const selectedTags = allTags.filter((tag) => 
-    selectedTagIds.includes(tag.id)
-  );
+  const selectedTags = allTags.filter((tag) => selectedTagIds.includes(tag.id));
 
   const handleAddTag = () => {
     if (!selectedTagId) return;
@@ -85,10 +83,7 @@ const EntryTagSelector: React.FC<EntryTagSelectorProps> = ({
 
       {availableTags.length > 0 && (
         <div className="flex gap-2">
-          <Select
-            value={selectedTagId}
-            onValueChange={setSelectedTagId}
-          >
+          <Select value={selectedTagId} onValueChange={setSelectedTagId}>
             <SelectTrigger className="w-[200px]">
               <SelectValue placeholder="Selecionar tag" />
             </SelectTrigger>
@@ -106,11 +101,7 @@ const EntryTagSelector: React.FC<EntryTagSelectorProps> = ({
               ))}
             </SelectContent>
           </Select>
-          <Button
-            size="sm"
-            onClick={handleAddTag}
-            disabled={!selectedTagId}
-          >
+          <Button size="sm" onClick={handleAddTag} disabled={!selectedTagId}>
             Adicionar
           </Button>
         </div>

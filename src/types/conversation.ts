@@ -13,15 +13,18 @@ export type ConversationMessage = {
 export type Conversation = {
   id: string;
   lastInteraction: Date | null;
+  lastMessage?: string;
+  unreadCount?: number;
   customer: {
     id: string;
     phone: string;
+    name?: string;
     identifier?: string;
   };
   agent: {
     id: string;
     name: string;
-  };
+  } | null;
   totalMessages: number;
   handledBy: "ai" | "human";
   tags?: Tag[];

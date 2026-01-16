@@ -1,11 +1,12 @@
 import { api } from "../api";
+import { WhatsAppIntegrationName } from "@/types/whatsapp-integration";
 
 export interface CreateWhatsAppIntegrationParams {
   externalToken: string;
   externalClientToken: string;
   postbackUrl: string;
   agentId: string;
-  whatsappIntegrationName: "z-api" | "evolux";
+  whatsappIntegrationName: WhatsAppIntegrationName;
 }
 
 export const createWhatsAppIntegration = async (

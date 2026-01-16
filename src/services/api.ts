@@ -71,14 +71,22 @@ api.interceptors.response.use(
   },
   (error) => {
     if (error.response) {
-      console.error(
-        "Erro da API:",
-        error.response.data.message || "Erro desconhecido"
-      );
+      const status = error.response.status;
+      const errorMessage = error.response.data?.message || "Erro desconhecido";
 
-      if (error.response.status === 401) {
+      console.error(`Erro da API (${status}):`, errorMessage);
+
+      // Only logout for 401 Unauthorized errors on protected routes
+      // Do NOT logout for login/register endpoints or 500 errors
+      const isAuthEndpoint = error.config?.url?.includes('/user/login') || 
+                             error.config?.url?.includes('/user/register');
+      
+      if (status === 401 && !isAuthEndpoint) {
+        console.warn("Unauthorized access - logging out user");
         removeUserData();
         window.location.href = "/";
+      } else if (status >= 500) {
+        console.error("Server error - keeping user logged in");
       }
 
       // Track the API error with Highlight

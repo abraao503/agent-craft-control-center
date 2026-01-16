@@ -1,3 +1,5 @@
+import { WhatsAppIntegrationName } from './whatsapp-integration';
+
 export interface WhatsAppIntegration {
   id: string;
   name: string;
@@ -21,10 +23,12 @@ export interface CompanyWhatsAppIntegrationFull {
   postbackUrl: string;
   externalToken: string;
   externalClientToken: string;
-  agentId: string;
+  pipelineId: string;
   whatsappIntegrationId: string;
-  whatsappIntegrationName: "z-api" | "evolux";
+  whatsappIntegrationName: WhatsAppIntegrationName;
   active: boolean;
+  initialPipelineStageId: string;
+  status: "close" | "open" | "connecting";
 }
 
 export interface WhatsAppFormData {
@@ -32,7 +36,7 @@ export interface WhatsAppFormData {
   externalClientToken: string;
   postbackUrl: string;
   agentId: string;
-  whatsappIntegrationName: "z-api" | "evolux";
+  whatsappIntegrationName: WhatsAppIntegrationName;
   id?: string; // For edit mode
   companyId?: string; // For edit mode
 }

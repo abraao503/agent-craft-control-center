@@ -153,20 +153,6 @@ const BasicInformation = ({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="initialMessage">Mensagem inicial</Label>
-        <Textarea
-          id="initialMessage"
-          placeholder="Olá! Como posso ajudar você hoje?"
-          value={formData.initialMessage}
-          onChange={(e) => updateFormData({ initialMessage: e.target.value })}
-          required
-        />
-        <p className="text-sm text-muted-foreground">
-          A primeira mensagem que seu agente enviará ao iniciar uma conversa.
-        </p>
-      </div>
-
-      <div className="space-y-2">
         <Label htmlFor="iaModelId">Modelo de IA</Label>
         <Select
           value={formData.iaModelId}

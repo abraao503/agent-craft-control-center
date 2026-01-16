@@ -1,12 +1,29 @@
 import LoginForm from "@/components/auth/LoginForm";
 import { useAuth } from "@/contexts/auth/hooks";
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
+import { Loader2 } from "lucide-react";
+
+type LocationState = {
+  from?: {
+    pathname: string;
+  };
+};
 
 const Login = () => {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
+  const location = useLocation();
+  const from = (location.state as LocationState | null)?.from?.pathname || "/";
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   if (user) {
-    return <Navigate to="/" />;
+    return <Navigate to={from} replace />;
   }
 
   return (

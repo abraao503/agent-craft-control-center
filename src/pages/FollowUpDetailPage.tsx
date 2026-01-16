@@ -236,7 +236,7 @@ export default function FollowUpDetailPage() {
     error: followUpError,
   } = useQuery({
     queryKey: ["followUps", id],
-    queryFn: () => getFollowUpById(id),
+    queryFn: () => getFollowUpById(id || ""),
     enabled: !!id,
   });
 
@@ -590,7 +590,7 @@ export default function FollowUpDetailPage() {
                               hours: number;
                               minutes: number;
                             }) => {
-                              const parts = [];
+                              const parts: string[] = [];
                               if (timeValue.days > 0) {
                                 parts.push(
                                   `${timeValue.days} ${
@@ -1047,7 +1047,7 @@ export default function FollowUpDetailPage() {
 
                         const totalPages = queuedMessagesData.totalPages;
                         const currentPage = messagesPage;
-                        const pages = [];
+                        const pages: JSX.Element[] = [];
 
                         // Always show first page
                         if (totalPages > 0) {

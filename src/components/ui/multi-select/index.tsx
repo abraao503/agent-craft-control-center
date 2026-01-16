@@ -32,6 +32,7 @@ interface MultiSelectProps {
   className?: string;
   renderOption?: (option: Option) => React.ReactNode;
   renderSelection?: (selected: Option[]) => React.ReactNode;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export function MultiSelect({
@@ -42,10 +43,16 @@ export function MultiSelect({
   className,
   renderOption,
   renderSelection,
+  onOpenChange,
 }: MultiSelectProps) {
   const [open, setOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
   const buttonRef = useRef<HTMLButtonElement>(null);
+
+  const handleOpenChange = (newOpen: boolean) => {
+    setOpen(newOpen);
+    onOpenChange?.(newOpen);
+  };
 
   // Mapear os IDs selecionados para objetos de opção completos
   const selectedOptions = selected
@@ -71,7 +78,7 @@ export function MultiSelect({
   };
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         <Button
           ref={buttonRef}
@@ -83,7 +90,7 @@ export function MultiSelect({
             selected.length > 0 ? "h-auto" : "h-10",
             className
           )}
-          onClick={() => setOpen(!open)}
+          onClick={() => handleOpenChange(!open)}
         >
           <div className="flex flex-wrap gap-1 py-1">
             {selected.length > 0 ? (

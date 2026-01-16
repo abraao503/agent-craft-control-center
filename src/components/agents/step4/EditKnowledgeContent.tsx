@@ -44,7 +44,7 @@ const EditKnowledgeContent = ({
     error,
   } = useQuery({
     queryKey: ["listContent", workspaceId],
-    queryFn: () => listContent(workspaceId),
+    queryFn: () => listContent(workspaceId || ""),
   });
 
   // Atualizar a lista local quando os dados da API forem carregados
@@ -244,7 +244,8 @@ const EditKnowledgeContent = ({
       <div className="mb-6">
         <h3 className="text-lg font-medium mb-2">Conteúdo de conhecimento</h3>
         <p className="text-sm text-muted-foreground">
-          Selecione conteúdo existente ou envie novos arquivos para o seu agente usar como fontes de conhecimento.
+          Selecione conteúdo existente ou envie novos arquivos para o seu agente
+          usar como fontes de conhecimento.
         </p>
       </div>
 

@@ -1,318 +1,295 @@
-import React, { useState } from "react";
+import { useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { useWorkspaceContext } from "@/contexts/workspace/WorkspaceContext";
-import { useToast } from "@/components/ui/use-toast";
+import { useWorkspaceManager } from "@/hooks/useWorkspaceManager";
+import { usePermissions } from "@/hooks/usePermissions";
+import { getPipelineQueue } from "@/services/message-queue/getPipelineQueue";
+import { getQueueMessages } from "@/services/message-queue/getQueueMessages";
+import { QueueHeader } from "@/components/message-queue/QueueHeader";
+import { QueueSettingsDialog } from "@/components/message-queue/QueueSettingsDialog";
+import { SmartPagination } from "@/components/common/SmartPagination";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Loader2, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
-import { MessageQueueTable } from "@/components/follow-up/MessageQueueTable";
-import { QueuedMessagesTable } from "@/components/follow-up/QueuedMessagesTable";
-import { MessageQueue, QueuedMessage } from "@/types/follow-up";
-import { listMessageQueues, listQueuedMessages } from "@/services/follow-up";
+  MessageQueueWithPipeline,
+  QueuedMessageStatus,
+} from "@/types/message-queue";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { isColorDark } from "@/lib/utils";
 
 export default function MessageQueuePage() {
-  const { toast } = useToast();
-  const { currentWorkspace } = useWorkspaceContext();
-  const workspaceId = currentWorkspace?.id || "";
+  const { pipelineId } = useParams<{ pipelineId: string }>();
+  const navigate = useNavigate();
+  const { has } = usePermissions();
 
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
-  const [selectedQueue, setSelectedQueue] = useState<MessageQueue | null>(null);
-  const [queuedMessagesPage, setQueuedMessagesPage] = useState(1);
-
-  // Query message queues
-  const {
-    data: messageQueuesData,
-    isLoading: isLoadingQueues,
-    error: queuesError,
-  } = useQuery({
-    queryKey: ["messageQueues", workspaceId, page, limit],
-    queryFn: () => listMessageQueues({ workspaceId, page, limit }),
-    enabled: !!workspaceId,
+  const { workspaceId, isChangingWorkspace } = useWorkspaceManager({
+    queryKeys: ["pipelineQueue", "queueMessages"],
+    autoRefetch: true,
+    trackLoadingState: true,
   });
 
-  // Query queued messages for selected queue
-  const {
-    data: queuedMessagesData,
-    isLoading: isLoadingMessages,
-    error: messagesError,
-  } = useQuery({
-    queryKey: ["queuedMessages", selectedQueue?.id, queuedMessagesPage, limit],
+  const [currentPage, setCurrentPage] = useState(0);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const limit = 10;
+
+  const canUpdatePipeline = has("update:pipeline");
+  const canViewPipeline = has("view:pipeline");
+
+  // Fetch queue info
+  const queueQuery = useQuery({
+    queryKey: ["pipelineQueue", pipelineId],
+    queryFn: () => getPipelineQueue(pipelineId!),
+    enabled: !!pipelineId && !!workspaceId && canViewPipeline,
+  });
+
+  // Fetch queue messages
+  const messagesQuery = useQuery({
+    queryKey: ["queueMessages", queueQuery.data?.queue.id, currentPage],
     queryFn: () =>
-      listQueuedMessages({
-        messageQueueId: selectedQueue?.id || "",
-        page: queuedMessagesPage,
+      getQueueMessages(queueQuery.data!.queue.id, {
+        page: currentPage + 1, // API uses 1-indexed pages
         limit,
       }),
-    enabled: !!selectedQueue?.id,
+    enabled: !!queueQuery.data?.queue.id && canViewPipeline,
+    placeholderData: (previousData) => previousData,
   });
 
-  const handleViewQueueDetails = (queue: MessageQueue) => {
-    setSelectedQueue(queue);
-    setQueuedMessagesPage(1);
-  };
+  const isLoading =
+    isChangingWorkspace || queueQuery.isLoading || messagesQuery.isLoading;
+  const error = queueQuery.error || messagesQuery.error;
 
-  const handleBackToQueues = () => {
-    setSelectedQueue(null);
-  };
-
-  const handlePageChange = (newPage: number) => {
-    if (selectedQueue) {
-      setQueuedMessagesPage(newPage);
-    } else {
-      setPage(newPage);
-    }
-  };
-
-  if (!workspaceId) {
+  if (!canViewPipeline) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <p className="text-muted-foreground">
-          Selecione um workspace para visualizar as filas de mensagens
-        </p>
+      <Alert variant="destructive">
+        <AlertDescription>
+          Você não tem permissão para visualizar filas de mensagens.
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <Button
+          variant="ghost"
+          onClick={() => navigate("/deals")}
+          className="mb-4"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Voltar para Negócios
+        </Button>
+        <Alert variant="destructive">
+          <AlertDescription>
+            Erro ao carregar fila de mensagens. Tente novamente.
+          </AlertDescription>
+        </Alert>
       </div>
     );
   }
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!queueQuery.data) {
+    return (
+      <div className="space-y-6">
+        <Button
+          variant="ghost"
+          onClick={() => navigate("/deals")}
+          className="mb-4"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Voltar para Negócios
+        </Button>
+        <Alert>
+          <AlertDescription>Fila de mensagens não encontrada.</AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
+  // Merge queue data with pipeline and totalMessages for component usage
+  const queueData: MessageQueueWithPipeline = {
+    ...queueQuery.data.queue,
+    pipeline: queueQuery.data.pipeline,
+    totalMessages: queueQuery.data.totalMessages,
+  };
+
+  const messages = messagesQuery.data?.items || [];
+  const totalPages = messagesQuery.data
+    ? Math.ceil(messagesQuery.data.total / limit)
+    : 0;
+
   return (
     <div className="space-y-6">
-      {selectedQueue ? (
-        <>
-          <div className="flex items-center space-x-4">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleBackToQueues}
-              className="flex items-center"
-            >
-              <ChevronLeft className="mr-1 h-4 w-4" />
-              Voltar
-            </Button>
-            <h1 className="text-3xl font-bold">Detalhes da Fila</h1>
-          </div>
+      <Button
+        variant="ghost"
+        onClick={() => navigate(`/deals/pipeline/${pipelineId}`)}
+        className="mb-4"
+      >
+        <ArrowLeft className="h-4 w-4 mr-2" />
+        Voltar para Pipeline
+      </Button>
 
-          <div className="bg-muted/50 p-4 rounded-md">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">
-                  ID da Fila
-                </p>
-                <p>{selectedQueue.id}</p>
+      <QueueHeader
+        queue={queueData}
+        pipelineId={pipelineId!}
+        onOpenSettings={() => setSettingsOpen(true)}
+        canUpdate={canUpdatePipeline}
+      />
+
+      <div>
+        <h2 className="text-xl font-semibold mb-4">Mensagens na Fila</h2>
+
+        {messages.length === 0 ? (
+          <Alert>
+            <AlertDescription>Não há mensagens nesta fila.</AlertDescription>
+          </Alert>
+        ) : (
+          <>
+            <div className="border rounded-lg overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Cliente</TableHead>
+                    <TableHead>Mensagem</TableHead>
+                    <TableHead>Negócio</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Criada em</TableHead>
+                    <TableHead>Envio agendado</TableHead>
+                    <TableHead className="text-center">Tentativas</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {messages.map((message) => {
+                    const normalizedStatus =
+                      message.status.toUpperCase() as QueuedMessageStatus;
+                    const statusConfig = {
+                      [QueuedMessageStatus.PENDING]: {
+                        label: "Pendente",
+                        bgColor: "#fef3c7",
+                        textColor: "#92400e",
+                      },
+                      [QueuedMessageStatus.SENT]: {
+                        label: "Enviada",
+                        bgColor: "#d1fae5",
+                        textColor: "#065f46",
+                      },
+                      [QueuedMessageStatus.FAILED]: {
+                        label: "Falhou",
+                        bgColor: "#fee2e2",
+                        textColor: "#991b1b",
+                      },
+                      [QueuedMessageStatus.SCHEDULED]: {
+                        label: "Agendada",
+                        bgColor: "#e0e7ff",
+                        textColor: "#3730a3",
+                      },
+                    };
+
+                    const status = statusConfig[normalizedStatus] || {
+                      label: message.status,
+                      bgColor: "#f3f4f6",
+                      textColor: "#374151",
+                    };
+
+                    return (
+                      <TableRow key={message.id}>
+                        <TableCell>
+                          <div className="font-medium">
+                            {message.customer.name || "Sem nome"}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {message.customer.phone}
+                          </div>
+                        </TableCell>
+                        <TableCell className="max-w-xs">
+                          <div className="line-clamp-2 text-sm">
+                            {message.content}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {message.deal?.title || "-"}
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            style={{
+                              backgroundColor: status.bgColor,
+                              color: isColorDark(status.bgColor)
+                                ? "white"
+                                : status.textColor,
+                            }}
+                          >
+                            {status.label}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {format(
+                            new Date(message.createdAt),
+                            "dd/MM/yyyy 'às' HH:mm",
+                            { locale: ptBR }
+                          )}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {message.sendAt
+                            ? format(
+                                new Date(message.sendAt),
+                                "dd/MM/yyyy 'às' HH:mm",
+                                { locale: ptBR }
+                              )
+                            : "-"}
+                        </TableCell>
+                        <TableCell className="text-center text-sm">
+                          {message.attemptNumber || 1}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+
+            {totalPages > 1 && (
+              <div className="mt-6">
+                <SmartPagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={setCurrentPage}
+                  showItemCount
+                  itemsPerPage={limit}
+                  totalItems={messagesQuery.data?.total || 0}
+                  itemLabel="mensagens"
+                />
               </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">
-                  Workspace
-                </p>
-                <p>{selectedQueue.workspaceId}</p>
-              </div>
-            </div>
-          </div>
+            )}
+          </>
+        )}
+      </div>
 
-          <h2 className="text-xl font-semibold mt-6">Mensagens Enfileiradas</h2>
-
-          {isLoadingMessages ? (
-            <div className="flex justify-center py-8">
-              <p className="text-muted-foreground">Carregando mensagens...</p>
-            </div>
-          ) : messagesError ? (
-            <div className="bg-red-50 p-4 rounded-md border border-red-200">
-              <p className="text-red-800">
-                Erro ao carregar mensagens. Tente novamente mais tarde.
-              </p>
-            </div>
-          ) : (
-            <>
-              <QueuedMessagesTable messages={queuedMessagesData?.items || []} />
-
-              {queuedMessagesData?.totalPages > 1 && (
-                <Pagination className="mt-4">
-                  <PaginationContent>
-                    <PaginationItem>
-                      <PaginationPrevious
-                        onClick={() =>
-                          handlePageChange(Math.max(1, queuedMessagesPage - 1))
-                        }
-                        className={
-                          queuedMessagesPage === 1
-                            ? "pointer-events-none opacity-50"
-                            : "cursor-pointer"
-                        }
-                      />
-                    </PaginationItem>
-
-                    {Array.from(
-                      { length: queuedMessagesData.totalPages },
-                      (_, i) => i + 1
-                    )
-                      .filter(
-                        (p) =>
-                          p === 1 ||
-                          p === queuedMessagesData.totalPages ||
-                          Math.abs(p - queuedMessagesPage) <= 1
-                      )
-                      .map((p, i, arr) => {
-                        // Adicionar elipses quando necessário
-                        if (i > 0 && arr[i - 1] !== p - 1) {
-                          return (
-                            <React.Fragment key={`ellipsis-${p}`}>
-                              <PaginationItem>
-                                <PaginationEllipsis />
-                              </PaginationItem>
-                              <PaginationItem key={p}>
-                                <PaginationLink
-                                  isActive={p === queuedMessagesPage}
-                                  onClick={() => handlePageChange(p)}
-                                >
-                                  {p}
-                                </PaginationLink>
-                              </PaginationItem>
-                            </React.Fragment>
-                          );
-                        }
-                        return (
-                          <PaginationItem key={p}>
-                            <PaginationLink
-                              isActive={p === queuedMessagesPage}
-                              onClick={() => handlePageChange(p)}
-                            >
-                              {p}
-                            </PaginationLink>
-                          </PaginationItem>
-                        );
-                      })}
-
-                    <PaginationItem>
-                      <PaginationNext
-                        onClick={() =>
-                          handlePageChange(
-                            Math.min(
-                              queuedMessagesData.totalPages,
-                              queuedMessagesPage + 1
-                            )
-                          )
-                        }
-                        className={
-                          queuedMessagesPage === queuedMessagesData.totalPages
-                            ? "pointer-events-none opacity-50"
-                            : "cursor-pointer"
-                        }
-                      />
-                    </PaginationItem>
-                  </PaginationContent>
-                </Pagination>
-              )}
-            </>
-          )}
-        </>
-      ) : (
-        <>
-          <h1 className="text-3xl font-bold">Filas de Mensagens</h1>
-
-          {isLoadingQueues ? (
-            <div className="flex justify-center py-8">
-              <p className="text-muted-foreground">
-                Carregando filas de mensagens...
-              </p>
-            </div>
-          ) : queuesError ? (
-            <div className="bg-red-50 p-4 rounded-md border border-red-200">
-              <p className="text-red-800">
-                Erro ao carregar filas de mensagens. Tente novamente mais tarde.
-              </p>
-            </div>
-          ) : (
-            <>
-              <MessageQueueTable
-                messageQueues={messageQueuesData?.data?.items || []}
-                onViewDetails={handleViewQueueDetails}
-              />
-
-              {messageQueuesData?.data?.totalPages > 1 && (
-                <Pagination className="mt-4">
-                  <PaginationContent>
-                    <PaginationItem>
-                      <PaginationPrevious
-                        onClick={() => handlePageChange(Math.max(1, page - 1))}
-                        className={
-                          page === 1
-                            ? "pointer-events-none opacity-50"
-                            : "cursor-pointer"
-                        }
-                      />
-                    </PaginationItem>
-
-                    {Array.from(
-                      { length: messageQueuesData.data.totalPages },
-                      (_, i) => i + 1
-                    )
-                      .filter(
-                        (p) =>
-                          p === 1 ||
-                          p === messageQueuesData.data.totalPages ||
-                          Math.abs(p - page) <= 1
-                      )
-                      .map((p, i, arr) => {
-                        // Adicionar elipses quando necessário
-                        if (i > 0 && arr[i - 1] !== p - 1) {
-                          return (
-                            <React.Fragment key={`ellipsis-${p}`}>
-                              <PaginationItem>
-                                <PaginationEllipsis />
-                              </PaginationItem>
-                              <PaginationItem key={p}>
-                                <PaginationLink
-                                  isActive={p === page}
-                                  onClick={() => handlePageChange(p)}
-                                >
-                                  {p}
-                                </PaginationLink>
-                              </PaginationItem>
-                            </React.Fragment>
-                          );
-                        }
-                        return (
-                          <PaginationItem key={p}>
-                            <PaginationLink
-                              isActive={p === page}
-                              onClick={() => handlePageChange(p)}
-                            >
-                              {p}
-                            </PaginationLink>
-                          </PaginationItem>
-                        );
-                      })}
-
-                    <PaginationItem>
-                      <PaginationNext
-                        onClick={() =>
-                          handlePageChange(
-                            Math.min(
-                              messageQueuesData.data.totalPages,
-                              page + 1
-                            )
-                          )
-                        }
-                        className={
-                          page === messageQueuesData.data.totalPages
-                            ? "pointer-events-none opacity-50"
-                            : "cursor-pointer"
-                        }
-                      />
-                    </PaginationItem>
-                  </PaginationContent>
-                </Pagination>
-              )}
-            </>
-          )}
-        </>
+      {canUpdatePipeline && (
+        <QueueSettingsDialog
+          queue={queueData}
+          pipelineId={pipelineId!}
+          open={settingsOpen}
+          onOpenChange={setSettingsOpen}
+        />
       )}
     </div>
   );

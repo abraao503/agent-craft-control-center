@@ -1,4 +1,4 @@
-import { api } from "@/lib/api";
+import { api } from "@/services/api";
 import { TagLinkRequest } from "@/types/tag";
 
 export const linkTagToChat = async (params: TagLinkRequest): Promise<void> => {

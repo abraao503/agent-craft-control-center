@@ -1,4 +1,4 @@
-import { api } from "@/lib/api";
+import { api } from "@/services/api";
 import { Tag } from "@/types/tag";
 
 export const getChatTags = async (chatId: string, workspaceId: string): Promise<Tag[]> => {

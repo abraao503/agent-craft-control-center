@@ -1,0 +1,67 @@
+export type UserRole =
+  | "PLATFORM_ADMIN"
+  | "COMPANY_OWNER"
+  | "COMPANY_ADMIN"
+  | "WORKSPACE_OWNER"
+  | "WORKSPACE_ADMIN"
+  | "WORKSPACE_MANAGER"
+  | "SALES_REP";
+
+export type Permission =
+  | "manage:platform"
+  | "view:platform-reports"
+  | "create:company"
+  | "delete:company"
+  | "view:all-companies"
+  | "manage:company"
+  | "update:company"
+  | "view:company-billing"
+  | "create:workspace"
+  | "update:workspace"
+  | "delete:workspace"
+  | "view:all-workspaces"
+  | "create:company-user"
+  | "delete:company-user"
+  | "create:workspace-user"
+  | "delete:workspace-user"
+  | "list:users"
+  | "assign:user-to-workspace"
+  | "create:pipeline"
+  | "update:pipeline"
+  | "delete:pipeline"
+  | "view:pipeline"
+  | "create:stage-form-field"
+  | "update:stage-form-field"
+  | "delete:stage-form-field"
+  | "view:stage-form-field"
+  | "save:form-field-values"
+  | "create:assistant"
+  | "update:assistant"
+  | "delete:assistant"
+  | "view:assistant"
+  | "manage:integrations"
+  | "connect:whatsapp"
+  | "view:integrations"
+  | "create:deal"
+  | "update:deal"
+  | "delete:deal"
+  | "view:deal"
+  | "view:all-deals"
+  | "view:team-deals"
+  | "view:own-deals"
+  | "assign:deal"
+  | "move:deal"
+  | "view:chat"
+  | "send:message"
+  | "view:workspace-reports"
+  | "view:company-reports";
+
+export interface UserProfile {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  companyId: string;
+  workspaceId: string | null;
+  permissions: Permission[];
+}

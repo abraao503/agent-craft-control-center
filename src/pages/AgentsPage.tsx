@@ -21,6 +21,7 @@ import { listAgent } from "@/services/agent/listAgent";
 import { deleteAgent } from "@/services/agent/deleteAgent";
 import AgentCardSkeleton from "@/components/agents/AgentCardSkeleton";
 import { useWorkspaceManager } from "@/hooks/useWorkspaceManager";
+import { usePermissions } from "@/hooks/usePermissions";
 
 const AgentsPage = () => {
   const [agents, setAgents] = useState<Agent[]>([]);
@@ -28,6 +29,7 @@ const AgentsPage = () => {
   const [agentToDelete, setAgentToDelete] = useState<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { has } = usePermissions();
 
   // Usar o hook de gerenciamento de workspace
   const { workspaceId, isChangingWorkspace } = useWorkspaceManager({
@@ -38,7 +40,7 @@ const AgentsPage = () => {
 
   const { isLoading, data, error } = useQuery({
     queryKey: ["listAgent", workspaceId],
-    queryFn: () => listAgent(workspaceId),
+    queryFn: () => listAgent(workspaceId || ""),
   });
 
   const { mutate: deleteAgentMutation, isPending: isDeleting } = useMutation({
@@ -86,10 +88,15 @@ const AgentsPage = () => {
     if (agentToDelete) {
       deleteAgentMutation({
         agentId: agentToDelete,
-        workspaceId,
+        workspaceId: workspaceId || "",
       });
     }
   };
+
+  // Verifica se o usuário tem permissões para criar, editar e deletar assistentes
+  const canCreateAssistant = has("create:assistant");
+  const canUpdateAssistant = has("update:assistant");
+  const canDeleteAssistant = has("delete:assistant");
 
   return (
     <div>
@@ -101,12 +108,14 @@ const AgentsPage = () => {
               Crie e gerencie seus agentes inteligentes
             </p>
           </div>
-          <Link to="/agents/new">
-            <Button className="flex items-center">
-              <Plus className="mr-2 h-5 w-5" />
-              Novo Agente
-            </Button>
-          </Link>
+          {canCreateAssistant && (
+            <Link to="/agents/new">
+              <Button className="flex items-center">
+                <Plus className="mr-2 h-5 w-5" />
+                Novo Agente
+              </Button>
+            </Link>
+          )}
         </div>
 
         <div className="relative">
@@ -125,7 +134,9 @@ const AgentsPage = () => {
           <div className="text-center py-12 border rounded-lg">
             {searchQuery ? (
               <>
-                <h3 className="font-medium text-lg">Nenhum agente encontrado</h3>
+                <h3 className="font-medium text-lg">
+                  Nenhum agente encontrado
+                </h3>
                 <p className="text-muted-foreground">
                   Nenhum agente corresponde à sua pesquisa. Tente usar
                   palavras-chave diferentes.
@@ -137,9 +148,11 @@ const AgentsPage = () => {
                 <p className="text-muted-foreground mb-4">
                   Crie seu primeiro agente de IA para começar
                 </p>
-                <Link to="/agents/new">
-                  <Button>Criar Agente</Button>
-                </Link>
+                {canCreateAssistant && (
+                  <Link to="/agents/new">
+                    <Button>Criar Agente</Button>
+                  </Link>
+                )}
               </>
             )}
           </div>
@@ -150,6 +163,8 @@ const AgentsPage = () => {
                 key={agent.id}
                 agent={agent}
                 onDelete={handleDeleteClick}
+                canEdit={canUpdateAssistant}
+                canDelete={canDeleteAssistant}
               />
             ))}
           </div>
@@ -169,7 +184,9 @@ const AgentsPage = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel disabled={isDeleting}>
+              Cancelar
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDelete}
               className="bg-red-500 hover:bg-red-600"

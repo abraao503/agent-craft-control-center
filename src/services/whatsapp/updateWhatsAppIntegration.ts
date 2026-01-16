@@ -1,4 +1,5 @@
 import { api } from "../api";
+import { WhatsAppIntegrationName } from "@/types/whatsapp-integration";
 
 export interface UpdateWhatsAppIntegrationParams {
   companyId: string;
@@ -6,7 +7,7 @@ export interface UpdateWhatsAppIntegrationParams {
   externalClientToken: string;
   postbackUrl: string;
   agentId: string;
-  whatsappIntegrationName: string;
+  whatsappIntegrationName: WhatsAppIntegrationName;
 }
 
 export const updateWhatsAppIntegration = async (

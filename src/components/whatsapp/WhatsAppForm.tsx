@@ -1,5 +1,9 @@
 import { useEffect, useState } from "react";
 import { WhatsAppFormData } from "@/types/whatsapp";
+import {
+  WhatsAppIntegrationName,
+  WHATSAPP_INTEGRATION_NAMES,
+} from "@/types/whatsapp-integration";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -38,7 +42,7 @@ const defaultFormData: WhatsAppFormData = {
   externalClientToken: "",
   postbackUrl: "",
   agentId: "",
-  whatsappIntegrationName: "z-api" as "z-api" | "evolux",
+  whatsappIntegrationName: WHATSAPP_INTEGRATION_NAMES.ZAPI,
 };
 
 const WhatsAppForm = ({
@@ -50,7 +54,8 @@ const WhatsAppForm = ({
   const [formData, setFormData] = useState<WhatsAppFormData>({
     ...defaultFormData,
     ...initialData,
-    whatsappIntegrationName: initialData.whatsappIntegrationName || "z-api",
+    whatsappIntegrationName:
+      initialData.whatsappIntegrationName || WHATSAPP_INTEGRATION_NAMES.ZAPI,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   // Webhook URL is now generated but not shown as a separate step
@@ -68,7 +73,7 @@ const WhatsAppForm = ({
 
   const { data: agentsData, isLoading: isLoadingAgents } = useQuery({
     queryKey: ["agents", workspaceId],
-    queryFn: () => listAgent(workspaceId),
+    queryFn: () => listAgent(workspaceId || ""),
   });
 
   // Get selected WhatsApp integration name
@@ -195,7 +200,7 @@ const WhatsAppForm = ({
               value={formData.whatsappIntegrationName}
               onValueChange={(value) =>
                 updateFormData({
-                  whatsappIntegrationName: value as "z-api" | "evolux",
+                  whatsappIntegrationName: value as WhatsAppIntegrationName,
                 })
               }
               disabled={isEditMode}
@@ -204,8 +209,12 @@ const WhatsAppForm = ({
                 <SelectValue placeholder="Selecione a integração do WhatsApp" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="z-api">Z-API</SelectItem>
-                <SelectItem value="evolux">Evolux</SelectItem>
+                <SelectItem value={WHATSAPP_INTEGRATION_NAMES.ZAPI}>
+                  Z-API
+                </SelectItem>
+                <SelectItem value={WHATSAPP_INTEGRATION_NAMES.EVOLUX}>
+                  Evolux
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -238,7 +247,8 @@ const WhatsAppForm = ({
             </p>
           </div>
 
-          {formData.whatsappIntegrationName === "z-api" && (
+          {formData.whatsappIntegrationName ===
+            WHATSAPP_INTEGRATION_NAMES.ZAPI && (
             <div className="space-y-2">
               <Label htmlFor="externalToken">Token externo</Label>
               <Input
@@ -255,7 +265,8 @@ const WhatsAppForm = ({
             </div>
           )}
 
-          {formData.whatsappIntegrationName === "z-api" && (
+          {formData.whatsappIntegrationName ===
+            WHATSAPP_INTEGRATION_NAMES.ZAPI && (
             <div className="space-y-2">
               <Label htmlFor="externalClientToken">Token do cliente</Label>
               <Input
@@ -272,7 +283,8 @@ const WhatsAppForm = ({
             </div>
           )}
 
-          {formData.whatsappIntegrationName === "z-api" && (
+          {formData.whatsappIntegrationName ===
+            WHATSAPP_INTEGRATION_NAMES.ZAPI && (
             <div className="space-y-2">
               <Label htmlFor="postbackUrl">URL de Postback</Label>
               <Input
@@ -289,37 +301,39 @@ const WhatsAppForm = ({
             </div>
           )}
 
-          {isEditMode && formData.whatsappIntegrationName === "z-api" && (
-            <div className="mt-8 p-6 border rounded-md bg-muted">
-              <h3 className="font-medium text-lg mb-3">
-                Webhook URL para Plataforma Externa
-              </h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Este é o webhook URL que será usado para receber mensagens do
-                WhatsApp. Você pode copiá-lo para configurar na sua plataforma
-                WhatsApp.
-              </p>
-              <div className="flex items-center space-x-2">
-                <div className="flex-1 relative">
-                  <Input
-                    value={webhookUrl}
-                    readOnly
-                    className="font-mono text-sm pr-10 bg-background"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-1 top-1/2 transform -translate-y-1/2"
-                    onClick={copyWebhookToClipboard}
-                  >
-                    <Copy className="h-4 w-4" />
-                    <span className="sr-only">Copiar</span>
-                  </Button>
+          {isEditMode &&
+            formData.whatsappIntegrationName ===
+              WHATSAPP_INTEGRATION_NAMES.ZAPI && (
+              <div className="mt-8 p-6 border rounded-md bg-muted">
+                <h3 className="font-medium text-lg mb-3">
+                  Webhook URL para Plataforma Externa
+                </h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Este é o webhook URL que será usado para receber mensagens do
+                  WhatsApp. Você pode copiá-lo para configurar na sua plataforma
+                  WhatsApp.
+                </p>
+                <div className="flex items-center space-x-2">
+                  <div className="flex-1 relative">
+                    <Input
+                      value={webhookUrl}
+                      readOnly
+                      className="font-mono text-sm pr-10 bg-background"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-1 top-1/2 transform -translate-y-1/2"
+                      onClick={copyWebhookToClipboard}
+                    >
+                      <Copy className="h-4 w-4" />
+                      <span className="sr-only">Copiar</span>
+                    </Button>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
         </form>
       </CardContent>
       <CardFooter className="pt-2 flex justify-end">

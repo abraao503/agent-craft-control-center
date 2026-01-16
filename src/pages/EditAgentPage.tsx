@@ -59,7 +59,7 @@ const EditAgentPage = () => {
 
   const { isLoading, data, error } = useQuery({
     queryKey: ["getAgent", id, workspaceId],
-    queryFn: () => getAgent(id, workspaceId),
+    queryFn: () => getAgent(id || "", workspaceId || ""),
   });
 
   const { mutateAsync: updateAgentMutation, isPending: isUpdating } =
@@ -80,10 +80,22 @@ const EditAgentPage = () => {
         });
         navigate(`/agents/${id}`);
       },
-      onError: (error) => {
+      onError: (error: unknown) => {
+        const apiError = error as {
+          response?: { data?: { statusCode?: number; message?: string } };
+          message?: string;
+        };
+        const isInvalidApiKey =
+          apiError?.response?.data?.statusCode === 422 &&
+          apiError?.response?.data?.message === "Invalid API key";
+
         toast({
-          title: "Error updating agent",
-          description: error.message,
+          title: isInvalidApiKey
+            ? "Chave de API Inválida"
+            : "Erro ao atualizar agente",
+          description: isInvalidApiKey
+            ? "A chave de API fornecida é inválida. Verifique sua chave de API e tente novamente."
+            : apiError.message || "Ocorreu um erro ao atualizar o agente.",
           variant: "destructive",
         });
       },
@@ -95,16 +107,13 @@ const EditAgentPage = () => {
       setFormData({
         name: data.name,
         description: data.description,
-        avatarUrl: data.avatar?.url || null,
+        avatarUrl: data.avatar?.url || undefined,
         timeZone: data.timeZone,
         language: data.language,
-        initialMessage: data.initialMessage,
         skipMessages: data.skipMessages,
         iaModelId: data.iaModel.id,
         iaProviderApiKey: "", // Não enviamos a chave de volta para o frontend
-        identity: data.prompt.identity,
         function: data.prompt.function,
-        goal: data.prompt.goal,
         style: data.prompt.style,
         instructions: data.prompt.instructions,
         blacklist: data.prompt.blacklist,
@@ -154,7 +163,7 @@ const EditAgentPage = () => {
     );
 
     await updateAgentMutation({
-      agentId: id,
+      agentId: id || "",
       agentData: {
         name: formData.name,
         description: formData.description,
@@ -162,9 +171,7 @@ const EditAgentPage = () => {
         timeZone: formData.timeZone,
         language: formData.language,
         prompt: {
-          identity: formData.identity,
           function: formData.function,
-          goal: formData.goal,
           style: formData.style,
           instructions: formattedInstructions,
           blacklist: formData.blacklist,
@@ -172,13 +179,12 @@ const EditAgentPage = () => {
         },
         contents: contentsToUpdate,
         customFields: customFieldsToUpdate,
-        initialMessage: formData.initialMessage,
         skipMessages: formData.skipMessages,
         iaModelId: formData.iaModelId,
         iaProviderApiKey: formData.iaProviderApiKey,
         entryTags: formData.entryTags,
       },
-      workspaceId,
+      workspaceId: workspaceId || "",
     });
 
     toast({
@@ -241,11 +247,7 @@ const EditAgentPage = () => {
         return true; // Custom fields are optional
       case 3:
         return (
-          !!formData.identity &&
-          !!formData.function &&
-          !!formData.goal &&
-          !!formData.style &&
-          !!formData.instructions
+          !!formData.function && !!formData.style && !!formData.instructions
         );
       case 4:
         return true; // Knowledge content is optional

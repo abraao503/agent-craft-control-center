@@ -6,24 +6,29 @@ import { Bot, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useWorkspaceManager } from "@/hooks/useWorkspaceManager";
-import { AssistantsStatsResponse, getAssistantsStats } from "@/services/dashboard/getAssistantsStats";
+import {
+  AssistantsStatsResponse,
+  getAssistantsStats,
+} from "@/services/dashboard/getAssistantsStats";
 
 const AgentPerformance = () => {
   const navigate = useNavigate();
   const { workspaceId } = useWorkspaceManager();
-  
-  const { data: assistantsData, isLoading } = useQuery<AssistantsStatsResponse>({
-    queryKey: ["assistantsStats", workspaceId],
-    queryFn: async () => {
-      if (!workspaceId) return null;
-      
-      return getAssistantsStats({ workspaceId });
-    },
-    enabled: !!workspaceId
-  });
+
+  const { data: assistantsData, isLoading } = useQuery<AssistantsStatsResponse>(
+    {
+      queryKey: ["assistantsStats", workspaceId],
+      queryFn: async () => {
+        if (!workspaceId) throw new Error("Workspace ID is required");
+
+        return getAssistantsStats({ workspaceId });
+      },
+      enabled: !!workspaceId,
+    }
+  );
 
   const agents = assistantsData?.assistants || [];
-  
+
   // Show only first 3 agents
   const displayedAgents = agents.slice(0, 3);
   const hasMoreAgents = agents.length > 3;
@@ -40,7 +45,9 @@ const AgentPerformance = () => {
         {isLoading ? (
           <div className="text-center text-muted-foreground">Carregando...</div>
         ) : displayedAgents.length === 0 ? (
-          <div className="text-center text-muted-foreground">Nenhum agente encontrado</div>
+          <div className="text-center text-muted-foreground">
+            Nenhum agente encontrado
+          </div>
         ) : (
           displayedAgents.map((agent) => (
             <div

@@ -2,6 +2,7 @@ import {
   CompanyWhatsAppIntegration,
   InstanceStatusEvent,
 } from "@/types/whatsapp";
+import { WHATSAPP_INTEGRATION_NAMES } from "@/types/whatsapp-integration";
 import {
   Card,
   CardContent,
@@ -31,19 +32,27 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { connectSocket } from "@/lib/socket";
 import { useAuth } from "@/contexts/auth/hooks";
+import { useWebSocket } from "@/hooks/useWebSocket";
+import {
+  InstanceStatusEvent as WsInstanceStatusEvent,
+  QrCodeGeneratedEvent,
+} from "@/types/websocket";
 
 interface WhatsAppIntegrationCardProps {
   integration: CompanyWhatsAppIntegration;
   workspaceId: string;
   onDelete: (id: string) => void;
+  canEdit?: boolean;
+  canDelete?: boolean;
 }
 
 const WhatsAppIntegrationCard = ({
   integration,
   workspaceId,
   onDelete,
+  canEdit = false,
+  canDelete = false,
 }: WhatsAppIntegrationCardProps) => {
   const [copied, setCopied] = useState(false);
   const [qrCodeOpen, setQrCodeOpen] = useState(false);
@@ -105,7 +114,7 @@ const WhatsAppIntegrationCard = ({
   });
 
   const qrCodeMutation = useMutation({
-    mutationFn: () => generateQrCode(integration.id),
+    mutationFn: () => generateQrCode(integration.id, workspaceId),
     onSuccess: (data) => {
       setQrCodeData(data.qrCode);
       setQrCodeOpen(true);
@@ -132,38 +141,51 @@ const WhatsAppIntegrationCard = ({
     setIsActive(integration.active);
   }, [integration.active]);
 
+  const token = localStorage.getItem("token") || "";
+  const { socket, connected, joinedWorkspace } = useWebSocket({
+    workspaceId,
+    token,
+    enabled:
+      integration.whatsappIntegrationName === WHATSAPP_INTEGRATION_NAMES.EVOLUX,
+  });
+
   useEffect(() => {
-    if (integration.whatsappIntegrationName !== "evolux") return;
+    if (
+      !socket ||
+      !joinedWorkspace ||
+      integration.whatsappIntegrationName !== WHATSAPP_INTEGRATION_NAMES.EVOLUX
+    ) {
+      return;
+    }
 
-    const token = localStorage.getItem("token");
-    const socket = connectSocket(token);
-
-    socket.on("connect", () => {
-      const room = `company:${user.companyId}`;
-      socket.emit("join", { room });
-    });
-
-    socket.on("instance:status", (event: InstanceStatusEvent) => {
+    const handleInstanceStatus = (event: WsInstanceStatusEvent) => {
       if (event.companyWhatsappIntegrationId === integration.id) {
-        setConnectionStatus(event.status);
+        console.log("Instance status updated:", event.status);
+        setConnectionStatus(event.status as "close" | "open" | "connecting");
       }
-    });
+    };
 
-    socket.on("qr:generated", (event) => {
+    const handleQrGenerated = (event: QrCodeGeneratedEvent) => {
       if (event.companyWhatsappIntegrationId === integration.id) {
-        console.log("QR Code gerado:", event.qrCode);
+        console.log("QR Code generated:", event.qrCode);
         setQrCodeData(event.qrCode);
         setQrCodeOpen(true);
       }
-    });
+    };
 
-    // Solicitar status inicial
-    socket.emit("get:instance:status", { integrationId: integration.id });
+    socket.on("instance:status", handleInstanceStatus);
+    socket.on("qr:generated", handleQrGenerated);
 
     return () => {
-      socket.disconnect();
+      socket.off("instance:status", handleInstanceStatus);
+      socket.off("qr:generated", handleQrGenerated);
     };
-  }, [integration.id, integration.whatsappIntegrationName, user.companyId]);
+  }, [
+    socket,
+    joinedWorkspace,
+    integration.id,
+    integration.whatsappIntegrationName,
+  ]);
 
   const copyPostbackUrlToClipboard = () => {
     const webhook = getWebhookUrl();
@@ -241,7 +263,8 @@ const WhatsAppIntegrationCard = ({
             {integration.whatsappIntegrationName}
           </CardTitle>
           <div className="flex items-center gap-2">
-            {integration.whatsappIntegrationName === "evolux" && (
+            {integration.whatsappIntegrationName ===
+              WHATSAPP_INTEGRATION_NAMES.EVOLUX && (
               <Badge variant="outline" className="flex items-center gap-1">
                 <span
                   className={`h-2 w-2 rounded-full ${getStatusColor()}`}
@@ -274,7 +297,8 @@ const WhatsAppIntegrationCard = ({
       </CardHeader>
       <CardContent className="pb-2 flex-grow">
         <div className="space-y-2 text-sm text-muted-foreground">
-          {integration.whatsappIntegrationName !== "evolux" && (
+          {integration.whatsappIntegrationName !==
+            WHATSAPP_INTEGRATION_NAMES.EVOLUX && (
             <div className="pt-2">
               <div className="flex items-center gap-1 mb-1">
                 <span className="font-medium text-foreground">
@@ -300,7 +324,8 @@ const WhatsAppIntegrationCard = ({
       </CardContent>
       <CardFooter className="pt-2 flex justify-end">
         <div className="flex flex-wrap gap-x-2">
-          {integration.whatsappIntegrationName === "evolux" &&
+          {integration.whatsappIntegrationName ===
+            WHATSAPP_INTEGRATION_NAMES.EVOLUX &&
             connectionStatus !== "open" && (
               <Button
                 variant="outline"
@@ -312,21 +337,25 @@ const WhatsAppIntegrationCard = ({
                 {qrCodeMutation.isPending ? "Gerando..." : "Gerar QR Code"}
               </Button>
             )}
-          <Link to={`/integrations/edit/${integration.id}`}>
-            <Button variant="outline" size="sm">
-              <Edit className="w-4 h-4 mr-1" />
-              Editar
+          {canEdit && (
+            <Link to={`/integrations/edit/${integration.id}`}>
+              <Button variant="outline" size="sm">
+                <Edit className="w-4 h-4 mr-1" />
+                Editar
+              </Button>
+            </Link>
+          )}
+          {canDelete && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-red-500 hover:text-red-700 hover:bg-red-50"
+              onClick={() => onDelete(integration.id)}
+            >
+              <Trash2 className="w-4 h-4 mr-1" />
+              Excluir
             </Button>
-          </Link>
-          <Button
-            variant="outline"
-            size="sm"
-            className="text-red-500 hover:text-red-700 hover:bg-red-50"
-            onClick={() => onDelete(integration.id)}
-          >
-            <Trash2 className="w-4 h-4 mr-1" />
-            Excluir
-          </Button>
+          )}
         </div>
       </CardFooter>
 

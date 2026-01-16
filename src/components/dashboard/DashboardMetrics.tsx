@@ -2,22 +2,27 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Bot, MessageSquare, Send } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useWorkspaceManager } from "@/hooks/useWorkspaceManager";
-import { DashboardIndicators, getIndicators } from "@/services/dashboard/getIndicators";
+import {
+  DashboardIndicators,
+  getIndicators,
+} from "@/services/dashboard/getIndicators";
 
 const DashboardMetrics = () => {
   const { workspaceId } = useWorkspaceManager();
-  
+
   const { data: indicators, isLoading } = useQuery<DashboardIndicators>({
     queryKey: ["dashboardIndicators", workspaceId],
     queryFn: async () => {
-      if (!workspaceId) return null;
-      
+      if (!workspaceId) {
+        throw new Error("Workspace ID is required");
+      }
+
       return getIndicators({
         workspaceId,
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
       });
     },
-    enabled: !!workspaceId
+    enabled: !!workspaceId,
   });
 
   return (
@@ -44,7 +49,9 @@ const DashboardMetrics = () => {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">
-            {isLoading ? "..." : (indicators?.conversations.total || 0).toLocaleString()}
+            {isLoading
+              ? "..."
+              : (indicators?.conversations.total || 0).toLocaleString()}
           </div>
           <p className="text-xs text-green-600">
             +{isLoading ? "..." : indicators?.conversations.todayNew || 0} hoje
@@ -59,7 +66,9 @@ const DashboardMetrics = () => {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">
-            {isLoading ? "..." : (indicators?.messages.total || 0).toLocaleString()}
+            {isLoading
+              ? "..."
+              : (indicators?.messages.total || 0).toLocaleString()}
           </div>
           <p className="text-xs text-green-600">
             +{isLoading ? "..." : indicators?.messages.todayNew || 0} hoje

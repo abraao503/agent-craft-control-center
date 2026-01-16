@@ -29,7 +29,7 @@ const ContentManagementPage = () => {
 
   const { isLoading, data, error } = useQuery({
     queryKey: ["listContent", workspaceId],
-    queryFn: () => listContent(workspaceId),
+    queryFn: () => listContent(workspaceId || ""),
   });
 
   useEffect(() => {

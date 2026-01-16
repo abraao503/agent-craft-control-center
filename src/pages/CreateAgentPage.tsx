@@ -26,17 +26,14 @@ const STEPS = [
 const defaultFormData: AgentFormData = {
   name: "",
   description: "",
-  avatarUrl: null,
+  avatarUrl: undefined,
   iaModelId: "",
   iaProviderApiKey: "",
-  initialMessage: "",
   skipMessages: [],
   timeZone: "America/Sao_Paulo",
   language: "pt-BR",
-  goal: "",
   contents: [],
   customFields: [],
-  identity: "",
   function: "",
   style: "",
   instructions: "",
@@ -70,10 +67,21 @@ const CreateAgentPage = () => {
       });
       navigate("/agents");
     },
-    onError: (error) => {
+    onError: (error: unknown) => {
+      const apiError = error as {
+        response?: { data?: { statusCode?: number; message?: string } };
+      };
+      const isInvalidApiKey =
+        apiError?.response?.data?.statusCode === 422 &&
+        apiError?.response?.data?.message === "Invalid API key";
+
       toast({
-        title: "Error creating agent",
-        description: "An error occurred while creating the agent.",
+        title: isInvalidApiKey
+          ? "Chave de API Inválida"
+          : "Erro ao criar agente",
+        description: isInvalidApiKey
+          ? "A chave de API fornecida é inválida. Verifique sua chave de API e tente novamente."
+          : "Ocorreu um erro ao criar o agente.",
         variant: "destructive",
       });
     },
@@ -101,8 +109,6 @@ const CreateAgentPage = () => {
       avatarFileId: null,
       contentsIds: formData.contents.map((content) => content.id),
       prompt: {
-        goal: formData.goal,
-        identity: formData.identity,
         function: formData.function,
         style: formData.style,
         instructions: formattedInstructions,
@@ -112,7 +118,7 @@ const CreateAgentPage = () => {
       iaProviderApiKey: formData.iaProviderApiKey,
       skipMessages: formData.skipMessages,
       entryTags: formData.entryTags,
-      workspaceId: workspaceId,
+      workspaceId: workspaceId || "",
     });
   };
 
@@ -162,11 +168,7 @@ const CreateAgentPage = () => {
         return true; // Custom fields are optional
       case 3:
         return (
-          !!formData.identity &&
-          !!formData.function &&
-          !!formData.goal &&
-          !!formData.style &&
-          !!formData.instructions
+          !!formData.function && !!formData.style && !!formData.instructions
         );
       case 4:
         return true; // Knowledge content is optional

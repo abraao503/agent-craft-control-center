@@ -1,14 +1,18 @@
 import { CompanyWhatsAppIntegrationFull } from "@/types/whatsapp";
+import { WhatsAppIntegrationName } from "@/types/whatsapp-integration";
 import { api } from "../api";
 
 type ApiResponse = {
   id: string;
-  assistantId: string;
   postbackUrl: string;
   externalToken: string;
   externalClientToken: string;
   whatsappIntegrationId: string;
   whatsappIntegrationName: string;
+  pipelineId: string;
+  initialPipelineStageId: string;
+  active: boolean;
+  status: "close" | "open" | "connecting";
 };
 
 export const getCompanyWhatsAppIntegration = async (
@@ -20,11 +24,14 @@ export const getCompanyWhatsAppIntegration = async (
 
   return {
     id: data.id,
-    agentId: data.assistantId,
+    pipelineId: data.pipelineId,
     postbackUrl: data.postbackUrl,
     externalToken: data.externalToken,
     externalClientToken: data.externalClientToken,
     whatsappIntegrationId: data.whatsappIntegrationId,
-    whatsappIntegrationName: data.whatsappIntegrationName as "z-api" | "evolux",
+    whatsappIntegrationName: data.whatsappIntegrationName as WhatsAppIntegrationName,
+    active: data.active,
+    initialPipelineStageId: data.initialPipelineStageId,
+    status: data.status,
   };
 };

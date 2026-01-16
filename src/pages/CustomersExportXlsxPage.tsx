@@ -195,10 +195,8 @@ const CustomersExportXlsxPage = () => {
                 <SelectContent>
                   <SelectItem value="all">Todos</SelectItem>
                   <SelectItem value="customer">Cliente</SelectItem>
-                  <SelectItem value="assistant">Assistente</SelectItem>
-                  <SelectItem value="human_assistant">
-                    Assistente Humano
-                  </SelectItem>
+                  <SelectItem value="assistant">Agente</SelectItem>
+                  <SelectItem value="human_assistant">Agente Humano</SelectItem>
                 </SelectContent>
               </Select>
             </div>
