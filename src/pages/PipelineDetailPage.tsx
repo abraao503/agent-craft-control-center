@@ -39,7 +39,7 @@ const PipelineDetailPage = () => {
   const [openCreateDeal, setOpenCreateDeal] = useState(false);
   const [isMoving, setIsMoving] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | undefined>(
-    undefined
+    undefined,
   );
   const [activitiesSidebarOpen, setActivitiesSidebarOpen] = useState(false);
 
@@ -161,7 +161,7 @@ const PipelineDetailPage = () => {
             const pages = currentData.pages || [];
             for (const page of pages) {
               const deal = page.items?.find(
-                (d: DealListItem) => d.id === dealId
+                (d: DealListItem) => d.id === dealId,
               );
               if (deal) {
                 fromStageId = stage.id;
@@ -206,7 +206,7 @@ const PipelineDetailPage = () => {
               total: page.total - 1,
             })),
           };
-        }
+        },
       );
     });
 
@@ -236,7 +236,7 @@ const PipelineDetailPage = () => {
               return page;
             }),
           };
-        }
+        },
       );
     });
 
@@ -269,7 +269,7 @@ const PipelineDetailPage = () => {
 
         // Extract field names from error message
         const match = errorMessage.match(
-          /Required fields must be filled: (.+)/
+          /Required fields must be filled: (.+)/,
         );
         if (match) {
           const fields = match[1];
@@ -378,7 +378,7 @@ const PipelineDetailPage = () => {
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <h1 className="text-3xl font-bold tracking-tight">Negócios</h1>
-          {canCreateDeal && (
+          {canCreateDeal && pipelineId && stages.length > 0 && (
             <Button onClick={() => setOpenCreateDeal(true)} className="mr-2">
               Novo Negócio
             </Button>

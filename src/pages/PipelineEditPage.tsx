@@ -68,6 +68,7 @@ const getDefaultCreateStages = (): PipelineStageMinimal[] => {
   return base.map((s, i) => ({
     id: `tmp-${i + 1}`,
     name: s.name,
+    order: i,
     color: s.color,
     winProbability: s.winProbability,
   }));
@@ -86,7 +87,7 @@ const PipelineEditPage = () => {
   });
 
   const [activeTab, setActiveTab] = useState<"stages" | "agent" | "config">(
-    "stages"
+    "stages",
   );
 
   // Loading state
@@ -169,7 +170,7 @@ const PipelineEditPage = () => {
     ],
     queryFn: () =>
       getCompanyWhatsAppIntegration(
-        currentPipeline!.companyWhatsappIntegrationId!
+        currentPipeline!.companyWhatsappIntegrationId!,
       ),
     enabled: !!currentPipeline?.companyWhatsappIntegrationId,
   });
@@ -186,7 +187,7 @@ const PipelineEditPage = () => {
 
       // Find stage order by initialPipelineStageId
       const stageIndex = stages.findIndex(
-        (s) => s.id === data.initialPipelineStageId
+        (s) => s.id === data.initialPipelineStageId,
       );
       if (stageIndex !== -1) {
         setInitialStageOrder(stageIndex);
@@ -328,7 +329,7 @@ const PipelineEditPage = () => {
       errors.push("Estilo do agente deve ter no mínimo 3 caracteres");
     }
     const instructionsText = convertHtmlStringToText(
-      agentFormData.instructions
+      agentFormData.instructions,
     );
     if (!instructionsText || instructionsText.trim().length < 3) {
       errors.push("Instruções do agente devem ter no mínimo 3 caracteres");
@@ -339,7 +340,7 @@ const PipelineEditPage = () => {
       agentFormData.links.forEach((link, index) => {
         if (!link.name || link.name.trim().length < 3) {
           errors.push(
-            `Link #${index + 1}: Nome deve ter no mínimo 3 caracteres`
+            `Link #${index + 1}: Nome deve ter no mínimo 3 caracteres`,
           );
         }
         try {
@@ -353,7 +354,7 @@ const PipelineEditPage = () => {
     // Custom fields validation
     if (agentFormData.customFields && agentFormData.customFields.length > 0) {
       const identifierCount = agentFormData.customFields.filter(
-        (field) => field.isIdentifier
+        (field) => field.isIdentifier,
       ).length;
       if (identifierCount > 1) {
         errors.push("Apenas um campo pode ser marcado como identificador");
@@ -362,17 +363,17 @@ const PipelineEditPage = () => {
       agentFormData.customFields.forEach((field, index) => {
         if (!field.name || field.name.trim().length < 3) {
           errors.push(
-            `Campo #${index + 1}: Nome deve ter no mínimo 3 caracteres`
+            `Campo #${index + 1}: Nome deve ter no mínimo 3 caracteres`,
           );
         }
         if (!field.label || field.label.trim().length < 3) {
           errors.push(
-            `Campo #${index + 1}: Label deve ter no mínimo 3 caracteres`
+            `Campo #${index + 1}: Label deve ter no mínimo 3 caracteres`,
           );
         }
         if (!["text", "number", "boolean"].includes(field.type)) {
           errors.push(
-            `Campo #${index + 1}: Tipo inválido (text, number ou boolean)`
+            `Campo #${index + 1}: Tipo inválido (text, number ou boolean)`,
           );
         }
       });
@@ -410,7 +411,7 @@ const PipelineEditPage = () => {
         (stage.winProbability < 0 || stage.winProbability > 100)
       ) {
         errors.push(
-          `Etapa #${index + 1}: Probabilidade deve estar entre 0 e 100`
+          `Etapa #${index + 1}: Probabilidade deve estar entre 0 e 100`,
         );
       }
 
@@ -428,7 +429,7 @@ const PipelineEditPage = () => {
             errors.push(
               `Etapa #${index + 1}, Movimentação #${
                 targetIndex + 1
-              }: Ordem da etapa destino inválida`
+              }: Ordem da etapa destino inválida`,
             );
           }
 
@@ -440,7 +441,7 @@ const PipelineEditPage = () => {
             errors.push(
               `Etapa #${index + 1}, Movimentação #${
                 targetIndex + 1
-              }: Condição de movimento é obrigatória`
+              }: Condição de movimento é obrigatória`,
             );
           }
         });
@@ -454,7 +455,7 @@ const PipelineEditPage = () => {
           errors.push(
             `Etapa #${
               index + 1
-            }: Tempo de inatividade deve ser no mínimo 1 hora`
+            }: Tempo de inatividade deve ser no mínimo 1 hora`,
           );
         }
 
@@ -462,7 +463,7 @@ const PipelineEditPage = () => {
           errors.push(
             `Etapa #${
               index + 1
-            }: Número máximo de mensagens deve ser no mínimo 1`
+            }: Número máximo de mensagens deve ser no mínimo 1`,
           );
         }
 
@@ -473,14 +474,14 @@ const PipelineEditPage = () => {
           errors.push(
             `Etapa #${
               index + 1
-            }: Intervalo entre mensagens deve ser no mínimo 1 hora`
+            }: Intervalo entre mensagens deve ser no mínimo 1 hora`,
           );
         }
 
         const validMessages = config.messages.filter((m) => m.trim() !== "");
         if (validMessages.length === 0) {
           errors.push(
-            `Etapa #${index + 1}: Adicione pelo menos uma mensagem de follow-up`
+            `Etapa #${index + 1}: Adicione pelo menos uma mensagem de follow-up`,
           );
         }
       }
@@ -495,10 +496,10 @@ const PipelineEditPage = () => {
               errors.push(
                 `Etapa #${index + 1}, Movimentação #${
                   targetIndex + 1
-                }: Etapa destino (ordem ${target.targetStageOrder}) não existe`
+                }: Etapa destino (ordem ${target.targetStageOrder}) não existe`,
               );
             }
-          }
+          },
         );
       }
     });
@@ -518,7 +519,7 @@ const PipelineEditPage = () => {
     const stageOrders = new Set(stages.map((s) => s.order));
     if (!stageOrders.has(initialStageOrder)) {
       errors.push(
-        `Etapa inicial do WhatsApp (ordem ${initialStageOrder}) não existe`
+        `Etapa inicial do WhatsApp (ordem ${initialStageOrder}) não existe`,
       );
     }
 
@@ -649,7 +650,7 @@ const PipelineEditPage = () => {
                 s.reengagementConfig.minInactiveChatTimeHours,
               maxMessages: s.reengagementConfig.maxMessages,
               messages: s.reengagementConfig.messages.filter(
-                (m) => m.trim() !== ""
+                (m) => m.trim() !== "",
               ), // Remove empty messages
               includeTags: s.reengagementConfig.includeTags || [],
               excludeTags: s.reengagementConfig.excludeTags || [],
@@ -662,7 +663,7 @@ const PipelineEditPage = () => {
 
       console.log(
         "🔍 DEBUG - Stages antes de enviar:",
-        JSON.stringify(stagesInput, null, 2)
+        JSON.stringify(stagesInput, null, 2),
       );
 
       // 4. Create or update pipeline with embedded assistant
@@ -836,7 +837,7 @@ const PipelineEditPage = () => {
                         endTime: s.reengagementConfig.endTime,
                       }
                     : null,
-                })
+                }),
               );
               setStages(convertedStages);
             }}
