@@ -44,6 +44,10 @@ import WorkspaceDetailsPage from "./pages/WorkspaceDetailsPage";
 import CompanySettingsPage from "./pages/CompanySettingsPage";
 import CompanyWorkspaceDetailsPage from "./pages/CompanyWorkspaceDetailsPage";
 import WorkspaceSettingsPage from "./pages/WorkspaceSettingsPage";
+import DealWebhooksPage from "./pages/DealWebhooksPage";
+import DealWebhookCreatePage from "./pages/DealWebhookCreatePage";
+import DealWebhookDetailPage from "./pages/DealWebhookDetailPage";
+import DealWebhookEditPage from "./pages/DealWebhookEditPage";
 import Sidebar from "./components/layout/Sidebar";
 import Header from "./components/layout/Header";
 import { SidebarProvider } from "./components/ui/sidebar";
@@ -104,28 +108,28 @@ const AppLayout = () => {
       if (isDarkMode) {
         document.documentElement.style.setProperty(
           "--sidebar-solid-bg",
-          "#1e1e2e"
+          "#1e1e2e",
         );
         document.documentElement.style.setProperty(
           "--sidebar-solid-text",
-          "#e0e0e0"
+          "#e0e0e0",
         );
         document.documentElement.style.setProperty(
           "--sidebar-solid-border",
-          "#2a2a3a"
+          "#2a2a3a",
         );
       } else {
         document.documentElement.style.setProperty(
           "--sidebar-solid-bg",
-          "#ffffff"
+          "#ffffff",
         );
         document.documentElement.style.setProperty(
           "--sidebar-solid-text",
-          "#0f0f0f"
+          "#0f0f0f",
         );
         document.documentElement.style.setProperty(
           "--sidebar-solid-border",
-          "#e0e0e0"
+          "#e0e0e0",
         );
       }
     };
@@ -184,7 +188,7 @@ const AppLayout = () => {
         <div
           className={cn(
             "flex flex-col h-screen overflow-hidden bg-background",
-            isDev && "ring-2 ring-blue-500"
+            isDev && "ring-2 ring-blue-500",
           )}
         >
           <Header />
@@ -196,7 +200,7 @@ const AppLayout = () => {
                 "flex-1 bg-background overflow-y-auto dark:text-gray-200 transition-opacity",
                 location.pathname !== "/chats" && "p-6",
                 pageTransitioning ? "opacity-95" : "opacity-100",
-                isMobile ? "pl-[60px]" : ""
+                isMobile ? "pl-[60px]" : "",
               )}
             >
               <Outlet />
@@ -236,6 +240,10 @@ const WorkspaceDetailsViewPage = () => <WorkspaceDetailsPage />;
 const CompanySettingsViewPage = () => <CompanySettingsPage />;
 const CompanyWorkspaceDetailsViewPage = () => <CompanyWorkspaceDetailsPage />;
 const WorkspaceSettingsViewPage = () => <WorkspaceSettingsPage />;
+const DealWebhooksListPage = () => <DealWebhooksPage />;
+const DealWebhookCreateViewPage = () => <DealWebhookCreatePage />;
+const DealWebhookDetailViewPage = () => <DealWebhookDetailPage />;
+const DealWebhookEditViewPage = () => <DealWebhookEditPage />;
 const NotFoundPage = () => <NotFound />;
 
 const App = () => (
@@ -314,6 +322,19 @@ const App = () => (
                   <Route
                     path="/follow-ups/:id"
                     element={<FollowUpDetailViewPage />}
+                  />
+                  <Route path="/webhooks" element={<DealWebhooksListPage />} />
+                  <Route
+                    path="/webhooks/create"
+                    element={<DealWebhookCreateViewPage />}
+                  />
+                  <Route
+                    path="/webhooks/:id"
+                    element={<DealWebhookDetailViewPage />}
+                  />
+                  <Route
+                    path="/webhooks/:id/edit"
+                    element={<DealWebhookEditViewPage />}
                   />
                   <Route
                     path="/admin/companies"
