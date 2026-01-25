@@ -16,6 +16,7 @@ import {
   Plus,
   BellRing,
   DollarSignIcon,
+  Webhook,
 } from "lucide-react";
 import { useAuth } from "@/contexts/auth/hooks";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -98,7 +99,7 @@ const useWorkspace = () => {
       } else {
         // Verifica se o workspace atual ainda existe na lista
         const workspaceExists = workspaces.some(
-          (w) => w.id === currentWorkspace.id
+          (w) => w.id === currentWorkspace.id,
         );
 
         if (!workspaceExists) {
@@ -109,7 +110,7 @@ const useWorkspace = () => {
         } else {
           // Atualiza os dados do workspace atual (caso o nome tenha sido editado)
           const updatedWorkspace = workspaces.find(
-            (w) => w.id === currentWorkspace.id
+            (w) => w.id === currentWorkspace.id,
           );
           if (
             updatedWorkspace &&
@@ -389,6 +390,11 @@ const SidebarMenuContent = () => {
       label: "Clientes",
       icon: <Users className="h-5 w-5" />,
     },
+    {
+      path: "/webhooks",
+      label: "Webhooks",
+      icon: <Webhook className="h-5 w-5" />,
+    },
     // {
     //   path: "/contents",
     //   label: "Conteúdos",
@@ -461,7 +467,7 @@ const SidebarMenuContent = () => {
                   "h-10 w-10",
                   isActive(item.path) && "bg-accent text-primary",
                   isDisabled &&
-                    "opacity-50 cursor-not-allowed pointer-events-none"
+                    "opacity-50 cursor-not-allowed pointer-events-none",
                 )}
               >
                 {item.icon}
@@ -488,7 +494,7 @@ const SidebarMenuContent = () => {
           className={cn(
             "w-full justify-start",
             isActive(item.path) && "bg-accent",
-            isDisabled && "opacity-50 cursor-not-allowed pointer-events-none"
+            isDisabled && "opacity-50 cursor-not-allowed pointer-events-none",
           )}
         >
           <span className="mr-2">{item.icon}</span>
@@ -503,14 +509,14 @@ const SidebarMenuContent = () => {
       <div
         className={cn(
           "p-4 border-b border-border",
-          isCollapsed && "flex justify-center items-center"
+          isCollapsed && "flex justify-center items-center",
         )}
       >
         <Link
           to="/"
           className={cn(
             "flex items-center space-x-2",
-            isCollapsed && "flex-col space-x-0 space-y-2"
+            isCollapsed && "flex-col space-x-0 space-y-2",
           )}
         >
           <div className="w-8 h-8 bg-primary rounded-md flex items-center justify-center">
@@ -525,7 +531,7 @@ const SidebarMenuContent = () => {
       <nav
         className={cn(
           "flex-1 p-4 space-y-2",
-          isCollapsed && "flex flex-col items-center px-2 py-4 space-y-4"
+          isCollapsed && "flex flex-col items-center px-2 py-4 space-y-4",
         )}
       >
         {menuItems.map(renderMenuItem)}
@@ -534,7 +540,7 @@ const SidebarMenuContent = () => {
       <div
         className={cn(
           "p-4 border-t border-border mt-auto",
-          isCollapsed && "flex justify-center p-2"
+          isCollapsed && "flex justify-center p-2",
         )}
       >
         {isCollapsed ? (
