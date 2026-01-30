@@ -116,7 +116,7 @@ const localDatetimeStringToUTC = (localDatetimeString: string): string => {
 // Formats datetime field value for display (converts UTC to local formatted string)
 const formatDatetimeForDisplay = (
   utcDateString: string,
-  fieldType: FieldType
+  fieldType: FieldType,
 ): string => {
   if (!utcDateString) return "";
   const date = new Date(utcDateString);
@@ -262,7 +262,7 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
 
         // Extract field names from error message
         const match = errorMessage.match(
-          /Required fields must be filled: (.+)/
+          /Required fields must be filled: (.+)/,
         );
         if (match) {
           const fields = match[1];
@@ -598,7 +598,7 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
   const handleFieldValueChange = (
     fieldId: string,
     value: string,
-    fieldType?: FieldType
+    fieldType?: FieldType,
   ) => {
     // Mark field as modified
     modifiedFieldsRef.current.add(fieldId);
@@ -832,8 +832,8 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
               field.type === "email"
                 ? "email"
                 : field.type === "phone"
-                ? "tel"
-                : "text"
+                  ? "tel"
+                  : "text"
             }
             value={value}
             onChange={(e) => handleFieldValueChange(field.id, e.target.value)}
@@ -968,7 +968,11 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-2">
                       <Label>E-mail principal</Label>
-                      <Input placeholder="Inserir e-mail" disabled />
+                      <Input
+                        value={dealDetails?.customer?.email || ""}
+                        disabled
+                        placeholder="Inserir e-mail"
+                      />
                     </div>
                     <div className="space-y-2">
                       <Label>Telefone principal</Label>
@@ -1055,7 +1059,7 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
                                     year: "numeric",
                                     hour: "2-digit",
                                     minute: "2-digit",
-                                  }
+                                  },
                                 )
                               : ""
                           }
@@ -1207,7 +1211,7 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
                                     ) {
                                       displayValue = formatDatetimeForDisplay(
                                         field.value,
-                                        field.type
+                                        field.type,
                                       );
                                     }
 
@@ -1453,14 +1457,14 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
                                 const noteDate = new Date(note.createdAt);
                                 const daysDiff = differenceInDays(
                                   new Date(),
-                                  noteDate
+                                  noteDate,
                                 );
 
                                 if (daysDiff >= 7) {
                                   return format(
                                     noteDate,
                                     "dd/MM/yyyy 'às' HH:mm",
-                                    { locale: ptBR }
+                                    { locale: ptBR },
                                   );
                                 }
 

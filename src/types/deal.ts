@@ -97,6 +97,7 @@ export interface DealDetails {
     id: string;
     name: string;
     phone: string;
+    email?: string;
   };
   assignedUser?: {
     id: string;
