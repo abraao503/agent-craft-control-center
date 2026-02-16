@@ -48,6 +48,9 @@ import DealWebhooksPage from "./pages/DealWebhooksPage";
 import DealWebhookCreatePage from "./pages/DealWebhookCreatePage";
 import DealWebhookDetailPage from "./pages/DealWebhookDetailPage";
 import DealWebhookEditPage from "./pages/DealWebhookEditPage";
+import MassBroadcastPage from "./pages/MassBroadcastPage";
+import MassBroadcastCreatePage from "./pages/MassBroadcastCreatePage";
+import MassBroadcastDetailPage from "./pages/MassBroadcastDetailPage";
 import Sidebar from "./components/layout/Sidebar";
 import Header from "./components/layout/Header";
 import { SidebarProvider } from "./components/ui/sidebar";
@@ -244,6 +247,9 @@ const DealWebhooksListPage = () => <DealWebhooksPage />;
 const DealWebhookCreateViewPage = () => <DealWebhookCreatePage />;
 const DealWebhookDetailViewPage = () => <DealWebhookDetailPage />;
 const DealWebhookEditViewPage = () => <DealWebhookEditPage />;
+const MassBroadcastListPage = () => <MassBroadcastPage />;
+const MassBroadcastCreateViewPage = () => <MassBroadcastCreatePage />;
+const MassBroadcastDetailViewPage = () => <MassBroadcastDetailPage />;
 const NotFoundPage = () => <NotFound />;
 
 const App = () => (
@@ -335,6 +341,18 @@ const App = () => (
                   <Route
                     path="/webhooks/:id/edit"
                     element={<DealWebhookEditViewPage />}
+                  />
+                  <Route
+                    path="/broadcasts"
+                    element={<MassBroadcastListPage />}
+                  />
+                  <Route
+                    path="/broadcasts/create"
+                    element={<MassBroadcastCreateViewPage />}
+                  />
+                  <Route
+                    path="/broadcasts/:id"
+                    element={<MassBroadcastDetailViewPage />}
                   />
                   <Route
                     path="/admin/companies"
