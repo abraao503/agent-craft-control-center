@@ -17,6 +17,7 @@ import {
   BellRing,
   DollarSignIcon,
   Webhook,
+  Megaphone,
 } from "lucide-react";
 import { useAuth } from "@/contexts/auth/hooks";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -394,6 +395,11 @@ const SidebarMenuContent = () => {
       path: "/webhooks",
       label: "Webhooks",
       icon: <Webhook className="h-5 w-5" />,
+    },
+    {
+      path: "/broadcasts",
+      label: "Disparos",
+      icon: <Megaphone className="h-5 w-5" />,
     },
     // {
     //   path: "/contents",
