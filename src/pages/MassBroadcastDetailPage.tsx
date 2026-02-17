@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/components/ui/use-toast";
+import { TemplateTextDisplay } from "@/components/message-template";
 import { Button } from "@/components/ui/button";
 import {
   ArrowLeft,
@@ -583,7 +584,9 @@ export default function MassBroadcastDetailPage() {
                       <span className="text-xs text-muted-foreground font-medium">
                         Variação {index + 1}:
                       </span>
-                      <p className="mt-1 whitespace-pre-wrap">{msg}</p>
+                      <p className="mt-1 whitespace-pre-wrap">
+                        <TemplateTextDisplay text={msg} />
+                      </p>
                     </div>
                   ))}
                 </div>

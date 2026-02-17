@@ -7,6 +7,7 @@ export interface CustomField {
 export interface Customer {
   id: string;
   companyId: string;
+  name?: string;
   phone: string;
   identifier: string;
   createdAt: Date;
@@ -17,6 +18,7 @@ export interface Customer {
 export interface CustomerWithFields {
   id: string;
   companyId: string;
+  name?: string;
   phone: string;
   identifier: string;
   createdAt: Date;
@@ -35,6 +37,7 @@ export interface CustomerResponse {
 export interface CustomerListParams {
   page?: number;
   limit?: number;
+  search?: string;
   orderBy?: string;
   order?: "asc" | "desc";
 }
