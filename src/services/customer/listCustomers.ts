@@ -7,7 +7,7 @@ import { api } from "../api";
 
 export const listCustomers = async (
   params: CustomerListParams,
-  workspaceId: string
+  workspaceId: string,
 ): Promise<CustomerResponse> => {
   const queryParams = new URLSearchParams();
 
@@ -27,13 +27,17 @@ export const listCustomers = async (
     queryParams.append("order", params.order);
   }
 
+  if (params?.search) {
+    queryParams.append("search", params.search);
+  }
+
   queryParams.append("workspaceId", workspaceId);
 
   const queryString = queryParams.toString()
     ? `?${queryParams.toString()}`
     : "";
   const response = await api.get<CustomerResponse>(
-    `/customer/list${queryString}`
+    `/customer/list${queryString}`,
   );
 
   return {

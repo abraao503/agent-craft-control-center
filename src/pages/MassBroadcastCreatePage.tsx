@@ -12,6 +12,8 @@ import {
   Loader2,
   Users,
   Eye,
+  Search,
+  X,
 } from "lucide-react";
 import {
   Card,
@@ -22,7 +24,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { MessageTemplateEditor } from "@/components/message-template";
 import {
   Select,
   SelectContent,
@@ -32,9 +34,12 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { TagSelector } from "@/components/pipelines/TagSelector";
 import { listPipelines } from "@/services/pipeline/listPipelines";
 import { listPipelineStages } from "@/services/pipeline/listPipelineStages";
+import { listCustomers } from "@/services/customer/listCustomers";
+import { Customer } from "@/types/customer";
 import {
   createMassBroadcast,
   previewRecipients,
@@ -53,6 +58,7 @@ export default function MassBroadcastCreatePage() {
   const [name, setName] = useState("");
   const [messages, setMessages] = useState<string[]>([""]);
   const [selectedPipelineId, setSelectedPipelineId] = useState("");
+  const [selectedCustomerIds, setSelectedCustomerIds] = useState<string[]>([]);
   const [includeTagIds, setIncludeTagIds] = useState<string[]>([]);
   const [excludeTagIds, setExcludeTagIds] = useState<string[]>([]);
   const [applyTagIds, setApplyTagIds] = useState<string[]>([]);
@@ -60,6 +66,11 @@ export default function MassBroadcastCreatePage() {
   const [messageDelaySeconds, setMessageDelaySeconds] = useState(30);
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
+
+  // Customer search state
+  const [customerSearch, setCustomerSearch] = useState("");
+  const [customerPage, setCustomerPage] = useState(1);
+  const [selectedCustomers, setSelectedCustomers] = useState<Customer[]>([]);
 
   // Pipeline stages for selection (all pipelines)
   const [allStages, setAllStages] = useState<
@@ -72,6 +83,82 @@ export default function MassBroadcastCreatePage() {
     queryFn: () => listPipelines(workspaceId),
     enabled: !!workspaceId,
   });
+
+  // Fetch customers for direct selection
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(customerSearch);
+      setCustomerPage(1);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [customerSearch]);
+
+  const { data: customersData, isLoading: isLoadingCustomers } = useQuery({
+    queryKey: [
+      "customers-broadcast",
+      workspaceId,
+      customerPage,
+      debouncedSearch,
+    ],
+    queryFn: () =>
+      listCustomers(
+        {
+          page: customerPage,
+          limit: 50,
+          search: debouncedSearch || undefined,
+        },
+        workspaceId,
+      ),
+    enabled: !!workspaceId,
+  });
+
+  // Format phone number for display
+  const formatPhone = (phone: string) => {
+    if (!phone || phone.length < 12) return phone;
+
+    const ddi = phone.slice(0, 2);
+    const ddd = phone.slice(2, 4);
+    const number = phone.slice(4);
+
+    if (number.length === 9) {
+      return `+${ddi} (${ddd}) ${number.slice(0, 5)}-${number.slice(5)}`;
+    } else if (number.length === 8) {
+      return `+${ddi} (${ddd}) ${number.slice(0, 4)}-${number.slice(4)}`;
+    }
+
+    return phone;
+  };
+
+  // Customer display label
+  const getCustomerLabel = (customer: Customer) => {
+    if (customer.name) return customer.name;
+    if (customer.phone) return formatPhone(customer.phone);
+    return customer.identifier || customer.id;
+  };
+
+  // Toggle customer selection
+  const toggleCustomer = (customer: Customer) => {
+    const isSelected = selectedCustomerIds.includes(customer.id);
+    if (isSelected) {
+      setSelectedCustomerIds((prev) => prev.filter((id) => id !== customer.id));
+      setSelectedCustomers((prev) => prev.filter((c) => c.id !== customer.id));
+    } else {
+      setSelectedCustomerIds((prev) => [...prev, customer.id]);
+      setSelectedCustomers((prev) => [...prev, customer]);
+    }
+  };
+
+  const removeCustomer = (customerId: string) => {
+    setSelectedCustomerIds((prev) => prev.filter((id) => id !== customerId));
+    setSelectedCustomers((prev) => prev.filter((c) => c.id !== customerId));
+  };
+
+  const clearAllCustomers = () => {
+    setSelectedCustomerIds([]);
+    setSelectedCustomers([]);
+  };
 
   // Fetch stages for all pipelines (for filter selection)
   useEffect(() => {
@@ -102,6 +189,8 @@ export default function MassBroadcastCreatePage() {
     mutationFn: () =>
       previewRecipients({
         workspaceId,
+        customerIds:
+          selectedCustomerIds.length > 0 ? selectedCustomerIds : undefined,
         includeTagIds: includeTagIds.length > 0 ? includeTagIds : undefined,
         excludeTagIds: excludeTagIds.length > 0 ? excludeTagIds : undefined,
         pipelineStageIds:
@@ -136,10 +225,36 @@ export default function MassBroadcastCreatePage() {
       });
       navigate(`/broadcasts/${broadcast.id}`);
     },
-    onError: (error: Error) => {
+    onError: (
+      error: Error & { response?: { data?: { message?: string } } },
+    ) => {
+      const apiMessage = error?.response?.data?.message || error?.message || "";
+
+      const errorMessages: Record<string, string> = {
+        "Pipeline not found":
+          "O funil selecionado não foi encontrado. Verifique se ele ainda existe.",
+        "Pipeline has no WhatsApp integration":
+          "O funil selecionado não possui integração com WhatsApp. Configure uma integração antes de criar a campanha.",
+        "No recipients found for the given criteria":
+          "Nenhum destinatário encontrado com os critérios selecionados. Ajuste os filtros e tente novamente.",
+        "Invalid tags":
+          "Uma ou mais tags selecionadas são inválidas. Verifique as tags e tente novamente.",
+        "Invalid pipeline stages":
+          "Uma ou mais etapas de funil selecionadas são inválidas. Verifique as etapas e tente novamente.",
+        "Messages cannot be empty":
+          "As mensagens não podem estar vazias. Adicione pelo menos uma mensagem com conteúdo.",
+        "Internal error":
+          "Ocorreu um erro interno no servidor. Tente novamente mais tarde.",
+      };
+
+      const description =
+        errorMessages[apiMessage] ||
+        apiMessage ||
+        "Ocorreu um erro ao criar a campanha.";
+
       toast({
         title: "Erro ao criar campanha",
-        description: error?.message || "Ocorreu um erro ao criar a campanha.",
+        description,
         variant: "destructive",
       });
     },
@@ -175,7 +290,9 @@ export default function MassBroadcastCreatePage() {
 
   // Validation
   const hasSelectionCriteria =
-    includeTagIds.length > 0 || selectedStageIds.length > 0;
+    selectedCustomerIds.length > 0 ||
+    includeTagIds.length > 0 ||
+    selectedStageIds.length > 0;
 
   const hasValidMessages = messages.some((m) => m.trim().length > 0);
 
@@ -207,6 +324,8 @@ export default function MassBroadcastCreatePage() {
       messages: filteredMessages,
       pipelineId: selectedPipelineId,
       workspaceId,
+      customerIds:
+        selectedCustomerIds.length > 0 ? selectedCustomerIds : undefined,
       includeTagIds: includeTagIds.length > 0 ? includeTagIds : undefined,
       excludeTagIds: excludeTagIds.length > 0 ? excludeTagIds : undefined,
       pipelineStageIds:
@@ -311,7 +430,15 @@ export default function MassBroadcastCreatePage() {
             <CardDescription>
               Adicione variações de mensagem. O sistema sorteia aleatoriamente
               uma para cada destinatário, ajudando a evitar detecção de spam.
-              Recomendamos pelo menos 3 variações.
+              Recomendamos pelo menos 3 variações. Use variáveis como{" "}
+              <code className="text-xs bg-muted px-1 py-0.5 rounded">
+                {"{{NOME}}"}
+              </code>{" "}
+              e{" "}
+              <code className="text-xs bg-muted px-1 py-0.5 rounded">
+                {"{{EMAIL}}"}
+              </code>{" "}
+              para personalizar cada mensagem.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -332,11 +459,10 @@ export default function MassBroadcastCreatePage() {
                     </Button>
                   )}
                 </div>
-                <Textarea
+                <MessageTemplateEditor
                   value={message}
-                  onChange={(e) => updateMessage(index, e.target.value)}
-                  placeholder="Digite a mensagem..."
-                  rows={3}
+                  onChange={(val) => updateMessage(index, val)}
+                  placeholder="Digite a mensagem... Use os botões abaixo para inserir variáveis"
                 />
               </div>
             ))}
@@ -461,6 +587,147 @@ export default function MassBroadcastCreatePage() {
                 <p className="text-xs text-muted-foreground">
                   {selectedStageIds.length} etapa(s) selecionada(s)
                 </p>
+              )}
+            </div>
+
+            <Separator />
+
+            {/* Direct Customer Selection */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label>Seleção Direta de Clientes</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Selecione clientes específicos para receber a mensagem
+                  </p>
+                </div>
+                {selectedCustomerIds.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary">
+                      {selectedCustomerIds.length} selecionado(s)
+                    </Badge>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={clearAllCustomers}
+                      className="h-7 text-xs text-muted-foreground"
+                    >
+                      Limpar todos
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              {/* Selected customers chips */}
+              {selectedCustomers.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {selectedCustomers.map((customer) => (
+                    <Badge
+                      key={customer.id}
+                      variant="secondary"
+                      className="gap-1 pr-1"
+                    >
+                      {getCustomerLabel(customer)}
+                      <button
+                        type="button"
+                        onClick={() => removeCustomer(customer.id)}
+                        className="ml-0.5 rounded-full hover:bg-muted-foreground/20 p-0.5"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+
+              {/* Search input */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar por nome ou telefone..."
+                  value={customerSearch}
+                  onChange={(e) => setCustomerSearch(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+
+              {/* Customer list */}
+              <div className="border rounded-md max-h-60 overflow-y-auto">
+                {isLoadingCustomers ? (
+                  <div className="flex items-center justify-center py-6">
+                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                  </div>
+                ) : !customersData?.items.length ? (
+                  <div className="py-6 text-center text-sm text-muted-foreground">
+                    {customerSearch
+                      ? "Nenhum cliente encontrado para a busca"
+                      : "Nenhum cliente disponível"}
+                  </div>
+                ) : (
+                  <div className="divide-y">
+                    {customersData.items.map((customer) => {
+                      const isSelected = selectedCustomerIds.includes(
+                        customer.id,
+                      );
+                      return (
+                        <label
+                          key={customer.id}
+                          className="flex items-center gap-3 px-3 py-2 hover:bg-muted/50 cursor-pointer transition-colors"
+                        >
+                          <Checkbox
+                            checked={isSelected}
+                            onCheckedChange={() => toggleCustomer(customer)}
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">
+                              {customer.name || "Sem nome"}
+                            </p>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {customer.phone
+                                ? formatPhone(customer.phone)
+                                : "Sem telefone"}
+                            </p>
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Pagination */}
+              {customersData && customersData.totalPages > 1 && (
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>
+                    Página {customerPage} de {customersData.totalPages} (
+                    {customersData.total} clientes)
+                  </span>
+                  <div className="flex gap-1">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs"
+                      disabled={customerPage <= 1}
+                      onClick={() => setCustomerPage((p) => Math.max(1, p - 1))}
+                    >
+                      Anterior
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs"
+                      disabled={
+                        customerPage >= (customersData?.totalPages ?? 1)
+                      }
+                      onClick={() => setCustomerPage((p) => p + 1)}
+                    >
+                      Próxima
+                    </Button>
+                  </div>
+                </div>
               )}
             </div>
 
