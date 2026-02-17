@@ -102,7 +102,7 @@ export const ConfigurationsTab: React.FC<ConfigurationsTabProps> = ({
                   value={whatsAppIntegrationName}
                   onValueChange={(value) =>
                     onWhatsAppIntegrationNameChange(
-                      value as WhatsAppIntegrationName
+                      value as WhatsAppIntegrationName,
                     )
                   }
                 >
@@ -147,31 +147,31 @@ export const ConfigurationsTab: React.FC<ConfigurationsTabProps> = ({
               {whatsAppIntegrationName === WHATSAPP_INTEGRATION_NAMES.ZAPI && (
                 <>
                   <div className="space-y-2">
-                    <Label>External Token</Label>
+                    <Label>Token da instância</Label>
                     <Input
                       value={externalToken}
                       onChange={(e) => onExternalTokenChange(e.target.value)}
-                      placeholder="Digite o token externo"
+                      placeholder="Digite o token da instância"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label>External Client Token</Label>
+                    <Label>Token de segurança da conta</Label>
                     <Input
                       value={externalClientToken}
                       onChange={(e) =>
                         onExternalClientTokenChange(e.target.value)
                       }
-                      placeholder="Digite o token do cliente"
+                      placeholder="Digite o token de segurança da conta"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Postback URL</Label>
+                    <Label>API da instância (URL)</Label>
                     <Input
                       value={postbackUrl}
                       onChange={(e) => onPostbackUrlChange(e.target.value)}
-                      placeholder="Digite a URL de postback"
+                      placeholder="Digite a URL da API da instância"
                     />
                   </div>
                 </>
