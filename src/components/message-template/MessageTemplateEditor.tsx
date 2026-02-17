@@ -8,7 +8,7 @@ import Paragraph from "@tiptap/extension-paragraph";
 import Text from "@tiptap/extension-text";
 import Placeholder from "@tiptap/extension-placeholder";
 import { Button } from "@/components/ui/button";
-import { User, Mail } from "lucide-react";
+import { User, Mail, UserRound } from "lucide-react";
 import {
   TEMPLATE_VARIABLES,
   templateHtmlToApiText,
@@ -17,7 +17,8 @@ import {
 } from "./template-utils";
 
 const VARIABLE_ICONS: Record<string, typeof User> = {
-  name: User,
+  firstName: User,
+  name: UserRound,
   email: Mail,
 };
 
@@ -37,7 +38,7 @@ const TemplateMention = Mention.extend({
         "data-label": node.attrs.label,
         class: "template-variable",
       },
-      `{{${display}}}`,
+      display,
     ];
   },
 
@@ -118,9 +119,25 @@ export function MessageTemplateEditor({
     (variable: (typeof TEMPLATE_VARIABLES)[number]) => {
       if (!editor) return;
 
-      editor
-        .chain()
-        .focus()
+      const { state } = editor;
+      const { selection } = state;
+      const { $from } = selection;
+
+      // Check if there's text before cursor position
+      const nodeBefore = $from.nodeBefore;
+      const textBefore = nodeBefore?.text || "";
+      const charBeforeCursor = textBefore.slice(-1);
+
+      // Add space before variable if there's text that doesn't end with whitespace
+      const needsSpaceBefore = textBefore.length > 0 && !/\s$/.test(textBefore);
+
+      const chain = editor.chain().focus();
+
+      if (needsSpaceBefore) {
+        chain.insertContent(" ");
+      }
+
+      chain
         .insertContent({
           type: "templateVariable",
           attrs: {
@@ -151,7 +168,7 @@ export function MessageTemplateEditor({
               onClick={() => insertVariable(variable)}
             >
               <Icon className="h-3 w-3" />
-              {`{{${variable.displayLabel}}}`}
+              {variable.displayLabel}
             </Button>
           );
         })}

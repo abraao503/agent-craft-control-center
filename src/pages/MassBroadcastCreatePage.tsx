@@ -430,13 +430,16 @@ export default function MassBroadcastCreatePage() {
             <CardDescription>
               Adicione variações de mensagem. O sistema sorteia aleatoriamente
               uma para cada destinatário, ajudando a evitar detecção de spam.
-              Recomendamos pelo menos 3 variações. Use variáveis como{" "}
+              Recomendamos pelo menos 3 variações. Use os botões abaixo de cada
+              mensagem para inserir variáveis como{" "}
+              <code className="text-xs bg-muted px-1 py-0.5 rounded">NOME</code>
+              ,{" "}
               <code className="text-xs bg-muted px-1 py-0.5 rounded">
-                {"{{NOME}}"}
+                NOME COMPLETO
               </code>{" "}
               e{" "}
               <code className="text-xs bg-muted px-1 py-0.5 rounded">
-                {"{{EMAIL}}"}
+                EMAIL
               </code>{" "}
               para personalizar cada mensagem.
             </CardDescription>

@@ -27,7 +27,7 @@ export function TemplateTextDisplay({
             key={i}
             className="inline-flex items-center bg-primary/15 text-primary border border-primary/30 rounded px-1.5 py-0 text-xs font-mono font-medium whitespace-nowrap"
           >
-            {`{{${getVariableDisplayLabel(segment.value)}}}`}
+            {getVariableDisplayLabel(segment.value)}
           </code>
         ) : (
           <React.Fragment key={i}>{segment.value}</React.Fragment>

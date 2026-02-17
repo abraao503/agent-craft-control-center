@@ -1,10 +1,11 @@
 /**
  * Available template variables for message templates.
  * `id` is the internal key used in the API as {{customer.<id>}}.
- * `displayLabel` is the friendly label shown to the user.
+ * `displayLabel` is the friendly label shown to the user (without braces).
  */
 export const TEMPLATE_VARIABLES = [
-  { id: "name", displayLabel: "NOME", apiKey: "name" },
+  { id: "firstName", displayLabel: "NOME", apiKey: "firstName" },
+  { id: "name", displayLabel: "NOME COMPLETO", apiKey: "name" },
   { id: "email", displayLabel: "EMAIL", apiKey: "email" },
 ] as const;
 
@@ -62,7 +63,7 @@ export function apiTextToTemplateHtml(text: string): string {
         /\{\{customer\.(\w+)\}\}/g,
         (_match, key) => {
           const display = getVariableDisplayLabel(key);
-          return `<span data-type="template-variable" data-id="${key}" data-label="${key}">{{${display}}}</span>`;
+          return `<span data-type="template-variable" data-id="${key}" data-label="${key}">${display}</span>`;
         },
       );
 
