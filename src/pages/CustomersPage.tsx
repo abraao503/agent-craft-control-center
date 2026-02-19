@@ -3,7 +3,14 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useQuery } from "@tanstack/react-query";
-import { Search, Users, ChevronUp, ChevronDown, Download } from "lucide-react";
+import {
+  Search,
+  Users,
+  ChevronUp,
+  ChevronDown,
+  Download,
+  FileUp,
+} from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { Customer, CustomerListParams } from "@/types/customer";
 import { listCustomers } from "@/services/customer";
@@ -25,9 +32,11 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { useWorkspaceManager } from "@/hooks/useWorkspaceManager";
+import { formatPhone } from "@/utils/phone";
 
 const CustomersPage = () => {
-  const [searchQuery, setSearchQuery] = useState("");
+  const [localSearchQuery, setLocalSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [queryParams, setQueryParams] = useState<CustomerListParams>({
     page: 1,
     limit: 10,
@@ -43,6 +52,24 @@ const CustomersPage = () => {
     trackLoadingState: true,
   });
 
+  // Debounce busca com 500ms de delay
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(localSearchQuery);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [localSearchQuery]);
+
+  // Atualiza params de query quando a busca debounceada muda
+  useEffect(() => {
+    setQueryParams((prev) => ({
+      ...prev,
+      search: debouncedSearch || undefined,
+      page: 1,
+    }));
+  }, [debouncedSearch]);
+
   const { isLoading, data, error, refetch } = useQuery({
     queryKey: ["listCustomers", queryParams, workspaceId],
     queryFn: () => listCustomers(queryParams, workspaceId || ""),
@@ -51,16 +78,16 @@ const CustomersPage = () => {
   useEffect(() => {
     if (error) {
       toast({
-        title: "Error",
-        description: "Failed to load customers. Please try again.",
+        title: "Erro",
+        description: "Falha ao carregar clientes. Tente novamente.",
         variant: "destructive",
       });
     }
   }, [error, toast]);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const query = e.target.value.toLowerCase();
-    setSearchQuery(query);
+    const query = e.target.value;
+    setLocalSearchQuery(query);
   };
 
   const handleSort = (field: string) => {
@@ -77,11 +104,6 @@ const CustomersPage = () => {
       page,
     }));
   };
-
-  const filteredCustomers =
-    data?.items.filter((customer) =>
-      customer.phone.toLowerCase().includes(searchQuery.toLowerCase())
-    ) || [];
 
   const getSortIcon = (field: string) => {
     if (queryParams.orderBy !== field) return null;
@@ -108,15 +130,23 @@ const CustomersPage = () => {
 
   return (
     <div>
-      <div className="container mx-auto py-6 w-100">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="container mx-auto py-6 px-6 w-100">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Clientes</h1>
             <p className="text-muted-foreground">
               Gerencie as informações dos seus clientes
             </p>
           </div>
-          <div>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => navigate("/customer-imports")}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <FileUp className="h-4 w-4" />
+              Importar Clientes
+            </Button>
             <Button
               onClick={() => navigate("/customers/export-xlsx")}
               className="flex items-center gap-2"
@@ -127,12 +157,12 @@ const CustomersPage = () => {
           </div>
         </div>
 
-        <div className="relative mb-4">
+        <div className="relative mb-6">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
             className="pl-10"
-            placeholder="Buscar clientes por telefone..."
-            value={searchQuery}
+            placeholder="Buscar clientes por nome ou telefone..."
+            value={localSearchQuery}
             onChange={handleSearch}
           />
         </div>
@@ -146,22 +176,24 @@ const CustomersPage = () => {
               />
             ))}
           </div>
-        ) : filteredCustomers.length === 0 ? (
+        ) : (data?.items.length ?? 0) === 0 ? (
           <div className="text-center py-12 border rounded-lg">
-            {searchQuery ? (
+            {localSearchQuery ? (
               <>
-                <h3 className="font-medium text-lg">No customers found</h3>
+                <h3 className="font-medium text-lg">
+                  Nenhum cliente encontrado
+                </h3>
                 <p className="text-muted-foreground">
-                  No customers match your search query. Try using different
-                  keywords.
+                  Nenhum cliente corresponde à sua busca. Tente usar
+                  palavras-chave diferentes.
                 </p>
               </>
             ) : (
               <>
-                <h3 className="font-medium text-lg">No customers yet</h3>
+                <h3 className="font-medium text-lg">Nenhum cliente ainda</h3>
                 <p className="text-muted-foreground mb-4">
-                  When customers interact with your system, they will appear
-                  here
+                  Quando os clientes interagirem com seu sistema, eles
+                  aparecerão aqui
                 </p>
                 <Users className="h-12 w-12 mx-auto text-muted-foreground" />
               </>
@@ -173,7 +205,7 @@ const CustomersPage = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Identificador</TableHead>
+                    <TableHead>Nome</TableHead>
                     <TableHead>Telefone</TableHead>
                     <TableHead>
                       <div
@@ -196,14 +228,14 @@ const CustomersPage = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredCustomers.map((customer) => (
+                  {data?.items.map((customer) => (
                     <TableRow
                       key={customer.id}
                       className="cursor-pointer hover:bg-muted/50"
                       onClick={() => handleRowClick(customer)}
                     >
-                      <TableCell>{customer.identifier}</TableCell>
-                      <TableCell>{customer.phone}</TableCell>
+                      <TableCell>{customer.name}</TableCell>
+                      <TableCell>{formatPhone(customer.phone)}</TableCell>
                       <TableCell>{formatDate(customer.createdAt)}</TableCell>
                       <TableCell>{formatDate(customer.updatedAt)}</TableCell>
                     </TableRow>
@@ -213,7 +245,7 @@ const CustomersPage = () => {
             </div>
 
             {data && data.totalPages > 1 && (
-              <Pagination className="mt-4">
+              <Pagination className="mt-6">
                 <PaginationContent>
                   <PaginationItem>
                     <PaginationPrevious
@@ -231,7 +263,7 @@ const CustomersPage = () => {
                   {[...Array(data.totalPages)].map((_, i) => {
                     const page = i + 1;
 
-                    // Only show first, last, current, and pages immediately adjacent to current
+                    // Mostrar apenas primeira, última, atual e páginas adjacentes
                     if (
                       page === 1 ||
                       page === data.totalPages ||
@@ -270,7 +302,7 @@ const CustomersPage = () => {
                     <PaginationNext
                       onClick={() =>
                         handlePageChange(
-                          Math.min(data.totalPages, queryParams.page! + 1)
+                          Math.min(data.totalPages, queryParams.page! + 1),
                         )
                       }
                       className={

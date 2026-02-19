@@ -246,7 +246,7 @@ export default function MassBroadcastPage() {
               return (
                 <Card
                   key={broadcast.id}
-                  className="cursor-pointer hover:shadow-md transition-shadow"
+                  className="cursor-pointer hover:shadow-md transition-shadow flex flex-col h-full"
                   onClick={() => navigate(`/broadcasts/${broadcast.id}`)}
                 >
                   <CardHeader className="pb-3">
@@ -269,45 +269,49 @@ export default function MassBroadcastPage() {
                       mensagem • {broadcast.totalRecipients} destinatário(s)
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="pt-0">
-                    {/* Progress bar */}
-                    {broadcast.status === "SENDING" ||
-                    broadcast.status === "PAUSED" ||
-                    broadcast.status === "COMPLETED" ? (
-                      <div className="mb-3">
-                        <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                          <span>Progresso</span>
-                          <span>{progress}%</span>
+                  <CardContent className="pt-0 flex flex-col justify-between h-full">
+                    <div>
+                      {/* Progress bar */}
+                      {broadcast.status === "SENDING" ||
+                      broadcast.status === "PAUSED" ||
+                      broadcast.status === "COMPLETED" ? (
+                        <div className="mb-3">
+                          <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                            <span>Progresso</span>
+                            <span>{progress}%</span>
+                          </div>
+                          <div className="w-full bg-muted rounded-full h-2">
+                            <div
+                              className="bg-primary rounded-full h-2 transition-all"
+                              style={{ width: `${progress}%` }}
+                            />
+                          </div>
+                          <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                            <span>
+                              {broadcast.sentCount} enviado(s)
+                              {broadcast.failedCount > 0 && (
+                                <span className="text-red-600">
+                                  {" "}
+                                  • {broadcast.failedCount} falha(s)
+                                </span>
+                              )}
+                            </span>
+                            <span>de {broadcast.totalRecipients}</span>
+                          </div>
                         </div>
-                        <div className="w-full bg-muted rounded-full h-2">
-                          <div
-                            className="bg-primary rounded-full h-2 transition-all"
-                            style={{ width: `${progress}%` }}
-                          />
-                        </div>
-                        <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                          <span>
-                            {broadcast.sentCount} enviado(s)
-                            {broadcast.failedCount > 0 && (
-                              <span className="text-red-600">
-                                {" "}
-                                • {broadcast.failedCount} falha(s)
-                              </span>
-                            )}
-                          </span>
-                          <span>de {broadcast.totalRecipients}</span>
-                        </div>
-                      </div>
-                    ) : null}
+                      ) : null}
 
-                    <div className="text-xs text-muted-foreground space-y-1">
-                      <p>Criado em: {formatDate(broadcast.createdAt)}</p>
-                      {broadcast.startedAt && (
-                        <p>Iniciado em: {formatDate(broadcast.startedAt)}</p>
-                      )}
-                      {broadcast.completedAt && (
-                        <p>Concluído em: {formatDate(broadcast.completedAt)}</p>
-                      )}
+                      <div className="text-xs text-muted-foreground space-y-1">
+                        <p>Criado em: {formatDate(broadcast.createdAt)}</p>
+                        {broadcast.startedAt && (
+                          <p>Iniciado em: {formatDate(broadcast.startedAt)}</p>
+                        )}
+                        {broadcast.completedAt && (
+                          <p>
+                            Concluído em: {formatDate(broadcast.completedAt)}
+                          </p>
+                        )}
+                      </div>
                     </div>
 
                     <div className="flex items-center gap-2 mt-4 justify-end">

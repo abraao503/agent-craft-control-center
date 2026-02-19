@@ -46,6 +46,7 @@ import {
 } from "@/services/mass-broadcast";
 import { CreateMassBroadcastInput } from "@/types/mass-broadcast";
 import { PipelineStageMinimal } from "@/types/pipeline";
+import { formatPhone, getCustomerLabel } from "@/utils/phone";
 
 export default function MassBroadcastCreatePage() {
   const navigate = useNavigate();
@@ -113,30 +114,6 @@ export default function MassBroadcastCreatePage() {
       ),
     enabled: !!workspaceId,
   });
-
-  // Format phone number for display
-  const formatPhone = (phone: string) => {
-    if (!phone || phone.length < 12) return phone;
-
-    const ddi = phone.slice(0, 2);
-    const ddd = phone.slice(2, 4);
-    const number = phone.slice(4);
-
-    if (number.length === 9) {
-      return `+${ddi} (${ddd}) ${number.slice(0, 5)}-${number.slice(5)}`;
-    } else if (number.length === 8) {
-      return `+${ddi} (${ddd}) ${number.slice(0, 4)}-${number.slice(4)}`;
-    }
-
-    return phone;
-  };
-
-  // Customer display label
-  const getCustomerLabel = (customer: Customer) => {
-    if (customer.name) return customer.name;
-    if (customer.phone) return formatPhone(customer.phone);
-    return customer.identifier || customer.id;
-  };
 
   // Toggle customer selection
   const toggleCustomer = (customer: Customer) => {

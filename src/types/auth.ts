@@ -54,7 +54,10 @@ export type Permission =
   | "view:chat"
   | "send:message"
   | "view:workspace-reports"
-  | "view:company-reports";
+  | "view:company-reports"
+  | "import:customers"
+  | "view:customer-imports"
+  | "download:customer-import-errors";
 
 export interface UserProfile {
   id: string;

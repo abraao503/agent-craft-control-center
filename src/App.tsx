@@ -51,6 +51,8 @@ import DealWebhookEditPage from "./pages/DealWebhookEditPage";
 import MassBroadcastPage from "./pages/MassBroadcastPage";
 import MassBroadcastCreatePage from "./pages/MassBroadcastCreatePage";
 import MassBroadcastDetailPage from "./pages/MassBroadcastDetailPage";
+import CustomerImportPage from "./pages/CustomerImportPage";
+import CustomerImportDetailPage from "./pages/CustomerImportDetailPage";
 import Sidebar from "./components/layout/Sidebar";
 import Header from "./components/layout/Header";
 import { SidebarProvider } from "./components/ui/sidebar";
@@ -250,6 +252,8 @@ const DealWebhookEditViewPage = () => <DealWebhookEditPage />;
 const MassBroadcastListPage = () => <MassBroadcastPage />;
 const MassBroadcastCreateViewPage = () => <MassBroadcastCreatePage />;
 const MassBroadcastDetailViewPage = () => <MassBroadcastDetailPage />;
+const CustomerImportListPage = () => <CustomerImportPage />;
+const CustomerImportDetailViewPage = () => <CustomerImportDetailPage />;
 const NotFoundPage = () => <NotFound />;
 
 const App = () => (
@@ -353,6 +357,14 @@ const App = () => (
                   <Route
                     path="/broadcasts/:id"
                     element={<MassBroadcastDetailViewPage />}
+                  />
+                  <Route
+                    path="/customer-imports"
+                    element={<CustomerImportListPage />}
+                  />
+                  <Route
+                    path="/customer-imports/:id"
+                    element={<CustomerImportDetailViewPage />}
                   />
                   <Route
                     path="/admin/companies"
