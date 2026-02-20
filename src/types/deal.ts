@@ -5,6 +5,7 @@ export interface RelatedMinimal {
   id: string;
   name: string;
   chatId?: string;
+  chatUnreadCount?: number;
 }
 
 export interface DealListItem {

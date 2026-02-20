@@ -65,6 +65,24 @@ const getInitials = (name: string) => {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 };
 
+const formatUnreadMessagesTitle = (count: number): string => {
+  if (count === 1) return "1 nova mensagem";
+  return `${count} novas mensagens`;
+};
+
+// Customizar posição do badge: offsetX e offsetY em pixels
+// offsetX > 0 = para a direita; offsetX < 0 = para a esquerda
+// offsetY > 0 = para baixo; offsetY < 0 = para cima
+// Ex: { offsetX: 2, offsetY: -2 } = 2px à direita e 2px para cima
+const getBadgePositionStyle = (
+  offsetX = 0,
+  offsetY = 0,
+): React.CSSProperties => ({
+  position: "absolute",
+  right: `calc(-50% + ${offsetX}px)`,
+  top: `calc(-50% + ${offsetY}px)`,
+});
+
 const DealTagsPopover: React.FC<{
   tagIds?: string[];
   workspaceId?: string;
@@ -91,8 +109,8 @@ const DealTagsPopover: React.FC<{
             e.stopPropagation();
           }}
         >
-          <TagIcon className="h-3.5 w-3.5 text-muted-foreground" />
-          <span className="text-xs text-muted-foreground/80">
+          <TagIcon className="h-[18px] w-[18px] text-muted-foreground" />
+          <span className="text-sm text-muted-foreground/80">
             {tagIds.length}
           </span>
         </div>
@@ -236,7 +254,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
 
   const handleOpenChat = (
     e: React.MouseEvent | React.TouchEvent,
-    chatId?: string
+    chatId?: string,
   ) => {
     e.preventDefault();
     e.stopPropagation();
@@ -251,7 +269,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
     probability != null
       ? stageDeals.reduce(
           (acc, d) => acc + (d.value || 0) * (probability / 100),
-          0
+          0,
         )
       : undefined;
   const headerColor = stageMeta?.color || stage.color || undefined;
@@ -317,7 +335,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
           <div
             className={cn(
               "rounded-md transition ring-offset-1",
-              dragOverStage === stage.id && "ring-2 ring-primary/40"
+              dragOverStage === stage.id && "ring-2 ring-primary/40",
             )}
           >
             <ScrollArea
@@ -331,7 +349,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                     key={deal.id}
                     className={cn(
                       "rounded-md border p-3 bg-card shadow-sm hover:shadow transition group relative",
-                      isMoving && "opacity-70"
+                      isMoving && "opacity-70",
                     )}
                     draggable
                     onDragStart={(e) => {
@@ -383,7 +401,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                             "inline-block px-2 py-0.5 rounded text-xs font-medium",
                             new Date(deal.dueDate) < new Date()
                               ? "bg-red-500/90 text-white"
-                              : "bg-muted text-foreground/80"
+                              : "bg-muted text-foreground/80",
                           )}
                         >
                           {(() => {
@@ -404,7 +422,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                       <span className="font-semibold text-foreground/85">
                         {formatCurrency(
                           deal.value ?? 0,
-                          deal.currency ?? "BRL"
+                          deal.currency ?? "BRL",
                         )}
                       </span>
                       <span className="text-xs text-foreground/90 font-medium">
@@ -414,7 +432,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
 
                     {/* Buttons area - not draggable */}
                     <div
-                      className="flex items-center gap-1 mt-2 justify-end"
+                      className="flex items-center gap-1 mt-5 justify-end"
                       data-no-drag="true"
                     >
                       <DealTagsPopover
@@ -423,10 +441,10 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                       />
                       <div
                         className={cn(
-                          "inline-flex items-center justify-center h-7 w-7 p-0 rounded-md transition-colors",
+                          "relative inline-flex items-center justify-center h-7 w-7 p-0 rounded-md transition-colors",
                           deal.customer?.chatId
                             ? "hover:bg-accent hover:text-accent-foreground cursor-pointer"
-                            : "opacity-50 cursor-not-allowed"
+                            : "opacity-50 cursor-not-allowed",
                         )}
                         onClick={(e) => {
                           if (!deal.customer?.chatId) return;
@@ -436,11 +454,26 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                         }}
                         title={
                           deal.customer?.chatId
-                            ? "Open chat"
-                            : "No chat available"
+                            ? deal.customer?.chatUnreadCount
+                              ? formatUnreadMessagesTitle(
+                                  deal.customer.chatUnreadCount,
+                                )
+                              : "Abrir chat"
+                            : "Chat não disponível"
                         }
                       >
-                        <MessageCircle className="h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+                        <MessageCircle className="h-[20px] w-[20px] text-muted-foreground pointer-events-none" />
+                        {deal.customer?.chatUnreadCount != null &&
+                          deal.customer.chatUnreadCount > 0 && (
+                            <span
+                              style={getBadgePositionStyle(10, 10)}
+                              className="flex items-center justify-center min-w-[17px] h-[17px] px-0.5 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold leading-none pointer-events-none"
+                            >
+                              {deal.customer.chatUnreadCount > 99
+                                ? "99+"
+                                : deal.customer.chatUnreadCount}
+                            </span>
+                          )}
                       </div>
                     </div>
                   </div>
