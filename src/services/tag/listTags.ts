@@ -9,9 +9,9 @@ interface PaginatedResponse<T> {
   totalPages: number;
 }
 
-export const listTags = async (workspaceId: string): Promise<Tag[]> => {
+export const listTags = async (workspaceId: string, search?: string): Promise<Tag[]> => {
   const response = await api.get<PaginatedResponse<Tag>>("/tag", {
-    params: { workspaceId }
+    params: { workspaceId, search, limit: 100 }
   });
   return response.data.items || [];
 };

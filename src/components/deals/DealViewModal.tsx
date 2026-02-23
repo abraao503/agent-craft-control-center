@@ -73,7 +73,7 @@ import {
 import { SelectFieldTypeModal } from "./SelectFieldTypeModal";
 import { CreateFieldModal } from "./CreateFieldModal";
 import { EditFieldModal } from "./EditFieldModal";
-import { DealTagsSelector } from "./DealTagsSelector";
+import { TagsSelector } from "@/components/tags/TagsSelector";
 import { UserSelector } from "./UserSelector";
 import { updateStageFormField } from "@/services/stage-form-field/updateStageFormField";
 import { updateDeal } from "@/services/deal/updateDeal";
@@ -1115,12 +1115,13 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
                     <h3 className="font-semibold mb-3">Tags</h3>
 
                     <div className="space-y-2">
-                      <DealTagsSelector
+                      <TagsSelector
                         allTags={allTags}
                         selectedTagIds={selectedTagIds}
                         onTagsChange={handleTagsChange}
                         onSave={(tagIds) => updateTagsMutation.mutate(tagIds)}
                         isLoading={updateTagsMutation.isPending}
+                        workspaceId={workspaceId}
                       />
                     </div>
                   </div>

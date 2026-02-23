@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import { Check, ChevronsUpDown, X } from "lucide-react";
+import { Check, ChevronsUpDown, X, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -33,6 +33,8 @@ interface MultiSelectProps {
   renderOption?: (option: Option) => React.ReactNode;
   renderSelection?: (selected: Option[]) => React.ReactNode;
   onOpenChange?: (open: boolean) => void;
+  onCreate?: (value: string) => void;
+  onSearchChange?: (value: string) => void;
 }
 
 export function MultiSelect({
@@ -44,6 +46,8 @@ export function MultiSelect({
   renderOption,
   renderSelection,
   onOpenChange,
+  onCreate,
+  onSearchChange,
 }: MultiSelectProps) {
   const [open, setOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
@@ -52,6 +56,10 @@ export function MultiSelect({
   const handleOpenChange = (newOpen: boolean) => {
     setOpen(newOpen);
     onOpenChange?.(newOpen);
+    if (!newOpen) {
+      setSearchValue("");
+      onSearchChange?.("");
+    }
   };
 
   // Mapear os IDs selecionados para objetos de opção completos
@@ -135,9 +143,12 @@ export function MultiSelect({
       <PopoverContent className="w-full p-0" align="start">
         <Command onKeyDown={handleKeyDown}>
           <CommandInput
-            placeholder="Pesquisar..."
+            placeholder="Pesquisar ou criar tags..."
             value={searchValue}
-            onValueChange={setSearchValue}
+            onValueChange={(val) => {
+              setSearchValue(val);
+              onSearchChange?.(val);
+            }}
           />
           <CommandList>
             <CommandEmpty>Nenhum resultado encontrado.</CommandEmpty>
@@ -145,7 +156,7 @@ export function MultiSelect({
               {options.map((option) => (
                 <CommandItem
                   key={option.value}
-                  value={option.value}
+                  value={option.label}
                   onSelect={() => handleSelect(option.value)}
                 >
                   <div className="flex items-center gap-2 w-full">
@@ -166,6 +177,22 @@ export function MultiSelect({
                 </CommandItem>
               ))}
             </CommandGroup>
+            {onCreate && searchValue && !options.some((o) => o.label.toLowerCase() === searchValue.toLowerCase()) && (
+              <CommandGroup>
+                <CommandItem
+                  value={searchValue}
+                  onSelect={(val) => {
+                     // Not using val because of lucide lowercase transformation issues sometimes, using exact searchValue
+                     onCreate(searchValue);
+                     // Clear state is done externally or here, but popover stays open when adding. We manually handle it in the callback
+                  }}
+                  className="cursor-pointer border border-dashed hover:bg-muted font-medium"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Criar tag "{searchValue}"
+                </CommandItem>
+              </CommandGroup>
+            )}
           </CommandList>
         </Command>
       </PopoverContent>
