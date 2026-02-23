@@ -8,8 +8,11 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  Loader2,
   Pencil,
+  Image,
+  FileAudio,
+  FileText,
+  Repeat,
 } from "lucide-react";
 import {
   Dialog,
@@ -20,6 +23,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import {
   listDealFollowUps,
@@ -28,6 +32,8 @@ import {
 import { DealFollowUp, DealFollowUpStatus } from "@/types/deal-follow-up";
 import { CreateDealFollowUpDialog } from "./CreateDealFollowUpDialog";
 import { EditDealFollowUpDialog } from "./EditDealFollowUpDialog";
+import { getRecurrenceDescription } from "./followUpUtils";
+import { getFollowUpErrorMessage } from "./errorMessages";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -57,7 +63,7 @@ export const DealFollowUpListDialog: React.FC<DealFollowUpListDialogProps> = ({
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [followUpToEdit, setFollowUpToEdit] = useState<DealFollowUp | null>(
-    null
+    null,
   );
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [followUpToDelete, setFollowUpToDelete] = useState<string | null>(null);
@@ -81,10 +87,22 @@ export const DealFollowUpListDialog: React.FC<DealFollowUpListDialogProps> = ({
       setDeleteConfirmOpen(false);
       setFollowUpToDelete(null);
     },
-    onError: () => {
+    onError: (error: unknown) => {
+      let errorMessage = "Falha ao excluir agendamento.";
+
+      if (error && typeof error === "object" && "response" in error) {
+        const axiosError = error as {
+          response?: { data?: { message?: string } };
+        };
+        const apiErrorMessage = axiosError.response?.data?.message;
+        if (apiErrorMessage) {
+          errorMessage = getFollowUpErrorMessage(apiErrorMessage);
+        }
+      }
+
       toast({
         title: "Erro",
-        description: "Falha ao excluir agendamento.",
+        description: errorMessage,
         variant: "destructive",
       });
     },
@@ -165,8 +183,38 @@ export const DealFollowUpListDialog: React.FC<DealFollowUpListDialogProps> = ({
 
             <ScrollArea className="h-[calc(80vh-180px)] pr-4">
               {isLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                <div className="space-y-3">
+                  {[...Array(3)].map((_, i) => (
+                    <div
+                      key={i}
+                      className="border rounded-lg p-4 space-y-3"
+                    >
+                      {/* Título + badge */}
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Skeleton className="h-5 w-40" />
+                            <Skeleton className="h-5 w-16 rounded-full" />
+                          </div>
+                          <Skeleton className="h-4 w-full" />
+                          <Skeleton className="h-4 w-3/4" />
+                        </div>
+                        {/* Botões */}
+                        <div className="flex items-center gap-1 shrink-0">
+                          <Skeleton className="h-8 w-8 rounded-md" />
+                          <Skeleton className="h-8 w-8 rounded-md" />
+                        </div>
+                      </div>
+                      {/* Data */}
+                      <div className="flex items-center gap-4">
+                        <Skeleton className="h-4 w-48" />
+                      </div>
+                      {/* Badges de mídia/recorrência */}
+                      <div className="flex gap-2">
+                        <Skeleton className="h-5 w-20 rounded-full" />
+                      </div>
+                    </div>
+                  ))}
                 </div>
               ) : data && data.items.length > 0 ? (
                 <div className="space-y-3">
@@ -239,6 +287,40 @@ export const DealFollowUpListDialog: React.FC<DealFollowUpListDialogProps> = ({
                               {formatDateTime(followUp.lastAttemptAt)}
                             </span>
                           </div>
+                        )}
+                      </div>
+
+                      {/* Media and Recurrence badges */}
+                      <div className="flex flex-wrap items-center gap-2">
+                        {followUp.mediaType && (
+                          <Badge
+                            variant="outline"
+                            className="flex items-center gap-1 text-xs"
+                          >
+                            {followUp.mediaType === "image" && (
+                              <Image className="h-3 w-3" />
+                            )}
+                            {followUp.mediaType === "audio" && (
+                              <FileAudio className="h-3 w-3" />
+                            )}
+                            {followUp.mediaType === "document" && (
+                              <FileText className="h-3 w-3" />
+                            )}
+                            {followUp.mediaType === "image"
+                              ? "Imagem"
+                              : followUp.mediaType === "audio"
+                                ? "Áudio"
+                                : "Documento"}
+                          </Badge>
+                        )}
+                        {followUp.recurrence && (
+                          <Badge
+                            variant="outline"
+                            className="flex items-center gap-1 text-xs"
+                          >
+                            <Repeat className="h-3 w-3" />
+                            {getRecurrenceDescription(followUp.recurrence)}
+                          </Badge>
                         )}
                       </div>
 

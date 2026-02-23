@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -21,10 +21,15 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { updateDealFollowUp } from "@/services/deal/dealFollowUp";
-import { DealFollowUp } from "@/types/deal-follow-up";
+import { DealFollowUp, Recurrence } from "@/types/deal-follow-up";
 import { Loader2 } from "lucide-react";
+import { RecurrenceSelector } from "./RecurrenceSelector";
+import { MediaAttachment } from "./MediaAttachment";
+import { getFollowUpErrorMessage } from "./errorMessages";
 
 // Schema de validação
 const formSchema = z.object({
@@ -53,6 +58,10 @@ export const EditDealFollowUpDialog: React.FC<EditDealFollowUpDialogProps> = ({
 }) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [recurrence, setRecurrence] = useState<Recurrence | undefined>(
+    undefined,
+  );
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -80,6 +89,10 @@ export const EditDealFollowUpDialog: React.FC<EditDealFollowUpDialogProps> = ({
         message: followUp.message,
         scheduledAt: localDateTime,
       });
+
+      // Restore recurrence and media state
+      setRecurrence(followUp.recurrence ?? undefined);
+      setSelectedFile(null);
     }
   }, [followUp, form]);
 
@@ -95,6 +108,8 @@ export const EditDealFollowUpDialog: React.FC<EditDealFollowUpDialogProps> = ({
         title: data.title,
         message: data.message,
         scheduledAt: utcDate,
+        file: selectedFile ?? undefined,
+        recurrence,
       });
     },
     onSuccess: () => {
@@ -112,7 +127,10 @@ export const EditDealFollowUpDialog: React.FC<EditDealFollowUpDialogProps> = ({
         const axiosError = error as {
           response?: { data?: { message?: string } };
         };
-        errorMessage = axiosError.response?.data?.message || errorMessage;
+        const apiErrorMessage = axiosError.response?.data?.message;
+        if (apiErrorMessage) {
+          errorMessage = getFollowUpErrorMessage(apiErrorMessage);
+        }
       }
 
       toast({
@@ -143,6 +161,8 @@ export const EditDealFollowUpDialog: React.FC<EditDealFollowUpDialogProps> = ({
   const handleOpenChange = (open: boolean) => {
     if (!open && !updateMutation.isPending) {
       form.reset();
+      setSelectedFile(null);
+      setRecurrence(undefined);
     }
     onOpenChange(open);
   };
@@ -163,87 +183,110 @@ export const EditDealFollowUpDialog: React.FC<EditDealFollowUpDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>Editar Agendamento</DialogTitle>
         </DialogHeader>
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Título *</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="Ex: Lembrete de Proposta"
-                      {...field}
-                      disabled={updateMutation.isPending}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="message"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Mensagem *</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Digite a mensagem que será enviada ao cliente..."
-                      rows={5}
-                      {...field}
-                      disabled={updateMutation.isPending}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="scheduledAt"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Data e Hora Agendada *</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="datetime-local"
-                      min={getMinDateTime()}
-                      {...field}
-                      disabled={updateMutation.isPending}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => handleOpenChange(false)}
-                disabled={updateMutation.isPending}
-              >
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={updateMutation.isPending}>
-                {updateMutation.isPending && (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        <ScrollArea className="max-h-[calc(90vh-140px)] pr-4">
+          <Form {...form}>
+            <form
+              onSubmit={form.handleSubmit(onSubmit)}
+              className="space-y-4 pb-2"
+            >
+              <FormField
+                control={form.control}
+                name="title"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Título *</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Ex: Lembrete de Proposta"
+                        {...field}
+                        disabled={updateMutation.isPending}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
-                Salvar Alterações
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
+              />
+
+              <FormField
+                control={form.control}
+                name="message"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Mensagem *</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Digite a mensagem que será enviada ao cliente..."
+                        rows={4}
+                        {...field}
+                        disabled={updateMutation.isPending}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Anexo de mídia */}
+              <MediaAttachment
+                file={selectedFile}
+                onChange={setSelectedFile}
+                existingMediaUrl={followUp.mediaUrl}
+                existingMediaType={followUp.mediaType}
+                disabled={updateMutation.isPending}
+              />
+
+              <FormField
+                control={form.control}
+                name="scheduledAt"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Data e Hora Agendada *</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="datetime-local"
+                        min={getMinDateTime()}
+                        {...field}
+                        disabled={updateMutation.isPending}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <Separator />
+
+              {/* Recorrência */}
+              <RecurrenceSelector
+                value={recurrence}
+                onChange={setRecurrence}
+                disabled={updateMutation.isPending}
+              />
+
+              <DialogFooter className="pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => handleOpenChange(false)}
+                  disabled={updateMutation.isPending}
+                >
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={updateMutation.isPending}>
+                  {updateMutation.isPending && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  Salvar Alterações
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );
