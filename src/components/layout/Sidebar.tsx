@@ -359,7 +359,10 @@ const SidebarMenuContent = () => {
   const { isLoading: isWorkspaceLoading } = useWorkspace();
 
   const isActive = (path: string) => {
-    return location.pathname === path;
+    if (path === "/") {
+      return location.pathname === "/";
+    }
+    return location.pathname.startsWith(path);
   };
 
   interface MenuItem {
