@@ -361,8 +361,8 @@ const SidebarMenuContent = () => {
   const { isLoading: isWorkspaceLoading } = useWorkspace();
 
   const isActive = (path: string) => {
-    if (path === "/") {
-      return location.pathname === "/";
+    if (path === "/dashboard") {
+      return location.pathname === "/dashboard";
     }
     return location.pathname.startsWith(path);
   };
@@ -376,7 +376,7 @@ const SidebarMenuContent = () => {
 
   const allMenuItems: MenuItem[] = [
     {
-      path: "/",
+      path: "/dashboard",
       label: "Dashboard",
       icon: <LayoutDashboard className="h-5 w-5" />,
     },
@@ -534,7 +534,7 @@ const SidebarMenuContent = () => {
         )}
       >
         <Link
-          to="/"
+          to="/dashboard"
           className={cn(
             "flex items-center space-x-2",
             isCollapsed && "flex-col space-x-0 space-y-2",

@@ -56,6 +56,7 @@ import MassBroadcastDetailPage from "./pages/MassBroadcastDetailPage";
 import CustomerImportPage from "./pages/CustomerImportPage";
 import CustomerImportDetailPage from "./pages/CustomerImportDetailPage";
 import IntegrationResponsePage from "./pages/IntegrationResponsePage";
+import LandingPage from "./pages/LandingPage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsOfServicePage from "./pages/TermsOfServicePage";
 import Sidebar from "./components/layout/Sidebar";
@@ -273,6 +274,7 @@ const App = () => (
             <Sonner />
             <BrowserRouter>
               <Routes>
+                <Route path="/" element={<LandingPage />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
                 <Route path="/privacy" element={<PrivacyPolicyPage />} />
@@ -284,7 +286,7 @@ const App = () => (
 
                 {/* Rotas autenticadas com layout persistente */}
                 <Route element={<AppLayout />}>
-                  <Route path="/" element={<DashboardPage />} />
+                  <Route path="/dashboard" element={<DashboardPage />} />
                   <Route path="/agents" element={<AgentsListPage />} />
                   <Route path="/agents/new" element={<AgentCreatePage />} />
                   <Route path="/agents/edit/:id" element={<AgentEditPage />} />
