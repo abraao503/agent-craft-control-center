@@ -12,7 +12,8 @@ type LocationState = {
 const Login = () => {
   const { user, isLoading } = useAuth();
   const location = useLocation();
-  const from = (location.state as LocationState | null)?.from?.pathname || "/";
+  const from =
+    (location.state as LocationState | null)?.from?.pathname || "/dashboard";
 
   if (isLoading) {
     return (

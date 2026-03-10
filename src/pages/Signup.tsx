@@ -7,7 +7,7 @@ const Signup = () => {
   const { user } = useAuth();
 
   if (user) {
-    return <Navigate to="/" />;
+    return <Navigate to="/dashboard" />;
   }
 
   return (
