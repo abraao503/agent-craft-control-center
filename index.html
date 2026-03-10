@@ -14,12 +14,21 @@
   </head>
 
   <body>
-    <div id="root">
+    <div id="root"></div>
+
+    <!-- Links estáticos para crawlers (Google, etc.) - ficam FORA do #root para não serem sobrescritos pelo React -->
+    <noscript>
       <div style="display: flex; justify-content: center; gap: 20px; padding: 40px; font-family: sans-serif;">
-        <a href="https://app.7agentes.com.br/privacy" style="color: blue; text-decoration: underline;">Política de Privacidade</a>
-        <a href="https://app.7agentes.com.br/terms" style="color: blue; text-decoration: underline;">Termos de Serviço</a>
+        <a href="/privacy.html">Política de Privacidade</a>
+        <a href="/terms.html">Termos de Serviço</a>
       </div>
-    </div>
+    </noscript>
+
+    <footer style="position: fixed; bottom: 0; width: 100%; text-align: center; padding: 10px; font-family: sans-serif; font-size: 12px; z-index: -1;">
+      <a href="/privacy.html" style="color: #6b7280; margin-right: 16px;">Política de Privacidade</a>
+      <a href="/terms.html" style="color: #6b7280;">Termos de Serviço</a>
+    </footer>
+
     <!-- IMPORTANT: DO NOT REMOVE THIS SCRIPT TAG OR THIS VERY COMMENT! -->
     <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
     <script type="module" src="/src/main.tsx"></script>
