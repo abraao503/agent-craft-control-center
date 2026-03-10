@@ -18,6 +18,7 @@ import {
   DollarSignIcon,
   Webhook,
   Megaphone,
+  Calendar as CalendarIcon,
 } from "lucide-react";
 import { useAuth } from "@/contexts/auth/hooks";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -27,6 +28,7 @@ import {
   SidebarContent as SidebarContentComponent,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { Plug } from "lucide-react";
 import { useState, useEffect } from "react";
 import {
   Tooltip,
@@ -390,6 +392,11 @@ const SidebarMenuContent = () => {
       icon: <DollarSignIcon className="h-5 w-5" />,
     },
     {
+      path: "/calendar",
+      label: "Calendário",
+      icon: <CalendarIcon className="h-5 w-5" />,
+    },
+    {
       path: "/customers",
       label: "Clientes",
       icon: <Users className="h-5 w-5" />,
@@ -403,6 +410,11 @@ const SidebarMenuContent = () => {
       path: "/broadcasts",
       label: "Disparos",
       icon: <Megaphone className="h-5 w-5" />,
+    },
+    {
+      path: "/integrations",
+      label: "Integrações",
+      icon: <Plug className="h-5 w-5" />,
     },
     // {
     //   path: "/contents",

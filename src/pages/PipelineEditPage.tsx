@@ -55,6 +55,7 @@ const defaultAgentFormData: AgentFormData = {
   customFields: [],
   followUps: [],
   entryTags: [],
+  googleCalendarIntegrationId: null,
 };
 
 const getDefaultCreateStages = (): PipelineStageMinimal[] => {
@@ -201,7 +202,51 @@ const PipelineEditPage = () => {
     if (hasInitializedDataRef.current) return;
 
     if (stagesQuery.data) {
-      setStages(stagesQuery.data);
+      // Normalize stages data to include targetStageOrder and targetStageId correctly
+      const normalizedStages = stagesQuery.data.map((s, idx, arr) => {
+        let assistantPipelineStage = s.assistantPipelineStage;
+        if (assistantPipelineStage?.assistantAllowedTargetStages) {
+          assistantPipelineStage = {
+            ...assistantPipelineStage,
+            assistantAllowedTargetStages:
+              assistantPipelineStage.assistantAllowedTargetStages.map(
+                (target) => {
+                  let targetStageOrder = target.targetStageOrder;
+                  let targetStageId = target.targetStageId;
+
+                  // Se a API retornou ID mas está faltando a order (comum em listagens)
+                  if (targetStageOrder === undefined && targetStageId) {
+                    const targetIndex = arr.findIndex(
+                      (st) => st.id === targetStageId,
+                    );
+                    targetStageOrder = targetIndex !== -1 ? targetIndex : -1;
+                  }
+
+                  // Se a API retornou order mas não o ID
+                  if (targetStageOrder !== undefined && !targetStageId) {
+                    const targetStage = arr.find(
+                      (st) =>
+                        st.order === targetStageOrder ||
+                        arr.indexOf(st) === targetStageOrder,
+                    );
+                    if (targetStage) targetStageId = targetStage.id;
+                  }
+
+                  return {
+                    ...target,
+                    targetStageOrder,
+                    targetStageId,
+                  };
+                },
+              ),
+          };
+        }
+        return {
+          ...s,
+          assistantPipelineStage,
+        };
+      });
+      setStages(normalizedStages);
     }
 
     if (currentPipeline) {
@@ -213,6 +258,9 @@ const PipelineEditPage = () => {
     // Load agent data if exists
     if (agentQuery.data) {
       const agent = agentQuery.data;
+
+      console.log("Agent data loaded from query:", agent);
+
       const agentData = {
         name: agent.name,
         description: agent.description,
@@ -231,6 +279,7 @@ const PipelineEditPage = () => {
         customFields: agent.customFields,
         followUps: agent.followUps,
         entryTags: agent.entryTags || [],
+        googleCalendarIntegrationId: agent.googleCalendarIntegrationId || null,
       };
       setAgentFormData(agentData);
       initialApiKeyRef.current = ""; // Set initial as empty when loading existing agent
@@ -615,6 +664,8 @@ const PipelineEditPage = () => {
             contentsIds: agentFormData.contents.map((c) => c.id),
             customFields: agentFormData.customFields,
             entryTags: agentFormData.entryTags,
+            googleCalendarIntegrationId:
+              agentFormData.googleCalendarIntegrationId || null,
           }
         : null;
 
