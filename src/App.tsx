@@ -56,6 +56,8 @@ import MassBroadcastDetailPage from "./pages/MassBroadcastDetailPage";
 import CustomerImportPage from "./pages/CustomerImportPage";
 import CustomerImportDetailPage from "./pages/CustomerImportDetailPage";
 import IntegrationResponsePage from "./pages/IntegrationResponsePage";
+import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
+import TermsOfServicePage from "./pages/TermsOfServicePage";
 import Sidebar from "./components/layout/Sidebar";
 import Header from "./components/layout/Header";
 import { SidebarProvider } from "./components/ui/sidebar";
@@ -273,6 +275,8 @@ const App = () => (
               <Routes>
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
+                <Route path="/privacy" element={<PrivacyPolicyPage />} />
+                <Route path="/terms" element={<TermsOfServicePage />} />
                 <Route
                   path="/response/integrations"
                   element={<IntegrationResponsePage />}
