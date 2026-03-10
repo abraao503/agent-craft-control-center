@@ -39,8 +39,10 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@/lib/utils";
 
-export interface EditableStage
-  extends Omit<PipelineStageMinimal, "reengagementConfig"> {
+export interface EditableStage extends Omit<
+  PipelineStageMinimal,
+  "reengagementConfig"
+> {
   order: number;
   color?: string;
   winProbability?: number;
@@ -299,7 +301,7 @@ export const StagesTab: React.FC<StagesTabProps> = ({
               (target) => {
                 // Find the order of the target stage by its ID
                 const targetStageIndex = arr.findIndex(
-                  (stage) => stage.id === target.targetStageId
+                  (stage) => stage.id === target.targetStageId,
                 );
                 const targetStageOrder =
                   targetStageIndex !== -1 ? targetStageIndex : -1;
@@ -309,7 +311,7 @@ export const StagesTab: React.FC<StagesTabProps> = ({
                   targetStageId: target.targetStageId,
                   moveCondition: target.moveCondition,
                 };
-              }
+              },
             ),
         };
       }
@@ -341,7 +343,7 @@ export const StagesTab: React.FC<StagesTabProps> = ({
   };
 
   const [draftStages, setDraftStages] = useState<EditableStage[]>(() =>
-    normalize(stages)
+    normalize(stages),
   );
 
   // Update draftStages when stages prop changes
@@ -353,8 +355,40 @@ export const StagesTab: React.FC<StagesTabProps> = ({
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
-    })
+    }),
   );
+
+  const syncTargets = (items: EditableStage[]): EditableStage[] => {
+    return items.map((s, idx) => {
+      let assistantPipelineStage = s.assistantPipelineStage;
+      if (assistantPipelineStage?.assistantAllowedTargetStages) {
+        assistantPipelineStage = {
+          ...assistantPipelineStage,
+          assistantAllowedTargetStages:
+            assistantPipelineStage.assistantAllowedTargetStages.map(
+              (target) => {
+                if (!target.targetStageId) return target;
+
+                const targetStageIndex = items.findIndex(
+                  (stage) => stage.id === target.targetStageId,
+                );
+
+                return {
+                  ...target,
+                  targetStageOrder:
+                    targetStageIndex !== -1 ? targetStageIndex : -1,
+                };
+              },
+            ),
+        };
+      }
+      return {
+        ...s,
+        order: idx,
+        assistantPipelineStage,
+      };
+    });
+  };
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -365,7 +399,7 @@ export const StagesTab: React.FC<StagesTabProps> = ({
         const newIndex = items.findIndex((item) => item.id === over?.id);
 
         const newItems = arrayMove(items, oldIndex, newIndex);
-        const updated = newItems.map((s, i) => ({ ...s, order: i }));
+        const updated = syncTargets(newItems);
 
         // Sync changes to parent immediately
         onSave({ stages: updated });
@@ -377,20 +411,22 @@ export const StagesTab: React.FC<StagesTabProps> = ({
 
   const setStage = (index: number, patch: Partial<EditableStage>) => {
     setDraftStages((prev) => {
-      const updated = prev.map((s, i) =>
-        i === index ? { ...s, ...patch } : s
+      const newItems = prev.map((s, i) =>
+        i === index ? { ...s, ...patch } : s,
       );
+      const updated = syncTargets(newItems);
+
       // Sync changes to parent immediately
-      onSave({ stages: updated.map((s, i) => ({ ...s, order: i })) });
+      onSave({ stages: updated });
       return updated;
     });
   };
 
   const handleRemove = (index: number) => {
     setDraftStages((prev) => {
-      const updated = prev
-        .filter((_, i) => i !== index)
-        .map((s, i) => ({ ...s, order: i }));
+      const newItems = prev.filter((_, i) => i !== index);
+      const updated = syncTargets(newItems);
+
       // Sync changes to parent immediately
       onSave({ stages: updated });
       return updated;
@@ -406,7 +442,7 @@ export const StagesTab: React.FC<StagesTabProps> = ({
         winProbability: 100,
         order: prev.length,
       };
-      const updated = [...prev, next];
+      const updated = syncTargets([...prev, next]);
       // Sync changes to parent immediately
       onSave({ stages: updated });
       return updated;
@@ -415,7 +451,7 @@ export const StagesTab: React.FC<StagesTabProps> = ({
 
   const handleApply = async () => {
     await onSave({
-      stages: draftStages.map((s, i) => ({ ...s, order: i })),
+      stages: syncTargets(draftStages),
     });
   };
 

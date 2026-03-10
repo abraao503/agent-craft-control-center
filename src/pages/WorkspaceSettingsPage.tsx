@@ -163,7 +163,7 @@ export default function WorkspaceSettingsPage() {
                 Usuários do Workspace
               </CardTitle>
               <CardDescription>
-                Gerenciar usuários com acesso a este workspace
+                Gerenciar usuários com acesso a este workspace1
               </CardDescription>
             </div>
             {has("create:workspace-user") && (

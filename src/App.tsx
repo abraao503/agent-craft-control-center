@@ -25,6 +25,8 @@ import WhatsAppIntegrationsPage from "./pages/WhatsAppIntegrationsPage";
 import CreateWhatsAppIntegrationPage from "./pages/CreateWhatsAppIntegrationPage";
 import EditWhatsAppIntegrationPage from "./pages/EditWhatsAppIntegrationPage";
 import SettingsPage from "./pages/SettingsPage";
+import IntegrationsPage from "./pages/IntegrationsPage";
+import CalendarPage from "./pages/CalendarPage";
 import NotFound from "./pages/NotFound";
 import ContentManagementPage from "./pages/ContentManagementPage";
 import ChatsPage from "./pages/ChatsPage";
@@ -53,6 +55,7 @@ import MassBroadcastCreatePage from "./pages/MassBroadcastCreatePage";
 import MassBroadcastDetailPage from "./pages/MassBroadcastDetailPage";
 import CustomerImportPage from "./pages/CustomerImportPage";
 import CustomerImportDetailPage from "./pages/CustomerImportDetailPage";
+import IntegrationResponsePage from "./pages/IntegrationResponsePage";
 import Sidebar from "./components/layout/Sidebar";
 import Header from "./components/layout/Header";
 import { SidebarProvider } from "./components/ui/sidebar";
@@ -226,6 +229,8 @@ const AgentDetailsViewPage = () => <AgentDetailsPage />;
 const IntegrationsListPage = () => <WhatsAppIntegrationsPage />;
 const IntegrationsCreatePage = () => <CreateWhatsAppIntegrationPage />;
 const IntegrationsEditPage = () => <EditWhatsAppIntegrationPage />;
+const IntegrationsViewPage = () => <IntegrationsPage />;
+const CalendarPageView = () => <CalendarPage />;
 const SettingsConfigPage = () => <SettingsPage />;
 const ContentsPage = () => <ContentManagementPage />;
 const ChatsListPage = () => <ChatsPage />;
@@ -268,6 +273,10 @@ const App = () => (
               <Routes>
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
+                <Route
+                  path="/response/integrations"
+                  element={<IntegrationResponsePage />}
+                />
 
                 {/* Rotas autenticadas com layout persistente */}
                 <Route element={<AppLayout />}>
@@ -279,18 +288,20 @@ const App = () => (
                     path="/agents/:id"
                     element={<AgentDetailsViewPage />}
                   />
+                  <Route path="/whatsapp" element={<IntegrationsListPage />} />
                   <Route
-                    path="/integrations"
-                    element={<IntegrationsListPage />}
-                  />
-                  <Route
-                    path="/integrations/new"
+                    path="/whatsapp/new"
                     element={<IntegrationsCreatePage />}
                   />
                   <Route
-                    path="/integrations/edit/:id"
+                    path="/whatsapp/edit/:id"
                     element={<IntegrationsEditPage />}
                   />
+                  <Route
+                    path="/integrations"
+                    element={<IntegrationsViewPage />}
+                  />
+                  <Route path="/calendar" element={<CalendarPageView />} />
                   <Route path="/settings" element={<SettingsConfigPage />} />
                   <Route path="/contents" element={<ContentsPage />} />
                   <Route path="/chats" element={<ChatsListPage />} />

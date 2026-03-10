@@ -26,7 +26,7 @@ interface AssistantStageConfigProps {
   availableStages: Array<{ id: string; name: string; order: number }>;
   onConfigChange: (
     stageId: string,
-    config?: AssistantPipelineStage | null
+    config?: AssistantPipelineStage | null,
   ) => void;
 }
 
@@ -78,7 +78,7 @@ export const AssistantStageConfig: React.FC<AssistantStageConfigProps> = ({
     if (!assistantConfig) return;
 
     const updatedTargetStages = allowedTargetStages.filter(
-      (_, i) => i !== index
+      (_, i) => i !== index,
     );
     const updatedConfig: AssistantPipelineStage = {
       assistantAllowedTargetStages: updatedTargetStages,
@@ -89,12 +89,12 @@ export const AssistantStageConfig: React.FC<AssistantStageConfigProps> = ({
   const handleTargetStageChange = (
     index: number,
     field: keyof AssistantAllowedTargetStage,
-    value: string | number
+    value: string | number,
   ) => {
     if (!assistantConfig) return;
 
     const updatedTargetStages = allowedTargetStages.map((stage, i) =>
-      i === index ? { ...stage, [field]: value } : stage
+      i === index ? { ...stage, [field]: value } : stage,
     );
 
     const updatedConfig: AssistantPipelineStage = {
@@ -125,7 +125,7 @@ export const AssistantStageConfig: React.FC<AssistantStageConfigProps> = ({
 
   // Filter out current stage from available target stages
   const availableTargetStages = availableStages.filter(
-    (stage) => stage.order !== stageOrder
+    (stage) => stage.order !== stageOrder,
   );
 
   return (
@@ -178,7 +178,7 @@ export const AssistantStageConfig: React.FC<AssistantStageConfigProps> = ({
                   const isStageSelected = targetStage.targetStageOrder >= 0;
 
                   const foundStage = availableStages.find(
-                    (s) => s.order === targetStage.targetStageOrder
+                    (s) => s.order === targetStage.targetStageOrder,
                   );
                   const targetStageName = foundStage?.name || "Não encontrada";
 
@@ -212,13 +212,30 @@ export const AssistantStageConfig: React.FC<AssistantStageConfigProps> = ({
                           <div className="flex-1 min-w-0">
                             <Select
                               value={selectValue}
-                              onValueChange={(value) =>
-                                handleTargetStageChange(
-                                  index,
-                                  "targetStageOrder",
-                                  Number(value)
-                                )
-                              }
+                              onValueChange={(value) => {
+                                const newOrder = Number(value);
+                                const selectedStage =
+                                  availableTargetStages.find(
+                                    (s) => s.order === newOrder,
+                                  );
+                                if (!assistantConfig || !selectedStage) return;
+
+                                const updatedTargetStages =
+                                  allowedTargetStages.map((st, i) =>
+                                    i === index
+                                      ? {
+                                          ...st,
+                                          targetStageOrder: newOrder,
+                                          targetStageId: selectedStage.id,
+                                        }
+                                      : st,
+                                  );
+
+                                onConfigChange(stageId, {
+                                  assistantAllowedTargetStages:
+                                    updatedTargetStages,
+                                });
+                              }}
                             >
                               <SelectTrigger className="h-8 text-xs border-0 bg-background/80 hover:bg-background shadow-sm font-medium w-full">
                                 <SelectValue placeholder="Selecione a etapa destino" />

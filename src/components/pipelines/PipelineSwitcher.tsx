@@ -42,7 +42,7 @@ export const PipelineSwitcher: React.FC<PipelineSwitcherProps> = ({
 
   const current = useMemo(
     () => pipelines.find((p) => p.id === currentPipelineId),
-    [pipelines, currentPipelineId]
+    [pipelines, currentPipelineId],
   );
 
   return (
@@ -86,6 +86,7 @@ export const PipelineSwitcher: React.FC<PipelineSwitcherProps> = ({
           onClick={onEditCurrent}
           aria-label="Editar funil"
           title="Editar funil"
+          disabled={!currentPipelineId}
         >
           <Pencil className="h-4 w-4" />
         </Button>

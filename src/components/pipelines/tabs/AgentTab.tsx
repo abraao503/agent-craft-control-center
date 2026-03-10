@@ -18,6 +18,7 @@ import {
   BasicInformationCard,
   PromptContextCard,
   EntryTagsCard,
+  SkillsCard,
 } from "@/components/pipelines/agent-config";
 import { getDeletedAssistant } from "@/services/pipeline/getDeletedAssistant";
 
@@ -50,7 +51,7 @@ export const AgentTab: React.FC<AgentTabProps> = ({
   const [wizardCompleted, setWizardCompleted] = useState(false); // Track if wizard was completed
   const [isLoadingDeleted, setIsLoadingDeleted] = useState(false);
   const [activeSubTab, setActiveSubTab] = useState<
-    "basic" | "custom" | "prompt" | "tags"
+    "basic" | "custom" | "prompt" | "tags" | "skills"
   >("basic");
 
   // Buscar agente deletado quando ativar o switch (apenas em modo de edição)
@@ -87,6 +88,8 @@ export const AgentTab: React.FC<AgentTabProps> = ({
             customFields: deletedAgent.customFields,
             followUps: deletedAgent.followUps,
             entryTags: deletedAgent.entryTags || [],
+            googleCalendarIntegrationId:
+              deletedAgent.googleCalendarIntegrationId || null,
           };
 
           onLoadDeletedAgent(agentData);
@@ -142,7 +145,9 @@ export const AgentTab: React.FC<AgentTabProps> = ({
     return !!(formData.function && formData.style && formData.instructions);
   };
 
-  const getTabIndicator = (tabName: "basic" | "custom" | "prompt" | "tags") => {
+  const getTabIndicator = (
+    tabName: "basic" | "custom" | "prompt" | "tags" | "skills",
+  ) => {
     if (!useAgent) return null;
 
     if (tabName === "basic" && !isBasicValid()) {
@@ -239,18 +244,23 @@ export const AgentTab: React.FC<AgentTabProps> = ({
           <Tabs
             value={activeSubTab}
             onValueChange={(v) =>
-              setActiveSubTab(v as "basic" | "custom" | "prompt" | "tags")
+              setActiveSubTab(
+                v as "basic" | "custom" | "prompt" | "tags" | "skills",
+              )
             }
           >
-            <TabsList className="w-full grid grid-cols-3">
+            <TabsList className="w-full grid grid-cols-4">
               <TabsTrigger value="basic">
-                Informações Básicas{getTabIndicator("basic")}
+                Informações{getTabIndicator("basic")}
               </TabsTrigger>
               <TabsTrigger value="prompt">
-                Prompt & Contexto{getTabIndicator("prompt")}
+                Prompt{getTabIndicator("prompt")}
               </TabsTrigger>
               <TabsTrigger value="tags">
-                Tags de Entrada{getTabIndicator("tags")}
+                Tags{getTabIndicator("tags")}
+              </TabsTrigger>
+              <TabsTrigger value="skills">
+                Skills{getTabIndicator("skills")}
               </TabsTrigger>
             </TabsList>
 
@@ -273,6 +283,10 @@ export const AgentTab: React.FC<AgentTabProps> = ({
                 formData={formData}
                 updateFormData={updateFormData}
               />
+            </TabsContent>
+
+            <TabsContent value="skills" className="mt-6">
+              <SkillsCard formData={formData} updateFormData={updateFormData} />
             </TabsContent>
           </Tabs>
         )

@@ -67,6 +67,7 @@ export interface FullAgent {
   customFields: CustomField[];
   followUps: FollowUp[];
   entryTags: string[];
+  googleCalendarIntegrationId?: string | null;
 }
 
 export interface Link {
@@ -146,6 +147,9 @@ export interface AgentFormData {
 
   // Entry Tags - Tags que serão adicionadas automaticamente aos novos chats
   entryTags: string[];
+
+  // Step 6: Skills
+  googleCalendarIntegrationId?: string | null;
 }
 
 export interface AIModel {
@@ -194,6 +198,7 @@ export type UpdateAgentResquest = {
   contents: AssistantContent[];
   customFields: UpdateAssistantCustomField[];
   entryTags: string[];
+  googleCalendarIntegrationId?: string | null;
 };
 
 export type CreateAgentRequest = {
@@ -210,4 +215,5 @@ export type CreateAgentRequest = {
   customFields: Omit<CustomField, "id">[];
   workspaceId: string;
   entryTags: string[];
+  googleCalendarIntegrationId?: string | null;
 };
