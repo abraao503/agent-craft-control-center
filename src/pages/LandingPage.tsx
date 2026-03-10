@@ -166,6 +166,38 @@ const LandingPage = () => {
             </div>
           </div>
         </section>
+
+        {/* Data Usage & Transparency Section */}
+        <section className="py-24 bg-background">
+          <div className="container mx-auto px-4 max-w-4xl text-center">
+            <Shield className="h-12 w-12 mx-auto text-primary mb-6" />
+            <h2 className="text-3xl font-bold tracking-tight mb-6">
+              Uso de Dados Transparente
+            </h2>
+            <p className="text-muted-foreground text-lg leading-relaxed mb-6">
+              A <strong>7 Agentes</strong> potencializa sua equipe com
+              Inteligência Artificial integrada às suas ferramentas de uso
+              diário. Para agendar reuniões automaticamente, solicitamos
+              conectar seu aplicativo com o <strong>Google Calendar</strong>.
+            </p>
+            <p className="text-muted-foreground text-lg leading-relaxed mb-8">
+              Apenas acessamos sua conta, sob sua expressa permissão, para{" "}
+              <strong>ler, criar e atualizar eventos</strong> na sua agenda,
+              garantindo que o seu assistente virtual não agende horários
+              duplicados. Nunca compartilhamos ou vendemos suas informações e
+              mantemos tudo seguro seguindo rigorosas regras.
+            </p>
+            <a
+              href="/privacy"
+              className={buttonVariants({
+                variant: "outline",
+                className: "rounded-full px-6",
+              })}
+            >
+              Leia nossa Política de Privacidade Completa
+            </a>
+          </div>
+        </section>
       </main>
 
       {/* Footer */}
@@ -183,18 +215,18 @@ const LandingPage = () => {
           </div>
 
           <div className="flex space-x-6 text-sm">
-            <Link
-              to="/privacy"
+            <a
+              href="/privacy"
               className="text-muted-foreground hover:text-primary transition-colors"
             >
               Política de Privacidade
-            </Link>
-            <Link
-              to="/terms"
+            </a>
+            <a
+              href="/terms"
               className="text-muted-foreground hover:text-primary transition-colors"
             >
               Termos de Serviço
-            </Link>
+            </a>
           </div>
         </div>
       </footer>
