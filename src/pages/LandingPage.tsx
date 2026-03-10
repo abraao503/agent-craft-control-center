@@ -188,7 +188,7 @@ const LandingPage = () => {
               mantemos tudo seguro seguindo rigorosas regras.
             </p>
             <a
-              href="/privacy"
+              href="https://app.7agentes.com.br/privacy"
               className={buttonVariants({
                 variant: "outline",
                 className: "rounded-full px-6",
@@ -216,7 +216,7 @@ const LandingPage = () => {
 
           <div className="flex space-x-6 text-sm">
             <a
-              href="/privacy"
+              href="https://app.7agentes.com.br/privacy"
               className="text-muted-foreground hover:text-primary transition-colors"
             >
               Política de Privacidade
