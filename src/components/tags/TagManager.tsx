@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { Plus, Pencil, Trash2, Loader } from "lucide-react";
+import { Plus, Pencil, Trash2 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
   DialogContent,
@@ -31,9 +32,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
+import { SmartPagination } from "@/components/common/SmartPagination";
 
 import { Tag } from "@/types/tag";
-import { listTags } from "@/services/tag/listTags";
+import { listTagsPaginated } from "@/services/tag/listTagsPaginated";
 import { createTag } from "@/services/tag/createTag";
 import { updateTag } from "@/services/tag/updateTag";
 import { deleteTag } from "@/services/tag/deleteTag";
@@ -43,6 +45,8 @@ type TagManagerProps = {
   workspaceId: string;
 };
 
+const TAGS_PER_PAGE = 10;
+
 export const TagManager: React.FC<TagManagerProps> = ({ workspaceId }) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -51,12 +55,21 @@ export const TagManager: React.FC<TagManagerProps> = ({ workspaceId }) => {
   const [tagName, setTagName] = useState("");
   const [tagColor, setTagColor] = useState("#000000");
   const [deletingTag, setDeletingTag] = useState<Tag | null>(null);
+  const [currentPage, setCurrentPage] = useState(0);
 
-  const { data: tags = [], isLoading } = useQuery({
-    queryKey: ["tags", workspaceId],
-    queryFn: () => listTags(workspaceId),
+  const { data, isLoading } = useQuery({
+    queryKey: ["tags", workspaceId, currentPage],
+    queryFn: () =>
+      listTagsPaginated({
+        workspaceId,
+        page: currentPage + 1,
+        limit: TAGS_PER_PAGE,
+      }),
     enabled: !!workspaceId,
   });
+
+  const tags = data?.items ?? [];
+  const totalPages = data ? Math.ceil(data.total / TAGS_PER_PAGE) : 0;
 
   const createTagMutation = useMutation({
     mutationFn: createTag,
@@ -78,8 +91,13 @@ export const TagManager: React.FC<TagManagerProps> = ({ workspaceId }) => {
   });
 
   const updateTagMutation = useMutation({
-    mutationFn: ({ id, params }: { id: string; params: { name: string; color: string; workspaceId: string } }) =>
-      updateTag(id, params),
+    mutationFn: ({
+      id,
+      params,
+    }: {
+      id: string;
+      params: { name: string; color: string; workspaceId: string };
+    }) => updateTag(id, params),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tags", workspaceId] });
       toast({
@@ -141,7 +159,7 @@ export const TagManager: React.FC<TagManagerProps> = ({ workspaceId }) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!tagName.trim()) {
       toast({
         title: "Nome obrigatório",
@@ -188,29 +206,54 @@ export const TagManager: React.FC<TagManagerProps> = ({ workspaceId }) => {
         </Button>
       </div>
 
-      {isLoading ? (
-        <div className="text-center py-4">Carregando tags...</div>
-      ) : tags.length === 0 ? (
-        <div className="text-center py-4 text-muted-foreground">
-          Nenhuma tag encontrada. Crie uma nova tag para começar.
-        </div>
-      ) : (
-        <Table>
-          <TableHeader>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Nome</TableHead>
+            <TableHead>Cor</TableHead>
+            <TableHead className="w-[100px]">Ações</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {isLoading ? (
+            Array.from({ length: TAGS_PER_PAGE }).map((_, i) => (
+              <TableRow key={i}>
+                <TableCell>
+                  <Skeleton className="h-6 w-24 rounded-full" />
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="h-6 w-6 rounded-full" />
+                    <Skeleton className="h-4 w-20" />
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex gap-2">
+                    <Skeleton className="h-8 w-8 rounded-md" />
+                    <Skeleton className="h-8 w-8 rounded-md" />
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))
+          ) : tags.length === 0 ? (
             <TableRow>
-              <TableHead>Nome</TableHead>
-              <TableHead>Cor</TableHead>
-              <TableHead className="w-[100px]">Ações</TableHead>
+              <TableCell
+                colSpan={3}
+                className="text-center py-8 text-muted-foreground"
+              >
+                Nenhuma tag encontrada. Crie uma nova tag para começar.
+              </TableCell>
             </TableRow>
-          </TableHeader>
-          <TableBody>
-            {tags.map((tag) => (
+          ) : (
+            tags.map((tag) => (
               <TableRow key={tag.id}>
                 <TableCell>
-                  <Badge style={{ 
-                    backgroundColor: tag.color,
-                    color: isColorDark(tag.color) ? "white" : "black"
-                  }}>
+                  <Badge
+                    style={{
+                      backgroundColor: tag.color,
+                      color: isColorDark(tag.color) ? "white" : "black",
+                    }}
+                  >
                     {tag.name}
                   </Badge>
                 </TableCell>
@@ -242,17 +285,27 @@ export const TagManager: React.FC<TagManagerProps> = ({ workspaceId }) => {
                   </div>
                 </TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            ))
+          )}
+        </TableBody>
+      </Table>
+
+      {!isLoading && totalPages > 1 && (
+        <SmartPagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          showItemCount
+          itemsPerPage={TAGS_PER_PAGE}
+          totalItems={data?.total ?? 0}
+          itemLabel="tags"
+        />
       )}
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>
-              {editingTag ? "Editar Tag" : "Nova Tag"}
-            </DialogTitle>
+            <DialogTitle>{editingTag ? "Editar Tag" : "Nova Tag"}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit}>
             <div className="grid gap-4 py-4">
@@ -288,16 +341,14 @@ export const TagManager: React.FC<TagManagerProps> = ({ workspaceId }) => {
               </div>
             </div>
             <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={resetForm}
-              >
+              <Button type="button" variant="outline" onClick={resetForm}>
                 Cancelar
               </Button>
               <Button
                 type="submit"
-                isLoading={createTagMutation.isPending || updateTagMutation.isPending}
+                isLoading={
+                  createTagMutation.isPending || updateTagMutation.isPending
+                }
               >
                 {editingTag ? "Atualizar" : "Criar"}
               </Button>
@@ -306,14 +357,17 @@ export const TagManager: React.FC<TagManagerProps> = ({ workspaceId }) => {
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={!!deletingTag} onOpenChange={(open) => !open && setDeletingTag(null)}>
+      <AlertDialog
+        open={!!deletingTag}
+        onOpenChange={(open) => !open && setDeletingTag(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
             <AlertDialogDescription>
               Esta ação não pode ser desfeita. Isso excluirá permanentemente
-              {deletingTag && ` "${deletingTag.name}" `}
-              e a removerá de todos os agentes que a utilizam.
+              {deletingTag && ` "${deletingTag.name}" `}e a removerá de todos os
+              agentes que a utilizam.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -324,13 +378,7 @@ export const TagManager: React.FC<TagManagerProps> = ({ workspaceId }) => {
               onClick={confirmDelete}
               className="bg-red-500 hover:bg-red-600"
             >
-              {deleteTagMutation.isPending ? (
-                <>
-                  <Loader className="h-4 w-4 animate-spin" />
-                </>
-              ) : (
-                "Excluir"
-              )}
+              {deleteTagMutation.isPending ? "Excluindo..." : "Excluir"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

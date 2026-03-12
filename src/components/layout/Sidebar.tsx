@@ -19,6 +19,7 @@ import {
   Webhook,
   Megaphone,
   Calendar as CalendarIcon,
+  Tag,
 } from "lucide-react";
 import { useAuth } from "@/contexts/auth/hooks";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -415,6 +416,11 @@ const SidebarMenuContent = () => {
       path: "/integrations",
       label: "Integrações",
       icon: <Plug className="h-5 w-5" />,
+    },
+    {
+      path: "/tags",
+      label: "Tags",
+      icon: <Tag className="h-5 w-5" />,
     },
     // {
     //   path: "/contents",

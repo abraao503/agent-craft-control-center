@@ -59,6 +59,7 @@ import IntegrationResponsePage from "./pages/IntegrationResponsePage";
 import LandingPage from "./pages/LandingPage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsOfServicePage from "./pages/TermsOfServicePage";
+import TagsPage from "./pages/TagsPage";
 import Sidebar from "./components/layout/Sidebar";
 import Header from "./components/layout/Header";
 import { SidebarProvider } from "./components/ui/sidebar";
@@ -262,6 +263,7 @@ const MassBroadcastCreateViewPage = () => <MassBroadcastCreatePage />;
 const MassBroadcastDetailViewPage = () => <MassBroadcastDetailPage />;
 const CustomerImportListPage = () => <CustomerImportPage />;
 const CustomerImportDetailViewPage = () => <CustomerImportDetailPage />;
+const TagsPageView = () => <TagsPage />;
 const NotFoundPage = () => <NotFound />;
 
 const App = () => (
@@ -383,6 +385,7 @@ const App = () => (
                     path="/customer-imports/:id"
                     element={<CustomerImportDetailViewPage />}
                   />
+                  <Route path="/tags" element={<TagsPageView />} />
                   <Route
                     path="/admin/companies"
                     element={<AdminCompaniesListPage />}

@@ -10,7 +10,6 @@ import {
   Trash2,
   Megaphone,
   Loader2,
-  Users,
   Eye,
   Search,
   X,
@@ -67,6 +66,7 @@ export default function MassBroadcastCreatePage() {
   const [messageDelaySeconds, setMessageDelaySeconds] = useState(30);
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
+  const [file, setFile] = useState<File | null>(null);
 
   // Customer search state
   const [customerSearch, setCustomerSearch] = useState("");
@@ -311,6 +311,7 @@ export default function MassBroadcastCreatePage() {
       messageDelaySeconds,
       startTime: startTime ? new Date(startTime).toISOString() : undefined,
       endTime: endTime ? new Date(endTime).toISOString() : undefined,
+      file: file || undefined,
     };
 
     createMutation.mutate(input);
@@ -349,10 +350,7 @@ export default function MassBroadcastCreatePage() {
         {/* Basic Info */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Megaphone className="h-5 w-5" />
-              Informações Básicas
-            </CardTitle>
+            <CardTitle>Informações Básicas</CardTitle>
             <CardDescription>
               Defina o nome da campanha e a conexão WhatsApp para envio
             </CardDescription>
@@ -395,6 +393,31 @@ export default function MassBroadcastCreatePage() {
               <p className="text-xs text-muted-foreground">
                 O funil define qual conexão WhatsApp será usada para enviar as
                 mensagens
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Mídia */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Mídia (Opcional)</CardTitle>
+            <CardDescription>
+              Anexe uma imagem, áudio ou documento (PDF, etc.) para enviar junto
+              com as mensagens
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="fileInput">Arquivo</Label>
+              <Input
+                id="fileInput"
+                type="file"
+                onChange={(e) => setFile(e.target.files?.[0] || null)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Tamanho máximo permitido: 10 MB. O tipo de arquivo será
+                detectado automaticamente.
               </p>
             </div>
           </CardContent>
@@ -463,10 +486,7 @@ export default function MassBroadcastCreatePage() {
         {/* Selection Criteria */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              Critérios de Seleção
-            </CardTitle>
+            <CardTitle>Critérios de Seleção</CardTitle>
             <CardDescription>
               Defina quais clientes receberão a mensagem. Pelo menos um critério
               de inclusão é obrigatório. Os filtros são combinados e depois as
@@ -826,10 +846,8 @@ export default function MassBroadcastCreatePage() {
             type="submit"
             disabled={!canSubmit || createMutation.isPending}
           >
-            {createMutation.isPending ? (
+            {createMutation.isPending && (
               <Loader2 className="h-4 w-4 animate-spin mr-2" />
-            ) : (
-              <Megaphone className="h-4 w-4 mr-2" />
             )}
             Criar Campanha
           </Button>

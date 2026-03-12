@@ -110,6 +110,7 @@ export interface CreateMassBroadcastInput {
   messageDelaySeconds?: number;
   startTime?: string;
   endTime?: string;
+  file?: File;
 }
 
 export interface ListMassBroadcastsParams {

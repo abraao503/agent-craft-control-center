@@ -25,6 +25,38 @@ export const previewRecipients = async (
 export const createMassBroadcast = async (
   input: CreateMassBroadcastInput,
 ): Promise<MassBroadcast> => {
+  if (input.file) {
+    const formData = new FormData();
+    formData.append("name", input.name);
+    formData.append("messages", JSON.stringify(input.messages));
+    formData.append("pipelineId", input.pipelineId);
+    formData.append("workspaceId", input.workspaceId);
+
+    if (input.customerIds?.length)
+      formData.append("customerIds", JSON.stringify(input.customerIds));
+    if (input.includeTagIds?.length)
+      formData.append("includeTagIds", JSON.stringify(input.includeTagIds));
+    if (input.excludeTagIds?.length)
+      formData.append("excludeTagIds", JSON.stringify(input.excludeTagIds));
+    if (input.pipelineStageIds?.length)
+      formData.append(
+        "pipelineStageIds",
+        JSON.stringify(input.pipelineStageIds),
+      );
+    if (input.applyTagIds?.length)
+      formData.append("applyTagIds", JSON.stringify(input.applyTagIds));
+
+    if (input.messageDelaySeconds !== undefined)
+      formData.append("messageDelaySeconds", String(input.messageDelaySeconds));
+    if (input.startTime) formData.append("startTime", input.startTime);
+    if (input.endTime) formData.append("endTime", input.endTime);
+
+    formData.append("file", input.file);
+
+    const { data } = await api.post<MassBroadcast>("/mass-broadcast", formData);
+    return data;
+  }
+
   const { data } = await api.post<MassBroadcast>("/mass-broadcast", input);
   return data;
 };
