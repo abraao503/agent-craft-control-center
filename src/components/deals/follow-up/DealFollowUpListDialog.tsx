@@ -5,7 +5,6 @@ import { ptBR } from "date-fns/locale";
 import {
   Trash2,
   Calendar,
-  Clock,
   CheckCircle,
   XCircle,
   Pencil,
@@ -13,6 +12,9 @@ import {
   FileAudio,
   FileText,
   Repeat,
+  History,
+  BarChart3,
+  AlertTriangle,
 } from "lucide-react";
 import {
   Dialog,
@@ -29,11 +31,13 @@ import {
   listDealFollowUps,
   deleteDealFollowUp,
 } from "@/services/deal/dealFollowUp";
-import { DealFollowUp, DealFollowUpStatus } from "@/types/deal-follow-up";
+import { DealFollowUp } from "@/types/deal-follow-up";
 import { CreateDealFollowUpDialog } from "./CreateDealFollowUpDialog";
 import { EditDealFollowUpDialog } from "./EditDealFollowUpDialog";
+import { OccurrencesHistoryDialog } from "./OccurrencesHistoryDialog";
 import { getRecurrenceDescription } from "./followUpUtils";
 import { getFollowUpErrorMessage } from "./errorMessages";
+import { cn } from "@/lib/utils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -67,6 +71,9 @@ export const DealFollowUpListDialog: React.FC<DealFollowUpListDialogProps> = ({
   );
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [followUpToDelete, setFollowUpToDelete] = useState<string | null>(null);
+  const [showOccurrencesDialog, setShowOccurrencesDialog] = useState(false);
+  const [occurrencesFollowUp, setOccurrencesFollowUp] =
+    useState<DealFollowUp | null>(null);
 
   // Fetch follow-ups
   const { data, isLoading } = useQuery({
@@ -124,37 +131,77 @@ export const DealFollowUpListDialog: React.FC<DealFollowUpListDialogProps> = ({
     }
   };
 
-  const getStatusBadge = (status: DealFollowUpStatus) => {
-    const statusConfig = {
-      PENDING: {
-        label: "Pendente",
-        variant: "secondary" as const,
-        icon: Clock,
-      },
-      SENT: {
-        label: "Enviado",
-        variant: "default" as const,
-        icon: CheckCircle,
-      },
-      FAILED: {
-        label: "Falhou",
-        variant: "destructive" as const,
-        icon: XCircle,
-      },
-      CANCELLED: {
-        label: "Cancelado",
-        variant: "outline" as const,
-        icon: XCircle,
-      },
-    };
+  const handleViewOccurrences = (followUp: DealFollowUp) => {
+    setOccurrencesFollowUp(followUp);
+    setShowOccurrencesDialog(true);
+  };
 
-    const config = statusConfig[status];
-    const Icon = config.icon;
+  /**
+   * Verifica se o follow-up pode ser editado.
+   * Follow-ups com status FAILED, CANCELLED ou SENT (avulso encerrado) não são editáveis.
+   * Recorrentes com status SENT mas com nextScheduledAt (ainda ativos) são editáveis.
+   */
+  const isEditable = (followUp: DealFollowUp): boolean => {
+    if (followUp.status === "CANCELLED" || followUp.status === "FAILED") {
+      return false;
+    }
+    if (followUp.status === "SENT" && !followUp.isRecurring) {
+      return false;
+    }
+    if (
+      followUp.status === "SENT" &&
+      followUp.isRecurring &&
+      !followUp.nextScheduledAt
+    ) {
+      return false;
+    }
+    return true;
+  };
+
+  const getStatusBadge = (followUp: DealFollowUp) => {
+    const { status, isRecurring, nextScheduledAt } = followUp;
+
+    // Significados combinados de status + recorrência
+    let label = "";
+    let variant: "secondary" | "default" | "destructive" | "outline" =
+      "secondary";
+    let Icon = Calendar;
+
+    if (status === "CANCELLED") {
+      label = "Cancelado";
+      variant = "outline";
+      Icon = XCircle;
+    } else if (status === "FAILED") {
+      label = isRecurring ? "Encerrado com falha" : "Falhou";
+      variant = "destructive";
+      Icon = XCircle;
+    } else if (status === "SENT") {
+      if (isRecurring && nextScheduledAt) {
+        label = "Recorrente ativo";
+        variant = "default";
+        Icon = CheckCircle;
+      } else {
+        label = isRecurring ? "Recorrência encerrada" : "Enviado";
+        variant = "default";
+        Icon = CheckCircle;
+      }
+    } else {
+      // PENDING
+      label = isRecurring ? "Aguardando 1º envio" : "Pendente";
+      variant = "secondary";
+      Icon = Calendar;
+    }
 
     return (
-      <Badge variant={config.variant} className="flex items-center gap-1">
+      <Badge
+        variant={variant}
+        className={cn(
+          "flex items-center gap-1",
+          variant === "secondary" && "text-white",
+        )}
+      >
         <Icon className="h-3 w-3" />
-        {config.label}
+        {label}
       </Badge>
     );
   };
@@ -222,24 +269,40 @@ export const DealFollowUpListDialog: React.FC<DealFollowUpListDialogProps> = ({
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1 space-y-1">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <h4 className="font-semibold">{followUp.title}</h4>
-                            {getStatusBadge(followUp.status)}
+                            {getStatusBadge(followUp)}
                           </div>
-                          <p className="text-sm text-muted-foreground">
+                          <p className="text-sm text-muted-foreground line-clamp-2">
                             {followUp.message}
                           </p>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <div title="Editar agendamento">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleEditClick(followUp)}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                          </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          {isEditable(followUp) && (
+                            <div title="Editar agendamento">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleEditClick(followUp)}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          )}
+                          {followUp.isRecurring &&
+                            followUp.totalOccurrences > 0 && (
+                              <div title="Ver histórico de envios">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() =>
+                                    handleViewOccurrences(followUp)
+                                  }
+                                >
+                                  <History className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            )}
                           <Button
                             variant="ghost"
                             size="icon"
@@ -251,25 +314,30 @@ export const DealFollowUpListDialog: React.FC<DealFollowUpListDialogProps> = ({
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                      {/* Dates section */}
+                      <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
                         <div className="flex items-center gap-1">
                           <Calendar className="h-4 w-4" />
                           <span>
                             Agendado: {formatDateTime(followUp.scheduledAt)}
                           </span>
                         </div>
-                        {followUp.lastAttemptAt && (
+                        {followUp.nextScheduledAt ? (
                           <div className="flex items-center gap-1">
-                            <Clock className="h-4 w-4" />
+                            <Calendar className="h-4 w-4" />
                             <span>
-                              Última tentativa:{" "}
-                              {formatDateTime(followUp.lastAttemptAt)}
+                              Próximo envio:{" "}
+                              {formatDateTime(followUp.nextScheduledAt)}
                             </span>
                           </div>
-                        )}
+                        ) : followUp.isRecurring ? (
+                          <Badge variant="outline" className="text-xs">
+                            Encerrado
+                          </Badge>
+                        ) : null}
                       </div>
 
-                      {/* Media and Recurrence badges */}
+                      {/* Media, Recurrence, and Stats badges */}
                       <div className="flex flex-wrap items-center gap-2">
                         {followUp.mediaType && (
                           <Badge
@@ -301,18 +369,26 @@ export const DealFollowUpListDialog: React.FC<DealFollowUpListDialogProps> = ({
                             {getRecurrenceDescription(followUp.recurrence)}
                           </Badge>
                         )}
-                      </div>
-
-                      {followUp.error && (
-                        <div className="text-sm text-destructive bg-destructive/10 rounded p-2">
-                          <strong>Erro:</strong> {followUp.error}
-                        </div>
-                      )}
-
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span>
-                          Tentativas: {followUp.attempts}/{followUp.maxAttempts}
-                        </span>
+                        {followUp.isRecurring && (
+                          <>
+                            <Badge
+                              variant="outline"
+                              className="flex items-center gap-1 text-xs"
+                            >
+                              <BarChart3 className="h-3 w-3" />
+                              Enviados: {followUp.totalOccurrences}
+                            </Badge>
+                            {followUp.failedOccurrences > 0 && (
+                              <Badge
+                                variant="destructive"
+                                className="flex items-center gap-1 text-xs"
+                              >
+                                <AlertTriangle className="h-3 w-3" />
+                                Falhas: {followUp.failedOccurrences}
+                              </Badge>
+                            )}
+                          </>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -343,6 +419,15 @@ export const DealFollowUpListDialog: React.FC<DealFollowUpListDialogProps> = ({
         dealId={dealId}
         followUp={followUpToEdit}
       />
+
+      {occurrencesFollowUp && (
+        <OccurrencesHistoryDialog
+          open={showOccurrencesDialog}
+          onOpenChange={setShowOccurrencesDialog}
+          followUpId={occurrencesFollowUp.id}
+          followUpTitle={occurrencesFollowUp.title}
+        />
+      )}
 
       <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
         <AlertDialogContent>

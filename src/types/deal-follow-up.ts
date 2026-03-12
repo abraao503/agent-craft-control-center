@@ -74,22 +74,44 @@ export type DealFollowUp = {
   title: string;
   message: string;
   scheduledAt: string;
+  nextScheduledAt: string | null;
   dealId: string;
   status: DealFollowUpStatus;
-  attempts: number;
-  maxAttempts: number;
-  lastAttemptAt: string | null;
-  error: string | null;
-  jobId: string | null;
   // Media fields
   mediaUrl: string | null;
   mediaMimetype: string | null;
   mediaType: FollowUpMediaType | null;
   // Recurrence fields
   recurrence: Recurrence | null;
+  isRecurring: boolean;
+  totalOccurrences: number;
+  failedOccurrences: number;
+  // Timestamps
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
+};
+
+export type FollowUpOccurrence = {
+  id: string;
+  followUpId: string;
+  scheduledAt: string;
+  status: DealFollowUpStatus;
+  attempts: number;
+  maxAttempts: number;
+  lastAttemptAt: string | null;
+  error: string | null;
+  sentAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type FollowUpOccurrenceListResponse = {
+  items: FollowUpOccurrence[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
 };
 
 export type CreateDealFollowUpParams = {

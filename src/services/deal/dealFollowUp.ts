@@ -3,6 +3,7 @@ import {
   CreateDealFollowUpParams,
   DealFollowUp,
   DealFollowUpListResponse,
+  FollowUpOccurrenceListResponse,
 } from "@/types/deal-follow-up";
 
 /**
@@ -72,4 +73,17 @@ export const updateDealFollowUp = async (
  */
 export const deleteDealFollowUp = async (followUpId: string): Promise<void> => {
   await api.delete(`/follow-up/${followUpId}`);
+};
+
+/**
+ * List occurrences (send history) for a follow-up
+ */
+export const listFollowUpOccurrences = async (
+  followUpId: string,
+  params?: { page?: number; limit?: number },
+): Promise<FollowUpOccurrenceListResponse> => {
+  const response = await api.get(`/follow-up/${followUpId}/occurrences`, {
+    params,
+  });
+  return response.data;
 };
