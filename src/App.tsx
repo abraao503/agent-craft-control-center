@@ -15,6 +15,7 @@ import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "./contexts/auth/provider";
 import { useAuth } from "./contexts/auth/hooks";
 import Dashboard from "./pages/Dashboard";
+import DashboardV2Page from "./pages/DashboardV2Page";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import AgentsPage from "./pages/AgentsPage";
@@ -226,6 +227,7 @@ const AppLayout = () => {
 
 // Componentes de página simplificados sem o MainLayout
 const DashboardPage = () => <Dashboard />;
+const DashboardV2PageView = () => <DashboardV2Page />;
 const AgentsListPage = () => <AgentsPage />;
 const AgentCreatePage = () => <CreateAgentPage />;
 const AgentEditPage = () => <EditAgentPage />;
@@ -288,7 +290,8 @@ const App = () => (
 
                 {/* Rotas autenticadas com layout persistente */}
                 <Route element={<AppLayout />}>
-                  <Route path="/dashboard" element={<DashboardPage />} />
+                  <Route path="/dashboard" element={<DashboardV2PageView />} />
+                  <Route path="/dashboard/legacy" element={<DashboardPage />} />
                   <Route path="/agents" element={<AgentsListPage />} />
                   <Route path="/agents/new" element={<AgentCreatePage />} />
                   <Route path="/agents/edit/:id" element={<AgentEditPage />} />

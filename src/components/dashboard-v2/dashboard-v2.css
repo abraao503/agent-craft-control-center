@@ -1,0 +1,37 @@
+/* Dashboard V2 — Grid overrides */
+
+.dashboard-grid .react-grid-item {
+  transition: all 200ms ease;
+}
+
+.dashboard-grid .react-grid-item.react-grid-placeholder {
+  background: hsl(var(--primary) / 0.15);
+  border: 2px dashed hsl(var(--primary) / 0.4);
+  border-radius: var(--radius);
+}
+
+.dashboard-grid .react-grid-item > .react-resizable-handle {
+  opacity: 0;
+  transition: opacity 200ms;
+  z-index: 20;
+}
+
+.dashboard-grid .react-grid-item:hover > .react-resizable-handle {
+  opacity: 1;
+}
+
+.dashboard-grid .react-grid-item > .react-resizable-handle::after {
+  border-color: hsl(var(--muted-foreground) / 0.4) !important;
+}
+
+/* Garante que o wrapper do widget preencha 100% do grid item sem bloquear o resize handle */
+.dashboard-grid .react-grid-item > div:first-child {
+  height: 100%;
+}
+
+/* Permite scroll dentro do conteúdo dos widgets sem interferência do drag do grid */
+.dashboard-grid .react-grid-item .overflow-y-auto,
+.dashboard-grid .react-grid-item .overflow-auto {
+  touch-action: pan-y;
+  overscroll-behavior: contain;
+}
