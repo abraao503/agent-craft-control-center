@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,10 +15,29 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { TagSelector } from "./TagSelector";
-import { ReengagementConfigInput } from "@/types/pipeline";
-import { Plus, Settings2, CheckCircle2 } from "lucide-react";
+import { ReengagementConfig, ReengagementConfigInput } from "@/types/pipeline";
+import {
+  Plus,
+  Settings2,
+  CheckCircle2,
+  Paperclip,
+  X,
+  Loader2,
+  Image,
+  FileAudio,
+  FileText,
+  AlertCircle,
+  Download,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { uploadMedia, UploadMediaResponse } from "@/services/file/uploadMedia";
+import {
+  validateFollowUpFile,
+  getMediaTypeFromFile,
+  FOLLOW_UP_ACCEPT_STRING,
+  FOLLOW_UP_MAX_FILE_SIZE,
+} from "../deals/follow-up/followUpUtils";
 
 // Helper function to convert time string (HH:MM) to ISO datetime
 const timeToISO = (timeString: string): string => {
@@ -38,7 +57,7 @@ const isoToTime = (isoString: string): string => {
 
 interface ReengagementConfigSectionProps {
   workspaceId: string;
-  config: ReengagementConfigInput | null;
+  config: ReengagementConfig | null;
   onChange: (config: ReengagementConfigInput | null) => void;
   className?: string;
 }
@@ -50,12 +69,29 @@ export function ReengagementConfigSection({
   className,
 }: ReengagementConfigSectionProps) {
   const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
   const [draftConfig, setDraftConfig] =
     useState<ReengagementConfigInput | null>(config);
   const [maxMessagesInput, setMaxMessagesInput] = useState<string>("");
   const [startTimeInput, setStartTimeInput] = useState<string>("08:00");
   const [endTimeInput, setEndTimeInput] = useState<string>("17:00");
+
+  // Media upload state
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  // Tracks the currently uploaded media for display purposes inside the modal
+  const [uploadedMedia, setUploadedMedia] =
+    useState<UploadMediaResponse | null>(null);
+  // Local object URL for immediate preview before/during upload
+  const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null);
+  const [localPreviewType, setLocalPreviewType] = useState<
+    "image" | "audio" | "document" | null
+  >(null);
+  // Tracks when the user explicitly removes the server-side media inside the modal
+  const [mediaRemoved, setMediaRemoved] = useState(false);
+  // URL of image to show in the lightbox (null = closed)
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
 
   // Sync draft with prop changes (sempre que config muda)
   useEffect(() => {
@@ -103,7 +139,16 @@ export function ReengagementConfigSection({
       setDraftConfig(defaultConfig);
       setStartTimeInput("08:00");
       setEndTimeInput("17:00");
+      setUploadedMedia(null);
+      setUploadError(null);
+    } else {
+      setUploadError(null);
     }
+    setMediaRemoved(false);
+    setUploadedMedia(null);
+    if (localPreviewUrl) URL.revokeObjectURL(localPreviewUrl);
+    setLocalPreviewUrl(null);
+    setLocalPreviewType(null);
     // Se já tem config, os valores já foram sincronizados pelo useEffect
     setOpen(true);
   };
@@ -116,9 +161,19 @@ export function ReengagementConfigSection({
   const handleSave = () => {
     if (!draftConfig) return;
 
+    // Bloquear save durante upload
+    if (isUploading) {
+      toast({
+        title: "Upload em andamento",
+        description: "Aguarde o upload do arquivo terminar antes de salvar.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // Validação: verificar se todas as mensagens estão preenchidas
     const emptyMessages = draftConfig.messages.filter(
-      (m) => m.trim() === ""
+      (m) => m.trim() === "",
     ).length;
 
     if (emptyMessages > 0) {
@@ -171,8 +226,83 @@ export function ReengagementConfigSection({
 
   const handleCancel = () => {
     setDraftConfig(config);
+    setUploadError(null);
+    setIsUploading(false);
+    if (localPreviewUrl) URL.revokeObjectURL(localPreviewUrl);
+    setLocalPreviewUrl(null);
+    setLocalPreviewType(null);
+    setUploadedMedia(null);
+    setMediaRemoved(false);
     setOpen(false);
   };
+
+  // --- Media helpers ---
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    // Reset input so same file can be re-selected
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    if (!file) return;
+
+    setUploadError(null);
+
+    const validation = validateFollowUpFile(file);
+    if (!validation.valid) {
+      setUploadError(validation.error);
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadedMedia(null);
+
+    // Create local preview URL immediately for instant feedback
+    if (localPreviewUrl) URL.revokeObjectURL(localPreviewUrl);
+    const objectUrl = URL.createObjectURL(file);
+    setLocalPreviewUrl(objectUrl);
+
+    // Detect local media type from mime type
+    const detectedType = getMediaTypeFromFile(file);
+    setLocalPreviewType(detectedType);
+
+    try {
+      const result = await uploadMedia(file);
+      setUploadedMedia(result);
+      updateDraftConfig({ mediaFileId: result.id });
+    } catch {
+      setUploadError("Erro ao fazer upload do arquivo. Tente novamente.");
+      // Keep local preview on error so user can see what failed
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleRemoveMedia = () => {
+    setUploadedMedia(null);
+    setUploadError(null);
+    if (localPreviewUrl) URL.revokeObjectURL(localPreviewUrl);
+    setLocalPreviewUrl(null);
+    setLocalPreviewType(null);
+    setMediaRemoved(true);
+    updateDraftConfig({ mediaFileId: null });
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const getMediaIcon = (type: "image" | "audio" | "document") => {
+    if (type === "image") return <Image className="h-5 w-5 text-blue-500" />;
+    if (type === "audio")
+      return <FileAudio className="h-5 w-5 text-purple-500" />;
+    return <FileText className="h-5 w-5 text-orange-500" />;
+  };
+
+  const getMediaLabel = (type: "image" | "audio" | "document") => {
+    if (type === "image") return "Imagem";
+    if (type === "audio") return "Áudio";
+    return "Documento";
+  };
+
+  // Resolved media from the server (present when config was fetched from API)
+  const existingMediaUrl = config?.mediaUrl ?? null;
+  const existingMediaType = config?.mediaType ?? null;
 
   const updateDraftConfig = (updates: Partial<ReengagementConfigInput>) => {
     if (!draftConfig) return;
@@ -206,7 +336,7 @@ export function ReengagementConfigSection({
               updateDraftConfig({
                 minInactiveChatTimeHours: Math.max(
                   1,
-                  parseInt(e.target.value) || 1
+                  parseInt(e.target.value) || 1,
                 ),
               })
             }
@@ -333,6 +463,190 @@ export function ReengagementConfigSection({
           </p>
         </div>
 
+        {/* Media Upload */}
+        <div className="space-y-2">
+          <Label>Mídia (opcional)</Label>
+
+          {/* Hidden file input */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            className="hidden"
+            accept={FOLLOW_UP_ACCEPT_STRING}
+            onChange={handleFileSelect}
+            disabled={isUploading}
+          />
+
+          {/* Uploading indicator — show local preview while upload is in progress */}
+          {isUploading && (
+            <div className="flex items-center gap-3 rounded-lg border p-3 bg-muted/30">
+              {localPreviewType === "image" && localPreviewUrl ? (
+                <img
+                  src={localPreviewUrl}
+                  alt="Preview"
+                  className="h-12 w-12 rounded object-cover shrink-0 cursor-pointer"
+                  onClick={() => setImagePreviewUrl(localPreviewUrl)}
+                />
+              ) : localPreviewType ? (
+                getMediaIcon(localPreviewType)
+              ) : null}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium">
+                  {localPreviewType
+                    ? getMediaLabel(localPreviewType)
+                    : "Arquivo"}
+                </p>
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Loader2 className="h-3 w-3 animate-spin shrink-0" />
+                  <span>Fazendo upload…</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Newly uploaded media preview */}
+          {!isUploading && uploadedMedia && (
+            <div className="flex items-center gap-3 rounded-lg border p-3 bg-muted/30">
+              {uploadedMedia.mediaType === "image" ? (
+                <img
+                  src={uploadedMedia.url}
+                  alt={uploadedMedia.name}
+                  className="h-12 w-12 rounded object-cover shrink-0 cursor-pointer"
+                  onClick={() => setImagePreviewUrl(uploadedMedia.url)}
+                />
+              ) : (
+                getMediaIcon(uploadedMedia.mediaType)
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">
+                  {uploadedMedia.name}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {getMediaLabel(uploadedMedia.mediaType)}
+                </p>
+              </div>
+              <div className="flex items-center gap-1">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading}
+                >
+                  Substituir
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 shrink-0"
+                  onClick={handleRemoveMedia}
+                  disabled={isUploading}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Existing server-side media (visible unless user removed it or replaced with a new upload) */}
+          {!isUploading &&
+            !uploadedMedia &&
+            !mediaRemoved &&
+            existingMediaUrl &&
+            existingMediaType && (
+              <div className="flex items-center gap-3 rounded-lg border p-3 bg-muted/30">
+                {existingMediaType === "image" ? (
+                  <img
+                    src={existingMediaUrl}
+                    alt="Imagem anexada"
+                    className="h-12 w-12 rounded object-cover shrink-0 cursor-pointer"
+                    onClick={() => setImagePreviewUrl(existingMediaUrl)}
+                  />
+                ) : (
+                  getMediaIcon(existingMediaType)
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">
+                    {getMediaLabel(existingMediaType)} anexado
+                  </p>
+                  {existingMediaType !== "image" ? (
+                    <a
+                      href={existingMediaUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      download
+                      className="flex items-center gap-1 text-xs text-primary hover:underline"
+                    >
+                      <Download className="h-3 w-3 shrink-0" />
+                      Baixar arquivo
+                    </a>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      Mídia existente
+                    </p>
+                  )}
+                </div>
+                <div className="flex items-center gap-1">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading}
+                  >
+                    Substituir
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 shrink-0"
+                    onClick={handleRemoveMedia}
+                    disabled={isUploading}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+
+          {/* Upload button — show when there's no media at all */}
+          {!isUploading &&
+            !uploadedMedia &&
+            !(existingMediaUrl && !mediaRemoved) && (
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full border-dashed"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading}
+              >
+                <Paperclip className="h-4 w-4 mr-2" />
+                Anexar arquivo
+              </Button>
+            )}
+
+          {/* Upload error */}
+          {uploadError && (
+            <div className="flex items-center gap-2 text-sm text-destructive">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              <span>{uploadError}</span>
+            </div>
+          )}
+
+          {/* Hint text */}
+          {!isUploading &&
+            !uploadedMedia &&
+            !(existingMediaUrl && !mediaRemoved) && (
+              <p className="text-xs text-muted-foreground">
+                Imagens, áudios ou documentos (PDF, DOC, DOCX, XLS, XLSX, PPT,
+                PPTX, TXT, CSV). Máx. {FOLLOW_UP_MAX_FILE_SIZE / (1024 * 1024)}{" "}
+                MB.
+              </p>
+            )}
+        </div>
+
         {/* Include Tags */}
         <div className="space-y-2">
           <TagSelector
@@ -387,6 +701,20 @@ export function ReengagementConfigSection({
             }
           />
         </div>
+
+        {/* Image lightbox */}
+        <Dialog
+          open={!!imagePreviewUrl}
+          onOpenChange={(open) => !open && setImagePreviewUrl(null)}
+        >
+          <DialogContent className="max-w-4xl p-2 bg-black/90 border-0">
+            <img
+              src={imagePreviewUrl ?? ""}
+              alt="Prévia da imagem"
+              className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
+            />
+          </DialogContent>
+        </Dialog>
       </div>
     );
   };
@@ -454,7 +782,10 @@ export function ReengagementConfigSection({
               <Button type="button" variant="outline" onClick={handleCancel}>
                 Cancelar
               </Button>
-              <Button type="button" onClick={handleSave}>
+              <Button type="button" onClick={handleSave} disabled={isUploading}>
+                {isUploading && (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                )}
                 Salvar Configurações
               </Button>
             </DialogFooter>
@@ -483,6 +814,12 @@ export function ReengagementConfigSection({
             <p>
               • Horário: {isoToTime(config.startTime)} às{" "}
               {isoToTime(config.endTime)}
+            </p>
+          )}
+          {(config.mediaFileId || existingMediaUrl) && (
+            <p>
+              • Mídia{" "}
+              {existingMediaType ? getMediaLabel(existingMediaType) : "anexada"}
             </p>
           )}
           {config.includeTags && config.includeTags.length > 0 && (

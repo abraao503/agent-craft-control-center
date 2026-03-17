@@ -708,6 +708,7 @@ const PipelineEditPage = () => {
               isActive: s.reengagementConfig.isActive ?? true,
               startTime: s.reengagementConfig.startTime,
               endTime: s.reengagementConfig.endTime,
+              mediaFileId: s.reengagementConfig.mediaFileId ?? undefined,
             }
           : null,
       }));
@@ -886,6 +887,8 @@ const PipelineEditPage = () => {
                         isActive: s.reengagementConfig.isActive ?? true,
                         startTime: s.reengagementConfig.startTime,
                         endTime: s.reengagementConfig.endTime,
+                        mediaFileId:
+                          s.reengagementConfig.mediaFileId ?? undefined,
                       }
                     : null,
                 }),

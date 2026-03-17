@@ -13,7 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   PipelineStageMinimal,
   AssistantPipelineStage,
-  ReengagementConfigInput,
+  ReengagementConfig,
 } from "@/types/pipeline";
 import { Agent } from "@/types/agent";
 import { CompanyWhatsAppIntegration } from "@/types/whatsapp";
@@ -47,7 +47,7 @@ export interface EditableStage extends Omit<
   color?: string;
   winProbability?: number;
   assistantPipelineStage?: AssistantPipelineStage;
-  reengagementConfig?: ReengagementConfigInput | null;
+  reengagementConfig?: ReengagementConfig | null;
 }
 
 interface StagesTabProps {
@@ -253,7 +253,16 @@ const SortableStage: React.FC<SortableStageProps> = ({
                 workspaceId={workspaceId}
                 config={stage.reengagementConfig ?? null}
                 onChange={(config) => {
-                  onUpdate(index, { reengagementConfig: config });
+                  onUpdate(index, {
+                    reengagementConfig: config
+                      ? {
+                          ...config,
+                          includeTags: config.includeTags ?? [],
+                          excludeTags: config.excludeTags ?? [],
+                          isActive: config.isActive ?? true,
+                        }
+                      : null,
+                  });
                 }}
               />
             </div>
@@ -325,15 +334,10 @@ export const StagesTab: React.FC<StagesTabProps> = ({
         assistantPipelineStage: assistantPipelineStage ?? undefined,
         reengagementConfig: s.reengagementConfig
           ? {
-              minInactiveChatTimeHours:
-                s.reengagementConfig.minInactiveChatTimeHours,
-              maxMessages: s.reengagementConfig.maxMessages,
-              messages: s.reengagementConfig.messages,
+              ...s.reengagementConfig,
               includeTags: s.reengagementConfig.includeTags || [],
               excludeTags: s.reengagementConfig.excludeTags || [],
               isActive: s.reengagementConfig.isActive ?? true,
-              startTime: s.reengagementConfig.startTime,
-              endTime: s.reengagementConfig.endTime,
             }
           : undefined,
       };

@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import {
   Paperclip,
   X,
@@ -64,6 +65,7 @@ export function MediaAttachment({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [removedExisting, setRemovedExisting] = useState(false);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -117,7 +119,8 @@ export function MediaAttachment({
             <img
               src={existingMediaUrl!}
               alt="Imagem anexada"
-              className="h-12 w-12 rounded object-cover shrink-0"
+              className="h-12 w-12 rounded object-cover shrink-0 cursor-pointer"
+              onClick={() => setImagePreviewUrl(existingMediaUrl!)}
             />
           ) : (
             getMediaIcon(existingMediaType!)
@@ -184,7 +187,8 @@ export function MediaAttachment({
             <img
               src={URL.createObjectURL(file)}
               alt="Preview"
-              className="h-10 w-10 rounded object-cover"
+              className="h-10 w-10 rounded object-cover cursor-pointer"
+              onClick={() => setImagePreviewUrl(URL.createObjectURL(file))}
             />
           )}
           <Button
@@ -225,10 +229,24 @@ export function MediaAttachment({
       {/* Dica de formatos */}
       {!file && !hasExistingMedia && (
         <p className="text-xs text-muted-foreground">
-          Imagens, áudios ou documentos (PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT, CSV). Máx.{" "}
-          {FOLLOW_UP_MAX_FILE_SIZE / (1024 * 1024)} MB.
+          Imagens, áudios ou documentos (PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX,
+          TXT, CSV). Máx. {FOLLOW_UP_MAX_FILE_SIZE / (1024 * 1024)} MB.
         </p>
       )}
+
+      {/* Image lightbox */}
+      <Dialog
+        open={!!imagePreviewUrl}
+        onOpenChange={(open) => !open && setImagePreviewUrl(null)}
+      >
+        <DialogContent className="max-w-4xl p-2 bg-black/90 border-0">
+          <img
+            src={imagePreviewUrl ?? ""}
+            alt="Prévia da imagem"
+            className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

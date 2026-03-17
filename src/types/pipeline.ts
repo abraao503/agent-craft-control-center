@@ -46,6 +46,12 @@ export interface ReengagementConfig {
   isActive: boolean; // default: true
   startTime?: string; // optional, ISO 8601 datetime string
   endTime?: string; // optional, ISO 8601 datetime string
+  // Media fields resolved by backend (read-only, returned on GET)
+  mediaUrl?: string | null;
+  mediaMimetype?: string | null;
+  mediaType?: "image" | "audio" | "document" | null;
+  // Used when building request payload — set by ReengagementConfigSection
+  mediaFileId?: string | null;
 }
 
 export interface ReengagementConfigInput {
@@ -57,6 +63,7 @@ export interface ReengagementConfigInput {
   isActive?: boolean; // optional, default: true
   startTime?: string; // optional, ISO 8601 datetime string (e.g., "2024-01-15T08:00:00.000Z")
   endTime?: string; // optional, ISO 8601 datetime string (e.g., "2024-01-15T17:00:00.000Z")
+  mediaFileId?: string | null; // UUID returned by POST /file/media/upload
 }
 
 export interface CreatePipelineStageInput {
