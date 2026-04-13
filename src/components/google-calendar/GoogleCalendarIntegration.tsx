@@ -84,12 +84,20 @@ export function GoogleCalendarIntegration({ workspaceId }: Props) {
               try {
                 // Checa se já voltou pro nosso frontend (Callback redirect)
                 if (win.location.origin === window.location.origin) {
-                  win.close();
-                  clearInterval(authTimerRef.current!);
-                  setIsAuthOpen(false);
-                  queryClient.invalidateQueries({
-                    queryKey: ["googleCalendarIntegrations", workspaceId],
-                  });
+                  const params = new URLSearchParams(win.location.search);
+                  const calendarStatus = params.get("google_calendar");
+
+                  // Apenas fecha automaticamente em caso de sucesso.
+                  // Em caso de erro (permission_denied, unknown_error), deixa
+                  // o popup aberto para o usuário ler o feedback e agir.
+                  if (calendarStatus === "connected") {
+                    win.close();
+                    clearInterval(authTimerRef.current!);
+                    setIsAuthOpen(false);
+                    queryClient.invalidateQueries({
+                      queryKey: ["googleCalendarIntegrations", workspaceId],
+                    });
+                  }
                 }
               } catch (e) {
                 // Ignorar erros Cross-Origin enquanto navega nas telas do Google

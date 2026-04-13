@@ -297,6 +297,11 @@ const PipelineEditPage = () => {
       setApiKeyChanged(false); // Reset API key change flag for creation mode
       initialApiKeyRef.current = ""; // Set initial as empty for new pipeline
       hasInitializedDataRef.current = true; // Marca como inicializado
+    } else if (currentPipeline && !currentPipeline.assistantId) {
+      // Edit mode without an existing agent — mark as initialized so re-renders
+      // triggered by React Query refetches (e.g. on window refocus) don't reset
+      // the useAgent toggle that the user may have already enabled.
+      hasInitializedDataRef.current = true;
     }
   }, [stagesQuery.data, currentPipeline, agentQuery.data, isCreating]);
 

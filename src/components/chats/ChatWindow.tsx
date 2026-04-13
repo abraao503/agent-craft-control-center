@@ -168,8 +168,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         prev.map((msg) =>
           msg.tempId === messageToSend.tempId
             ? { ...sentMessage, status: "sent" }
-            : msg
-        )
+            : msg,
+        ),
       );
 
       // Remove from queue
@@ -180,8 +180,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         prev.map((msg) =>
           msg.tempId === messageToSend.tempId
             ? { ...msg, status: "failed" }
-            : msg
-        )
+            : msg,
+        ),
       );
 
       // Remove from queue
@@ -200,13 +200,19 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   // Validate file type and size
   const validateFile = (file: File): { valid: boolean; error?: string } => {
     const maxSize = 50 * 1024 * 1024; // 50 MB
-    
+
     if (file.size > maxSize) {
       return { valid: false, error: "File size exceeds 50 MB limit" };
     }
 
     const imageTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
-    const audioTypes = ["audio/mp3", "audio/mpeg", "audio/ogg", "audio/wav", "audio/aac"];
+    const audioTypes = [
+      "audio/mp3",
+      "audio/mpeg",
+      "audio/ogg",
+      "audio/wav",
+      "audio/aac",
+    ];
     const documentTypes = [
       "application/pdf",
       "application/msword",
@@ -251,7 +257,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
 
     setSelectedFile(file);
     setIsMediaPreviewOpen(true);
-    
+
     // Reset input
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
@@ -302,8 +308,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       // Update message status to sent
       setMessages((prev) =>
         prev.map((msg) =>
-          msg.tempId === tempId ? { ...sentMessage, status: "sent" } : msg
-        )
+          msg.tempId === tempId ? { ...sentMessage, status: "sent" } : msg,
+        ),
       );
 
       // Revoke object URL
@@ -312,8 +318,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       // Mark message as failed
       setMessages((prev) =>
         prev.map((msg) =>
-          msg.tempId === tempId ? { ...msg, status: "failed" } : msg
-        )
+          msg.tempId === tempId ? { ...msg, status: "failed" } : msg,
+        ),
       );
 
       toast({
@@ -330,7 +336,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
 
     const mediaType = getMediaTypeFromFile(selectedFile);
     const tempId = `temp-${Date.now()}-${Math.random()}`;
-    
+
     const pendingMessage: MessageWithStatus = {
       id: tempId,
       tempId,
@@ -370,10 +376,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       // Update message status to sent
       setMessages((prev) =>
         prev.map((msg) =>
-          msg.tempId === tempId
-            ? { ...sentMessage, status: "sent" }
-            : msg
-        )
+          msg.tempId === tempId ? { ...sentMessage, status: "sent" } : msg,
+        ),
       );
 
       // Revoke object URL
@@ -382,10 +386,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       // Mark message as failed
       setMessages((prev) =>
         prev.map((msg) =>
-          msg.tempId === tempId
-            ? { ...msg, status: "failed" }
-            : msg
-        )
+          msg.tempId === tempId ? { ...msg, status: "failed" } : msg,
+        ),
       );
 
       toast({
@@ -466,9 +468,10 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       type: newMessageEvent.type || "text",
       mediaUrl: newMessageEvent.mediaUrl || null,
       mediaMimetype: newMessageEvent.mediaMimetype || null,
-      createdAt: newMessageEvent.createdAt instanceof Date 
-        ? newMessageEvent.createdAt.toISOString() 
-        : newMessageEvent.createdAt,
+      createdAt:
+        newMessageEvent.createdAt instanceof Date
+          ? newMessageEvent.createdAt.toISOString()
+          : newMessageEvent.createdAt,
       status: "sent",
     };
 
@@ -476,7 +479,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       // Check if message already exists (avoid duplicates)
       const exists = prev.some((msg) => msg.id === newMsg.id);
       if (exists) return prev;
-      
+
       return [...prev, newMsg];
     });
 
@@ -507,7 +510,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         setMessages((prevMessages) => {
           const newUniqueMessages = messagesData.items.filter(
             (msg) =>
-              !prevMessages.some((existingMsg) => existingMsg.id === msg.id)
+              !prevMessages.some((existingMsg) => existingMsg.id === msg.id),
           );
           return [...newUniqueMessages, ...prevMessages];
         });
@@ -598,7 +601,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       const maxHeight = 120; // max height in pixels (approx 5 lines)
       textareaRef.current.style.height = `${Math.min(
         scrollHeight,
-        maxHeight
+        maxHeight,
       )}px`;
       textareaRef.current.style.overflowY =
         scrollHeight > maxHeight ? "auto" : "hidden";
@@ -652,7 +655,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   const formatDateSeparator = (date: Date) => {
     const now = new Date();
     const diffInDays = Math.floor(
-      (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24)
+      (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24),
     );
 
     if (diffInDays === 0) {
@@ -668,7 +671,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
 
   const shouldShowDateSeparator = (
     currentMsg: MessageWithStatus,
-    previousMsg: MessageWithStatus | null
+    previousMsg: MessageWithStatus | null,
   ) => {
     if (!previousMsg) return true;
     const currentDate = new Date(currentMsg.createdAt);
@@ -696,7 +699,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
               <AvatarFallback className="bg-primary/10 text-primary font-semibold">
                 {getInitials(
                   conversation.customer.name,
-                  conversation.customer.phone
+                  conversation.customer.phone,
                 )}
               </AvatarFallback>
             </Avatar>
@@ -721,21 +724,29 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
             <div
               className={`flex items-center gap-1.5 xl:gap-2 px-2 xl:px-3 py-1.5 rounded-lg border-2 ${
                 localConversation.handledBy === "ai"
-                  ? "bg-blue-50 border-blue-200 text-blue-700"
-                  : "bg-green-50 border-green-200 text-green-700"
+                  ? "bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300"
+                  : "bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800 text-green-700 dark:text-green-300"
               }`}
             >
               {localConversation.handledBy === "ai" ? (
                 <>
                   <Bot className="h-4 w-4" />
-                  <span className="text-xs xl:text-sm font-medium xl:hidden">IA</span>
-                  <span className="text-sm font-medium hidden xl:inline">Atendimento por IA</span>
+                  <span className="text-xs xl:text-sm font-medium xl:hidden">
+                    IA
+                  </span>
+                  <span className="text-sm font-medium hidden xl:inline">
+                    Atendimento por IA
+                  </span>
                 </>
               ) : (
                 <>
                   <UserCog className="h-4 w-4" />
-                  <span className="text-xs xl:text-sm font-medium xl:hidden">Humano</span>
-                  <span className="text-sm font-medium hidden xl:inline">Atendimento Humano</span>
+                  <span className="text-xs xl:text-sm font-medium xl:hidden">
+                    Humano
+                  </span>
+                  <span className="text-sm font-medium hidden xl:inline">
+                    Atendimento Humano
+                  </span>
                 </>
               )}
             </div>
@@ -786,7 +797,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         {/* Messages */}
         <ScrollArea
           ref={scrollAreaRef}
-          className="flex-1 bg-[#efeae2] pr-2"
+          className="flex-1 bg-[#efeae2] dark:bg-[#0d1117] pr-2"
           onScroll={handleScroll}
         >
           <div className="p-4">
@@ -811,14 +822,14 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                     index > 0 ? messages[index - 1] : null;
                   const showDateSeparator = shouldShowDateSeparator(
                     message,
-                    previousMessage
+                    previousMessage,
                   );
 
                   return (
                     <div key={message.id}>
                       {showDateSeparator && (
                         <div className="flex justify-center my-4">
-                          <div className="bg-white/80 backdrop-blur-sm px-3 py-1 rounded-full shadow-sm">
+                          <div className="bg-white/80 dark:bg-[#182229]/90 backdrop-blur-sm px-3 py-1 rounded-full shadow-sm">
                             <span className="text-xs font-medium text-muted-foreground">
                               {formatDateSeparator(new Date(message.createdAt))}
                             </span>
@@ -833,10 +844,10 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                         <div
                           className={`max-w-[70%] rounded-lg p-3 ${
                             isCustomer
-                              ? "bg-white"
+                              ? "bg-white dark:bg-[#202c33]"
                               : message.sender === "assistant"
-                              ? "bg-[#d9fdd3]"
-                              : "bg-[#cfe9ff]"
+                                ? "bg-[#d9fdd3] dark:bg-[#005c4b]"
+                                : "bg-[#cfe9ff] dark:bg-[#1f4e7e]"
                           }`}
                         >
                           <div className="flex items-center gap-2 mb-1">
@@ -889,9 +900,9 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                 accept="image/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv,.zip,.rar"
                 onChange={handleFileSelect}
               />
-              <Button 
-                variant="ghost" 
-                size="icon" 
+              <Button
+                variant="ghost"
+                size="icon"
                 className="flex-shrink-0"
                 onClick={() => fileInputRef.current?.click()}
               >

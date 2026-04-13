@@ -41,6 +41,7 @@ export interface UpdatePipelineInput {
     contentsIds: string[];
     customFields: unknown[];
     entryTags: string[];
+    googleCalendarIntegrationId?: string | null;
   } | null;
   assistantId?: string | null; // DEPRECATED: for backwards compatibility
   whatsappIntegration?: WhatsAppIntegrationConfig | null;
@@ -48,7 +49,7 @@ export interface UpdatePipelineInput {
 
 export const updatePipeline = async (
   pipelineId: string,
-  payload: UpdatePipelineInput
+  payload: UpdatePipelineInput,
 ): Promise<{ message: string }> => {
   const { workspaceId, ...body } = payload;
   const { data } = await api.patch<{ message: string }>(
@@ -56,7 +57,7 @@ export const updatePipeline = async (
     body,
     {
       params: { workspaceId },
-    }
+    },
   );
   return data;
 };
