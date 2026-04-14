@@ -33,6 +33,7 @@ import {
 } from "@/services/deal-webhook";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { formatPhone } from "@/utils/phone";
 import {
   Table,
   TableBody,
@@ -333,7 +334,7 @@ export default function DealWebhookDetailPage() {
     description: "Descrição opcional do negócio",
     value: 1000,
     customerName: "João Silva",
-    customerPhone: "11999999999",
+    customerPhone: "+5511999887766",
     customerEmail: "joao.silva@exemplo.com",
   };
 
@@ -567,7 +568,7 @@ export default function DealWebhookDetailPage() {
                                 {execution.payload.customerName || "-"}
                               </TableCell>
                               <TableCell>
-                                {execution.payload.customerPhone}
+                                {formatPhone(execution.payload.customerPhone)}
                               </TableCell>
                               <TableCell>
                                 {format(
@@ -754,7 +755,7 @@ export default function DealWebhookDetailPage() {
                     </div>
                     <div className="grid grid-cols-3 gap-2 p-2 bg-muted/30">
                       <code>customerPhone</code>
-                      <span>string (11 dígitos)</span>
+                      <span>string (formato internacional)</span>
                       <span className="text-green-600">Sim</span>
                     </div>
                     <div className="grid grid-cols-3 gap-2 p-2">
@@ -788,8 +789,9 @@ export default function DealWebhookDetailPage() {
                   </Label>
                   <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
                     <li>
-                      O telefone deve ter exatamente 11 dígitos (formato:
-                      XX9NNNNNNNN)
+                      O telefone aceita formato internacional com DDI (ex:
+                      +5511999887766, +16505551234). Números sem DDI são
+                      assumidos como brasileiros.
                     </li>
                     <li>
                       O campo{" "}

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { getCustomerById } from "@/services/customer";
 import { useToast } from "@/components/ui/use-toast";
 import { ArrowLeft, Phone } from "lucide-react";
+import { formatPhone } from "@/utils/phone";
 import {
   Card,
   CardContent,
@@ -88,7 +89,7 @@ const CustomerDetailsPage = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Phone className="h-5 w-5" />
-                  {customer.phone}
+                  {formatPhone(customer.phone)}
                 </CardTitle>
                 <CardDescription>
                   Created on {formatDate(customer.createdAt)}

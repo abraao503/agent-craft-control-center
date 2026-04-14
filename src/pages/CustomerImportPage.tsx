@@ -442,8 +442,10 @@ export default function CustomerImportPage() {
                     por arquivo.
                   </p>
                   <p>
-                    <strong>Formato do telefone:</strong> DDD + Número (ex:
-                    11987654321).
+                    <strong>Formato do telefone:</strong> DDD + Número para
+                    Brasil (ex: 11987654321) ou formato internacional com DDI
+                    (ex: +16505551234). Números sem DDI são assumidos como
+                    brasileiros.
                   </p>
                   <p>
                     <strong>Atualização:</strong> Clientes com o mesmo telefone

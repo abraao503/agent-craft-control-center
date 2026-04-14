@@ -19,9 +19,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { DateTimePicker } from "@/components/ui/date-time-picker";
+import { PhoneInput } from "@/components/ui/phone-input";
 import { createDeal } from "@/services/deal/createDeal";
 import { CreateDealInput } from "@/types/deal";
 import { PipelineStageMinimal } from "@/types/pipeline";
+import { isValidPhone, normalizePhone } from "@/utils/phone";
 
 interface ValidationError {
   field: string;
@@ -58,7 +60,7 @@ export const CreateDealModal: React.FC<CreateDealModalProps> = ({
   const [value, setValue] = useState<string>("");
   const [currency, setCurrency] = useState<string>("BRL");
   const [expectedCloseDate, setExpectedCloseDate] = useState<Date | undefined>(
-    undefined
+    undefined,
   );
   const [customerName, setCustomerName] = useState<string>("");
   const [customerPhone, setCustomerPhone] = useState<string>("");
@@ -66,35 +68,11 @@ export const CreateDealModal: React.FC<CreateDealModalProps> = ({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const formatPhoneNumber = (value: string): string => {
-    // Remove all non-digit characters
-    const digits = value.replace(/\D/g, "");
-
-    // Limit to 11 digits
-    const limited = digits.slice(0, 11);
-
-    // Format as (XX) 9XXXX-XXXX
-    if (limited.length <= 2) {
-      return limited;
-    } else if (limited.length <= 7) {
-      return `(${limited.slice(0, 2)}) ${limited.slice(2)}`;
-    } else {
-      return `(${limited.slice(0, 2)}) ${limited.slice(2, 7)}-${limited.slice(
-        7
-      )}`;
-    }
-  };
-
-  const getUnformattedPhone = (formatted: string): string => {
-    return formatted.replace(/\D/g, "");
-  };
-
   const validate = (): string | null => {
     if (!pipelineId) return "Pipeline é obrigatório";
     if (!currentStageId) return "Selecione a etapa";
-    const phone = getUnformattedPhone(customerPhone);
-    if (!phone) return "Telefone do cliente é obrigatório";
-    if (phone.length !== 11) return "Formato de telefone inválido";
+    if (!customerPhone.trim()) return "Telefone do cliente é obrigatório";
+    if (!isValidPhone(customerPhone)) return "Formato de telefone inválido";
     if (!title.trim()) return "Título é obrigatório";
     const n = value ? Number(value) : undefined;
     if (n !== undefined && (isNaN(n) || n < 0))
@@ -123,7 +101,7 @@ export const CreateDealModal: React.FC<CreateDealModalProps> = ({
       currency: currency || "BRL",
       expectedCloseDate: expectedCloseDate?.toISOString(),
       customerName: customerName.trim(),
-      customerPhone: getUnformattedPhone(customerPhone),
+      customerPhone: normalizePhone(customerPhone),
       customerEmail: customerEmail.trim() || undefined,
     };
 
@@ -165,7 +143,10 @@ export const CreateDealModal: React.FC<CreateDealModalProps> = ({
               "Currency must be 3 characters": "Moeda deve ter 3 caracteres",
               "Invalid date format": "Formato de data inválido",
               "Phone must be in format XX9NNNNNNNN (11 digits)":
-                "Telefone deve estar no formato XX9NNNNNNNN (11 dígitos)",
+                "Formato de telefone inválido. Use o formato internacional (ex: +5511999887766) ou nacional (ex: 11999887766).",
+              "Invalid phone number": "Número de telefone inválido.",
+              "Invalid phone number format":
+                "Formato de telefone inválido. Use o formato internacional (ex: +5511999887766) ou nacional (ex: 11999887766).",
               "Invalid email format": "Formato de email inválido",
             };
             return fieldMessages[err.message] || err.message;
@@ -177,7 +158,7 @@ export const CreateDealModal: React.FC<CreateDealModalProps> = ({
             "Stage not found in pipeline": "Etapa não encontrada no pipeline",
           };
           setError(
-            notFoundMessages[errorData.message] || "Recurso não encontrado"
+            notFoundMessages[errorData.message] || "Recurso não encontrado",
           );
         } else if (errorData.statusCode === 409) {
           setError("Já existe um negócio para este cliente neste pipeline");
@@ -185,7 +166,7 @@ export const CreateDealModal: React.FC<CreateDealModalProps> = ({
           setError("Erro ao criar negócio. Tente novamente.");
         } else {
           setError(
-            errorData.message || "Erro ao criar negócio. Tente novamente."
+            errorData.message || "Erro ao criar negócio. Tente novamente.",
           );
         }
       } else {
@@ -239,13 +220,11 @@ export const CreateDealModal: React.FC<CreateDealModalProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label>Telefone do Cliente</Label>
-              <Input
+              <PhoneInput
+                defaultCountry="BR"
                 value={customerPhone}
-                onChange={(e) =>
-                  setCustomerPhone(formatPhoneNumber(e.target.value))
-                }
-                placeholder="(11) 98765-4321"
-                maxLength={15}
+                onChange={(value) => setCustomerPhone(value || "")}
+                placeholder="Número de telefone"
               />
             </div>
             <div className="space-y-2">

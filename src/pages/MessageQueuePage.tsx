@@ -27,6 +27,7 @@ import {
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { isColorDark } from "@/lib/utils";
+import { formatPhone } from "@/utils/phone";
 
 export default function MessageQueuePage() {
   const { pipelineId } = useParams<{ pipelineId: string }>();
@@ -217,7 +218,7 @@ export default function MessageQueuePage() {
                             {message.customer.name || "Sem nome"}
                           </div>
                           <div className="text-xs text-muted-foreground">
-                            {message.customer.phone}
+                            {formatPhone(message.customer.phone)}
                           </div>
                         </TableCell>
                         <TableCell className="max-w-xs">
@@ -244,7 +245,7 @@ export default function MessageQueuePage() {
                           {format(
                             new Date(message.createdAt),
                             "dd/MM/yyyy 'às' HH:mm",
-                            { locale: ptBR }
+                            { locale: ptBR },
                           )}
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
@@ -252,7 +253,7 @@ export default function MessageQueuePage() {
                             ? format(
                                 new Date(message.sendAt),
                                 "dd/MM/yyyy 'às' HH:mm",
-                                { locale: ptBR }
+                                { locale: ptBR },
                               )
                             : "-"}
                         </TableCell>

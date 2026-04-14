@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/components/ui/use-toast";
 import { TemplateTextDisplay } from "@/components/message-template";
+import { formatPhone } from "@/utils/phone";
 import { Button } from "@/components/ui/button";
 import {
   ArrowLeft,
@@ -280,26 +281,6 @@ export default function MassBroadcastDetailPage() {
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return "—";
     return format(new Date(dateStr), "dd/MM/yyyy HH:mm", { locale: ptBR });
-  };
-
-  const formatPhone = (phone: string) => {
-    // Formato: 559291824283 -> +55 (92) 91824-283
-    if (!phone || phone.length < 12) return phone;
-
-    const ddi = phone.slice(0, 2); // 55
-    const ddd = phone.slice(2, 4); // 92
-    const number = phone.slice(4); // 91824283
-
-    // Formata o número (celular com 9 dígitos ou fixo com 8)
-    if (number.length === 9) {
-      // Celular: 91824-283
-      return `+${ddi} (${ddd}) ${number.slice(0, 5)}-${number.slice(5)}`;
-    } else if (number.length === 8) {
-      // Fixo: 1824-283
-      return `+${ddi} (${ddd}) ${number.slice(0, 4)}-${number.slice(4)}`;
-    }
-
-    return phone;
   };
 
   const getProgressPercent = () => {

@@ -1,38 +1,110 @@
+import {
+  parsePhoneNumber,
+  isValidPhoneNumber as libIsValidPhoneNumber,
+} from "libphonenumber-js";
+
 /**
- * Format phone number for display
- * Converts formats like "5511987654321" to "(11) 98765-4321" (without DDI by default)
- * Or with DDI: "+55 (11) 98765-4321"
+ * Format phone number for display (supports international numbers)
  *
- * @param phone - Phone number string
- * @param showDDI - Whether to show the DDI (country code) - defaults to false
+ * - Brazilian numbers: displayed in national format "(11) 99988-7766"
+ * - International numbers: displayed in international format "+1 650 555 1234"
+ *
+ * The phone parameter is expected in E.164 format WITHOUT "+" (as stored/returned by the backend).
+ * Examples: "5511999887766", "16505551234", "447911123456"
+ *
+ * @param phone - Phone number string (E.164 without "+")
+ * @param showDDI - Whether to always show the DDI (country code) - defaults to false
  * @returns Formatted phone number or original string if format is invalid
  */
 export const formatPhone = (
   phone: string,
   showDDI: boolean = false,
 ): string => {
-  if (!phone || phone.length < 12) return phone;
+  if (!phone) return phone;
 
-  const ddi = phone.slice(0, 2);
-  const ddd = phone.slice(2, 4);
-  const number = phone.slice(4);
+  try {
+    const parsed = parsePhoneNumber(`+${phone}`);
+    if (!parsed) return phone;
 
-  const formatNumber = () => {
-    if (number.length === 9) {
-      return `${number.slice(0, 5)}-${number.slice(5)}`;
-    } else if (number.length === 8) {
-      return `${number.slice(0, 4)}-${number.slice(4)}`;
+    // Brazilian numbers: national format by default
+    if (parsed.country === "BR" && !showDDI) {
+      return parsed.formatNational();
     }
-    return number;
-  };
 
-  const formattedNumber = formatNumber();
+    // International numbers or when DDI is explicitly requested
+    return parsed.formatInternational();
+  } catch {
+    // Fallback for invalid/unparseable numbers
+    return phone;
+  }
+};
 
-  if (showDDI) {
-    return `+${ddi} (${ddd}) ${formattedNumber}`;
+/**
+ * Validate a phone number (supports international numbers)
+ *
+ * Accepts numbers with or without "+". Numbers without country code
+ * are assumed to be Brazilian (BR fallback).
+ *
+ * @param phone - Phone number string to validate
+ * @returns Whether the phone number is valid
+ */
+export const isValidPhone = (phone: string): boolean => {
+  if (!phone) return false;
+
+  try {
+    // If already starts with "+", validate directly
+    if (phone.startsWith("+")) {
+      return libIsValidPhoneNumber(phone);
+    }
+
+    // Try with "+" prefix first (E.164 format without "+")
+    if (libIsValidPhoneNumber(`+${phone}`)) {
+      return true;
+    }
+
+    // Fallback: assume Brazilian number
+    return libIsValidPhoneNumber(phone, "BR");
+  } catch {
+    return false;
+  }
+};
+
+/**
+ * Normalize a phone number to E.164 format WITH "+"
+ * (the format expected when sending to the backend API)
+ *
+ * @param phone - Phone number string (can include formatting, spaces, etc.)
+ * @returns E.164 string with "+" prefix (e.g. "+5511999887766") or digits-only fallback
+ */
+export const normalizePhone = (phone: string): string => {
+  if (!phone) return phone;
+
+  try {
+    // If starts with "+", parse directly
+    if (phone.startsWith("+")) {
+      const parsed = parsePhoneNumber(phone);
+      if (parsed) {
+        return parsed.format("E.164");
+      }
+    }
+
+    // Try parsing as international (with "+" prefix)
+    const digits = phone.replace(/\D/g, "");
+    const parsedWithPlus = parsePhoneNumber(`+${digits}`);
+    if (parsedWithPlus?.isValid()) {
+      return parsedWithPlus.format("E.164");
+    }
+
+    // Fallback: assume Brazilian number
+    const parsed = parsePhoneNumber(phone, "BR");
+    if (parsed) {
+      return parsed.format("E.164");
+    }
+  } catch {
+    // Return digits only as fallback
   }
 
-  return `(${ddd}) ${formattedNumber}`;
+  return `+${phone.replace(/\D/g, "")}`;
 };
 
 /**

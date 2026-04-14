@@ -45,6 +45,7 @@ import { MessageSentEvent } from "@/types/websocket";
 import { MessageContent } from "./media/MessageContent";
 import { MediaPreviewModal } from "./MediaPreviewModal";
 import { AudioRecorder } from "./AudioRecorder";
+import { formatPhone } from "@/utils/phone";
 
 type MessageStatus = "pending" | "sent" | "failed";
 
@@ -705,11 +706,12 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
             </Avatar>
             <div>
               <h3 className="font-semibold">
-                {conversation.customer.name || conversation.customer.phone}
+                {conversation.customer.name ||
+                  formatPhone(conversation.customer.phone)}
               </h3>
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 {conversation.customer.name && (
-                  <span>{conversation.customer.phone}</span>
+                  <span>{formatPhone(conversation.customer.phone)}</span>
                 )}
                 {conversation.customer.name && conversation.agent && (
                   <span>•</span>

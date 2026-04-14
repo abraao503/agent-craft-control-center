@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { PhoneInput, PhoneDisplay } from "@/components/ui/phone-input";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -825,18 +826,21 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
     switch (field.type) {
       case "short_text":
       case "email":
-      case "phone":
         return (
           <Input
-            type={
-              field.type === "email"
-                ? "email"
-                : field.type === "phone"
-                  ? "tel"
-                  : "text"
-            }
+            type={field.type === "email" ? "email" : "text"}
             value={value}
             onChange={(e) => handleFieldValueChange(field.id, e.target.value)}
+            onBlur={() => handleFieldBlur(field.id)}
+            placeholder={field.description || field.label}
+          />
+        );
+      case "phone":
+        return (
+          <PhoneInput
+            defaultCountry="BR"
+            value={value}
+            onChange={(val) => handleFieldValueChange(field.id, val || "")}
             onBlur={() => handleFieldBlur(field.id)}
             placeholder={field.description || field.label}
           />
@@ -976,11 +980,11 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
                     </div>
                     <div className="space-y-2">
                       <Label>Telefone principal</Label>
-                      <Input
-                        value={dealDetails?.customer?.phone || ""}
-                        disabled
-                        placeholder="Telefone"
-                      />
+                      {dealDetails?.customer?.phone ? (
+                        <PhoneDisplay phone={dealDetails.customer.phone} />
+                      ) : (
+                        <Input disabled placeholder="Telefone" />
+                      )}
                     </div>
                   </div>
 

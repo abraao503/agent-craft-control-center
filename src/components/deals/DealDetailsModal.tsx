@@ -19,6 +19,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Trash2, Edit2, Plus, Save, X } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { DealListItem, DealNote, DealDetails } from "@/types/deal";
+import { formatPhone } from "@/utils/phone";
 import { updateDeal } from "@/services/deal/updateDeal";
 import { getDealNotes } from "@/services/deal/getDealNotes";
 import { createDealNote } from "@/services/deal/createDealNote";
@@ -53,7 +54,7 @@ export const DealDetailsModal: React.FC<DealDetailsModalProps> = ({
   const [currency, setCurrency] = useState("BRL");
   const [customerName, setCustomerName] = useState("");
   const [expectedCloseDate, setExpectedCloseDate] = useState<Date | undefined>(
-    undefined
+    undefined,
   );
 
   const [newNoteContent, setNewNoteContent] = useState("");
@@ -82,7 +83,7 @@ export const DealDetailsModal: React.FC<DealDetailsModalProps> = ({
       setExpectedCloseDate(
         dealDetails.expectedCloseDate
           ? new Date(dealDetails.expectedCloseDate)
-          : undefined
+          : undefined,
       );
     }
   }, [dealDetails]);
@@ -301,7 +302,11 @@ export const DealDetailsModal: React.FC<DealDetailsModalProps> = ({
                     <div className="space-y-2">
                       <Label>Telefone principal</Label>
                       <Input
-                        value={dealDetails?.customer?.phone || ""}
+                        value={
+                          dealDetails?.customer?.phone
+                            ? formatPhone(dealDetails.customer.phone)
+                            : ""
+                        }
                         disabled
                         placeholder="Telefone"
                       />

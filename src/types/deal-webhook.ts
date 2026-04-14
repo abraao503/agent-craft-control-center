@@ -65,7 +65,7 @@ export interface TriggerWebhookPayload {
   description?: string;
   value?: number;
   customerName?: string;
-  customerPhone: string; // 11 digits, format: XX9NNNNNNNN
+  customerPhone: string; // Phone number (international format supported, e.g. +5511999887766 or +16505551234)
   customerEmail?: string;
 }
 

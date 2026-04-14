@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { QueuedMessage } from "@/types/follow-up";
+import { formatPhone } from "@/utils/phone";
 
 interface QueuedMessagesTableProps {
   messages: QueuedMessage[];
@@ -125,11 +126,11 @@ export function QueuedMessagesTable({
                         {message.customer.identifier}
                       </div>
                       <div className="text-sm text-muted-foreground">
-                        {message.customer.phone}
+                        {formatPhone(message.customer.phone)}
                       </div>
                     </div>
                   ) : (
-                    message.customer.phone
+                    formatPhone(message.customer.phone)
                   )}
                 </TableCell>
                 <TableCell>{getStatusBadge(message.status)}</TableCell>

@@ -4,6 +4,7 @@ import { QueuedMessage, QueuedMessageStatus } from "@/types/message-queue";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Clock, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
+import { formatPhone } from "@/utils/phone";
 
 interface QueuedMessageCardProps {
   message: QueuedMessage;
@@ -57,11 +58,11 @@ export function QueuedMessageCard({ message }: QueuedMessageCardProps) {
         <div className="flex items-start justify-between">
           <div className="space-y-1">
             <CardTitle className="text-base">
-              {message.customer.name || message.customer.phone}
+              {message.customer.name || formatPhone(message.customer.phone)}
             </CardTitle>
             {message.customer.name && (
               <p className="text-sm text-muted-foreground">
-                {message.customer.phone}
+                {formatPhone(message.customer.phone)}
               </p>
             )}
           </div>

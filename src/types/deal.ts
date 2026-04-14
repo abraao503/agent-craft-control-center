@@ -34,7 +34,7 @@ export interface CreateDealInput {
   currency?: string; // default BRL
   expectedCloseDate?: string; // ISO datetime
   customerName: string; // Required - Customer name
-  customerPhone: string; // Required - Phone in format XX9NNNNNNNN (11 digits)
+  customerPhone: string; // Required - Phone number (international format supported, e.g. +5511999887766 or 11999887766)
   customerEmail?: string; // Optional - Valid email format
 }
 

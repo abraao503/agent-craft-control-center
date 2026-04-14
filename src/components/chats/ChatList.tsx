@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Conversation } from "@/types/conversation";
 import { isColorDark } from "@/lib/utils";
+import { formatPhone } from "@/utils/phone";
 
 type ChatListProps = {
   conversations: Conversation[];
@@ -47,7 +48,7 @@ export const ChatList: React.FC<ChatListProps> = ({
     const now = new Date();
     const messageDate = new Date(date);
     const diffInDays = Math.floor(
-      (now.getTime() - messageDate.getTime()) / (1000 * 60 * 60 * 24)
+      (now.getTime() - messageDate.getTime()) / (1000 * 60 * 60 * 24),
     );
 
     if (diffInDays === 0) {
@@ -142,7 +143,7 @@ export const ChatList: React.FC<ChatListProps> = ({
                       <AvatarFallback className="bg-primary/10 text-primary font-semibold">
                         {getInitials(
                           conversation.customer.name,
-                          conversation.customer.phone
+                          conversation.customer.phone,
                         )}
                       </AvatarFallback>
                     </Avatar>
@@ -160,18 +161,18 @@ export const ChatList: React.FC<ChatListProps> = ({
                             }`}
                           >
                             {conversation.customer.name ||
-                              conversation.customer.phone}
+                              formatPhone(conversation.customer.phone)}
                           </h3>
                           {conversation.customer.name && (
                             <p className="text-xs text-muted-foreground truncate">
-                              {conversation.customer.phone}
+                              {formatPhone(conversation.customer.phone)}
                             </p>
                           )}
                         </div>
                         <div className="flex flex-col items-end gap-1 ml-2 flex-shrink-0">
                           <span className="text-xs text-muted-foreground">
                             {formatLastInteraction(
-                              conversation.lastInteraction
+                              conversation.lastInteraction,
                             )}
                           </span>
                           {conversation.unreadCount !== undefined &&
