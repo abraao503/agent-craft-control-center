@@ -67,7 +67,7 @@ const LoginForm = () => {
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
-            <div className="p-3 bg-red-50 border border-red-200 text-red-600 rounded-md text-sm">
+            <div className="p-3 bg-destructive/10 border border-destructive/30 text-destructive rounded-md text-sm">
               {error}
             </div>
           )}

@@ -57,6 +57,8 @@ export interface UpdateDealInput {
   assignedUserId?: string;
   customer?: {
     name?: string;
+    email?: string;
+    phone?: string;
   };
 }
 

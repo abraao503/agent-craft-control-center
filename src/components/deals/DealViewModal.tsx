@@ -81,6 +81,7 @@ import { updateDeal } from "@/services/deal/updateDeal";
 import { updateDealTags } from "@/services/deal/updateDealTags";
 import { assignUserToDeal } from "@/services/deal/assignUserToDeal";
 import { listTags } from "@/services/tag/listTags";
+import { updateCustomerPhone } from "@/services/customer/updateCustomerPhone";
 import {
   formatCPF,
   formatCNPJ,
@@ -170,6 +171,8 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
   const [description, setDescription] = useState("");
   const [value, setValue] = useState("");
   const [customerName, setCustomerName] = useState("");
+  const [customerEmail, setCustomerEmail] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
   const [assignedUserId, setAssignedUserId] = useState<string | null>(null);
 
   // Track which field is being saved
@@ -344,6 +347,11 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
       setDescription(dealDetails.description || "");
       setValue(dealDetails.value?.toString() || "");
       setCustomerName(dealDetails.customer?.name || "");
+      setCustomerEmail(dealDetails.customer?.email || "");
+      // PhoneInput expects E.164 (+prefix); backend stores without +
+      setCustomerPhone(
+        dealDetails.customer?.phone ? `+${dealDetails.customer.phone}` : "",
+      );
       setAssignedUserId(dealDetails.assignedUser?.id || null);
       setSelectedTagIds(dealDetails.tags || []);
     }
@@ -356,6 +364,8 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
       description?: string;
       value?: number;
       customerName?: string;
+      customerEmail?: string;
+      customerPhone?: string;
       fieldName?: string;
     }) => {
       if (!deal) return;
@@ -363,9 +373,19 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
         title: data.title?.trim() || undefined,
         description: data.description?.trim() || undefined,
         value: data.value,
-        customer: data.customerName?.trim()
-          ? { name: data.customerName.trim() }
-          : undefined,
+        customer:
+          data.customerName?.trim() ||
+          data.customerEmail !== undefined ||
+          data.customerPhone !== undefined
+            ? {
+                name: data.customerName?.trim() || undefined,
+                email:
+                  data.customerEmail !== undefined
+                    ? data.customerEmail.trim()
+                    : undefined,
+                phone: data.customerPhone?.trim() || undefined,
+              }
+            : undefined,
       });
     },
     onSuccess: () => {
@@ -374,12 +394,83 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
       queryClient.invalidateQueries({ queryKey: ["dealsByStage"] });
       setSavingField(null);
     },
-    onError: () => {
+    onError: (error: unknown, data) => {
+      // Revert email to previous value if email update failed
+      if (data.fieldName === "customerEmail") {
+        setCustomerEmail(dealDetails?.customer?.email || "");
+
+        let description = "Falha ao atualizar e-mail.";
+        if (error instanceof AxiosError) {
+          const status = error.response?.status;
+          const message = error.response?.data?.message;
+
+          if (status === 400 || message === "Invalid email format") {
+            description = "Formato de e-mail inválido.";
+          } else if (status === 409) {
+            description = "Este e-mail já está em uso.";
+          } else if (message === "Customer not found") {
+            description = "Cliente não encontrado.";
+          } else if (message === "Internal error") {
+            description = "Erro interno. Tente novamente mais tarde.";
+          }
+        }
+
+        toast({ title: "Erro", description, variant: "destructive" });
+        setSavingField(null);
+        return;
+      }
+
       toast({
         title: "Erro",
         description: "Falha ao atualizar negócio.",
         variant: "destructive",
       });
+      setSavingField(null);
+    },
+  });
+
+  // Update customer phone mutation (dedicated route)
+  const updateCustomerPhoneMutation = useMutation({
+    mutationFn: async (phone: string) => {
+      if (!dealDetails?.customer?.id) return;
+      await updateCustomerPhone({
+        customerId: dealDetails.customer.id,
+        phone,
+        workspaceId,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["getDealById", deal?.id] });
+      setSavingField(null);
+    },
+    onError: (error: unknown) => {
+      // Revert to previous value stored in dealDetails
+      const previousPhone = dealDetails?.customer?.phone
+        ? `+${dealDetails.customer.phone}`
+        : "";
+      setCustomerPhone(previousPhone);
+
+      let description = "Falha ao atualizar telefone.";
+      if (error instanceof AxiosError) {
+        const status = error.response?.status;
+        const message = error.response?.data?.message;
+
+        if (status === 400) {
+          description = "Número no formato incorreto.";
+        } else if (status === 409) {
+          if (message === "Phone already in use") {
+            description = "Este número de telefone já está em uso.";
+          } else {
+            description = "Conflito ao atualizar telefone.";
+          }
+        } else if (message === "Customer not found") {
+          description = "Cliente não encontrado.";
+        } else if (message === "Internal error") {
+          description = "Erro interno. Tente novamente mais tarde.";
+        }
+      }
+
+      toast({ title: "Erro", description, variant: "destructive" });
       setSavingField(null);
     },
   });
@@ -706,6 +797,22 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
     }
   };
 
+  const handleCustomerEmailBlur = () => {
+    if (customerEmail !== (dealDetails?.customer?.email || "")) {
+      setSavingField("customerEmail");
+      updateDealMutation.mutate({ customerEmail, fieldName: "customerEmail" });
+    }
+  };
+
+  const handleCustomerPhoneBlur = () => {
+    // customerPhone is E.164 (+5511...), backend stores without +
+    const phoneForBackend = customerPhone.replace(/^\+/, "");
+    if (phoneForBackend !== (dealDetails?.customer?.phone || "")) {
+      setSavingField("customerPhone");
+      updateCustomerPhoneMutation.mutate(phoneForBackend);
+    }
+  };
+
   const handleSelectFieldType = (type: FieldType | "document") => {
     setSelectedFieldType(type);
     setShowCreateFieldModal(true);
@@ -971,20 +1078,33 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
 
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-2">
-                      <Label>E-mail principal</Label>
+                      <Label className="flex items-center gap-2">
+                        E-mail principal
+                        {savingField === "customerEmail" && (
+                          <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                        )}
+                      </Label>
                       <Input
-                        value={dealDetails?.customer?.email || ""}
-                        disabled
+                        type="email"
+                        value={customerEmail}
+                        onChange={(e) => setCustomerEmail(e.target.value)}
+                        onBlur={handleCustomerEmailBlur}
                         placeholder="Inserir e-mail"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>Telefone principal</Label>
-                      {dealDetails?.customer?.phone ? (
-                        <PhoneDisplay phone={dealDetails.customer.phone} />
-                      ) : (
-                        <Input disabled placeholder="Telefone" />
-                      )}
+                      <Label className="flex items-center gap-2">
+                        Telefone principal
+                        {savingField === "customerPhone" && (
+                          <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                        )}
+                      </Label>
+                      <PhoneInput
+                        defaultCountry="BR"
+                        value={customerPhone}
+                        onChange={(val) => setCustomerPhone(val || "")}
+                        onBlur={handleCustomerPhoneBlur}
+                      />
                     </div>
                   </div>
 

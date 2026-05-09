@@ -19,6 +19,7 @@ export type Conversation = {
     id: string;
     phone: string;
     name?: string;
+    email?: string;
     identifier?: string;
   };
   agent: {

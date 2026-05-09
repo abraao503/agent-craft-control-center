@@ -42,6 +42,7 @@ const PhoneInput: React.ForwardRefExoticComponent<PhoneInputProps> =
           countrySelectComponent={CountrySelect}
           inputComponent={InputComponent}
           labels={ptBR}
+          international={false}
           smartCaret={false}
           value={value || undefined}
           /**
@@ -108,11 +109,6 @@ const CountrySelect = ({
             country={selectedCountry}
             countryName={selectedCountry}
           />
-          {selectedCountry && (
-            <span className="text-sm text-foreground/80">
-              +{RPNInput.getCountryCallingCode(selectedCountry)}
-            </span>
-          )}
           <ChevronsUpDown
             className={cn(
               "-mr-2 size-4 opacity-50",

@@ -86,12 +86,12 @@ const ChatsPage = () => {
       // Update local state to remove unread count
       setConversations((prev) =>
         prev.map((conv) =>
-          conv.id === chatId ? { ...conv, unreadCount: 0 } : conv
-        )
+          conv.id === chatId ? { ...conv, unreadCount: 0 } : conv,
+        ),
       );
       if (selectedConversation?.id === chatId) {
         setSelectedConversation((prev) =>
-          prev ? { ...prev, unreadCount: 0 } : null
+          prev ? { ...prev, unreadCount: 0 } : null,
         );
       }
     },
@@ -178,13 +178,13 @@ const ChatsPage = () => {
 
       setConversations((prev) =>
         prev.map((conv) =>
-          conv.id === event.chatId ? { ...conv, unreadCount: 0 } : conv
-        )
+          conv.id === event.chatId ? { ...conv, unreadCount: 0 } : conv,
+        ),
       );
 
       if (selectedConversation?.id === event.chatId) {
         setSelectedConversation((prev) =>
-          prev ? { ...prev, unreadCount: 0 } : null
+          prev ? { ...prev, unreadCount: 0 } : null,
         );
       }
     };
@@ -274,8 +274,8 @@ const ChatsPage = () => {
   const handleUpdateConversation = (updatedConversation: Conversation) => {
     setConversations((prev) =>
       prev.map((conv) =>
-        conv.id === updatedConversation.id ? updatedConversation : conv
-      )
+        conv.id === updatedConversation.id ? updatedConversation : conv,
+      ),
     );
     setSelectedConversation(updatedConversation);
   };
@@ -350,7 +350,7 @@ const ChatsPage = () => {
                   newMessageEvent={lastMessageEvent}
                 />
               ) : (
-                <div className="flex-1 flex flex-col items-center justify-center bg-[#f0f2f5] text-muted-foreground">
+                <div className="flex-1 flex flex-col items-center justify-center bg-muted/30 text-muted-foreground">
                   <MessageSquare className="h-24 w-24 mb-4 opacity-20" />
                   <h2 className="text-2xl font-semibold mb-2">
                     Selecione uma conversa

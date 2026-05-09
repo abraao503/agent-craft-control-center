@@ -129,7 +129,10 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
 
           <div className="flex-1 overflow-hidden">
             {activeView === "contact" && (
-              <ContactDetailsPanel conversation={conversation} />
+              <ContactDetailsPanel
+                conversation={conversation}
+                onUpdateConversation={onUpdateConversation}
+              />
             )}
             {activeView === "deals" && (
               <DealsPanel conversation={conversation} />
