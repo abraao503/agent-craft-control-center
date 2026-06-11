@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -45,6 +45,10 @@ export const PipelineSwitcher: React.FC<PipelineSwitcherProps> = ({
     [pipelines, currentPipelineId],
   );
 
+  const emptyMessage = canCreate
+    ? "Nenhum funil criado ainda."
+    : "Nenhum negócio atribuído a você.";
+
   return (
     <div className="inline-flex rounded-md shadow-sm">
       <DropdownMenu>
@@ -62,11 +66,17 @@ export const PipelineSwitcher: React.FC<PipelineSwitcherProps> = ({
             value={currentPipelineId}
             onValueChange={onSelect}
           >
-            {pipelines.map((p) => (
-              <DropdownMenuRadioItem key={p.id} value={p.id}>
-                {p.name}
-              </DropdownMenuRadioItem>
-            ))}
+            {pipelines.length === 0 ? (
+              <p className="px-2 py-3 text-sm text-muted-foreground text-center">
+                {emptyMessage}
+              </p>
+            ) : (
+              pipelines.map((p) => (
+                <DropdownMenuRadioItem key={p.id} value={p.id}>
+                  {p.name}
+                </DropdownMenuRadioItem>
+              ))
+            )}
           </DropdownMenuRadioGroup>
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
