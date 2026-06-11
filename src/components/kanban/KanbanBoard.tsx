@@ -43,7 +43,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   return (
     <>
       <div className="overflow-x-auto">
-        <div className="flex items-start gap-4 h-[calc(100vh-220px)] w-max pr-2">
+        <div className="flex items-start gap-4 h-[calc(100vh-210px)] w-max pr-2">
           {stages.map((stage) => (
             <KanbanColumn
               key={stage.id}
