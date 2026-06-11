@@ -21,6 +21,7 @@ import { useWebSocket } from "@/hooks/useWebSocket";
 import { useDealStageWebSocket } from "@/hooks/useDealStageWebSocket";
 import { useActivityWebSocket } from "@/hooks/useActivityWebSocket";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useAuth } from "@/contexts/auth/hooks";
 import { Inbox } from "lucide-react";
 
 const PipelineDetailPage = () => {
@@ -29,6 +30,7 @@ const PipelineDetailPage = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { has } = usePermissions();
+  const { userProfile } = useAuth();
 
   const { workspaceId, isChangingWorkspace } = useWorkspaceManager({
     queryKeys: ["listPipelineStages", "listPipelines"],
@@ -36,12 +38,19 @@ const PipelineDetailPage = () => {
     trackLoadingState: true,
   });
 
+  const isSalesRep = userProfile?.role === "SALES_REP";
+
   const [openCreateDeal, setOpenCreateDeal] = useState(false);
   const [isMoving, setIsMoving] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | undefined>(
     undefined,
   );
   const [activitiesSidebarOpen, setActivitiesSidebarOpen] = useState(false);
+
+  // SALES_REP sempre filtra pelos próprios cards
+  const effectiveAssignedUserId = isSalesRep
+    ? (userProfile?.id ?? undefined)
+    : selectedUserId;
 
   // WebSocket connection
   const token = localStorage.getItem("token") || "";
@@ -331,12 +340,20 @@ const PipelineDetailPage = () => {
     return (
       <div className="border rounded-lg py-12 text-center">
         <div className="space-y-4">
-          <p className="text-muted-foreground">
-            Você ainda não tem nenhum funil.
-          </p>
-          <Button onClick={() => navigate("/deals/pipeline/create")}>
-            Criar funil
-          </Button>
+          {isSalesRep ? (
+            <p className="text-muted-foreground">
+              Você ainda não possui negócios atribuídos a você.
+            </p>
+          ) : (
+            <>
+              <p className="text-muted-foreground">
+                Você ainda não tem nenhum funil.
+              </p>
+              <Button onClick={() => navigate("/deals/pipeline/create")}>
+                Criar funil
+              </Button>
+            </>
+          )}
         </div>
       </div>
     );
@@ -355,7 +372,7 @@ const PipelineDetailPage = () => {
       isMoving={isMoving}
       workspaceId={workspaceId}
       pipelineId={pipelineId}
-      assignedUserId={selectedUserId}
+      assignedUserId={effectiveAssignedUserId}
       onDealUpdated={() => {
         stages.forEach((stage) => {
           queryClient.invalidateQueries({
@@ -383,7 +400,7 @@ const PipelineDetailPage = () => {
               Novo Negócio
             </Button>
           )}
-          {workspaceId && canListUsers && (
+          {workspaceId && canListUsers && !isSalesRep && (
             <UserFilter
               workspaceId={workspaceId}
               selectedUserId={selectedUserId}

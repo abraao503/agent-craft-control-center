@@ -220,6 +220,9 @@ const WorkspaceSelector = ({ isCollapsed }: { isCollapsed: boolean }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newWorkspaceName, setNewWorkspaceName] = useState("");
   const { toast } = useToast();
+  const { userProfile } = useAuth();
+
+  const isSalesRep = userProfile?.role === "SALES_REP";
 
   const handleCreateWorkspace = async () => {
     if (!newWorkspaceName.trim()) return;
@@ -285,21 +288,23 @@ const WorkspaceSelector = ({ isCollapsed }: { isCollapsed: boolean }) => {
             {selectedWorkspace?.name || "Carregando..."}
           </TooltipContent>
         </Tooltip>
-        <Tooltip delayDuration={0}>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="w-full h-8 flex justify-center"
-              onClick={() => setIsDialogOpen(true)}
-            >
-              <Plus className="h-4 w-4 text-muted-foreground" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="right" className="border-border">
-            Criar novo workspace
-          </TooltipContent>
-        </Tooltip>
+        {!isSalesRep && (
+          <Tooltip delayDuration={0}>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="w-full h-8 flex justify-center"
+                onClick={() => setIsDialogOpen(true)}
+              >
+                <Plus className="h-4 w-4 text-muted-foreground" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right" className="border-border">
+              Criar novo workspace
+            </TooltipContent>
+          </Tooltip>
+        )}
 
         <WorkspaceDialog
           isOpen={isDialogOpen}
@@ -321,6 +326,10 @@ const WorkspaceSelector = ({ isCollapsed }: { isCollapsed: boolean }) => {
       {isLoading ? (
         <div className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm flex items-center text-muted-foreground">
           Carregando...
+        </div>
+      ) : isSalesRep ? (
+        <div className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm flex items-center text-foreground">
+          {selectedWorkspace?.name || "Carregando..."}
         </div>
       ) : (
         <Select
@@ -360,6 +369,14 @@ const SidebarMenuContent = () => {
   const { has } = usePermissions();
   const isCollapsed = state === "collapsed";
   const { isLoading: isWorkspaceLoading } = useWorkspace();
+  const queryClient = useQueryClient();
+
+  const handleLogout = () => {
+    // Limpa todo o cache do React Query antes de deslogar
+    // para evitar que dados de um usuário apareçam para outro
+    queryClient.clear();
+    logout();
+  };
 
   const isActive = (path: string) => {
     if (path === "/dashboard") {
@@ -577,7 +594,7 @@ const SidebarMenuContent = () => {
                 variant="ghost"
                 size="icon"
                 className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                onClick={logout}
+                onClick={handleLogout}
               >
                 <LogOut className="h-5 w-5" />
                 <span className="sr-only">Sair</span>
@@ -591,7 +608,7 @@ const SidebarMenuContent = () => {
           <Button
             variant="ghost"
             className="w-full justify-start text-red-500 hover:text-red-700 hover:bg-red-50"
-            onClick={logout}
+            onClick={handleLogout}
           >
             <LogOut className="mr-2 h-5 w-5" />
             Sair
