@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   Check,
   ChevronsUpDown,
@@ -61,8 +61,15 @@ export function UserSelector({
 }: UserSelectorProps) {
   const [open, setOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const { role } = usePermissions();
   const { userProfile } = useAuth();
+
+  // Debounce search to avoid firing a request on every keystroke
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchValue), 300);
+    return () => clearTimeout(timer);
+  }, [searchValue]);
 
   const companyId = userProfile?.companyId;
 
@@ -71,21 +78,30 @@ export function UserSelector({
     role && ROLES_WITH_COMPANY_ADMIN_ACCESS.includes(role as UserRole);
 
   // Fetch workspace users with search
-  const { data: usersData, isLoading: isLoadingUsers } = useQuery({
-    queryKey: ["listUsers", workspaceId, searchValue],
+  const {
+    data: usersData,
+    isLoading: isLoadingUsers,
+    isFetching: isFetchingUsers,
+  } = useQuery({
+    queryKey: ["listUsers", workspaceId, debouncedSearch],
     queryFn: () =>
       listUsers({
         workspaceId,
-        search: searchValue || undefined,
+        search: debouncedSearch || undefined,
         limit: 50,
         page: 1,
       }),
     enabled: open,
+    placeholderData: (prev) => prev,
   });
 
   // Fetch company admins (only for authorized roles)
-  const { data: adminsData, isLoading: isLoadingAdmins } = useQuery({
-    queryKey: ["companyAdmins", companyId, searchValue],
+  const {
+    data: adminsData,
+    isLoading: isLoadingAdmins,
+    isFetching: isFetchingAdmins,
+  } = useQuery({
+    queryKey: ["companyAdmins", companyId, debouncedSearch],
     queryFn: () =>
       listCompanyAdmins({
         companyId: companyId!,
@@ -93,9 +109,14 @@ export function UserSelector({
         limit: 50,
       }),
     enabled: open && canSeeCompanyAdmins && !!companyId,
+    placeholderData: (prev) => prev,
   });
 
+  // isLoading = sem dados ainda; isFetching = refetch em background (já tem dados)
   const isLoading = isLoadingUsers || (canSeeCompanyAdmins && isLoadingAdmins);
+  const isFetching =
+    !isLoading &&
+    (isFetchingUsers || (canSeeCompanyAdmins ? isFetchingAdmins : false));
 
   // Merge and deduplicate users, with company admins first
   const users = useMemo(() => {
@@ -103,7 +124,7 @@ export function UserSelector({
       (u) => ({
         ...u,
         isCompanyAdmin: false,
-      })
+      }),
     );
 
     if (!canSeeCompanyAdmins || !adminsData?.items) {
@@ -113,8 +134,8 @@ export function UserSelector({
     // Filter company admins by search if needed
     const companyAdmins: ExtendedUser[] = adminsData.items
       .filter((admin) => {
-        if (!searchValue) return true;
-        const searchLower = searchValue.toLowerCase();
+        if (!debouncedSearch) return true;
+        const searchLower = debouncedSearch.toLowerCase();
         return (
           admin.name.toLowerCase().includes(searchLower) ||
           admin.email.toLowerCase().includes(searchLower)
@@ -131,12 +152,12 @@ export function UserSelector({
     // Deduplicate: remove workspace users that are also company admins
     const adminIds = new Set(companyAdmins.map((a) => a.id));
     const filteredWorkspaceUsers = workspaceUsers.filter(
-      (u) => !adminIds.has(u.id)
+      (u) => !adminIds.has(u.id),
     );
 
     // Company admins first, then workspace users
     return [...companyAdmins, ...filteredWorkspaceUsers];
-  }, [usersData, adminsData, canSeeCompanyAdmins, searchValue]);
+  }, [usersData, adminsData, canSeeCompanyAdmins, debouncedSearch]);
 
   const selectedUser = users.find((u) => u.id === selectedUserId);
 
@@ -150,7 +171,7 @@ export function UserSelector({
   };
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={setOpen} modal={true}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
@@ -158,7 +179,7 @@ export function UserSelector({
           aria-expanded={open}
           className={cn(
             "w-full justify-between text-left font-normal",
-            !selectedUserId && "text-muted-foreground"
+            !selectedUserId && "text-muted-foreground",
           )}
           disabled={disabled}
         >
@@ -187,70 +208,87 @@ export function UserSelector({
             value={searchValue}
             onValueChange={setSearchValue}
           />
-          <CommandList>
-            {isLoading ? (
+          {/* wrapper externo só para o overlay de loading; scroll fica no CommandList */}
+          <CommandList className="max-h-64">
+            {/* Loading inicial — sem dados ainda */}
+            {isLoading && (
               <div className="flex items-center justify-center p-4">
                 <Loader2 className="h-4 w-4 animate-spin" />
               </div>
-            ) : users.length === 0 ? (
+            )}
+
+            {!isLoading && users.length === 0 && (
               <CommandEmpty>Nenhum usuário encontrado.</CommandEmpty>
-            ) : (
-              <CommandGroup className="max-h-64 overflow-auto">
-                {/* Option to clear selection */}
-                {selectedUserId && (
-                  <CommandItem
-                    value="__clear__"
-                    onSelect={() => {
-                      onUserSelect(null);
-                      setOpen(false);
-                    }}
-                  >
-                    <div className="flex items-center gap-2 w-full text-muted-foreground">
-                      <UserIcon className="h-4 w-4" />
-                      <span className="italic">Remover atribuição</span>
-                    </div>
-                  </CommandItem>
+            )}
+
+            {users.length > 0 && (
+              /* position relative aqui para o overlay absolute funcionar */
+              <div className="relative">
+                {/* Overlay de refetch — mantém tamanho e itens visíveis */}
+                {isFetching && (
+                  <div className="absolute inset-0 z-10 flex items-start justify-center pt-6 bg-white/70 dark:bg-background/70 pointer-events-none">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  </div>
                 )}
-                {users.map((user) => (
-                  <CommandItem
-                    key={user.id}
-                    value={user.id}
-                    onSelect={() => {
-                      onUserSelect(user.id === selectedUserId ? null : user.id);
-                      setOpen(false);
-                    }}
-                  >
-                    <div className="flex items-center gap-2 w-full">
-                      <Check
-                        className={cn(
-                          "mr-2 h-4 w-4",
-                          selectedUserId === user.id
-                            ? "opacity-100"
-                            : "opacity-0"
-                        )}
-                      />
-                      <Avatar className="h-6 w-6">
-                        <AvatarFallback className="text-xs">
-                          {getInitials(user.name)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-1.5">
-                          <p className="text-sm font-medium">{user.name}</p>
-                          {user.isCompanyAdmin && (
-                            <span title="Admin da Empresa">
-                              <Shield className="h-3 w-3 text-primary" />
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          {user.email}
-                        </p>
+                <CommandGroup>
+                  {/* Option to clear selection */}
+                  {selectedUserId && (
+                    <CommandItem
+                      value="__clear__"
+                      onSelect={() => {
+                        onUserSelect(null);
+                        setOpen(false);
+                      }}
+                    >
+                      <div className="flex items-center gap-2 w-full text-muted-foreground">
+                        <UserIcon className="h-4 w-4" />
+                        <span className="italic">Remover atribuição</span>
                       </div>
-                    </div>
-                  </CommandItem>
-                ))}
-              </CommandGroup>
+                    </CommandItem>
+                  )}
+                  {users.map((user) => (
+                    <CommandItem
+                      key={user.id}
+                      value={user.id}
+                      onSelect={() => {
+                        onUserSelect(
+                          user.id === selectedUserId ? null : user.id,
+                        );
+                        setOpen(false);
+                      }}
+                    >
+                      <div className="flex items-center gap-2 w-full">
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            selectedUserId === user.id
+                              ? "opacity-100"
+                              : "opacity-0",
+                          )}
+                        />
+                        <Avatar className="h-6 w-6">
+                          <AvatarFallback className="text-xs">
+                            {getInitials(user.name)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-1.5">
+                            <p className="text-sm font-medium">{user.name}</p>
+                            {user.isCompanyAdmin && (
+                              <span title="Admin da Empresa">
+                                <Shield className="h-3 w-3 text-primary" />
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            {user.email}
+                          </p>
+                        </div>
+                      </div>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </div>
             )}
           </CommandList>
         </Command>
