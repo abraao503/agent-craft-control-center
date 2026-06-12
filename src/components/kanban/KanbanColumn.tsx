@@ -83,6 +83,39 @@ const getBadgePositionStyle = (
   top: `calc(-50% + ${offsetY}px)`,
 });
 
+const DealTagsInline: React.FC<{
+  tagIds?: string[];
+  workspaceId?: string;
+}> = ({ tagIds = [], workspaceId }) => {
+  const { data: allTags = [] } = useQuery({
+    queryKey: ["tags", workspaceId],
+    queryFn: () => listTags(workspaceId!),
+    enabled: !!workspaceId && tagIds.length > 0,
+  });
+
+  if (!tagIds.length) return null;
+
+  const dealTags = allTags.filter((tag) => tagIds.includes(tag.id));
+  if (!dealTags.length) return null;
+
+  return (
+    <div className="flex flex-wrap gap-1 mt-2">
+      {dealTags.map((tag) => (
+        <span
+          key={tag.id}
+          className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium leading-none"
+          style={{
+            backgroundColor: tag.color,
+            color: isColorDark(tag.color) ? "white" : "black",
+          }}
+        >
+          {tag.name}
+        </span>
+      ))}
+    </div>
+  );
+};
+
 const DealTagsPopover: React.FC<{
   tagIds?: string[];
   workspaceId?: string;
@@ -393,15 +426,26 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                         {deal.description}
                       </div>
                     )}
+                    <DealTagsInline
+                      tagIds={deal.tags}
+                      workspaceId={workspaceId}
+                    />
                     {deal.dueDate && (
                       <div className="mt-2 space-y-1">
                         <div className="text-xs">Data de vencimento</div>
                         <div
                           className={cn(
                             "inline-block px-2 py-0.5 rounded text-xs font-medium",
-                            new Date(deal.dueDate) < new Date()
-                              ? "bg-red-500/90 text-white"
-                              : "bg-muted text-foreground/80",
+                            (() => {
+                              const now = new Date();
+                              const due = new Date(deal.dueDate);
+                              const diffMs = due.getTime() - now.getTime();
+                              const diffHours = diffMs / (1000 * 60 * 60);
+                              if (diffMs < 0) return "bg-red-500/90 text-white";
+                              if (diffHours <= 24)
+                                return "bg-yellow-400/90 text-yellow-900";
+                              return "bg-muted text-foreground/80";
+                            })(),
                           )}
                         >
                           {(() => {

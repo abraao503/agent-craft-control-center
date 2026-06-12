@@ -19,6 +19,7 @@ type DealApiItem = {
   customer?: RelatedMinimal | null;
   assignedUser?: RelatedMinimal | null;
   tags?: string[];
+  tagIds?: string[];
   dueDate?: string | null;
 };
 
@@ -60,7 +61,7 @@ export const getDealsByStage = async ({
     updatedAt: new Date(apiDeal.updatedAt),
     customer: apiDeal.customer,
     assignedUser: apiDeal.assignedUser,
-    tags: apiDeal.tags || [],
+    tags: apiDeal.tags || apiDeal.tagIds || [],
     dueDate: apiDeal.dueDate,
   }));
 
