@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { PhoneInput, PhoneDisplay } from "@/components/ui/phone-input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -181,7 +182,8 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
   // Editable deal fields
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [value, setValue] = useState("");
+  const [value, setValue] = useState<number | undefined>(undefined);
+  const [currency, setCurrency] = useState("BRL");
   const [customerName, setCustomerName] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
@@ -357,7 +359,8 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
     if (dealDetails) {
       setTitle(dealDetails.title || "");
       setDescription(dealDetails.description || "");
-      setValue(dealDetails.value?.toString() || "");
+      setValue(dealDetails.value ?? undefined);
+      setCurrency(dealDetails.currency || "BRL");
       setCustomerName(dealDetails.customer?.name || "");
       setCustomerEmail(dealDetails.customer?.email || "");
       // PhoneInput expects E.164 (+prefix); backend stores without +
@@ -375,6 +378,7 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
       title?: string;
       description?: string;
       value?: number;
+      currency?: string;
       customerName?: string;
       customerEmail?: string;
       customerPhone?: string;
@@ -385,6 +389,7 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
         title: data.title?.trim() || undefined,
         description: data.description?.trim() || undefined,
         value: data.value,
+        currency: data.currency,
         customer:
           data.customerName?.trim() ||
           data.customerEmail !== undefined ||
@@ -795,10 +800,17 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
   };
 
   const handleValueBlur = () => {
-    const numValue = value ? Number(value) : undefined;
-    if (numValue !== dealDetails?.value) {
+    if (value !== dealDetails?.value) {
       setSavingField("value");
-      updateDealMutation.mutate({ value: numValue, fieldName: "value" });
+      updateDealMutation.mutate({ value, fieldName: "value" });
+    }
+  };
+
+  const handleCurrencyChange = (newCurrency: string) => {
+    setCurrency(newCurrency);
+    if (newCurrency !== (dealDetails?.currency || "BRL")) {
+      setSavingField("value");
+      updateDealMutation.mutate({ currency: newCurrency, fieldName: "value" });
     }
   };
 
@@ -817,11 +829,15 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
   };
 
   const handleCustomerPhoneBlur = () => {
-    // customerPhone is E.164 (+5511...), backend stores without +
-    const phoneForBackend = customerPhone.replace(/^\+/, "");
-    if (phoneForBackend !== (dealDetails?.customer?.phone || "")) {
+    // customerPhone is E.164 with + (e.g. +5511999887766 or +351912345678)
+    // Backend expects the + prefix for correct international number parsing
+    if (!customerPhone) return;
+    const storedPhone = dealDetails?.customer?.phone || "";
+    // Compare against stored format (digits without +)
+    const phoneDigits = customerPhone.replace(/^\+/, "");
+    if (phoneDigits !== storedPhone) {
       setSavingField("customerPhone");
-      updateCustomerPhoneMutation.mutate(phoneForBackend);
+      updateCustomerPhoneMutation.mutate(customerPhone);
     }
   };
 
@@ -915,8 +931,8 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
       if (description !== dealDetails?.description) {
         updateDealMutation.mutate({ description });
       }
-      if (value && Number(value) !== dealDetails?.value) {
-        updateDealMutation.mutate({ value: Number(value) });
+      if (value !== undefined && value !== dealDetails?.value) {
+        updateDealMutation.mutate({ value });
       }
       if (customerName !== dealDetails?.customer?.name) {
         updateDealMutation.mutate({ customerName });
@@ -1213,30 +1229,20 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="space-y-2">
-                            <Label className="flex items-center gap-2">
-                              Valor do negócio
-                              {savingField === "value" && (
-                                <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
-                              )}
-                            </Label>
-                            <Input
-                              type="number"
-                              value={value}
-                              onChange={(e) => setValue(e.target.value)}
-                              onBlur={handleValueBlur}
-                              placeholder="R$ 0"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Moeda</Label>
-                            <Input
-                              value={dealDetails?.currency || "BRL"}
-                              disabled
-                              maxLength={3}
-                            />
-                          </div>
+                        <div className="space-y-2">
+                          <Label className="flex items-center gap-2">
+                            Valor do negócio
+                            {savingField === "value" && (
+                              <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                            )}
+                          </Label>
+                          <CurrencyInput
+                            numericValue={value}
+                            currency={currency}
+                            onNumericValueChange={setValue}
+                            onCurrencyChange={handleCurrencyChange}
+                            onBlur={handleValueBlur}
+                          />
                         </div>
 
                         <div className="space-y-2">
