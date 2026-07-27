@@ -1,5 +1,9 @@
 # Regras de Criação de Usuários
 
+> **Legado.** A orientação atual está em
+> [`docs/agent/autorizacao-e-tenancy.md`](agent/autorizacao-e-tenancy.md).
+> Permissões e validações de servidor devem ser confirmadas no código atual.
+
 ## Validações Implementadas
 
 ### 1. Hierarquia de Roles

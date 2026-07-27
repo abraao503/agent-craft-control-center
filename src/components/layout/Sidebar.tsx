@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
@@ -62,6 +62,7 @@ import { Workspace } from "@/types/workspace";
 import { useToast } from "@/hooks/use-toast";
 import { useWorkspaceContext } from "@/contexts/workspace/WorkspaceContext";
 import { AxiosError } from "axios";
+import { useUnsavedChanges } from "@/contexts/unsaved-changes/UnsavedChangesContext";
 
 const useWorkspace = () => {
   const queryClient = useQueryClient();
@@ -364,8 +365,10 @@ const WorkspaceSelector = ({ isCollapsed }: { isCollapsed: boolean }) => {
 
 const SidebarMenuContent = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { state } = useSidebar();
+  const { requestNavigation } = useUnsavedChanges();
   const { has } = usePermissions();
   const isCollapsed = state === "collapsed";
   const { isLoading: isWorkspaceLoading } = useWorkspace();
@@ -502,7 +505,14 @@ const SidebarMenuContent = () => {
       return (
         <Tooltip key={item.path} delayDuration={0}>
           <TooltipTrigger asChild>
-            <Link to={item.path} tabIndex={isDisabled ? -1 : undefined}>
+            <Link
+              to={item.path}
+              tabIndex={isDisabled ? -1 : undefined}
+              onClick={(event) => {
+                event.preventDefault();
+                if (!isDisabled) requestNavigation(() => navigate(item.path));
+              }}
+            >
               <Button
                 variant="ghost"
                 size="icon"
@@ -531,6 +541,10 @@ const SidebarMenuContent = () => {
         to={item.path}
         key={item.path}
         tabIndex={isDisabled ? -1 : undefined}
+        onClick={(event) => {
+          event.preventDefault();
+          if (!isDisabled) requestNavigation(() => navigate(item.path));
+        }}
       >
         <Button
           variant="ghost"
@@ -558,6 +572,10 @@ const SidebarMenuContent = () => {
       >
         <Link
           to="/dashboard"
+          onClick={(event) => {
+            event.preventDefault();
+            requestNavigation(() => navigate("/dashboard"));
+          }}
           className={cn(
             "flex items-center space-x-2",
             isCollapsed && "flex-col space-x-0 space-y-2",

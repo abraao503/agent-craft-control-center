@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { AgentFormData } from "@/types/agent";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Card,
   CardContent,
@@ -11,7 +10,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Bot, AlertCircle, Loader2 } from "lucide-react";
+import { AlertCircle, Bot, Loader2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AgentWizard } from "@/components/pipelines/agent-wizard";
 import {
@@ -50,9 +49,9 @@ export const AgentTab: React.FC<AgentTabProps> = ({
   const [showWizard, setShowWizard] = useState(false);
   const [wizardCompleted, setWizardCompleted] = useState(false); // Track if wizard was completed
   const [isLoadingDeleted, setIsLoadingDeleted] = useState(false);
-  const [activeSubTab, setActiveSubTab] = useState<
-    "basic" | "custom" | "prompt" | "tags" | "skills"
-  >("basic");
+  const [activeSection, setActiveSection] = useState<
+    "profile" | "behavior" | "resources"
+  >("profile");
 
   // Buscar agente deletado quando ativar o switch (apenas em modo de edição)
   const handleAgentToggle = async (value: boolean) => {
@@ -90,6 +89,8 @@ export const AgentTab: React.FC<AgentTabProps> = ({
             entryTags: deletedAgent.entryTags || [],
             googleCalendarIntegrationId:
               deletedAgent.googleCalendarIntegrationId || null,
+            transitionDecisionMode:
+              deletedAgent.transitionDecisionMode || "CONVERSATIONAL",
           };
 
           onLoadDeletedAgent(agentData);
@@ -145,59 +146,74 @@ export const AgentTab: React.FC<AgentTabProps> = ({
     return !!(formData.function && formData.style && formData.instructions);
   };
 
-  const getTabIndicator = (
-    tabName: "basic" | "custom" | "prompt" | "tags" | "skills",
-  ) => {
-    if (!useAgent) return null;
-
-    if (tabName === "basic" && !isBasicValid()) {
-      return <span className="ml-1 text-destructive">*</span>;
-    }
-    if (tabName === "prompt" && !isPromptValid()) {
-      return <span className="ml-1 text-destructive">*</span>;
-    }
-    return null;
-  };
+  const sections = [
+    {
+      id: "profile" as const,
+      title: "Perfil e modelo",
+      description: "Identificação, idioma, modelo e chave de API",
+      hasPending: !isBasicValid(),
+    },
+    {
+      id: "behavior" as const,
+      title: "Comportamento",
+      description: "Decisões, tom, instruções e restrições",
+      hasPending: !isPromptValid(),
+    },
+    {
+      id: "resources" as const,
+      title: "Recursos",
+      description: "Tags de entrada e Google Calendar",
+      hasPending: false,
+    },
+  ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Switch para habilitar/desabilitar agente */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+      <Card className="border-primary/15 bg-muted/20">
+        <CardContent className="flex flex-col gap-4 py-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
               <Bot className="h-5 w-5 text-primary" />
-              <div>
-                <CardTitle>Agente de IA</CardTitle>
-                <CardDescription>
-                  Configure um agente para automatizar interações neste funil
-                </CardDescription>
-              </div>
             </div>
-            <div className="flex items-center gap-2">
-              {isLoadingDeleted && (
-                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-              )}
-              <Label htmlFor="use-agent" className="cursor-pointer">
-                {useAgent ? "Ativado" : "Desativado"}
-              </Label>
-              <Switch
-                id="use-agent"
-                checked={useAgent}
-                onCheckedChange={handleAgentToggle}
-                disabled={isLoadingDeleted}
-              />
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <CardTitle className="text-sm">Agente de IA</CardTitle>
+                <span
+                  className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${useAgent ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" : "bg-muted text-muted-foreground"}`}
+                >
+                  {useAgent ? "Ligado" : "Desligado"}
+                </span>
+              </div>
+              <CardDescription className="text-xs">
+                {useAgent
+                  ? "Personalize como o agente atende e movimenta negócios."
+                  : "Ative para automatizar atendimentos e movimentações neste funil."}
+              </CardDescription>
             </div>
           </div>
-        </CardHeader>
+          <div className="flex items-center gap-2 self-end sm:self-auto">
+            {isLoadingDeleted && (
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            )}
+            <Label htmlFor="use-agent" className="cursor-pointer text-sm">
+              {useAgent ? "Desativar" : "Ativar"}
+            </Label>
+            <Switch
+              id="use-agent"
+              checked={useAgent}
+              onCheckedChange={handleAgentToggle}
+              disabled={isLoadingDeleted}
+            />
+          </div>
+        </CardContent>
         {useAgent && !showWizard && (
-          <CardContent>
+          <CardContent className="pt-0">
             <Alert>
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                Configure todas as informações obrigatórias do agente nas abas
-                abaixo. Campos marcados com{" "}
-                <span className="text-destructive">*</span> são obrigatórios.
+                Configure os campos obrigatórios nas seções abaixo. O ponto
+                vermelho indica uma seção pendente.
               </AlertDescription>
             </Alert>
           </CardContent>
@@ -231,8 +247,14 @@ export const AgentTab: React.FC<AgentTabProps> = ({
             updateFormData={updateFormData}
             onComplete={() => {
               setShowWizard(false);
-              setWizardCompleted(true); // Mark wizard as completed
-              // Após completar o wizard, vai para as tabs normais
+              setWizardCompleted(true);
+              setActiveSection(
+                !isBasicValid()
+                  ? "profile"
+                  : !isPromptValid()
+                    ? "behavior"
+                    : "profile",
+              );
             }}
             onCancel={() => {
               setShowWizard(false);
@@ -241,67 +263,71 @@ export const AgentTab: React.FC<AgentTabProps> = ({
             }}
           />
         ) : (
-          <Tabs
-            value={activeSubTab}
-            onValueChange={(v) =>
-              setActiveSubTab(
-                v as "basic" | "custom" | "prompt" | "tags" | "skills",
-              )
-            }
-          >
-            <TabsList className="w-full grid grid-cols-4">
-              <TabsTrigger value="basic">
-                Informações{getTabIndicator("basic")}
-              </TabsTrigger>
-              <TabsTrigger value="prompt">
-                Prompt{getTabIndicator("prompt")}
-              </TabsTrigger>
-              <TabsTrigger value="tags">
-                Tags{getTabIndicator("tags")}
-              </TabsTrigger>
-              <TabsTrigger value="skills">
-                Skills{getTabIndicator("skills")}
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="basic" className="mt-6">
-              <BasicInformationCard
-                formData={formData}
-                updateFormData={updateFormData}
-              />
-            </TabsContent>
-
-            <TabsContent value="prompt" className="mt-6">
-              <PromptContextCard
-                formData={formData}
-                updateFormData={updateFormData}
-              />
-            </TabsContent>
-
-            <TabsContent value="tags" className="mt-6">
-              <EntryTagsCard
-                formData={formData}
-                updateFormData={updateFormData}
-              />
-            </TabsContent>
-
-            <TabsContent value="skills" className="mt-6">
-              <SkillsCard formData={formData} updateFormData={updateFormData} />
-            </TabsContent>
-          </Tabs>
+          <div className="grid gap-4 lg:grid-cols-[250px_minmax(0,1fr)]">
+            <nav
+              className="flex gap-2 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible"
+              aria-label="Seções da configuração do agente"
+            >
+              {sections.map((section) => {
+                const selected = activeSection === section.id;
+                return (
+                  <button
+                    key={section.id}
+                    type="button"
+                    onClick={() => setActiveSection(section.id)}
+                    className={`min-w-[210px] rounded-lg border p-3 text-left transition-colors lg:min-w-0 ${selected ? "border-primary/40 bg-primary/5" : "bg-card hover:bg-muted/50"}`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium">
+                        {section.title}
+                      </span>
+                      {section.hasPending && (
+                        <span
+                          className="ml-auto h-2 w-2 rounded-full bg-destructive"
+                          aria-label="Campos obrigatórios pendentes"
+                        />
+                      )}
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {section.description}
+                    </p>
+                  </button>
+                );
+              })}
+            </nav>
+            <div className="min-w-0 [&_.p-6]:p-4 [&_.space-y-6]:space-y-4 [&_h3]:text-base [&_p.text-muted-foreground]:text-xs">
+              {activeSection === "profile" && (
+                <BasicInformationCard
+                  formData={formData}
+                  updateFormData={updateFormData}
+                />
+              )}
+              {activeSection === "behavior" && (
+                <PromptContextCard
+                  formData={formData}
+                  updateFormData={updateFormData}
+                />
+              )}
+              {activeSection === "resources" && (
+                <div className="space-y-4">
+                  <EntryTagsCard
+                    formData={formData}
+                    updateFormData={updateFormData}
+                  />
+                  <SkillsCard
+                    formData={formData}
+                    updateFormData={updateFormData}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
         )
       ) : (
-        <Card className="border-dashed">
-          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-            <Bot className="h-16 w-16 text-muted-foreground/30 mb-4" />
-            <h3 className="font-semibold text-lg mb-2">Agente Desativado</h3>
-            <p className="text-sm text-muted-foreground max-w-md">
-              Ative o agente para configurar automações e interações
-              inteligentes neste funil. O agente poderá mover negócios entre
-              etapas e interagir com clientes automaticamente.
-            </p>
-          </CardContent>
-        </Card>
+        <p className="px-1 text-sm text-muted-foreground">
+          Quando estiver ligado, você poderá configurar o perfil, o
+          comportamento e os recursos do agente.
+        </p>
       )}
     </div>
   );

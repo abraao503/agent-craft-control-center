@@ -1,5 +1,10 @@
 # Sistema de Roles e Permissões
 
+> **Legado.** Para implementação atual, use
+> [`docs/agent/autorizacao-e-tenancy.md`](../agent/autorizacao-e-tenancy.md) e
+> confirme permissões e contratos no frontend e na API. Este documento retém
+> contexto detalhado, mas não é fonte normativa isolada.
+
 ## Índice
 - [Visão Geral](#visão-geral)
 - [Modelo de Negócio](#modelo-de-negócio)

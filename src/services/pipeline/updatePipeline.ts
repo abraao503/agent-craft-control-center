@@ -42,6 +42,7 @@ export interface UpdatePipelineInput {
     customFields: unknown[];
     entryTags: string[];
     googleCalendarIntegrationId?: string | null;
+    transitionDecisionMode?: "CONVERSATIONAL" | "DEDICATED";
   } | null;
   assistantId?: string | null; // DEPRECATED: for backwards compatibility
   whatsappIntegration?: WhatsAppIntegrationConfig | null;

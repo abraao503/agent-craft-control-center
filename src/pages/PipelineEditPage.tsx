@@ -35,6 +35,7 @@ import {
   WhatsAppIntegrationName,
 } from "@/types/whatsapp-integration";
 import { convertHtmlStringToText } from "@/lib/utils";
+import { useUnsavedChanges } from "@/contexts/unsaved-changes/UnsavedChangesContext";
 
 // Default agent form data
 const defaultAgentFormData: AgentFormData = {
@@ -56,6 +57,7 @@ const defaultAgentFormData: AgentFormData = {
   followUps: [],
   entryTags: [],
   googleCalendarIntegrationId: null,
+  transitionDecisionMode: "CONVERSATIONAL",
 };
 
 const getDefaultCreateStages = (): PipelineStageMinimal[] => {
@@ -81,6 +83,7 @@ const PipelineEditPage = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const isCreating = !pipelineId;
+  const { setDirty, requestNavigation } = useUnsavedChanges();
 
   const { workspaceId } = useWorkspaceManager({
     queryKeys: ["listPipelineStages", "listPipelines", "listAgent", "getAgent"],
@@ -109,7 +112,8 @@ const PipelineEditPage = () => {
   // Reset initialization flag when pipelineId changes (navigating between different pipelines)
   useEffect(() => {
     hasInitializedDataRef.current = false;
-  }, [pipelineId]);
+    setDirty(false);
+  }, [pipelineId, setDirty]);
 
   // WhatsApp state
   const [useWhatsApp, setUseWhatsApp] = useState(false);
@@ -122,6 +126,7 @@ const PipelineEditPage = () => {
 
   // Helper to update agent form data
   const updateAgentFormData = (data: Partial<AgentFormData>) => {
+    if (hasInitializedDataRef.current) setDirty(true);
     // Track if API key was manually changed (only if it's different from initial value)
     if (data.iaProviderApiKey !== undefined) {
       // Only mark as changed if the new value is different from the initial empty state
@@ -280,6 +285,8 @@ const PipelineEditPage = () => {
         followUps: agent.followUps,
         entryTags: agent.entryTags || [],
         googleCalendarIntegrationId: agent.googleCalendarIntegrationId || null,
+        transitionDecisionMode:
+          agent.transitionDecisionMode || "CONVERSATIONAL",
       };
       setAgentFormData(agentData);
       initialApiKeyRef.current = ""; // Set initial as empty when loading existing agent
@@ -487,15 +494,16 @@ const PipelineEditPage = () => {
             );
           }
 
-          // Move condition validation
+          // A regra pode usar a condição legada ou critérios estruturados.
           if (
-            !target.moveCondition ||
-            target.moveCondition.trim().length === 0
+            (!target.moveCondition ||
+              target.moveCondition.trim().length === 0) &&
+            !target.criteria?.some((criterion) => criterion.trim().length > 0)
           ) {
             errors.push(
               `Etapa #${index + 1}, Movimentação #${
                 targetIndex + 1
-              }: Condição de movimento é obrigatória`,
+              }: Adicione uma condição de movimento`,
             );
           }
         });
@@ -671,6 +679,7 @@ const PipelineEditPage = () => {
             entryTags: agentFormData.entryTags,
             googleCalendarIntegrationId:
               agentFormData.googleCalendarIntegrationId || null,
+            transitionDecisionMode: agentFormData.transitionDecisionMode,
           }
         : null;
 
@@ -744,7 +753,7 @@ const PipelineEditPage = () => {
             ? `${pipelineName} foi criado com seu agente configurado.`
             : `${pipelineName} foi criado.`,
         });
-
+        setDirty(false);
         navigate(`/deals/pipeline/${response.id}`);
       } else {
         await updatePipeline(pipelineId!, {
@@ -782,7 +791,7 @@ const PipelineEditPage = () => {
           queryClient.invalidateQueries({ queryKey: ["listPipelineStages"] }),
           queryClient.invalidateQueries({ queryKey: ["getAgent"] }),
         ]);
-
+        setDirty(false);
         navigate(`/deals/pipeline/${pipelineId}`);
       }
     } catch (e) {
@@ -806,11 +815,9 @@ const PipelineEditPage = () => {
   };
 
   const handleCancel = () => {
-    if (isCreating) {
-      navigate("/deals");
-    } else {
-      navigate(`/deals/pipeline/${pipelineId}`);
-    }
+    requestNavigation(() =>
+      navigate(isCreating ? "/deals" : `/deals/pipeline/${pipelineId}`),
+    );
   };
 
   return (
@@ -842,7 +849,10 @@ const PipelineEditPage = () => {
           id="pipeline-name"
           placeholder="4 Novo funil"
           value={pipelineName}
-          onChange={(e) => setPipelineName(e.target.value)}
+          onChange={(e) => {
+            setPipelineName(e.target.value);
+            if (hasInitializedDataRef.current) setDirty(true);
+          }}
           className="max-w-md"
         />
       </div>
@@ -899,6 +909,7 @@ const PipelineEditPage = () => {
                 }),
               );
               setStages(convertedStages);
+              if (hasInitializedDataRef.current) setDirty(true);
             }}
             onCancel={() => {}}
             saveLabel="Aplicar"
@@ -911,7 +922,10 @@ const PipelineEditPage = () => {
             updateFormData={updateAgentFormData}
             isCreating={isCreating}
             useAgent={useAgent}
-            onUseAgentChange={setUseAgent}
+            onUseAgentChange={(value) => {
+              setUseAgent(value);
+              if (hasInitializedDataRef.current) setDirty(true);
+            }}
             hasExistingAgent={!!currentPipeline?.assistantId}
             pipelineId={pipelineId}
             workspaceId={workspaceId}
@@ -919,6 +933,7 @@ const PipelineEditPage = () => {
             onLoadDeletedAgent={(deletedAgentData) => {
               // Carregar todos os dados do agente deletado
               setAgentFormData(deletedAgentData);
+              setDirty(true);
               // Não marcar API key como alterada ao carregar agente deletado
               setApiKeyChanged(false);
             }}
@@ -938,12 +953,30 @@ const PipelineEditPage = () => {
             externalToken={externalToken}
             externalClientToken={externalClientToken}
             postbackUrl={postbackUrl}
-            onUseWhatsAppChange={setUseWhatsApp}
-            onWhatsAppIntegrationNameChange={setWhatsAppIntegrationName}
-            onInitialStageOrderChange={setInitialStageOrder}
-            onExternalTokenChange={setExternalToken}
-            onExternalClientTokenChange={setExternalClientToken}
-            onPostbackUrlChange={setPostbackUrl}
+            onUseWhatsAppChange={(value) => {
+              setUseWhatsApp(value);
+              if (hasInitializedDataRef.current) setDirty(true);
+            }}
+            onWhatsAppIntegrationNameChange={(value) => {
+              setWhatsAppIntegrationName(value);
+              if (hasInitializedDataRef.current) setDirty(true);
+            }}
+            onInitialStageOrderChange={(value) => {
+              setInitialStageOrder(value);
+              if (hasInitializedDataRef.current) setDirty(true);
+            }}
+            onExternalTokenChange={(value) => {
+              setExternalToken(value);
+              if (hasInitializedDataRef.current) setDirty(true);
+            }}
+            onExternalClientTokenChange={(value) => {
+              setExternalClientToken(value);
+              if (hasInitializedDataRef.current) setDirty(true);
+            }}
+            onPostbackUrlChange={(value) => {
+              setPostbackUrl(value);
+              if (hasInitializedDataRef.current) setDirty(true);
+            }}
           />
         </TabsContent>
       </Tabs>

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Card,
   CardContent,
@@ -22,7 +22,7 @@ import {
   WHATSAPP_INTEGRATION_NAMES,
 } from "@/types/whatsapp-integration";
 import { PipelineStageMinimal } from "@/types/pipeline";
-import { MessageSquare } from "lucide-react";
+import { Eye, EyeOff, MessageSquare } from "lucide-react";
 
 interface ConfigurationsTabProps {
   stages: PipelineStageMinimal[];
@@ -57,29 +57,31 @@ export const ConfigurationsTab: React.FC<ConfigurationsTabProps> = ({
   onExternalClientTokenChange,
   onPostbackUrlChange,
 }) => {
+  const [showInstanceToken, setShowInstanceToken] = useState(false);
+  const [showClientToken, setShowClientToken] = useState(false);
+
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <MessageSquare className="h-5 w-5 text-green-600" />
-            <div>
-              <CardTitle>Integração WhatsApp</CardTitle>
-              <CardDescription>
-                Conecte este funil a uma integração WhatsApp para receber leads
-                automaticamente
+    <div className="space-y-4 [&_.p-6]:p-4 [&_h3]:text-sm [&_p.text-muted-foreground]:text-xs">
+      <Card className="border-emerald-500/20 bg-emerald-500/[0.03]">
+        <CardContent className="flex flex-col gap-4 py-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10">
+              <MessageSquare className="h-5 w-5 text-emerald-600" />
+            </div>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <CardTitle className="text-sm">Integração WhatsApp</CardTitle>
+                <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${useWhatsApp ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" : "bg-muted text-muted-foreground"}`}>
+                  {useWhatsApp ? "Ligada" : "Desligada"}
+                </span>
+              </div>
+              <CardDescription className="text-xs">
+                {useWhatsApp ? "Defina como os novos leads chegam a este funil." : "Ative para receber novos leads pelo WhatsApp."}
               </CardDescription>
             </div>
           </div>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label htmlFor="use-whatsapp">Usar WhatsApp</Label>
-              <p className="text-sm text-muted-foreground">
-                Ative para receber leads do WhatsApp neste funil
-              </p>
-            </div>
+          <div className="flex items-center gap-2 self-end sm:self-auto">
+            <Label htmlFor="use-whatsapp" className="cursor-pointer text-sm">{useWhatsApp ? "Desativar" : "Ativar"}</Label>
             <Switch
               id="use-whatsapp"
               checked={useWhatsApp}
@@ -93,9 +95,21 @@ export const ConfigurationsTab: React.FC<ConfigurationsTabProps> = ({
               }}
             />
           </div>
+        </CardContent>
+      </Card>
 
-          {useWhatsApp && (
-            <>
+      {useWhatsApp ? (
+        <div className="space-y-4">
+          <Card>
+            <CardHeader className="pb-4">
+              <div className="flex items-center gap-2">
+                <div>
+                  <CardTitle className="text-sm">Entrada de leads</CardTitle>
+                  <CardDescription className="text-xs">Escolha o provedor e a primeira etapa do funil.</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="grid gap-5 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Tipo de Integração</Label>
                 <Select
@@ -143,30 +157,33 @@ export const ConfigurationsTab: React.FC<ConfigurationsTabProps> = ({
                   Novos leads do WhatsApp serão adicionados nesta etapa
                 </p>
               </div>
+            </CardContent>
+          </Card>
 
-              {whatsAppIntegrationName === WHATSAPP_INTEGRATION_NAMES.ZAPI && (
-                <>
-                  <div className="space-y-2">
+          {whatsAppIntegrationName === WHATSAPP_INTEGRATION_NAMES.ZAPI && (
+            <Card className="border-primary/15">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-sm">Credenciais Z-API</CardTitle>
+                <CardDescription className="text-xs">Esses dados conectam a instância selecionada e ficam ocultos enquanto você digita.</CardDescription>
+              </CardHeader>
+              <CardContent className="grid gap-5 sm:grid-cols-2">
+                <div className="space-y-2">
                     <Label>Token da instância</Label>
-                    <Input
-                      value={externalToken}
-                      onChange={(e) => onExternalTokenChange(e.target.value)}
-                      placeholder="Digite o token da instância"
-                    />
-                  </div>
+                    <div className="relative">
+                      <Input type={showInstanceToken ? "text" : "password"} value={externalToken} onChange={(e) => onExternalTokenChange(e.target.value)} placeholder="Digite o token da instância" className="pr-10" />
+                      <button type="button" onClick={() => setShowInstanceToken((value) => !value)} className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-muted-foreground hover:text-foreground" aria-label={showInstanceToken ? "Ocultar token" : "Revelar token"}>{showInstanceToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button>
+                    </div>
+                </div>
 
-                  <div className="space-y-2">
+                <div className="space-y-2">
                     <Label>Token de segurança da conta</Label>
-                    <Input
-                      value={externalClientToken}
-                      onChange={(e) =>
-                        onExternalClientTokenChange(e.target.value)
-                      }
-                      placeholder="Digite o token de segurança da conta"
-                    />
-                  </div>
+                    <div className="relative">
+                      <Input type={showClientToken ? "text" : "password"} value={externalClientToken} onChange={(e) => onExternalClientTokenChange(e.target.value)} placeholder="Digite o token de segurança da conta" className="pr-10" />
+                      <button type="button" onClick={() => setShowClientToken((value) => !value)} className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-muted-foreground hover:text-foreground" aria-label={showClientToken ? "Ocultar token" : "Revelar token"}>{showClientToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button>
+                    </div>
+                </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-2 sm:col-span-2">
                     <Label>API da instância (URL)</Label>
                     <Input
                       value={postbackUrl}
@@ -174,12 +191,13 @@ export const ConfigurationsTab: React.FC<ConfigurationsTabProps> = ({
                       placeholder="Digite a URL da API da instância"
                     />
                   </div>
-                </>
-              )}
-            </>
+              </CardContent>
+            </Card>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      ) : (
+        <p className="px-1 text-sm text-muted-foreground">Ao ativar, selecione o tipo de integração e a etapa onde os novos leads devem entrar.</p>
+      )}
     </div>
   );
 };

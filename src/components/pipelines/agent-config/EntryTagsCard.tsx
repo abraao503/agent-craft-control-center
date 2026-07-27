@@ -38,7 +38,7 @@ export const EntryTagsCard: React.FC<EntryTagsCardProps> = ({
   };
 
   const selectedTags = tags.filter((tag) =>
-    formData.entryTags?.includes(tag.id)
+    formData.entryTags?.includes(tag.id),
   );
 
   return (
@@ -127,28 +127,6 @@ export const EntryTagsCard: React.FC<EntryTagsCardProps> = ({
               </div>
             </div>
           )}
-        </CardContent>
-      </Card>
-
-      {/* Informações sobre uso de tags */}
-      <Card className="bg-purple-50/50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-900">
-        <CardContent className="pt-6">
-          <div className="flex gap-3">
-            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-purple-500/10 flex items-center justify-center">
-              <TagIcon className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-purple-900 dark:text-purple-100">
-                Para que servem as tags?
-              </p>
-              <ul className="text-xs text-purple-700 dark:text-purple-300 space-y-1">
-                <li>• Organizar e categorizar chats automaticamente</li>
-                <li>• Facilitar filtros e buscas por tipo de atendimento</li>
-                <li>• Criar relatórios e métricas segmentadas</li>
-                <li>• Automatizar fluxos baseados em tags</li>
-              </ul>
-            </div>
-          </div>
         </CardContent>
       </Card>
     </div>

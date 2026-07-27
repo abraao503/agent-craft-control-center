@@ -39,7 +39,7 @@ const EditAgentPage = () => {
   const [formData, setFormData] = useState<AgentFormData | null>(null);
   const [agent, setAgent] = useState<FullAgent | null>(null);
   const [contentsToUpdate, setContentsToUpdate] = useState<AssistantContent[]>(
-    []
+    [],
   );
   const [customFieldsToUpdate, setCustomFieldsToUpdate] = useState<
     UpdateAssistantCustomField[]
@@ -122,6 +122,7 @@ const EditAgentPage = () => {
         customFields: data.customFields,
         followUps: data.followUps,
         entryTags: data.entryTags || [],
+        transitionDecisionMode: data.transitionDecisionMode || "CONVERSATIONAL",
       });
     }
   }, [data]);
@@ -159,7 +160,7 @@ const EditAgentPage = () => {
     if (!formData || !agent) return;
 
     const formattedInstructions = convertHtmlStringToText(
-      formData.instructions
+      formData.instructions,
     );
 
     await updateAgentMutation({
@@ -183,6 +184,7 @@ const EditAgentPage = () => {
         iaModelId: formData.iaModelId,
         iaProviderApiKey: formData.iaProviderApiKey,
         entryTags: formData.entryTags,
+        transitionDecisionMode: formData.transitionDecisionMode,
       },
       workspaceId: workspaceId || "",
     });

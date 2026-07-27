@@ -41,6 +41,7 @@ const defaultFormData: AgentFormData = {
   links: null,
   followUps: [],
   entryTags: [],
+  transitionDecisionMode: "CONVERSATIONAL",
 };
 
 const CreateAgentPage = () => {

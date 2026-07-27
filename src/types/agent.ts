@@ -1,4 +1,5 @@
 export type AgentLanguage = "en-US" | "es-ES" | "pt-BR";
+export type TransitionDecisionMode = "CONVERSATIONAL" | "DEDICATED";
 
 type Prompt = {
   function: string;
@@ -68,6 +69,7 @@ export interface FullAgent {
   followUps: FollowUp[];
   entryTags: string[];
   googleCalendarIntegrationId?: string | null;
+  transitionDecisionMode: TransitionDecisionMode;
 }
 
 export interface Link {
@@ -150,6 +152,7 @@ export interface AgentFormData {
 
   // Step 6: Skills
   googleCalendarIntegrationId?: string | null;
+  transitionDecisionMode?: TransitionDecisionMode;
 }
 
 export interface AIModel {
@@ -199,6 +202,7 @@ export type UpdateAgentResquest = {
   customFields: UpdateAssistantCustomField[];
   entryTags: string[];
   googleCalendarIntegrationId?: string | null;
+  transitionDecisionMode?: TransitionDecisionMode;
 };
 
 export type CreateAgentRequest = {

@@ -1,5 +1,9 @@
 # Gerenciamento Dinâmico de Workspaces
 
+> **Legado.** Consulte [`docs/agent/autorizacao-e-tenancy.md`](agent/autorizacao-e-tenancy.md)
+> para regras atuais e confirme `WorkspaceContext`, sidebar e contracts antes
+> de implementar mudanças.
+
 ## Visão Geral
 
 Este documento descreve o comportamento dinâmico do sistema de workspaces quando ocorrem operações de criação, edição e exclusão.

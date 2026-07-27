@@ -1,5 +1,9 @@
 # Feature: Follow-ups de Deals
 
+> **Legado.** O conhecimento consolidado e as regras atuais para agentes estão
+> em [`docs/agent/dominios.md`](agent/dominios.md). Confirme serviços e
+> contratos antes de alterar o fluxo.
+
 ## Visão Geral
 
 Esta feature permite criar, listar e gerenciar follow-ups agendados para deals. Os follow-ups são mensagens programadas que serão enviadas via WhatsApp para os clientes em horários específicos.

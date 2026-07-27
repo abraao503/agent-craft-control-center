@@ -1,8 +1,30 @@
 import React, { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+import { ChevronRight, Plus, Trash2 } from "lucide-react";
+import {
+  AssistantAllowedTargetStage,
+  AssistantPipelineStage,
+} from "@/types/pipeline";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -10,13 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Trash2, Plus, Edit2, ArrowRight, AlertCircle } from "lucide-react";
-import {
-  AssistantAllowedTargetStage,
-  AssistantPipelineStage,
-} from "@/types/pipeline";
-import { MoveConditionModal } from "./MoveConditionModal";
+import { Switch } from "@/components/ui/switch";
 
 interface AssistantStageConfigProps {
   stageId: string;
@@ -30,6 +46,26 @@ interface AssistantStageConfigProps {
   ) => void;
 }
 
+const criteriaOf = (rule: AssistantAllowedTargetStage) =>
+  rule.criteria?.length
+    ? rule.criteria
+    : rule.moveCondition?.trim()
+      ? [rule.moveCondition]
+      : [];
+
+const sameRule = (
+  left: AssistantAllowedTargetStage | null,
+  right: AssistantAllowedTargetStage | null,
+) => JSON.stringify(left) === JSON.stringify(right);
+
+const formatConditionsCount = (count: number) =>
+  `${count} ${count === 1 ? "condição" : "condições"}`;
+
+const formatRulesCount = (count: number) =>
+  count === 0
+    ? "Nenhuma regra"
+    : `${count} ${count === 1 ? "regra" : "regras"}`;
+
 export const AssistantStageConfig: React.FC<AssistantStageConfigProps> = ({
   stageId,
   stageName,
@@ -38,299 +74,505 @@ export const AssistantStageConfig: React.FC<AssistantStageConfigProps> = ({
   availableStages,
   onConfigChange,
 }) => {
-  const agentEnabledForStage = !!assistantConfig;
-  const allowedTargetStages =
-    assistantConfig?.assistantAllowedTargetStages ?? [];
+  const [open, setOpen] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [draft, setDraft] = useState<AssistantAllowedTargetStage | null>(null);
+  const [criterion, setCriterion] = useState("");
+  const [showValidation, setShowValidation] = useState(false);
+  const [discardPrompt, setDiscardPrompt] = useState<(() => void) | null>(null);
+  const [removeIndex, setRemoveIndex] = useState<number | null>(null);
+  const rules = assistantConfig?.assistantAllowedTargetStages ?? [];
+  const targets = availableStages.filter((stage) => stage.order !== stageOrder);
 
-  const [editingCondition, setEditingCondition] = useState<{
-    index: number;
-    condition: string;
-    targetStageName: string;
-  } | null>(null);
-
-  const handleCanActChange = (canAct: boolean) => {
-    if (!canAct) {
-      onConfigChange(stageId, null);
-    } else {
-      onConfigChange(stageId, {
-        assistantAllowedTargetStages: [],
-      });
+  const makeDraft = (
+    rule?: AssistantAllowedTargetStage,
+  ): AssistantAllowedTargetStage => ({
+    targetStageOrder: rule?.targetStageOrder ?? -1,
+    targetStageId: rule?.targetStageId,
+    criteria: [...criteriaOf(rule ?? { targetStageOrder: -1 })],
+    matchMode: rule?.matchMode ?? "ALL",
+    requiresExplicitConfirmation: rule?.requiresExplicitConfirmation ?? false,
+  });
+  const draftChanged = () =>
+    !sameRule(
+      draft,
+      selectedIndex === null ? null : makeDraft(rules[selectedIndex]),
+    );
+  const clearEditor = () => {
+    setSelectedIndex(null);
+    setDraft(null);
+    setCriterion("");
+    setShowValidation(false);
+  };
+  const select = (index: number | null) => {
+    setSelectedIndex(index);
+    setDraft(index === null ? makeDraft() : makeDraft(rules[index]));
+    setCriterion("");
+    setShowValidation(false);
+  };
+  const requestChange = (next: () => void) => {
+    if (draftChanged()) setDiscardPrompt(() => next);
+    else next();
+  };
+  const save = () => {
+    if (!draft || draft.targetStageOrder < 0 || !criteriaOf(draft).length) {
+      setShowValidation(true);
+      return false;
     }
-  };
-
-  const handleAddTargetStage = () => {
-    if (!assistantConfig) return;
-
-    // Use -1 to indicate "not selected" instead of 0 (which is a valid stage order)
-    const newTargetStage: AssistantAllowedTargetStage = {
-      targetStageOrder: -1,
-      moveCondition: "",
+    const normalized = {
+      ...draft,
+      criteria: criteriaOf(draft),
+      moveCondition: undefined,
     };
-
-    const updatedConfig: AssistantPipelineStage = {
-      assistantAllowedTargetStages: [...allowedTargetStages, newTargetStage],
-    };
-
-    onConfigChange(stageId, updatedConfig);
+    const isNewRule = selectedIndex === null;
+    const next =
+      isNewRule
+        ? [normalized, ...rules]
+        : rules.map((rule, index) =>
+            index === selectedIndex ? normalized : rule,
+          );
+    onConfigChange(stageId, { assistantAllowedTargetStages: next });
+    if (isNewRule) {
+      clearEditor();
+    } else {
+      setDraft(makeDraft(normalized));
+      setShowValidation(false);
+    }
+    return true;
   };
-
-  const handleRemoveTargetStage = (index: number) => {
-    if (!assistantConfig) return;
-
-    const updatedTargetStages = allowedTargetStages.filter(
-      (_, i) => i !== index,
-    );
-    const updatedConfig: AssistantPipelineStage = {
-      assistantAllowedTargetStages: updatedTargetStages,
-    };
-    onConfigChange(stageId, updatedConfig);
-  };
-
-  const handleTargetStageChange = (
-    index: number,
-    field: keyof AssistantAllowedTargetStage,
-    value: string | number,
-  ) => {
-    if (!assistantConfig) return;
-
-    const updatedTargetStages = allowedTargetStages.map((stage, i) =>
-      i === index ? { ...stage, [field]: value } : stage,
-    );
-
-    const updatedConfig: AssistantPipelineStage = {
-      assistantAllowedTargetStages: updatedTargetStages,
-    };
-
-    onConfigChange(stageId, updatedConfig);
-  };
-
-  const handleEditCondition = (index: number) => {
-    const targetStage = allowedTargetStages[index];
-    const targetStageName =
-      availableStages.find((s) => s.order === targetStage.targetStageOrder)
-        ?.name || "Etapa desconhecida";
-
-    setEditingCondition({
-      index,
-      condition: targetStage.moveCondition,
-      targetStageName,
+  const close = () =>
+    requestChange(() => {
+      setOpen(false);
+      clearEditor();
     });
-  };
-
-  const handleSaveCondition = (condition: string) => {
-    if (editingCondition === null) return;
-    handleTargetStageChange(editingCondition.index, "moveCondition", condition);
-    setEditingCondition(null);
-  };
-
-  // Filter out current stage from available target stages
-  const availableTargetStages = availableStages.filter(
-    (stage) => stage.order !== stageOrder,
-  );
+  const targetName = (rule: AssistantAllowedTargetStage) =>
+    targets.find((target) => target.order === rule.targetStageOrder)?.name ??
+    "Destino não definido";
 
   return (
-    <Card className="mt-3 border-primary/20 shadow-sm">
-      <CardHeader className="pb-3 space-y-1">
-        <div className="flex items-center justify-between">
-          <div className="space-y-0.5">
-            <CardTitle className="text-sm font-semibold">
-              Automação do Agente
-            </CardTitle>
-            <p className="text-xs text-muted-foreground">
-              Configure movimentações automáticas para esta etapa
+    <>
+      <div className="mt-3 rounded-md border bg-muted/20 px-2.5 py-1.5">
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <Label className="text-xs font-medium">Automação do agente</Label>
+            <p className="text-[11px] leading-snug text-muted-foreground">
+              Move negócios automaticamente entre etapas.
             </p>
           </div>
-          <Switch
-            checked={agentEnabledForStage}
-            onCheckedChange={handleCanActChange}
-          />
+          <div className="flex shrink-0 items-center gap-2">
+            <span className="text-[11px] text-muted-foreground">
+              {assistantConfig ? "Ligada" : "Desligada"}
+            </span>
+            <Switch
+              checked={!!assistantConfig}
+              aria-label="Ativar automação nesta etapa"
+              onCheckedChange={(enabled) =>
+                onConfigChange(
+                  stageId,
+                  enabled ? { assistantAllowedTargetStages: [] } : null,
+                )
+              }
+            />
+          </div>
         </div>
-      </CardHeader>
+        {assistantConfig && (
+          <div className="mt-2 border-t border-border/60 pt-2">
+            <button
+              type="button"
+              className="flex h-7 w-full items-center justify-between rounded-sm px-1.5 text-xs font-medium transition-colors hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              onClick={() => {
+                setOpen(true);
+                clearEditor();
+              }}
+            >
+              <span>Regras de movimentação</span>
+              <span className="flex items-center gap-1 text-muted-foreground">
+                <span className="text-[11px]">
+                  {formatRulesCount(rules.length)}
+                </span>
+                <ChevronRight className="h-3.5 w-3.5" />
+              </span>
+            </button>
+          </div>
+        )}
+      </div>
 
-      {agentEnabledForStage && (
-        <CardContent className="pt-0 space-y-4">
-          <div className="space-y-3">
-            <div className="flex items-center justify-between gap-3">
-              <Label className="text-xs font-semibold text-foreground flex items-center gap-2">
-                <span className="h-1 w-1 rounded-full bg-primary"></span>
-                Regras de Movimentação
-                <Badge variant="secondary" className="ml-1 text-xs px-1.5 py-0">
-                  {allowedTargetStages.length}
-                </Badge>
-              </Label>
+      <Dialog
+        open={open}
+        onOpenChange={(value) => {
+          if (!value) close();
+        }}
+      >
+        <DialogContent
+          className="flex h-[min(760px,90vh)] max-w-5xl flex-col gap-0 overflow-hidden p-0"
+          onEscapeKeyDown={(event) => {
+            if (draftChanged()) {
+              event.preventDefault();
+              close();
+            }
+          }}
+          onPointerDownOutside={(event) => {
+            if (draftChanged()) {
+              event.preventDefault();
+              close();
+            }
+          }}
+        >
+          <DialogHeader className="border-b px-6 py-4">
+            <DialogTitle>Gerenciar regras</DialogTitle>
+            <DialogDescription>
+              As regras são salvas no rascunho do funil. Use o botão Salvar da
+              página para persistir.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid min-h-0 flex-1 md:grid-cols-[260px_minmax(0,1fr)]">
+            <aside className="min-h-0 overflow-y-auto border-r p-4">
               <Button
                 type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleAddTargetStage}
-                className="h-8 text-xs px-3 gap-1.5 hover:bg-primary hover:text-primary-foreground transition-colors"
+                className="mb-3 w-full"
+                disabled={selectedIndex === null && draft !== null}
+                onClick={() => requestChange(() => select(null))}
               >
-                <Plus className="h-3.5 w-3.5" />
+                <Plus className="mr-2 h-4 w-4" />
                 Nova regra
               </Button>
-            </div>
-
-            {allowedTargetStages.length > 0 && (
-              <div className="space-y-2.5">
-                {allowedTargetStages.map((targetStage, index) => {
-                  const hasCondition =
-                    targetStage.moveCondition.trim().length > 0;
-                  const isStageSelected = targetStage.targetStageOrder >= 0;
-
-                  const foundStage = availableStages.find(
-                    (s) => s.order === targetStage.targetStageOrder,
-                  );
-                  const targetStageName = foundStage?.name || "Não encontrada";
-
-                  const selectValue =
-                    targetStage.targetStageOrder >= 0
-                      ? String(targetStage.targetStageOrder)
-                      : "";
-
-                  return (
-                    <div
-                      key={`${stageId}-target-${index}-${targetStage.targetStageOrder}`}
-                      className="space-y-1.5"
+              <div className="space-y-1">
+                {selectedIndex === null && draft && (
+                  <div className="rounded-md border border-dashed border-primary/50 bg-primary/5 px-3 py-2">
+                    <span className="block text-sm font-medium">
+                      Nova regra
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      Rascunho não salvo
+                    </span>
+                  </div>
+                )}
+                {rules.map((rule, index) => (
+                  <button
+                    key={rule.id ?? `${stageId}-${index}`}
+                    type="button"
+                    onClick={() => requestChange(() => select(index))}
+                    className={`w-full rounded-md px-3 py-2 text-left ${selectedIndex === index ? "bg-accent" : "hover:bg-muted"}`}
+                  >
+                    <span className="block text-sm font-medium">
+                      {targetName(rule)}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {formatConditionsCount(criteriaOf(rule).length)}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </aside>
+            <section className="min-h-0 overflow-y-auto p-6">
+              {!draft ? (
+                <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                  Selecione ou crie uma regra.
+                </div>
+              ) : (
+                <div className="space-y-5">
+                  <div>
+                    <Label htmlFor={`${stageId}-target`}>
+                      Etapa de destino
+                    </Label>
+                    <Select
+                      value={
+                        draft.targetStageOrder >= 0
+                          ? String(draft.targetStageOrder)
+                          : undefined
+                      }
+                      onValueChange={(value) => {
+                        const target = targets.find(
+                          (item) => item.order === Number(value),
+                        );
+                        setDraft(
+                          (current) =>
+                            current && {
+                              ...current,
+                              targetStageOrder: Number(value),
+                              targetStageId: target?.id,
+                            },
+                        );
+                      }}
                     >
-                      <div
-                        className={`p-3 border rounded-lg transition-all ${
-                          !hasCondition && isStageSelected
-                            ? "border-orange-300 bg-orange-50/50 dark:border-orange-800 dark:bg-orange-950/30 shadow-sm"
-                            : "bg-muted/20 hover:bg-muted/40 border-border/60 hover:border-border"
-                        }`}
+                      <SelectTrigger
+                        id={`${stageId}-target`}
+                        className={`mt-1 ${showValidation && draft.targetStageOrder < 0 ? "border-destructive ring-1 ring-destructive" : ""}`}
                       >
-                        {/* Linha do topo: Badge + Select + Botões */}
-                        <div className="flex items-center gap-2.5 mb-0">
-                          <Badge
-                            variant="outline"
-                            className="text-xs shrink-0 h-5 px-1.5 bg-background"
+                        <SelectValue placeholder="Selecione uma etapa" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {targets.map((target) => (
+                          <SelectItem
+                            key={target.id}
+                            value={String(target.order)}
                           >
-                            #{index + 1}
-                          </Badge>
-                          <ArrowRight className="h-3.5 w-3.5 text-muted-foreground/60 shrink-0" />
-
-                          <div className="flex-1 min-w-0">
-                            <Select
-                              value={selectValue}
-                              onValueChange={(value) => {
-                                const newOrder = Number(value);
-                                const selectedStage =
-                                  availableTargetStages.find(
-                                    (s) => s.order === newOrder,
-                                  );
-                                if (!assistantConfig || !selectedStage) return;
-
-                                const updatedTargetStages =
-                                  allowedTargetStages.map((st, i) =>
-                                    i === index
-                                      ? {
-                                          ...st,
-                                          targetStageOrder: newOrder,
-                                          targetStageId: selectedStage.id,
-                                        }
-                                      : st,
-                                  );
-
-                                onConfigChange(stageId, {
-                                  assistantAllowedTargetStages:
-                                    updatedTargetStages,
-                                });
-                              }}
-                            >
-                              <SelectTrigger className="h-8 text-xs border-0 bg-background/80 hover:bg-background shadow-sm font-medium w-full">
-                                <SelectValue placeholder="Selecione a etapa destino" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {availableTargetStages.map((stage) => (
-                                  <SelectItem
-                                    key={stage.id}
-                                    value={String(stage.order)}
-                                    className="text-xs"
-                                  >
-                                    {stage.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            <Button
-                              type="button"
-                              variant={
-                                !hasCondition && isStageSelected
-                                  ? "default"
-                                  : "ghost"
-                              }
-                              size="sm"
-                              onClick={() => handleEditCondition(index)}
-                              className={`h-7 px-2.5 ${
-                                !hasCondition && isStageSelected
-                                  ? "bg-orange-600 hover:bg-orange-700 text-white shadow-sm"
-                                  : "hover:bg-muted"
-                              }`}
-                              title={
-                                hasCondition
-                                  ? "Editar condição"
-                                  : "Definir condição (obrigatório)"
-                              }
-                            >
-                              <Edit2 className="h-3 w-3" />
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleRemoveTargetStage(index)}
-                              className="h-7 w-7 p-0 text-destructive/70 hover:text-destructive hover:bg-destructive/10"
-                              title="Remover movimentação"
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </div>
+                            {target.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {showValidation && draft.targetStageOrder < 0 && (
+                      <p className="mt-1 text-xs text-destructive">
+                        Selecione a etapa para a qual o negócio será movido.
+                      </p>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <div>
+                      <Label>Condições</Label>
+                      <p className="text-xs text-muted-foreground">
+                        Cada condição é um fato observável na conversa, por
+                        exemplo: “Cliente solicitou uma proposta”.
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-sm text-muted-foreground">
+                        Mover quando
+                      </span>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={
+                          (draft.matchMode ?? "ALL") === "ALL"
+                            ? "default"
+                            : "outline"
+                        }
+                        aria-pressed={(draft.matchMode ?? "ALL") === "ALL"}
+                        onClick={() =>
+                          setDraft(
+                            (current) =>
+                              current && { ...current, matchMode: "ALL" },
+                          )
+                        }
+                      >
+                        Todas as condições
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={
+                          (draft.matchMode ?? "ALL") === "ANY"
+                            ? "default"
+                            : "outline"
+                        }
+                        aria-pressed={(draft.matchMode ?? "ALL") === "ANY"}
+                        onClick={() =>
+                          setDraft(
+                            (current) =>
+                              current && { ...current, matchMode: "ANY" },
+                          )
+                        }
+                      >
+                        Qualquer condição
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {(draft.matchMode ?? "ALL") === "ALL"
+                        ? "Todas as condições precisam ser identificadas na conversa."
+                        : "Pelo menos uma das condições precisa ser identificada na conversa."}
+                    </p>
+                    <div className="flex gap-2">
+                      <Input
+                        value={criterion}
+                        onChange={(event) => setCriterion(event.target.value)}
+                        placeholder="Ex.: Cliente solicitou uma proposta"
+                        className={showValidation && !criteriaOf(draft).length ? "border-destructive ring-1 ring-destructive" : ""}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" && criterion.trim()) {
+                            event.preventDefault();
+                            setDraft(
+                              (current) =>
+                                current && {
+                                  ...current,
+                                  criteria: [
+                                    ...criteriaOf(current),
+                                    criterion.trim(),
+                                  ],
+                                },
+                            );
+                            setCriterion("");
+                          }
+                        }}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          if (criterion.trim()) {
+                            setDraft(
+                              (current) =>
+                                current && {
+                                  ...current,
+                                  criteria: [
+                                    ...criteriaOf(current),
+                                    criterion.trim(),
+                                  ],
+                                },
+                            );
+                            setCriterion("");
+                          }
+                        }}
+                      >
+                        Adicionar
+                      </Button>
+                    </div>
+                    {criteriaOf(draft).map((item, index) => (
+                      <div
+                        key={`${item}-${index}`}
+                        className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm"
+                      >
+                        <span className="flex-1">{item}</span>
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7 text-destructive"
+                          aria-label="Remover condição"
+                          onClick={() =>
+                            setDraft(
+                              (current) =>
+                                current && {
+                                  ...current,
+                                  criteria: criteriaOf(current).filter(
+                                    (_, itemIndex) => itemIndex !== index,
+                                  ),
+                                },
+                            )
+                          }
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
-
-                      {!hasCondition && isStageSelected && (
-                        <div className="flex items-center gap-1.5 text-orange-600 dark:text-orange-400 pl-3">
-                          <AlertCircle className="h-3 w-3" />
-                          <span className="text-xs font-medium">
-                            Defina a condição para ativar esta regra
-                          </span>
-                        </div>
+                    ))}
+                    {showValidation && !criteriaOf(draft).length && (
+                      <p className="text-xs text-destructive">
+                        Adicione pelo menos uma condição para salvar a regra.
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex items-center justify-between gap-4 rounded-md border px-3 py-3">
+                    <div>
+                      <Label htmlFor={`${stageId}-confirmation`}>
+                        Exigir confirmação explícita
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Só permita a movimentação após uma confirmação clara do
+                        cliente.
+                      </p>
+                    </div>
+                    <Switch
+                      id={`${stageId}-confirmation`}
+                      checked={draft.requiresExplicitConfirmation ?? false}
+                      onCheckedChange={(checked) =>
+                        setDraft(
+                          (current) =>
+                            current && {
+                              ...current,
+                              requiresExplicitConfirmation: checked,
+                            },
+                        )
+                      }
+                    />
+                  </div>
+                  {/* Refinar regra ficará disponível quando o contrato de exceções for ativado. */}
+                  <div className="flex justify-between border-t pt-4">
+                    <div>
+                      {selectedIndex !== null && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          className="text-destructive"
+                          onClick={() => setRemoveIndex(selectedIndex)}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Excluir regra
+                        </Button>
                       )}
                     </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {allowedTargetStages.length === 0 && (
-              <div className="text-xs text-muted-foreground text-center py-6 border-2 border-dashed rounded-lg bg-muted/20">
-                <div className="flex flex-col items-center gap-2">
-                  <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
-                    <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                  <div>
-                    <p className="font-medium">Nenhuma regra configurada</p>
-                    <p className="text-muted-foreground/70 mt-0.5">
-                      O agente não poderá mover negócios desta etapa
-                    </p>
+                    <Button
+                      type="button"
+                      onClick={save}
+                    >
+                      Salvar regra
+                    </Button>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
+            </section>
           </div>
-        </CardContent>
-      )}
-
-      <MoveConditionModal
-        open={editingCondition !== null}
-        onOpenChange={(open) => !open && setEditingCondition(null)}
-        condition={editingCondition?.condition || ""}
-        targetStageName={editingCondition?.targetStageName || ""}
-        onSave={handleSaveCondition}
-      />
-    </Card>
+        </DialogContent>
+      </Dialog>
+      <AlertDialog
+        open={!!discardPrompt}
+        onOpenChange={(value) => !value && setDiscardPrompt(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Salvar alterações da regra?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Há alterações não salvas nesta regra.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDiscardPrompt(null)}>
+              Continuar editando
+            </AlertDialogCancel>
+            <Button
+              variant="outline"
+              onClick={() => {
+                const action = discardPrompt;
+                setDiscardPrompt(null);
+                action?.();
+              }}
+            >
+              Descartar
+            </Button>
+            <AlertDialogAction
+              onClick={() => {
+                if (!save()) return;
+                const action = discardPrompt;
+                setDiscardPrompt(null);
+                action?.();
+              }}
+            >
+              Salvar e continuar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <AlertDialog
+        open={removeIndex !== null}
+        onOpenChange={(value) => !value && setRemoveIndex(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir regra?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta regra será removida do rascunho do funil.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive hover:bg-destructive/90"
+              onClick={() => {
+                if (removeIndex !== null) {
+                  onConfigChange(stageId, {
+                    assistantAllowedTargetStages: rules.filter(
+                      (_, index) => index !== removeIndex,
+                    ),
+                  });
+                  clearEditor();
+                }
+                setRemoveIndex(null);
+              }}
+            >
+              Excluir regra
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };

@@ -2,6 +2,14 @@
 
 Painel de controle de agentes IA.
 
+## Documentação e trabalho assistido por agentes
+
+- [`AGENTS.md`](AGENTS.md) contém as regras operacionais do frontend.
+- [`docs/agent/README.md`](docs/agent/README.md) é a documentação atual,
+  organizada por arquitetura, dados, tenancy, UI e domínios.
+- Os demais arquivos Markdown em `docs/` são legado e devem ser confirmados
+  contra o código e a API antes de orientar uma implementação.
+
 ## Stack
 
 - Vite + React + TypeScript
