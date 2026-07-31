@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { ChevronRight, Plus, Trash2 } from "lucide-react";
 import {
   AssistantAllowedTargetStage,
@@ -40,6 +40,7 @@ interface AssistantStageConfigProps {
   stageOrder: number;
   assistantConfig?: AssistantPipelineStage | null;
   availableStages: Array<{ id: string; name: string; order: number }>;
+  focusRuleIndex?: number;
   onConfigChange: (
     stageId: string,
     config?: AssistantPipelineStage | null,
@@ -72,6 +73,7 @@ export const AssistantStageConfig: React.FC<AssistantStageConfigProps> = ({
   stageOrder,
   assistantConfig,
   availableStages,
+  focusRuleIndex,
   onConfigChange,
 }) => {
   const [open, setOpen] = useState(false);
@@ -148,6 +150,22 @@ export const AssistantStageConfig: React.FC<AssistantStageConfigProps> = ({
   const targetName = (rule: AssistantAllowedTargetStage) =>
     targets.find((target) => target.order === rule.targetStageOrder)?.name ??
     "Destino não definido";
+
+  useEffect(() => {
+    if (
+      focusRuleIndex === undefined ||
+      focusRuleIndex < 0 ||
+      focusRuleIndex >= rules.length
+    ) {
+      return;
+    }
+
+    setOpen(true);
+    select(focusRuleIndex);
+    setShowValidation(true);
+    // Only react when the page asks to focus a different rule.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusRuleIndex]);
 
   return (
     <>

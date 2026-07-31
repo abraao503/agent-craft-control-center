@@ -71,17 +71,23 @@ export const ConfigurationsTab: React.FC<ConfigurationsTabProps> = ({
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <CardTitle className="text-sm">Integração WhatsApp</CardTitle>
-                <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${useWhatsApp ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" : "bg-muted text-muted-foreground"}`}>
+                <span
+                  className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${useWhatsApp ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" : "bg-muted text-muted-foreground"}`}
+                >
                   {useWhatsApp ? "Ligada" : "Desligada"}
                 </span>
               </div>
               <CardDescription className="text-xs">
-                {useWhatsApp ? "Defina como os novos leads chegam a este funil." : "Ative para receber novos leads pelo WhatsApp."}
+                {useWhatsApp
+                  ? "Defina como os novos leads chegam a este funil."
+                  : "Ative para receber novos leads pelo WhatsApp."}
               </CardDescription>
             </div>
           </div>
           <div className="flex items-center gap-2 self-end sm:self-auto">
-            <Label htmlFor="use-whatsapp" className="cursor-pointer text-sm">{useWhatsApp ? "Desativar" : "Ativar"}</Label>
+            <Label htmlFor="use-whatsapp" className="cursor-pointer text-sm">
+              {useWhatsApp ? "Desativar" : "Ativar"}
+            </Label>
             <Switch
               id="use-whatsapp"
               checked={useWhatsApp}
@@ -105,7 +111,9 @@ export const ConfigurationsTab: React.FC<ConfigurationsTabProps> = ({
               <div className="flex items-center gap-2">
                 <div>
                   <CardTitle className="text-sm">Entrada de leads</CardTitle>
-                  <CardDescription className="text-xs">Escolha o provedor e a primeira etapa do funil.</CardDescription>
+                  <CardDescription className="text-xs">
+                    Escolha o provedor e a primeira etapa do funil.
+                  </CardDescription>
                 </div>
               </div>
             </CardHeader>
@@ -164,39 +172,81 @@ export const ConfigurationsTab: React.FC<ConfigurationsTabProps> = ({
             <Card className="border-primary/15">
               <CardHeader className="pb-4">
                 <CardTitle className="text-sm">Credenciais Z-API</CardTitle>
-                <CardDescription className="text-xs">Esses dados conectam a instância selecionada e ficam ocultos enquanto você digita.</CardDescription>
               </CardHeader>
               <CardContent className="grid gap-5 sm:grid-cols-2">
                 <div className="space-y-2">
-                    <Label>Token da instância</Label>
-                    <div className="relative">
-                      <Input type={showInstanceToken ? "text" : "password"} value={externalToken} onChange={(e) => onExternalTokenChange(e.target.value)} placeholder="Digite o token da instância" className="pr-10" />
-                      <button type="button" onClick={() => setShowInstanceToken((value) => !value)} className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-muted-foreground hover:text-foreground" aria-label={showInstanceToken ? "Ocultar token" : "Revelar token"}>{showInstanceToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button>
-                    </div>
+                  <Label>Token da instância</Label>
+                  <div className="relative">
+                    <Input
+                      type={showInstanceToken ? "text" : "password"}
+                      value={externalToken}
+                      onChange={(e) => onExternalTokenChange(e.target.value)}
+                      placeholder="Digite o token da instância"
+                      className="pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowInstanceToken((value) => !value)}
+                      className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-muted-foreground hover:text-foreground"
+                      aria-label={
+                        showInstanceToken ? "Ocultar token" : "Revelar token"
+                      }
+                    >
+                      {showInstanceToken ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
                 </div>
 
                 <div className="space-y-2">
-                    <Label>Token de segurança da conta</Label>
-                    <div className="relative">
-                      <Input type={showClientToken ? "text" : "password"} value={externalClientToken} onChange={(e) => onExternalClientTokenChange(e.target.value)} placeholder="Digite o token de segurança da conta" className="pr-10" />
-                      <button type="button" onClick={() => setShowClientToken((value) => !value)} className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-muted-foreground hover:text-foreground" aria-label={showClientToken ? "Ocultar token" : "Revelar token"}>{showClientToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button>
-                    </div>
+                  <Label>Token de segurança da conta</Label>
+                  <div className="relative">
+                    <Input
+                      type={showClientToken ? "text" : "password"}
+                      value={externalClientToken}
+                      onChange={(e) =>
+                        onExternalClientTokenChange(e.target.value)
+                      }
+                      placeholder="Digite o token de segurança da conta"
+                      className="pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowClientToken((value) => !value)}
+                      className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-muted-foreground hover:text-foreground"
+                      aria-label={
+                        showClientToken ? "Ocultar token" : "Revelar token"
+                      }
+                    >
+                      {showClientToken ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
                 </div>
 
-                  <div className="space-y-2 sm:col-span-2">
-                    <Label>API da instância (URL)</Label>
-                    <Input
-                      value={postbackUrl}
-                      onChange={(e) => onPostbackUrlChange(e.target.value)}
-                      placeholder="Digite a URL da API da instância"
-                    />
-                  </div>
+                <div className="space-y-2 sm:col-span-2">
+                  <Label>API da instância (URL)</Label>
+                  <Input
+                    value={postbackUrl}
+                    onChange={(e) => onPostbackUrlChange(e.target.value)}
+                    placeholder="Digite a URL da API da instância"
+                  />
+                </div>
               </CardContent>
             </Card>
           )}
         </div>
       ) : (
-        <p className="px-1 text-sm text-muted-foreground">Ao ativar, selecione o tipo de integração e a etapa onde os novos leads devem entrar.</p>
+        <p className="px-1 text-sm text-muted-foreground">
+          Ao ativar, selecione o tipo de integração e a etapa onde os novos
+          leads devem entrar.
+        </p>
       )}
     </div>
   );

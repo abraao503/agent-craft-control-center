@@ -25,6 +25,7 @@ import { getAgent } from "@/services/agent/getAgent";
 import { listCompanyWhatsAppIntegrations } from "@/services/whatsapp/listCompanyWhatsAppIntegrations";
 import { getCompanyWhatsAppIntegration } from "@/services/whatsapp/getCompanyWhatsAppIntegration";
 import {
+  AssistantPipelineStage,
   PipelineStageMinimal,
   CreatePipelineStageInput,
   WhatsAppIntegrationConfig,
@@ -36,6 +37,124 @@ import {
 } from "@/types/whatsapp-integration";
 import { convertHtmlStringToText } from "@/lib/utils";
 import { useUnsavedChanges } from "@/contexts/unsaved-changes/UnsavedChangesContext";
+
+type PipelineValidationPath = Array<string | number>;
+
+interface PipelineApiError {
+  message?: string | string[];
+  path?: PipelineValidationPath;
+}
+
+interface SaveErrorFeedback {
+  message: string;
+  tab?: "stages" | "agent" | "config";
+  stageIndex?: number;
+  ruleIndex?: number;
+}
+
+const getMessage = (message?: string | string[]) =>
+  Array.isArray(message) ? message[0] : message;
+
+const normalizeAssistantPipelineStage = (
+  config?: AssistantPipelineStage | null,
+): AssistantPipelineStage | null | undefined => {
+  if (!config) return config;
+
+  return {
+    ...config,
+    assistantAllowedTargetStages: config.assistantAllowedTargetStages.map(
+      ({ moveCondition, ...rule }) =>
+        moveCondition?.trim()
+          ? { ...rule, moveCondition: moveCondition.trim() }
+          : rule,
+    ),
+  };
+};
+
+const getSaveErrorFeedback = (error: unknown): SaveErrorFeedback => {
+  const apiError = (error as { response?: { data?: PipelineApiError } })
+    ?.response?.data;
+  const path = apiError?.path;
+  const message = getMessage(apiError?.message);
+
+  if (message === "Invalid API key") {
+    return {
+      message:
+        "Chave de API inválida. Verifique a chave do provedor de IA e tente novamente.",
+      tab: "agent",
+    };
+  }
+
+  if (path?.[0] === "stages" && typeof path[1] === "number") {
+    const stageIndex = path[1];
+    const ruleIndex = path.indexOf("assistantAllowedTargetStages");
+    const targetPathPart = ruleIndex >= 0 ? path[ruleIndex + 1] : undefined;
+    const targetIndex =
+      typeof targetPathPart === "number" ? targetPathPart : undefined;
+    const field = [...path]
+      .reverse()
+      .find((part): part is string => typeof part === "string");
+
+    if (ruleIndex >= 0) {
+      if (targetIndex === undefined) {
+        return {
+          message: `Etapa ${stageIndex + 1}: adicione pelo menos uma regra de movimentação ou desative a automação do agente.`,
+          tab: "stages",
+          stageIndex,
+        };
+      }
+
+      return {
+        message:
+          field === "moveCondition" || field === "criteria"
+            ? `Etapa ${stageIndex + 1}, regra ${targetIndex + 1}: informe pelo menos uma condição de movimentação.`
+            : `Etapa ${stageIndex + 1}, regra ${targetIndex + 1}: revise o campo informado na automação do agente.`,
+        tab: "stages",
+        stageIndex,
+        ruleIndex: targetIndex,
+      };
+    }
+
+    const fieldMessages: Record<string, string> = {
+      name: "Informe o nome da etapa.",
+      order: "A ordem da etapa é inválida.",
+      winProbability: "A probabilidade da etapa deve estar entre 0 e 100.",
+      minInactiveChatTimeHours:
+        "O tempo de inatividade do follow-up deve ser de pelo menos 1 hora.",
+      maxMessages: "O número de mensagens de follow-up é inválido.",
+      messages: "Adicione uma mensagem válida de follow-up.",
+      startTime: "Revise o horário de início do follow-up.",
+      endTime: "Revise o horário de término do follow-up.",
+    };
+
+    return {
+      message: `Etapa ${stageIndex + 1}: ${fieldMessages[String(field)] ?? "revise o campo informado."}`,
+      tab: "stages",
+      stageIndex,
+    };
+  }
+
+  if (path?.[0] === "assistant") {
+    return {
+      message: "Revise os dados informados para o agente.",
+      tab: "agent",
+    };
+  }
+
+  if (path?.[0] === "whatsappIntegration") {
+    return {
+      message: "Revise a configuração da integração do WhatsApp.",
+      tab: "config",
+    };
+  }
+
+  return {
+    message:
+      message && !message.startsWith("String must")
+        ? message
+        : "Não foi possível salvar o funil e o agente. Tente novamente.",
+  };
+};
 
 // Default agent form data
 const defaultAgentFormData: AgentFormData = {
@@ -100,6 +219,10 @@ const PipelineEditPage = () => {
   // Pipeline state
   const [pipelineName, setPipelineName] = useState("");
   const [stages, setStages] = useState<PipelineStageMinimal[]>([]);
+  const [focusedStageError, setFocusedStageError] = useState<{
+    stageId: string;
+    ruleIndex?: number;
+  } | null>(null);
 
   // Agent state
   const [useAgent, setUseAgent] = useState(false);
@@ -481,6 +604,12 @@ const PipelineEditPage = () => {
         const assistantTargets =
           stage.assistantPipelineStage.assistantAllowedTargetStages;
 
+        if (assistantTargets.length === 0) {
+          errors.push(
+            `Etapa #${index + 1}: adicione ao menos uma regra de movimentação ou desative a automação do agente`,
+          );
+        }
+
         assistantTargets.forEach((target, targetIndex) => {
           // Target stage order validation
           if (
@@ -630,6 +759,20 @@ const PipelineEditPage = () => {
       ];
 
       if (allErrors.length > 0) {
+        const emptyAutomationStageIndex = stages.findIndex(
+          (stage) =>
+            stage.assistantPipelineStage &&
+            stage.assistantPipelineStage.assistantAllowedTargetStages.length ===
+              0,
+        );
+
+        if (emptyAutomationStageIndex >= 0) {
+          setActiveTab("stages");
+          setFocusedStageError({
+            stageId: stages[emptyAutomationStageIndex].id,
+          });
+        }
+
         toast({
           title: "Validação falhou",
           description: (
@@ -707,7 +850,7 @@ const PipelineEditPage = () => {
         color: s.color || "#64748b",
         winProbability: s.winProbability ?? 100,
         assistantPipelineStage: useAgent
-          ? s.assistantPipelineStage || null // Se agente habilitado, usar config ou null
+          ? (normalizeAssistantPipelineStage(s.assistantPipelineStage) ?? null)
           : null, // Se agente desabilitado, sempre null
         reengagementConfig: s.reengagementConfig
           ? {
@@ -726,11 +869,6 @@ const PipelineEditPage = () => {
             }
           : null,
       }));
-
-      console.log(
-        "🔍 DEBUG - Stages antes de enviar:",
-        JSON.stringify(stagesInput, null, 2),
-      );
 
       // 4. Create or update pipeline with embedded assistant
       if (isCreating) {
@@ -765,7 +903,9 @@ const PipelineEditPage = () => {
               order: idx,
               color: s.color,
               winProbability: s.winProbability,
-              assistantPipelineStage: s.assistantPipelineStage || null,
+              assistantPipelineStage:
+                normalizeAssistantPipelineStage(s.assistantPipelineStage) ??
+                null,
               reengagementConfig: s.reengagementConfig || null,
             };
             const originalStage = stages[idx];
@@ -795,18 +935,24 @@ const PipelineEditPage = () => {
         navigate(`/deals/pipeline/${pipelineId}`);
       }
     } catch (e) {
-      console.error("Error saving pipeline and agent:", e);
+      console.error("Error saving pipeline and agent");
 
-      // Check if error is "Invalid API key"
-      const apiError = e as { response?: { data?: { message?: string } } };
-      const isInvalidApiKey =
-        apiError?.response?.data?.message === "Invalid API key";
+      const feedback = getSaveErrorFeedback(e);
+
+      if (feedback.tab) setActiveTab(feedback.tab);
+      if (feedback.stageIndex !== undefined) {
+        const stage = stages[feedback.stageIndex];
+        if (stage) {
+          setFocusedStageError({
+            stageId: stage.id,
+            ruleIndex: feedback.ruleIndex,
+          });
+        }
+      }
 
       toast({
         title: "Erro ao salvar",
-        description: isInvalidApiKey
-          ? "Chave de API inválida. Verifique a chave do provedor de IA e tente novamente."
-          : "Não foi possível salvar o funil e o agente.",
+        description: feedback.message,
         variant: "destructive",
       });
     } finally {
@@ -881,6 +1027,8 @@ const PipelineEditPage = () => {
             assistantConfigured={isAgentConfigured}
             assistantLoading={agentQuery.isLoading}
             workspaceId={workspaceId}
+            focusStageId={focusedStageError?.stageId}
+            focusRuleIndex={focusedStageError?.ruleIndex}
             onSave={async ({ stages: newStages }) => {
               // Convert EditableStage to PipelineStageMinimal
               const convertedStages: PipelineStageMinimal[] = newStages.map(

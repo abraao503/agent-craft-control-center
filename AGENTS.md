@@ -66,8 +66,12 @@ Execute a verificação proporcional, a partir de `front/`:
 
 ```bash
 npm run lint
+npm run typecheck
 npm run build
 ```
+
+Use `npm run typecheck`, e não `tsc --noEmit` diretamente: o `tsconfig.json`
+raiz usa *project references*, e a checagem correta é executada com `tsc -b`.
 
 Não há script de testes automatizados configurado. Quando uma mudança for de
 interface, valide manualmente o fluxo relevante quando o ambiente estiver

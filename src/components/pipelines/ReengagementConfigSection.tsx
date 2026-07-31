@@ -679,7 +679,7 @@ export function ReengagementConfigSection({
             emptyMessage="Nenhum negócio será excluído"
           />
           <p className="text-xs text-muted-foreground">
-            negócios com qualquer uma dessas tags NÃO receberão mensagens de
+            Negócios com qualquer uma dessas tags NÃO receberão mensagens de
             follow-up.
           </p>
         </div>
@@ -720,7 +720,9 @@ export function ReengagementConfigSection({
   };
 
   return (
-    <div className={cn("rounded-md border bg-muted/20 px-2.5 py-1.5", className)}>
+    <div
+      className={cn("rounded-md border bg-muted/20 px-2.5 py-1.5", className)}
+    >
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
           <Label className="text-xs font-medium">Follow-up automático</Label>

@@ -61,6 +61,8 @@ interface StagesTabProps {
   assistantConfigured?: boolean; // Indica se o agente foi configurado (tem campos obrigatórios)
   assistantLoading?: boolean; // Indica se o agente está sendo carregado
   workspaceId?: string; // Required for ReengagementConfigSection
+  focusStageId?: string;
+  focusRuleIndex?: number;
   onSave: (args: { stages: EditableStage[] }) => Promise<void> | void;
   onCancel: () => void;
   saveLabel?: string;
@@ -76,6 +78,8 @@ interface SortableStageProps {
   assistantLoading: boolean; // Indica se o agente está sendo carregado
   allStages: EditableStage[];
   workspaceId?: string; // Required for ReengagementConfigSection
+  focusStageId?: string;
+  focusRuleIndex?: number;
 }
 
 const SortableStage: React.FC<SortableStageProps> = ({
@@ -88,6 +92,8 @@ const SortableStage: React.FC<SortableStageProps> = ({
   assistantLoading,
   allStages,
   workspaceId,
+  focusStageId,
+  focusRuleIndex,
 }) => {
   const {
     attributes,
@@ -130,6 +136,7 @@ const SortableStage: React.FC<SortableStageProps> = ({
     <div
       ref={setNodeRef}
       style={style}
+      id={`pipeline-stage-${stage.id}`}
       className={cn("min-w-[320px] w-[320px] max-w-[360px]")}
     >
       <Card
@@ -229,6 +236,9 @@ const SortableStage: React.FC<SortableStageProps> = ({
                   name: s.name,
                   order: s.order,
                 }))}
+                focusRuleIndex={
+                  focusStageId === stage.id ? focusRuleIndex : undefined
+                }
                 onConfigChange={(stageId, config) => {
                   onUpdate(index, {
                     assistantPipelineStage: config ?? undefined,
@@ -294,6 +304,8 @@ export const StagesTab: React.FC<StagesTabProps> = ({
   assistantConfigured = false,
   assistantLoading = false,
   workspaceId,
+  focusStageId,
+  focusRuleIndex,
   onSave,
   onCancel,
   saveLabel = "Aplicar",
@@ -354,6 +366,14 @@ export const StagesTab: React.FC<StagesTabProps> = ({
   useEffect(() => {
     setDraftStages(normalize(stages));
   }, [stages]);
+
+  useEffect(() => {
+    if (!focusStageId) return;
+
+    document
+      .getElementById(`pipeline-stage-${focusStageId}`)
+      ?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+  }, [focusStageId]);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -484,6 +504,8 @@ export const StagesTab: React.FC<StagesTabProps> = ({
                   assistantLoading={assistantLoading}
                   allStages={draftStages}
                   workspaceId={workspaceId}
+                  focusStageId={focusStageId}
+                  focusRuleIndex={focusRuleIndex}
                 />
               ))}
             </SortableContext>
