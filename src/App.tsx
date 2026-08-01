@@ -18,11 +18,6 @@ import Dashboard from "./pages/Dashboard";
 import DashboardV2Page from "./pages/DashboardV2Page";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
-import AgentsPage from "./pages/AgentsPage";
-import CreateAgentPage from "./pages/CreateAgentPage";
-import EditAgentPage from "./pages/EditAgentPage";
-import AgentDetailsPage from "./pages/AgentDetailsPage";
-import AssistantPlaygroundPage from "./pages/AssistantPlaygroundPage";
 import { UnsavedChangesProvider } from "./contexts/unsaved-changes/UnsavedChangesContext";
 import WhatsAppIntegrationsPage from "./pages/WhatsAppIntegrationsPage";
 import CreateWhatsAppIntegrationPage from "./pages/CreateWhatsAppIntegrationPage";
@@ -232,10 +227,6 @@ const AppLayout = () => {
 // Componentes de página simplificados sem o MainLayout
 const DashboardPage = () => <Dashboard />;
 const DashboardV2PageView = () => <DashboardV2Page />;
-const AgentsListPage = () => <AgentsPage />;
-const AgentCreatePage = () => <CreateAgentPage />;
-const AgentEditPage = () => <EditAgentPage />;
-const AgentDetailsViewPage = () => <AgentDetailsPage />;
 const IntegrationsListPage = () => <WhatsAppIntegrationsPage />;
 const IntegrationsCreatePage = () => <CreateWhatsAppIntegrationPage />;
 const IntegrationsEditPage = () => <EditWhatsAppIntegrationPage />;
@@ -311,20 +302,7 @@ const App = () => (
                       path="/dashboard/legacy"
                       element={<DashboardPage />}
                     />
-                    <Route path="/agents" element={<AgentsListPage />} />
-                    <Route path="/agents/new" element={<AgentCreatePage />} />
-                    <Route
-                      path="/agents/edit/:id"
-                      element={<AgentEditPage />}
-                    />
-                    <Route
-                      path="/agents/:id"
-                      element={<AgentDetailsViewPage />}
-                    />
-                    <Route
-                      path="/agents/:id/playground"
-                      element={<AssistantPlaygroundPage />}
-                    />
+                    <Route path="/agents/*" element={<Navigate to="/deals" replace />} />
                     <Route
                       path="/whatsapp"
                       element={<IntegrationsListPage />}

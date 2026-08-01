@@ -29,6 +29,7 @@ export interface AssistantAllowedTargetStage {
 }
 
 export interface AssistantPipelineStage {
+  canCreateFollowUp?: boolean;
   assistantAllowedTargetStages: AssistantAllowedTargetStage[];
 }
 

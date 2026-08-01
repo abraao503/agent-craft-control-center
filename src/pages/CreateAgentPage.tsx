@@ -14,6 +14,7 @@ import CustomFields from "@/components/agents/step2/CustomFields";
 import { useMainContainerRef } from "@/contexts/mainContainer";
 import { convertHtmlStringToText } from "@/lib/utils";
 import { useWorkspaceManager } from "@/hooks/useWorkspaceManager";
+import { toPlaygroundAssistantConfig } from "@/services/agent/playground";
 
 const STEPS = [
   "Informações Básicas",
@@ -210,13 +211,31 @@ const CreateAgentPage = () => {
                 Próximo
               </Button>
             ) : (
-              <Button
-                onClick={handleSubmit}
-                disabled={!isStepValid() || isPending}
-                isLoading={isPending}
-              >
-                Criar Agente
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() =>
+                    navigate("/agents/playground", {
+                      state: {
+                        configuration: {
+                          mode: "draft",
+                          assistant: toPlaygroundAssistantConfig(formData),
+                        },
+                      },
+                    })
+                  }
+                  disabled={!isStepValid()}
+                >
+                  Testar agente
+                </Button>
+                <Button
+                  onClick={handleSubmit}
+                  disabled={!isStepValid() || isPending}
+                  isLoading={isPending}
+                >
+                  Criar Agente
+                </Button>
+              </div>
             )}
           </div>
         </div>

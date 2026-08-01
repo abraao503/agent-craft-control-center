@@ -10,7 +10,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertCircle, Bot, Loader2 } from "lucide-react";
+import { AlertCircle, Bot, Loader2, TestTube2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AgentWizard } from "@/components/pipelines/agent-wizard";
 import {
@@ -20,6 +20,11 @@ import {
   SkillsCard,
 } from "@/components/pipelines/agent-config";
 import { getDeletedAssistant } from "@/services/pipeline/getDeletedAssistant";
+import { toPlaygroundAssistantConfig } from "@/services/agent/playground";
+import { Button } from "@/components/ui/button";
+import AssistantPlaygroundPage from "@/pages/AssistantPlaygroundPage";
+import { PlaygroundConfiguration } from "@/types/assistant-playground";
+import { PipelineStageMinimal } from "@/types/pipeline";
 
 interface AgentTabProps {
   formData: AgentFormData;
@@ -29,7 +34,10 @@ interface AgentTabProps {
   onUseAgentChange: (value: boolean) => void;
   hasExistingAgent?: boolean; // Indica se já existe um agente criado
   pipelineId?: string; // ID da pipeline para buscar agente deletado
+  assistantId?: string;
   workspaceId?: string; // ID do workspace
+  pipelineName?: string;
+  stages?: PipelineStageMinimal[];
   onLoadDeletedAgent?: (agentData: AgentFormData) => void; // Callback para carregar dados do agente deletado
   isLoading?: boolean; // Indica se os dados do agente estão sendo carregados
 }
@@ -42,7 +50,10 @@ export const AgentTab: React.FC<AgentTabProps> = ({
   onUseAgentChange,
   hasExistingAgent = false,
   pipelineId,
+  assistantId,
   workspaceId,
+  pipelineName,
+  stages = [],
   onLoadDeletedAgent,
   isLoading = false,
 }) => {
@@ -50,7 +61,7 @@ export const AgentTab: React.FC<AgentTabProps> = ({
   const [wizardCompleted, setWizardCompleted] = useState(false); // Track if wizard was completed
   const [isLoadingDeleted, setIsLoadingDeleted] = useState(false);
   const [activeSection, setActiveSection] = useState<
-    "profile" | "behavior" | "resources"
+    "profile" | "behavior" | "resources" | "test"
   >("profile");
 
   // Buscar agente deletado quando ativar o switch (apenas em modo de edição)
@@ -146,6 +157,18 @@ export const AgentTab: React.FC<AgentTabProps> = ({
     return !!(formData.function && formData.style && formData.instructions);
   };
 
+  const playgroundConfiguration: PlaygroundConfiguration =
+    !assistantId || Boolean(formData.iaProviderApiKey)
+      ? {
+          mode: "draft",
+          assistant: toPlaygroundAssistantConfig(formData),
+        }
+      : {
+          mode: "saved_with_overrides",
+          assistantId,
+          overrides: toPlaygroundAssistantConfig(formData),
+        };
+
   const sections = [
     {
       id: "profile" as const,
@@ -164,6 +187,12 @@ export const AgentTab: React.FC<AgentTabProps> = ({
       title: "Recursos",
       description: "Tags de entrada e Google Calendar",
       hasPending: false,
+    },
+    {
+      id: "test" as const,
+      title: "Testar agente",
+      description: "Conversa e efeitos simulados",
+      hasPending: !isBasicValid() || !isPromptValid(),
     },
   ];
 
@@ -195,6 +224,19 @@ export const AgentTab: React.FC<AgentTabProps> = ({
           <div className="flex items-center gap-2 self-end sm:self-auto">
             {isLoadingDeleted && (
               <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            )}
+            {useAgent && !showWizard && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setActiveSection("test")}
+                disabled={!isBasicValid() || !isPromptValid()}
+                title="Preencha Perfil e modelo e Comportamento para testar as alterações"
+              >
+                <TestTube2 className="mr-2 h-4 w-4" />
+                Testar agente
+              </Button>
             )}
             <Label htmlFor="use-agent" className="cursor-pointer text-sm">
               {useAgent ? "Desativar" : "Ativar"}
@@ -319,6 +361,15 @@ export const AgentTab: React.FC<AgentTabProps> = ({
                     updateFormData={updateFormData}
                   />
                 </div>
+              )}
+              {activeSection === "test" && (
+                <AssistantPlaygroundPage
+                  embedded
+                  assistantId={assistantId}
+                  configuration={playgroundConfiguration}
+                  workspaceId={workspaceId}
+                  pipeline={{ id: pipelineId, name: pipelineName ?? "Funil atual", stages }}
+                />
               )}
             </div>
           </div>

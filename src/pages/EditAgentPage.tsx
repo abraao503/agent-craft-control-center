@@ -22,6 +22,7 @@ import EditKnowledgeContent from "@/components/agents/step4/EditKnowledgeContent
 import { useMainContainerRef } from "@/contexts/mainContainer";
 import { convertHtmlStringToText } from "@/lib/utils";
 import { useWorkspaceManager } from "@/hooks/useWorkspaceManager";
+import { toPlaygroundAssistantConfig } from "@/services/agent/playground";
 
 const STEPS = [
   "Informações Básicas",
@@ -316,13 +317,45 @@ const EditAgentPage = () => {
                 Próximo
               </Button>
             ) : (
-              <Button
-                onClick={handleSubmit}
-                disabled={!isStepValid() || isUpdating}
-                isLoading={isUpdating}
-              >
-                Salvar Alterações
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    if (!formData || !agent || !id) return;
+                    const needsEphemeralCredential =
+                      Boolean(formData.iaProviderApiKey) ||
+                      formData.iaModelId !== agent.iaModel.id;
+                    navigate(`/agents/${id}/playground`, {
+                      state: needsEphemeralCredential
+                        ? {
+                            configuration: {
+                              mode: "draft",
+                              assistant: toPlaygroundAssistantConfig(formData),
+                            },
+                            notice:
+                              "Como a credencial ou o modelo foi alterado, este teste usa um rascunho e pedirá a credencial em cada turno.",
+                          }
+                        : {
+                            configuration: {
+                              mode: "saved_with_overrides",
+                              assistantId: id,
+                              overrides: toPlaygroundAssistantConfig(formData),
+                            },
+                          },
+                    });
+                  }}
+                  disabled={!isStepValid()}
+                >
+                  Testar alterações do agente
+                </Button>
+                <Button
+                  onClick={handleSubmit}
+                  disabled={!isStepValid() || isUpdating}
+                  isLoading={isUpdating}
+                >
+                  Salvar Alterações
+                </Button>
+              </div>
             )}
           </div>
         </div>

@@ -1075,8 +1075,11 @@ const PipelineEditPage = () => {
               if (hasInitializedDataRef.current) setDirty(true);
             }}
             hasExistingAgent={!!currentPipeline?.assistantId}
+            assistantId={currentPipeline?.assistantId ?? undefined}
             pipelineId={pipelineId}
             workspaceId={workspaceId}
+            pipelineName={pipelineName}
+            stages={stages}
             isLoading={agentQuery.isLoading}
             onLoadDeletedAgent={(deletedAgentData) => {
               // Carregar todos os dados do agente deletado

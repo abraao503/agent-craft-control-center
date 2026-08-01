@@ -17,8 +17,19 @@ export type PlaygroundScenario = {
     name: string;
     requiredFields: PlaygroundRecord[];
     allowedTargetStages: PlaygroundRecord[];
+    canCreateFollowUp?: boolean;
   };
   fields: PlaygroundRecord;
+  requiredFields?: Array<{
+    id?: string;
+    name?: string;
+    label?: string;
+    type?: "text" | "number" | "boolean";
+    required?: boolean;
+    isIdentifier?: boolean;
+  }>;
+  pipeline?: { id?: string; name?: string };
+  followUpsEnabled?: boolean;
   followUps: PlaygroundRecord[];
   calendar: {
     active: boolean;
@@ -35,7 +46,9 @@ export type PlaygroundConfiguration =
     }
   | { mode: "draft"; assistant: PlaygroundRecord };
 export type PlaygroundDiagnostic = {
+  createdAt?: string;
   message: string;
+  visibleResponse?: string;
   toolCalls: Array<{
     id: string;
     name: string;
@@ -48,6 +61,10 @@ export type PlaygroundDiagnostic = {
   warnings: string[];
   latencies: { totalMs?: number };
   decision: PlaygroundRecord | null;
+  availableTools?: PlaygroundRecord[];
+  promptSections?: Array<{ title: string; content: string }>;
+  stateBefore?: PlaygroundRecord;
+  stateAfter?: PlaygroundRecord;
   errors?: Array<{ code: string; message: string }>;
 };
 export type PlaygroundSession = {
@@ -59,19 +76,20 @@ export type PlaygroundSession = {
   initialScenario: PlaygroundScenario;
   simulatedState: PlaygroundScenario;
   transcript: Array<{
-    role: "user" | "assistant";
+    role: "user" | "assistant" | "tool";
     content: string;
     createdAt: string;
   }>;
   diagnostics: PlaygroundDiagnostic[];
-  promptSections?: PlaygroundRecord;
+  promptSections?: Array<{ title: string; content: string }>;
+  expiresInSeconds?: number;
   createdAt: string;
 };
 export type PlaygroundTurnResult = {
   visibleResponse: string;
   transcript: PlaygroundSession["transcript"];
   simulatedToolCalls: PlaygroundDiagnostic["toolCalls"];
-  promptSections: PlaygroundRecord;
+  promptSections: Array<{ title: string; content: string }>;
   availableTools: PlaygroundRecord[];
   decision: PlaygroundRecord | null;
   stateBefore: PlaygroundRecord;
