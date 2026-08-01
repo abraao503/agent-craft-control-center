@@ -900,9 +900,6 @@ export default function AssistantPlaygroundPage({
         </p>
       )}
       <div className="hidden min-h-[560px] gap-4 lg:flex">
-        {scenarioOpen && (
-          <aside className="w-96 shrink-0">{scenarioPanel}</aside>
-        )}
         <section className="min-w-0 flex-1">
           <Card className="min-h-[560px]">
             <CardHeader>
@@ -1008,9 +1005,6 @@ export default function AssistantPlaygroundPage({
             </CardContent>
           </Card>
         </section>
-        {diagnosticOpen && (
-          <aside className="w-[27.5rem] shrink-0">{diagnosticPanel}</aside>
-        )}
       </div>
       <div className="lg:hidden">
         <Card>

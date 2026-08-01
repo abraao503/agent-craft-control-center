@@ -80,9 +80,11 @@ export default function DashboardV2Page() {
   const [period, setPeriod] = useState<PeriodPreset>("last_30_days");
   const [customizerOpen, setCustomizerOpen] = useState(false);
 
-  // v2: mede a largura do container para o grid funcionar
+  // Monta o grid apenas após medir o container. Renderizá-lo com uma largura
+  // inicial fixa faz o RGL escolher um breakpoint/layout transitório e deixa
+  // espaço em branco quando a largura real é maior.
   const { width, containerRef, mounted } = useContainerWidth({
-    initialWidth: 1200,
+    measureBeforeMount: true,
   });
 
   const {
@@ -274,7 +276,6 @@ export default function DashboardV2Page() {
             resizeConfig={{ enabled: true, handles: ["se"] }}
             margin={[16, 16]}
             containerPadding={[0, 0]}
-            onLayoutChange={handleLayoutChange}
             onDragStart={handleDragStart}
             onDragStop={handleDragStop}
             onResizeStart={handleDragStart}
