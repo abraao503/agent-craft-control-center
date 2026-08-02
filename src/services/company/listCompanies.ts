@@ -4,6 +4,7 @@ import { ListCompaniesResponse } from "@/types/company";
 export interface ListCompaniesParams {
   limit?: number;
   page?: number;
+  search?: string;
 }
 
 export async function listCompanies(
@@ -13,6 +14,7 @@ export async function listCompanies(
     params: {
       limit: params?.limit || 10,
       page: params?.page || 1,
+      search: params?.search || undefined,
     },
   });
   return data;

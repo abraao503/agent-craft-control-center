@@ -22,6 +22,7 @@ export interface ListCompanyAdminsParams {
   companyId: string;
   page?: number;
   limit?: number;
+  search?: string;
 }
 
 export interface ListCompanyAdminsResponse {
@@ -35,11 +36,11 @@ export interface ListCompanyAdminsResponse {
 export async function listCompanyAdmins(
   params: ListCompanyAdminsParams
 ): Promise<ListCompanyAdminsResponse> {
-  const { companyId, page = 1, limit = 10 } = params;
+  const { companyId, page = 1, limit = 10, search } = params;
   const { data } = await api.get<ListCompanyAdminsResponse>(
     `/company/${companyId}/admins`,
     {
-      params: { page, limit },
+      params: { page, limit, search },
     }
   );
   return data;

@@ -369,7 +369,7 @@ const SidebarMenuContent = () => {
   const { user, logout } = useAuth();
   const { state } = useSidebar();
   const { requestNavigation } = useUnsavedChanges();
-  const { has } = usePermissions();
+  const { has, role } = usePermissions();
   const isCollapsed = state === "collapsed";
   const { isLoading: isWorkspaceLoading } = useWorkspace();
   const queryClient = useQueryClient();
@@ -457,34 +457,34 @@ const SidebarMenuContent = () => {
     //   label: "Configurações",
     //   icon: <Settings className="h-5 w-5" />,
     // },
-    {
-      path: "/admin/companies",
-      label: "Empresas",
-      icon: <Building2 className="h-5 w-5" />,
-      requiredPermission: "view:all-companies",
-    },
   ];
 
-  // Adiciona condicionalmente os itens de gestão baseado no nível de permissão
-  // Hierarquia: Platform Admin > Company Admin > Workspace Admin
-  if (has("view:all-companies")) {
-    // PLATFORM_ADMIN - já tem o item "Empresas" acima
-  } else if (has("manage:company") || has("create:workspace")) {
-    // COMPANY_OWNER ou COMPANY_ADMIN
+  // A role é a fonte de verdade para a hierarquia de navegação. Permissões
+  // continuam controlando cada ação e são validadas pela API.
+  if (role === "PLATFORM_ADMIN") {
     allMenuItems.push({
-      path: "/company/settings",
-      label: "Minha Empresa",
+      path: "/admin/companies",
+      label: "Administração",
       icon: <Building2 className="h-5 w-5" />,
     });
-  } else if (has("create:workspace-user")) {
-    // WORKSPACE_OWNER ou WORKSPACE_ADMIN
+  } else if (role === "COMPANY_OWNER" || role === "COMPANY_ADMIN") {
+    allMenuItems.push({
+      path: "/company/settings",
+      label: "Administração",
+      icon: <Building2 className="h-5 w-5" />,
+    });
+  } else if (
+    role === "WORKSPACE_OWNER" ||
+    role === "WORKSPACE_ADMIN" ||
+    role === "WORKSPACE_MANAGER"
+  ) {
     allMenuItems.push({
       path: "/workspace/settings",
-      label: "Meu Workspace",
+      label: "Administração",
       icon: <Building2 className="h-5 w-5" />,
     });
   }
-  // WORKSPACE_MANAGER e SALES_REP não veem nenhum item de gestão
+  // SALES_REP não vê Administração.
 
   const menuItems = allMenuItems.filter((item) => {
     if (item.requiredPermission) {
