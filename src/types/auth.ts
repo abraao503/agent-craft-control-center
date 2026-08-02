@@ -50,6 +50,7 @@ export type Permission =
   | "view:team-deals"
   | "view:own-deals"
   | "assign:deal"
+  | "manage:deal-distribution"
   | "move:deal"
   | "view:chat"
   | "send:message"

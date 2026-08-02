@@ -46,6 +46,18 @@ import { MessageContent } from "./media/MessageContent";
 import { MediaPreviewModal } from "./MediaPreviewModal";
 import { AudioRecorder } from "./AudioRecorder";
 import { formatPhone } from "@/utils/phone";
+import { ConversationTimeline } from "./ConversationTimeline";
+import { usePermissions } from "@/hooks/usePermissions";
+import { assignUserToDeal } from "@/services/deal/assignUserToDeal";
+import { listUsers } from "@/services/user/listUsers";
+import { useWorkspaceManager } from "@/hooks/useWorkspaceManager";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type MessageStatus = "pending" | "sent" | "failed";
 
@@ -66,6 +78,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   newMessageEvent,
 }) => {
   const { toast } = useToast();
+  const { has } = usePermissions();
+  const { currentWorkspace } = useWorkspaceManager();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const lastScrollTop = useRef(0);
@@ -83,6 +97,33 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   const [isMediaPreviewOpen, setIsMediaPreviewOpen] = useState(false);
   const [isRecordingAudio, setIsRecordingAudio] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const canSend = has("send:message");
+  const canAssign = has("assign:deal");
+
+  const { data: workspaceUsers } = useQuery({
+    queryKey: ["chat-assignment-users", currentWorkspace?.id],
+    queryFn: () => listUsers({ workspaceId: currentWorkspace!.id, limit: 100 }),
+    enabled: canAssign && Boolean(currentWorkspace?.id),
+  });
+
+  const assignmentMutation = useMutation({
+    mutationFn: (userId: string | null) =>
+      assignUserToDeal(conversation.primaryDeal.id, {
+        workspaceId: currentWorkspace!.id,
+        userId,
+      }),
+    onSuccess: (_, userId) => {
+      const assignedUser = workspaceUsers?.items.find((user) => user.id === userId) ?? null;
+      const updatedConversation = {
+        ...localConversation,
+        primaryDeal: { ...localConversation.primaryDeal, assignedUser },
+      };
+      setLocalConversation(updatedConversation);
+      onUpdateConversation(updatedConversation);
+      toast({ title: assignedUser ? `Responsável: ${assignedUser.name}` : "Responsável removido" });
+    },
+    onError: () => toast({ title: "Não foi possível alterar o responsável", variant: "destructive" }),
+  });
 
   // Fetch messages
   const {
@@ -722,6 +763,23 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           </div>
 
           <div className="flex items-center gap-2 xl:gap-3">
+            {canAssign && (
+              <Select
+                value={localConversation.primaryDeal.assignedUser?.id ?? "unassigned"}
+                onValueChange={(value) => assignmentMutation.mutate(value === "unassigned" ? null : value)}
+                disabled={assignmentMutation.isPending}
+              >
+                <SelectTrigger className="w-44">
+                  <SelectValue placeholder="Responsável" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="unassigned">Não atribuído</SelectItem>
+                  {workspaceUsers?.items.map((user) => (
+                    <SelectItem key={user.id} value={user.id}>{user.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
             {/* Handler Status Badge */}
             <div
               className={`flex items-center gap-1.5 xl:gap-2 px-2 xl:px-3 py-1.5 rounded-lg border-2 ${
@@ -796,95 +854,13 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           </div>
         </div>
 
-        {/* Messages */}
-        <ScrollArea
-          ref={scrollAreaRef}
-          className="flex-1 bg-[#efeae2] dark:bg-[#0d1117] pr-2"
-          onScroll={handleScroll}
-        >
-          <div className="p-4">
-            {isFetchingMessages && currentPage > 1 && (
-              <div className="flex justify-center py-2">
-                <Loader2 className="h-5 w-5 animate-spin text-primary" />
-              </div>
-            )}
-            {isLoadingMessages && currentPage === 1 ? (
-              <div className="flex justify-center items-center h-full">
-                <Loader2 className="h-6 w-6 animate-spin text-primary" />
-              </div>
-            ) : messages.length === 0 ? (
-              <div className="flex justify-center items-center h-full text-muted-foreground">
-                Nenhuma mensagem ainda
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {messages.map((message, index) => {
-                  const isCustomer = message.sender === "customer";
-                  const previousMessage =
-                    index > 0 ? messages[index - 1] : null;
-                  const showDateSeparator = shouldShowDateSeparator(
-                    message,
-                    previousMessage,
-                  );
-
-                  return (
-                    <div key={message.id}>
-                      {showDateSeparator && (
-                        <div className="flex justify-center my-4">
-                          <div className="bg-white/80 dark:bg-[#182229]/90 backdrop-blur-sm px-3 py-1 rounded-full shadow-sm">
-                            <span className="text-xs font-medium text-muted-foreground">
-                              {formatDateSeparator(new Date(message.createdAt))}
-                            </span>
-                          </div>
-                        </div>
-                      )}
-                      <div
-                        className={`flex ${
-                          isCustomer ? "justify-start" : "justify-end"
-                        }`}
-                      >
-                        <div
-                          className={`max-w-[70%] rounded-lg p-3 ${
-                            isCustomer
-                              ? "bg-white dark:bg-[#202c33]"
-                              : message.sender === "assistant"
-                                ? "bg-[#d9fdd3] dark:bg-[#005c4b]"
-                                : "bg-[#cfe9ff] dark:bg-[#1f4e7e]"
-                          }`}
-                        >
-                          <div className="flex items-center gap-2 mb-1">
-                            {message.sender === "assistant" && (
-                              <Bot className="h-3 w-3 text-primary" />
-                            )}
-                            {message.sender === "human_assistant" && (
-                              <UserCog className="h-3 w-3 text-blue-600" />
-                            )}
-                            <span className="text-xs font-semibold text-muted-foreground">
-                              {getSenderLabel(message.sender)}
-                            </span>
-                          </div>
-                          <MessageContent message={message} />
-                          <div className="flex items-center justify-end gap-1 mt-1">
-                            {message.status && message.status !== "sent" && (
-                              <span className="flex items-center">
-                                {getMessageStatusIcon(message.status)}
-                              </span>
-                            )}
-                            {message.status !== "pending" && (
-                              <span className="text-xs text-muted-foreground">
-                                {format(new Date(message.createdAt), "HH:mm")}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </ScrollArea>
+        {/* Timeline */}
+        <div className="min-h-0 flex-1">
+          <ConversationTimeline
+            chatId={conversation.id}
+            newMessageEvent={newMessageEvent}
+          />
+        </div>
 
         {/* Input or Audio Recorder */}
         {isRecordingAudio ? (
@@ -907,12 +883,14 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                 size="icon"
                 className="flex-shrink-0"
                 onClick={() => fileInputRef.current?.click()}
+                disabled={!canSend}
               >
                 <Paperclip className="h-5 w-5" />
               </Button>
               <Textarea
                 ref={textareaRef}
                 placeholder="Digite uma mensagem"
+                disabled={!canSend}
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
                 onKeyDown={(e) => {
@@ -929,6 +907,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                   size="icon"
                   onClick={handleSendMessage}
                   className="flex-shrink-0"
+                  disabled={!canSend}
                 >
                   <Send className="h-5 w-5" />
                 </Button>
@@ -938,6 +917,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                   onClick={() => setIsRecordingAudio(true)}
                   className="flex-shrink-0"
                   variant="ghost"
+                  disabled={!canSend}
                 >
                   <Mic className="h-5 w-5" />
                 </Button>

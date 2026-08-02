@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Search, Loader2 } from "lucide-react";
@@ -18,6 +18,10 @@ type ChatListProps = {
   searchValue: string;
   onSearchChange: (value: string) => void;
   isLoading?: boolean;
+  filters?: React.ReactNode;
+  hasMore?: boolean;
+  isLoadingMore?: boolean;
+  onLoadMore?: () => void;
 };
 
 export const ChatList: React.FC<ChatListProps> = ({
@@ -27,8 +31,13 @@ export const ChatList: React.FC<ChatListProps> = ({
   searchValue,
   onSearchChange,
   isLoading,
+  filters,
+  hasMore,
+  isLoadingMore,
+  onLoadMore,
 }) => {
   const [localSearchValue, setLocalSearchValue] = useState(searchValue);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setLocalSearchValue(searchValue);
@@ -41,6 +50,19 @@ export const ChatList: React.FC<ChatListProps> = ({
 
     return () => clearTimeout(timer);
   }, [localSearchValue, onSearchChange]);
+
+  useEffect(() => {
+    const target = loadMoreRef.current;
+    if (!target || !hasMore || !onLoadMore) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !isLoadingMore) onLoadMore();
+      },
+      { rootMargin: "200px" },
+    );
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [hasMore, isLoadingMore, onLoadMore]);
 
   const formatLastInteraction = (date: Date | null) => {
     if (!date) return "";
@@ -98,6 +120,8 @@ export const ChatList: React.FC<ChatListProps> = ({
           />
         </div>
       </div>
+
+      {filters}
 
       {/* Chat List */}
       <ScrollArea className="flex-1">
@@ -204,12 +228,13 @@ export const ChatList: React.FC<ChatListProps> = ({
                         >
                           {conversation.handledBy === "ai" ? "IA" : "Humano"}
                         </Badge>
-                        {conversation.agent && (
-                          <span className="text-xs text-muted-foreground truncate">
-                            {conversation.agent.name}
-                          </span>
-                        )}
+                        <span className="text-xs text-muted-foreground truncate">
+                          {conversation.primaryDeal.pipeline.name} / {conversation.primaryDeal.stage.name}
+                        </span>
                       </div>
+                      <p className="truncate text-xs text-muted-foreground">
+                        Responsável: {conversation.primaryDeal.assignedUser?.name ?? "Não atribuído"}
+                      </p>
 
                       {/* Tags */}
                       {conversation.tags && conversation.tags.length > 0 && (
@@ -239,6 +264,7 @@ export const ChatList: React.FC<ChatListProps> = ({
                   </div>
                 </div>
               ))}
+              {hasMore && <div ref={loadMoreRef} className="p-3 text-center text-sm text-primary">{isLoadingMore ? "Carregando..." : "Carregar mais"}</div>}
             </div>
           </div>
         )}

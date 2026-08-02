@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/card";
 import { Loader2, Plus, Briefcase, Users, Edit2, Trash2 } from "lucide-react";
 import { UserRole } from "@/services/company/listCompanyAdmins";
+import { DealDistributionSection } from "@/components/admin/DealDistributionSection";
 
 const ROLE_LABELS: Record<UserRole, string> = {
   [UserRole.PLATFORM_ADMIN]: "Admin de Plataforma",
@@ -294,6 +295,8 @@ export default function WorkspaceSettingsPage() {
           )}
         </CardContent>
       </Card>
+
+      <DealDistributionSection workspaceId={workspaceId} />
 
       {has("create:workspace-user") && (
         <>

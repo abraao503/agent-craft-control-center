@@ -9,6 +9,7 @@ export type Message = {
   mediaMimetype: string | null;
   createdAt: string;
   chatId: string;
+  sentByUser?: { id: string; name: string } | null;
 };
 
 export type ListMessagesParams = {

@@ -38,6 +38,7 @@ import {
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { UserRole } from "@/services/company/listCompanyAdmins";
+import { DealDistributionSection } from "@/components/admin/DealDistributionSection";
 
 const ROLE_LABELS: Record<UserRole, string> = {
   [UserRole.PLATFORM_ADMIN]: "Admin de Plataforma",
@@ -342,6 +343,8 @@ export default function WorkspaceDetailsPage() {
           )}
         </CardContent>
       </Card>
+
+      {workspaceId && <DealDistributionSection workspaceId={workspaceId} />}
 
       <CreateCompanyUserDialog
         open={createUserOpen}

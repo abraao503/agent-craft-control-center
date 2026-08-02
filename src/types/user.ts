@@ -26,5 +26,5 @@ export interface ListUsersResponse {
 
 export interface AssignUserToDealInput {
   workspaceId: string;
-  userId: string;
+  userId: string | null;
 }

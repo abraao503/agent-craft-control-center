@@ -13,7 +13,7 @@ export type ConversationMessage = {
 export type Conversation = {
   id: string;
   lastInteraction: Date | null;
-  lastMessage?: string;
+  lastMessage?: string | null;
   unreadCount?: number;
   customer: {
     id: string;
@@ -29,6 +29,12 @@ export type Conversation = {
   totalMessages: number;
   handledBy: "ai" | "human";
   tags?: Tag[];
+  primaryDeal: {
+    id: string;
+    pipeline: { id: string; name: string };
+    stage: { id: string; name: string; color: string };
+    assignedUser: { id: string; name: string } | null;
+  };
 };
 
 export type ConversationsResponse = Pagination<Conversation>;
@@ -40,9 +46,14 @@ export type ConversationsFilters = {
   tagIds?: string[];
   page: number;
   limit: number;
-  sortBy: "createdAt" | "updatedAt";
+  sortBy: "lastMessageAt";
   sortOrder: "asc" | "desc";
   initialDate?: Date;
   finalDate?: Date;
   handledBy?: "assistant" | "human";
+  assignmentScope: "all" | "mine" | "unassigned" | "user";
+  assignedUserId?: string;
+  pipelineId?: string;
+  stageId?: string;
+  onlyUnread?: boolean;
 };
