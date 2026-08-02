@@ -225,19 +225,6 @@ export const AgentTab: React.FC<AgentTabProps> = ({
             {isLoadingDeleted && (
               <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
             )}
-            {useAgent && !showWizard && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setActiveSection("test")}
-                disabled={!isBasicValid() || !isPromptValid()}
-                title="Preencha Perfil e modelo e Comportamento para testar as alterações"
-              >
-                <TestTube2 className="mr-2 h-4 w-4" />
-                Testar agente
-              </Button>
-            )}
             <Label htmlFor="use-agent" className="cursor-pointer text-sm">
               {useAgent ? "Desativar" : "Ativar"}
             </Label>
@@ -368,7 +355,11 @@ export const AgentTab: React.FC<AgentTabProps> = ({
                   assistantId={assistantId}
                   configuration={playgroundConfiguration}
                   workspaceId={workspaceId}
-                  pipeline={{ id: pipelineId, name: pipelineName ?? "Funil atual", stages }}
+                  pipeline={{
+                    id: pipelineId,
+                    name: pipelineName ?? "Funil atual",
+                    stages,
+                  }}
                 />
               )}
             </div>
