@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ArrowRight, Bot, BriefcaseBusiness, Loader2, UserCog } from "lucide-react";
@@ -13,6 +13,9 @@ type Props = { chatId: string; newMessageEvent?: MessageSentEvent | null };
 
 export function ConversationTimeline({ chatId, newMessageEvent }: Props) {
   const queryClient = useQueryClient();
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const initialScrollChatId = useRef<string | null>(null);
+  const lastScrolledEventKey = useRef<string | null>(null);
   const query = useInfiniteQuery({
     queryKey: ["chat-timeline", chatId],
     queryFn: ({ pageParam }) =>
@@ -28,15 +31,44 @@ export function ConversationTimeline({ chatId, newMessageEvent }: Props) {
     }
   }, [chatId, newMessageEvent, queryClient]);
 
+  const events = query.data?.pages.flatMap((page) => page.items) ?? [];
+
+  useLayoutEffect(() => {
+    if (!query.data || query.isLoading || !scrollAreaRef.current) return;
+
+    const eventKey =
+      newMessageEvent?.chatId === chatId
+        ? `${chatId}:${newMessageEvent.messageId}`
+        : null;
+    const isOpeningChat = initialScrollChatId.current !== chatId;
+    const isNewMessageLoaded =
+      eventKey !== null &&
+      eventKey !== lastScrolledEventKey.current &&
+      query.data.pages.some((page) =>
+        page.items.some((event) => event.id === newMessageEvent?.messageId),
+      );
+
+    if (!isOpeningChat && !isNewMessageLoaded) return;
+
+    scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
+    initialScrollChatId.current = chatId;
+
+    if (isNewMessageLoaded) {
+      lastScrolledEventKey.current = eventKey;
+    }
+  }, [chatId, newMessageEvent, query.data, query.isLoading]);
+
   if (query.isLoading) {
     return <Loader2 className="m-auto h-6 w-6 animate-spin text-primary" />;
   }
 
-  const events = query.data?.pages.flatMap((page) => page.items) ?? [];
   const chronologicalEvents = [...events].reverse();
 
   return (
-    <div className="flex h-full flex-col overflow-auto bg-[#efeae2] p-4 dark:bg-[#0d1117]">
+    <div
+      ref={scrollAreaRef}
+      className="flex h-full flex-col overflow-auto bg-[#efeae2] p-4 dark:bg-[#0d1117]"
+    >
       {query.hasNextPage && (
         <Button
           variant="ghost"

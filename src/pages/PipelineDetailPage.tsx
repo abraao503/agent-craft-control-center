@@ -22,6 +22,7 @@ import { useDealStageWebSocket } from "@/hooks/useDealStageWebSocket";
 import { useActivityWebSocket } from "@/hooks/useActivityWebSocket";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useAuth } from "@/contexts/auth/hooks";
+import { MessageSentEvent } from "@/types/websocket";
 import { Inbox } from "lucide-react";
 
 const PipelineDetailPage = () => {
@@ -73,6 +74,27 @@ const PipelineDetailPage = () => {
     workspaceId: workspaceId || "",
     enabled: !!socket && !!workspaceId,
   });
+
+  useEffect(() => {
+    if (!socket || !workspaceId) return;
+
+    const refreshDeals = () => {
+      void queryClient.invalidateQueries({
+        queryKey: ["dealsByStage"],
+      });
+    };
+    const onMessageSent = (event: MessageSentEvent) => {
+      if (event.workspaceId === workspaceId) refreshDeals();
+    };
+
+    socket.on("message:sent", onMessageSent);
+    socket.on("chat:marked-as-read", refreshDeals);
+
+    return () => {
+      socket.off("message:sent", onMessageSent);
+      socket.off("chat:marked-as-read", refreshDeals);
+    };
+  }, [queryClient, socket, workspaceId]);
 
   const isDataReady = () => {
     return !!pipelineId && !!workspaceId;
