@@ -14,12 +14,14 @@ type ChatTagManagerProps = {
   chatId: string;
   initialChatTags?: TagType[];
   onTagsChange: (tags: TagType[]) => void;
+  showLabel?: boolean;
 };
 
 export const ChatTagManager: React.FC<ChatTagManagerProps> = ({
   chatId,
   initialChatTags = [],
   onTagsChange,
+  showLabel = true,
 }) => {
   const { toast } = useToast();
   const { workspaceId } = useWorkspaceManager();
@@ -28,6 +30,11 @@ export const ChatTagManager: React.FC<ChatTagManagerProps> = ({
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>(
     initialChatTags.map((t) => t.id)
   );
+  const initialTagIds = initialChatTags.map((tag) => tag.id).join(",");
+
+  useEffect(() => {
+    setSelectedTagIds(initialTagIds ? initialTagIds.split(",") : []);
+  }, [chatId, initialTagIds]);
 
   const { data: allTags = [] } = useQuery({
     queryKey: ["tags", workspaceId],
@@ -68,6 +75,9 @@ export const ChatTagManager: React.FC<ChatTagManagerProps> = ({
       queryClient.invalidateQueries({ queryKey: ["chatTags", chatId] });
     },
     onError: () => {
+      const previousTags = fetchedChatTags || initialChatTags;
+      setSelectedTagIds(previousTags.map((tag) => tag.id));
+      onTagsChange(previousTags);
       toast({
         title: "Erro ao atualizar tags",
         description: "Houve um erro ao sincronizar as tags da conversa.",
@@ -78,7 +88,7 @@ export const ChatTagManager: React.FC<ChatTagManagerProps> = ({
 
   return (
     <div className="space-y-2">
-      <h4 className="text-sm font-medium">Tags</h4>
+      {showLabel && <h4 className="text-sm font-medium">Tags</h4>}
       <TagsSelector
         allTags={allTags}
         selectedTagIds={selectedTagIds}
