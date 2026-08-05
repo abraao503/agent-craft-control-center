@@ -1,9 +1,14 @@
-import { WhatsAppIntegrationName } from './whatsapp-integration';
+import {
+  WhatsAppIntegrationName,
+  WhatsAppProviderCapabilities,
+} from './whatsapp-integration';
 
 export interface WhatsAppIntegration {
   id: string;
   name: string;
   alias: string;
+  active?: boolean;
+  capabilities?: WhatsAppProviderCapabilities;
 }
 
 export interface CompanyWhatsAppIntegration {
@@ -16,6 +21,11 @@ export interface CompanyWhatsAppIntegration {
     id: string;
     name: string;
   };
+  metaPhoneNumberId?: string | null;
+  displayPhoneNumber?: string | null;
+  connectionStatus?: string;
+  diagnosticCode?: string | null;
+  diagnosticMessage?: string | null;
 }
 
 export interface CompanyWhatsAppIntegrationFull {
@@ -29,6 +39,8 @@ export interface CompanyWhatsAppIntegrationFull {
   active: boolean;
   initialPipelineStageId: string;
   status: "close" | "open" | "connecting";
+  metaPhoneNumberId?: string | null;
+  connectionStatus?: string;
 }
 
 export interface WhatsAppFormData {

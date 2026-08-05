@@ -15,6 +15,13 @@ export type ChatTimelineEvent = {
     messageType?: Message["type"];
     mediaUrl?: string | null;
     mediaMimetype?: string | null;
+    deliveryStatus?: string | null;
+    externalMessageId?: string | null;
+    deliveryUpdatedAt?: string | null;
+    deliveryErrorCode?: string | null;
+    deliveryErrorMessage?: string | null;
+    providerCreatedAt?: string | null;
+    providerUpdatedAt?: string | null;
     sentByUser?: Related | null;
     stage?: Related & { color?: string };
     fromStage?: (Related & { color?: string }) | null;

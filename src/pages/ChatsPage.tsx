@@ -133,18 +133,25 @@ export default function ChatsPage() {
       void queryClient.invalidateQueries({ queryKey: ["conversations", workspaceId] });
       if (selectedConversation) void queryClient.invalidateQueries({ queryKey: ["chat-timeline", selectedConversation.id] });
     };
+    const onStatus = (event: { chatId: string }) => {
+      if (selectedConversation?.id === event.chatId) {
+        void queryClient.invalidateQueries({ queryKey: ["chat-timeline", event.chatId] });
+      }
+    };
 
     socket.on("message:sent", onMessage);
     socket.on("chat:marked-as-read", onRead);
     socket.on("deal:assignment-changed", onAssignment);
     socket.on("chat:handler-changed", onHandler);
     socket.on("deal:stage-changed", onStage);
+    socket.on("message:status", onStatus);
     return () => {
       socket.off("message:sent", onMessage);
       socket.off("chat:marked-as-read", onRead);
       socket.off("deal:assignment-changed", onAssignment);
       socket.off("chat:handler-changed", onHandler);
       socket.off("deal:stage-changed", onStage);
+      socket.off("message:status", onStatus);
     };
   }, [joinedWorkspace, markAsRead, queryClient, selectedConversation, socket, workspaceId]);
 

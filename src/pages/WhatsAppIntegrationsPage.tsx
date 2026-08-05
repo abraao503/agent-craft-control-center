@@ -23,6 +23,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useWorkspaceManager } from "@/hooks/useWorkspaceManager";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { usePermissions } from "@/hooks/usePermissions";
+import { MetaCloudPilotPanel } from "@/components/whatsapp/MetaCloudPilotPanel";
 
 const WhatsAppIntegrationsPage = () => {
   const [integrationToDelete, setIntegrationToDelete] = useState<string | null>(
@@ -50,6 +51,9 @@ const WhatsAppIntegrationsPage = () => {
     queryKey: ["company-whatsapp-integrations", workspaceId],
     queryFn: () => listCompanyWhatsAppIntegrations(workspaceId || ""),
   });
+  const legacyIntegrations = integrations.filter(
+    (integration) => integration.whatsappIntegrationName !== "meta-cloud",
+  );
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteWhatsAppIntegration(id),
@@ -125,7 +129,7 @@ const WhatsAppIntegrationsPage = () => {
 
         {isLoading || isChangingWorkspace ? (
           <IntegrationSkeletons />
-        ) : integrations.length === 0 ? (
+        ) : legacyIntegrations.length === 0 ? (
           <div className="text-center py-12 border rounded-lg">
             <h3 className="font-medium text-lg">
               Nenhuma integração do WhatsApp ainda
@@ -142,7 +146,7 @@ const WhatsAppIntegrationsPage = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {integrations.map((integration) => (
+            {legacyIntegrations.map((integration) => (
               <WhatsAppIntegrationCard
                 key={integration.id}
                 workspaceId={workspaceId || ""}
@@ -155,6 +159,8 @@ const WhatsAppIntegrationsPage = () => {
           </div>
         )}
       </div>
+
+      <MetaCloudPilotPanel />
 
       <AlertDialog
         open={!!integrationToDelete}

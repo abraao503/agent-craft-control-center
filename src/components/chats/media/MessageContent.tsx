@@ -49,6 +49,7 @@ export const MessageContent: React.FC<MessageContentProps> = ({ message }) => {
       );
 
     case "text":
+    case "template":
     default:
       return <TextMessage content={message.content} />;
   }

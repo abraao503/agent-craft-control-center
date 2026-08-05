@@ -10,12 +10,13 @@ export type SendMediaMessageParams = {
 };
 
 export const sendMediaMessage = async (
-  params: SendMediaMessageParams
+  params: SendMediaMessageParams,
 ): Promise<Message> => {
   const { chatId, type, file, message, caption } = params;
 
   const formData = new FormData();
   formData.append("type", type);
+  formData.append("clientMessageId", crypto.randomUUID());
 
   if (type === "text" && message) {
     formData.append("message", message);
@@ -26,11 +27,15 @@ export const sendMediaMessage = async (
     }
   }
 
-  const { data } = await api.post<Message>(`/chat/${chatId}/message`, formData, {
-    headers: {
-      "Content-Type": "multipart/form-data",
+  const { data } = await api.post<Message>(
+    `/chat/${chatId}/message`,
+    formData,
+    {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
     },
-  });
+  );
 
   return data;
 };

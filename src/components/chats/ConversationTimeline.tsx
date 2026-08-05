@@ -108,6 +108,11 @@ function TimelineMessage({ event, chatId }: { event: ChatTimelineEvent; chatId: 
     mediaMimetype: event.payload.mediaMimetype ?? null,
     createdAt: event.createdAt,
     sentByUser: event.payload.sentByUser,
+    deliveryStatus: event.payload.deliveryStatus,
+    externalMessageId: event.payload.externalMessageId,
+    deliveryUpdatedAt: event.payload.deliveryUpdatedAt,
+    deliveryErrorCode: event.payload.deliveryErrorCode,
+    deliveryErrorMessage: event.payload.deliveryErrorMessage,
   };
   const isCustomer = sender === "customer";
   const author =
@@ -127,6 +132,11 @@ function TimelineMessage({ event, chatId }: { event: ChatTimelineEvent; chatId: 
         <MessageContent message={message} />
         <div className="mt-1 text-right text-xs text-muted-foreground">
           {format(new Date(event.createdAt), "dd/MM/yyyy HH:mm")}
+          {message.deliveryStatus && message.sender !== "customer" && (
+            <span className="ml-2" title={message.deliveryErrorMessage ?? undefined}>
+              · {message.deliveryStatus.toLowerCase()}
+            </span>
+          )}
         </div>
       </div>
     </div>
