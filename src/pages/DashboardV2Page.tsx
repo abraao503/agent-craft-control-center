@@ -80,10 +80,17 @@ export default function DashboardV2Page() {
   const [period, setPeriod] = useState<PeriodPreset>("last_30_days");
   const [customizerOpen, setCustomizerOpen] = useState(false);
 
-  // v2: mede a largura do container para o grid funcionar
+  // O container permanece montado inclusive durante o loading, permitindo que
+  // o ResizeObserver obtenha a largura real antes de inicializar o grid.
   const { width, containerRef, mounted } = useContainerWidth({
-    initialWidth: 1200,
+    measureBeforeMount: true,
   });
+  const setContainerRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      (containerRef as { current: HTMLDivElement | null }).current = node;
+    },
+    [containerRef],
+  );
 
   const {
     activeWidgets,
@@ -222,7 +229,10 @@ export default function DashboardV2Page() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div
+        ref={setContainerRef}
+        className="flex w-full items-center justify-center h-64"
+      >
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
@@ -231,7 +241,7 @@ export default function DashboardV2Page() {
   const hasWidgets = activeWidgets.length > 0;
 
   return (
-    <div className="space-y-6">
+    <div ref={setContainerRef} className="w-full space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -258,9 +268,8 @@ export default function DashboardV2Page() {
         </div>
       </div>
 
-      {/* Grid de widgets — ref para medir largura */}
-      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-      <div ref={containerRef as any} className="w-full">
+      {/* Grid de widgets */}
+      <div className="w-full">
         {hasWidgets && mounted ? (
           <ResponsiveGridLayout
             className="dashboard-grid"
@@ -274,7 +283,6 @@ export default function DashboardV2Page() {
             resizeConfig={{ enabled: true, handles: ["se"] }}
             margin={[16, 16]}
             containerPadding={[0, 0]}
-            onLayoutChange={handleLayoutChange}
             onDragStart={handleDragStart}
             onDragStop={handleDragStop}
             onResizeStart={handleDragStart}

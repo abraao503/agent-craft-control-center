@@ -35,6 +35,7 @@ interface DealHistoryListProps {
   deals: CustomerDealApiResponse[];
   onArchive: (dealId: string) => void;
   isArchiving?: boolean;
+  canArchive?: boolean;
   workspaceId?: string;
   customerId?: string;
 }
@@ -43,6 +44,7 @@ const DealHistoryListComponent: React.FC<DealHistoryListProps> = ({
   deals,
   onArchive,
   isArchiving = false,
+  canArchive = true,
   workspaceId,
   customerId,
 }) => {
@@ -153,13 +155,15 @@ const DealHistoryListComponent: React.FC<DealHistoryListProps> = ({
                     <ExternalLink className="h-4 w-4 mr-2" />
                     Ver detalhes
                   </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => setDealToArchive(deal.id)}
-                    className="text-red-600"
-                  >
-                    <Archive className="h-4 w-4 mr-2" />
-                    Arquivar
-                  </DropdownMenuItem>
+                  {canArchive && (
+                    <DropdownMenuItem
+                      onClick={() => setDealToArchive(deal.id)}
+                      className="text-red-600"
+                    >
+                      <Archive className="h-4 w-4 mr-2" />
+                      Arquivar
+                    </DropdownMenuItem>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>

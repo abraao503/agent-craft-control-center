@@ -23,10 +23,10 @@ const QuickActions = () => {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 gap-3">
-          <Link to="/agents/new">
+          <Link to="/deals/pipeline/create">
             <Button variant="outline" className="w-full justify-start">
               <Bot className="mr-2 h-4 w-4" />
-              Criar Novo Agente
+              Criar Novo Funil
             </Button>
           </Link>
           

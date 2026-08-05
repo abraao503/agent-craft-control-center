@@ -1,5 +1,9 @@
 # Regras de Criação de Workspace
 
+> **Legado.** A orientação atual está em
+> [`docs/agent/autorizacao-e-tenancy.md`](agent/autorizacao-e-tenancy.md).
+> Confirme permissões, cache e comportamento da sidebar no código atual.
+
 ## Visão Geral
 
 Este documento descreve as regras e permissões para criação de workspaces no sistema.

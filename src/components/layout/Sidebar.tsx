@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
@@ -62,6 +62,7 @@ import { Workspace } from "@/types/workspace";
 import { useToast } from "@/hooks/use-toast";
 import { useWorkspaceContext } from "@/contexts/workspace/WorkspaceContext";
 import { AxiosError } from "axios";
+import { useUnsavedChanges } from "@/contexts/unsaved-changes/UnsavedChangesContext";
 
 const useWorkspace = () => {
   const queryClient = useQueryClient();
@@ -364,9 +365,11 @@ const WorkspaceSelector = ({ isCollapsed }: { isCollapsed: boolean }) => {
 
 const SidebarMenuContent = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { state } = useSidebar();
-  const { has } = usePermissions();
+  const { requestNavigation } = useUnsavedChanges();
+  const { has, role } = usePermissions();
   const isCollapsed = state === "collapsed";
   const { isLoading: isWorkspaceLoading } = useWorkspace();
   const queryClient = useQueryClient();
@@ -454,34 +457,34 @@ const SidebarMenuContent = () => {
     //   label: "Configurações",
     //   icon: <Settings className="h-5 w-5" />,
     // },
-    {
-      path: "/admin/companies",
-      label: "Empresas",
-      icon: <Building2 className="h-5 w-5" />,
-      requiredPermission: "view:all-companies",
-    },
   ];
 
-  // Adiciona condicionalmente os itens de gestão baseado no nível de permissão
-  // Hierarquia: Platform Admin > Company Admin > Workspace Admin
-  if (has("view:all-companies")) {
-    // PLATFORM_ADMIN - já tem o item "Empresas" acima
-  } else if (has("manage:company") || has("create:workspace")) {
-    // COMPANY_OWNER ou COMPANY_ADMIN
+  // A role é a fonte de verdade para a hierarquia de navegação. Permissões
+  // continuam controlando cada ação e são validadas pela API.
+  if (role === "PLATFORM_ADMIN") {
     allMenuItems.push({
-      path: "/company/settings",
-      label: "Minha Empresa",
+      path: "/admin/companies",
+      label: "Administração",
       icon: <Building2 className="h-5 w-5" />,
     });
-  } else if (has("create:workspace-user")) {
-    // WORKSPACE_OWNER ou WORKSPACE_ADMIN
+  } else if (role === "COMPANY_OWNER" || role === "COMPANY_ADMIN") {
+    allMenuItems.push({
+      path: "/company/settings",
+      label: "Administração",
+      icon: <Building2 className="h-5 w-5" />,
+    });
+  } else if (
+    role === "WORKSPACE_OWNER" ||
+    role === "WORKSPACE_ADMIN" ||
+    role === "WORKSPACE_MANAGER"
+  ) {
     allMenuItems.push({
       path: "/workspace/settings",
-      label: "Meu Workspace",
+      label: "Administração",
       icon: <Building2 className="h-5 w-5" />,
     });
   }
-  // WORKSPACE_MANAGER e SALES_REP não veem nenhum item de gestão
+  // SALES_REP não vê Administração.
 
   const menuItems = allMenuItems.filter((item) => {
     if (item.requiredPermission) {
@@ -502,7 +505,14 @@ const SidebarMenuContent = () => {
       return (
         <Tooltip key={item.path} delayDuration={0}>
           <TooltipTrigger asChild>
-            <Link to={item.path} tabIndex={isDisabled ? -1 : undefined}>
+            <Link
+              to={item.path}
+              tabIndex={isDisabled ? -1 : undefined}
+              onClick={(event) => {
+                event.preventDefault();
+                if (!isDisabled) requestNavigation(() => navigate(item.path));
+              }}
+            >
               <Button
                 variant="ghost"
                 size="icon"
@@ -531,6 +541,10 @@ const SidebarMenuContent = () => {
         to={item.path}
         key={item.path}
         tabIndex={isDisabled ? -1 : undefined}
+        onClick={(event) => {
+          event.preventDefault();
+          if (!isDisabled) requestNavigation(() => navigate(item.path));
+        }}
       >
         <Button
           variant="ghost"
@@ -558,6 +572,10 @@ const SidebarMenuContent = () => {
       >
         <Link
           to="/dashboard"
+          onClick={(event) => {
+            event.preventDefault();
+            requestNavigation(() => navigate("/dashboard"));
+          }}
           className={cn(
             "flex items-center space-x-2",
             isCollapsed && "flex-col space-x-0 space-y-2",

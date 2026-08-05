@@ -61,6 +61,8 @@ interface StagesTabProps {
   assistantConfigured?: boolean; // Indica se o agente foi configurado (tem campos obrigatórios)
   assistantLoading?: boolean; // Indica se o agente está sendo carregado
   workspaceId?: string; // Required for ReengagementConfigSection
+  focusStageId?: string;
+  focusRuleIndex?: number;
   onSave: (args: { stages: EditableStage[] }) => Promise<void> | void;
   onCancel: () => void;
   saveLabel?: string;
@@ -76,6 +78,8 @@ interface SortableStageProps {
   assistantLoading: boolean; // Indica se o agente está sendo carregado
   allStages: EditableStage[];
   workspaceId?: string; // Required for ReengagementConfigSection
+  focusStageId?: string;
+  focusRuleIndex?: number;
 }
 
 const SortableStage: React.FC<SortableStageProps> = ({
@@ -88,6 +92,8 @@ const SortableStage: React.FC<SortableStageProps> = ({
   assistantLoading,
   allStages,
   workspaceId,
+  focusStageId,
+  focusRuleIndex,
 }) => {
   const {
     attributes,
@@ -130,6 +136,7 @@ const SortableStage: React.FC<SortableStageProps> = ({
     <div
       ref={setNodeRef}
       style={style}
+      id={`pipeline-stage-${stage.id}`}
       className={cn("min-w-[320px] w-[320px] max-w-[360px]")}
     >
       <Card
@@ -191,19 +198,20 @@ const SortableStage: React.FC<SortableStageProps> = ({
         </CardHeader>
         <CardContent className="p-3 flex-1 overflow-auto">
           <div className="space-y-3">
-            <div className="space-y-2">
-              <Label>Cor</Label>
-              <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between rounded-md border bg-muted/20 px-2.5 py-1.5">
+              <Label className="text-xs font-medium">Cor</Label>
+              <label className="flex cursor-pointer items-center gap-2">
                 <input
                   type="color"
                   value={stage.color || "#64748b"}
                   onChange={(e) => onUpdate(index, { color: e.target.value })}
-                  className="h-8 w-12 rounded border border-input cursor-pointer"
+                  aria-label="Cor da etapa"
+                  className="h-5 w-5 cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 [&::-moz-color-swatch]:rounded-sm [&::-moz-color-swatch]:border-0 [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:rounded-sm [&::-webkit-color-swatch]:border-0"
                 />
-                <span className="text-xs text-muted-foreground">
+                <span className="font-mono text-[11px] text-muted-foreground">
                   {stage.color || "#64748b"}
                 </span>
-              </div>
+              </label>
             </div>
           </div>
 
@@ -228,6 +236,9 @@ const SortableStage: React.FC<SortableStageProps> = ({
                   name: s.name,
                   order: s.order,
                 }))}
+                focusRuleIndex={
+                  focusStageId === stage.id ? focusRuleIndex : undefined
+                }
                 onConfigChange={(stageId, config) => {
                   onUpdate(index, {
                     assistantPipelineStage: config ?? undefined,
@@ -248,7 +259,7 @@ const SortableStage: React.FC<SortableStageProps> = ({
 
           {/* Follow-up Configuration */}
           {workspaceId && (
-            <div className="mt-4 pt-4 border-t">
+            <div className="mt-3">
               <ReengagementConfigSection
                 workspaceId={workspaceId}
                 config={stage.reengagementConfig ?? null}
@@ -293,6 +304,8 @@ export const StagesTab: React.FC<StagesTabProps> = ({
   assistantConfigured = false,
   assistantLoading = false,
   workspaceId,
+  focusStageId,
+  focusRuleIndex,
   onSave,
   onCancel,
   saveLabel = "Aplicar",
@@ -316,9 +329,8 @@ export const StagesTab: React.FC<StagesTabProps> = ({
                   targetStageIndex !== -1 ? targetStageIndex : -1;
 
                 return {
+                  ...target,
                   targetStageOrder,
-                  targetStageId: target.targetStageId,
-                  moveCondition: target.moveCondition,
                 };
               },
             ),
@@ -354,6 +366,14 @@ export const StagesTab: React.FC<StagesTabProps> = ({
   useEffect(() => {
     setDraftStages(normalize(stages));
   }, [stages]);
+
+  useEffect(() => {
+    if (!focusStageId) return;
+
+    document
+      .getElementById(`pipeline-stage-${focusStageId}`)
+      ?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+  }, [focusStageId]);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -484,6 +504,8 @@ export const StagesTab: React.FC<StagesTabProps> = ({
                   assistantLoading={assistantLoading}
                   allStages={draftStages}
                   workspaceId={workspaceId}
+                  focusStageId={focusStageId}
+                  focusRuleIndex={focusRuleIndex}
                 />
               ))}
             </SortableContext>

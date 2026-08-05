@@ -94,7 +94,6 @@ export const BasicInformationCard = ({
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
-            <User className="h-5 w-5 text-primary" />
             <div>
               <CardTitle>Identificação do Agente</CardTitle>
               <CardDescription>
@@ -140,7 +139,6 @@ export const BasicInformationCard = ({
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
-            <Globe className="h-5 w-5 text-primary" />
             <div>
               <CardTitle>Regionalização</CardTitle>
               <CardDescription>
@@ -202,7 +200,6 @@ export const BasicInformationCard = ({
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
-            <Brain className="h-5 w-5 text-primary" />
             <div>
               <CardTitle>Modelo de Inteligência Artificial</CardTitle>
               <CardDescription>
@@ -277,7 +274,6 @@ export const BasicInformationCard = ({
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
-            <Ban className="h-5 w-5 text-primary" />
             <div>
               <CardTitle>Mensagens a Ignorar</CardTitle>
               <CardDescription>

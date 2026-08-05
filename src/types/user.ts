@@ -6,6 +6,7 @@ export interface User {
   name: string;
   email: string;
   role?: string;
+  createdAt?: string | Date;
 }
 
 export interface ListUsersParams {
@@ -26,5 +27,5 @@ export interface ListUsersResponse {
 
 export interface AssignUserToDealInput {
   workspaceId: string;
-  userId: string;
+  userId: string | null;
 }

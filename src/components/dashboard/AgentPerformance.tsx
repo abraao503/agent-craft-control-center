@@ -88,7 +88,7 @@ const AgentPerformance = () => {
             <Button
               variant="ghost"
               className="w-full justify-between text-sm"
-              onClick={() => navigate("/agents")}
+              onClick={() => navigate("/deals")}
             >
               <span>Ver todos os agentes ({agents.length})</span>
               <ArrowRight className="w-4 h-4" />

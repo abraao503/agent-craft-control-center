@@ -1,5 +1,9 @@
 # 📘 Guia de Desenvolvimento - Agent Craft Control Center
 
+> **Legado.** Este documento preserva referências históricas. Para trabalho
+> atual, use [`docs/agent/README.md`](agent/README.md); confirme exemplos e
+> contratos no código antes de reutilizá-los.
+
 > **Documentação consolidada de padrões, boas práticas e arquitetura do projeto**
 
 ---
@@ -1139,4 +1143,3 @@ const { data } = useQuery({
 **Última Atualização:** Novembro 2024  
 **Versão da Documentação:** 1.0  
 **Mantido por:** Equipe de Desenvolvimento
-

@@ -18,10 +18,7 @@ import Dashboard from "./pages/Dashboard";
 import DashboardV2Page from "./pages/DashboardV2Page";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
-import AgentsPage from "./pages/AgentsPage";
-import CreateAgentPage from "./pages/CreateAgentPage";
-import EditAgentPage from "./pages/EditAgentPage";
-import AgentDetailsPage from "./pages/AgentDetailsPage";
+import { UnsavedChangesProvider } from "./contexts/unsaved-changes/UnsavedChangesContext";
 import WhatsAppIntegrationsPage from "./pages/WhatsAppIntegrationsPage";
 import CreateWhatsAppIntegrationPage from "./pages/CreateWhatsAppIntegrationPage";
 import EditWhatsAppIntegrationPage from "./pages/EditWhatsAppIntegrationPage";
@@ -230,10 +227,6 @@ const AppLayout = () => {
 // Componentes de página simplificados sem o MainLayout
 const DashboardPage = () => <Dashboard />;
 const DashboardV2PageView = () => <DashboardV2Page />;
-const AgentsListPage = () => <AgentsPage />;
-const AgentCreatePage = () => <CreateAgentPage />;
-const AgentEditPage = () => <EditAgentPage />;
-const AgentDetailsViewPage = () => <AgentDetailsPage />;
 const IntegrationsListPage = () => <WhatsAppIntegrationsPage />;
 const IntegrationsCreatePage = () => <CreateWhatsAppIntegrationPage />;
 const IntegrationsEditPage = () => <EditWhatsAppIntegrationPage />;
@@ -279,150 +272,161 @@ const App = () => (
             <Toaster />
             <Sonner />
             <BrowserRouter>
-              <Routes>
-                <Route path="/" element={<LandingPage />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/signup" element={<Signup />} />
-                <Route
-                  path="/forgot-password"
-                  element={<ForgotPasswordPage />}
-                />
-                <Route path="/reset-password" element={<ResetPasswordPage />} />
-                <Route path="/privacy" element={<PrivacyPolicyPage />} />
-                <Route path="/terms" element={<TermsOfServicePage />} />
-                <Route
-                  path="/response/integrations"
-                  element={<IntegrationResponsePage />}
-                />
+              <UnsavedChangesProvider>
+                <Routes>
+                  <Route path="/" element={<LandingPage />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/signup" element={<Signup />} />
+                  <Route
+                    path="/forgot-password"
+                    element={<ForgotPasswordPage />}
+                  />
+                  <Route
+                    path="/reset-password"
+                    element={<ResetPasswordPage />}
+                  />
+                  <Route path="/privacy" element={<PrivacyPolicyPage />} />
+                  <Route path="/terms" element={<TermsOfServicePage />} />
+                  <Route
+                    path="/response/integrations"
+                    element={<IntegrationResponsePage />}
+                  />
 
-                {/* Rotas autenticadas com layout persistente */}
-                <Route element={<AppLayout />}>
-                  <Route path="/dashboard" element={<DashboardV2PageView />} />
-                  <Route path="/dashboard/legacy" element={<DashboardPage />} />
-                  <Route path="/agents" element={<AgentsListPage />} />
-                  <Route path="/agents/new" element={<AgentCreatePage />} />
-                  <Route path="/agents/edit/:id" element={<AgentEditPage />} />
-                  <Route
-                    path="/agents/:id"
-                    element={<AgentDetailsViewPage />}
-                  />
-                  <Route path="/whatsapp" element={<IntegrationsListPage />} />
-                  <Route
-                    path="/whatsapp/new"
-                    element={<IntegrationsCreatePage />}
-                  />
-                  <Route
-                    path="/whatsapp/edit/:id"
-                    element={<IntegrationsEditPage />}
-                  />
-                  <Route
-                    path="/integrations"
-                    element={<IntegrationsViewPage />}
-                  />
-                  <Route path="/calendar" element={<CalendarPageView />} />
-                  <Route path="/settings" element={<SettingsConfigPage />} />
-                  <Route path="/contents" element={<ContentsPage />} />
-                  <Route path="/chats" element={<ChatsListPage />} />
-                  <Route path="/customers" element={<CustomersListPage />} />
-                  <Route
-                    path="/customers/:id"
-                    element={<CustomerDetailsViewPage />}
-                  />
-                  <Route path="/deals" element={<PipelineDetailViewPage />} />
-                  <Route
-                    path="/deals/pipeline/:pipelineId"
-                    element={<PipelineDetailViewPage />}
-                  />
-                  <Route
-                    path="/deals/pipeline/create"
-                    element={<PipelineEditViewPage />}
-                  />
-                  <Route
-                    path="/deals/pipeline/:pipelineId/edit"
-                    element={<PipelineEditViewPage />}
-                  />
-                  <Route
-                    path="/deals/pipeline/:pipelineId/queue"
-                    element={<MessageQueueViewPage />}
-                  />
-                  <Route
-                    path="/customers/export-xlsx"
-                    element={<CustomersExportPage />}
-                  />
-                  <Route path="/follow-ups" element={<FollowUpListPage />} />
-                  <Route
-                    path="/follow-ups/create"
-                    element={<FollowUpCreatePageView />}
-                  />
-                  <Route
-                    path="/follow-ups/edit/:id"
-                    element={<FollowUpEditPageView />}
-                  />
-                  <Route
-                    path="/follow-ups/:id"
-                    element={<FollowUpDetailViewPage />}
-                  />
-                  <Route path="/webhooks" element={<DealWebhooksListPage />} />
-                  <Route
-                    path="/webhooks/create"
-                    element={<DealWebhookCreateViewPage />}
-                  />
-                  <Route
-                    path="/webhooks/:id"
-                    element={<DealWebhookDetailViewPage />}
-                  />
-                  <Route
-                    path="/webhooks/:id/edit"
-                    element={<DealWebhookEditViewPage />}
-                  />
-                  <Route
-                    path="/broadcasts"
-                    element={<MassBroadcastListPage />}
-                  />
-                  <Route
-                    path="/broadcasts/create"
-                    element={<MassBroadcastCreateViewPage />}
-                  />
-                  <Route
-                    path="/broadcasts/:id"
-                    element={<MassBroadcastDetailViewPage />}
-                  />
-                  <Route
-                    path="/customer-imports"
-                    element={<CustomerImportListPage />}
-                  />
-                  <Route
-                    path="/customer-imports/:id"
-                    element={<CustomerImportDetailViewPage />}
-                  />
-                  <Route path="/tags" element={<TagsPageView />} />
-                  <Route
-                    path="/admin/companies"
-                    element={<AdminCompaniesListPage />}
-                  />
-                  <Route
-                    path="/admin/companies/:companyId"
-                    element={<CompanyDetailsViewPage />}
-                  />
-                  <Route
-                    path="/admin/companies/:companyId/workspaces/:workspaceId"
-                    element={<WorkspaceDetailsViewPage />}
-                  />
-                  <Route
-                    path="/company/settings"
-                    element={<CompanySettingsViewPage />}
-                  />
-                  <Route
-                    path="/company/workspaces/:workspaceId"
-                    element={<CompanyWorkspaceDetailsViewPage />}
-                  />
-                  <Route
-                    path="/workspace/settings"
-                    element={<WorkspaceSettingsViewPage />}
-                  />
-                  <Route path="*" element={<NotFoundPage />} />
-                </Route>
-              </Routes>
+                  {/* Rotas autenticadas com layout persistente */}
+                  <Route element={<AppLayout />}>
+                    <Route
+                      path="/dashboard"
+                      element={<DashboardV2PageView />}
+                    />
+                    <Route
+                      path="/dashboard/legacy"
+                      element={<DashboardPage />}
+                    />
+                    <Route path="/agents/*" element={<Navigate to="/deals" replace />} />
+                    <Route
+                      path="/whatsapp"
+                      element={<IntegrationsListPage />}
+                    />
+                    <Route
+                      path="/whatsapp/new"
+                      element={<IntegrationsCreatePage />}
+                    />
+                    <Route
+                      path="/whatsapp/edit/:id"
+                      element={<IntegrationsEditPage />}
+                    />
+                    <Route
+                      path="/integrations"
+                      element={<IntegrationsViewPage />}
+                    />
+                    <Route path="/calendar" element={<CalendarPageView />} />
+                    <Route path="/settings" element={<SettingsConfigPage />} />
+                    <Route path="/contents" element={<ContentsPage />} />
+                    <Route path="/chats" element={<ChatsListPage />} />
+                    <Route path="/customers" element={<CustomersListPage />} />
+                    <Route
+                      path="/customers/:id"
+                      element={<CustomerDetailsViewPage />}
+                    />
+                    <Route path="/deals" element={<PipelineDetailViewPage />} />
+                    <Route
+                      path="/deals/pipeline/:pipelineId"
+                      element={<PipelineDetailViewPage />}
+                    />
+                    <Route
+                      path="/deals/pipeline/create"
+                      element={<PipelineEditViewPage />}
+                    />
+                    <Route
+                      path="/deals/pipeline/:pipelineId/edit"
+                      element={<PipelineEditViewPage />}
+                    />
+                    <Route
+                      path="/deals/pipeline/:pipelineId/queue"
+                      element={<MessageQueueViewPage />}
+                    />
+                    <Route
+                      path="/customers/export-xlsx"
+                      element={<CustomersExportPage />}
+                    />
+                    <Route path="/follow-ups" element={<FollowUpListPage />} />
+                    <Route
+                      path="/follow-ups/create"
+                      element={<FollowUpCreatePageView />}
+                    />
+                    <Route
+                      path="/follow-ups/edit/:id"
+                      element={<FollowUpEditPageView />}
+                    />
+                    <Route
+                      path="/follow-ups/:id"
+                      element={<FollowUpDetailViewPage />}
+                    />
+                    <Route
+                      path="/webhooks"
+                      element={<DealWebhooksListPage />}
+                    />
+                    <Route
+                      path="/webhooks/create"
+                      element={<DealWebhookCreateViewPage />}
+                    />
+                    <Route
+                      path="/webhooks/:id"
+                      element={<DealWebhookDetailViewPage />}
+                    />
+                    <Route
+                      path="/webhooks/:id/edit"
+                      element={<DealWebhookEditViewPage />}
+                    />
+                    <Route
+                      path="/broadcasts"
+                      element={<MassBroadcastListPage />}
+                    />
+                    <Route
+                      path="/broadcasts/create"
+                      element={<MassBroadcastCreateViewPage />}
+                    />
+                    <Route
+                      path="/broadcasts/:id"
+                      element={<MassBroadcastDetailViewPage />}
+                    />
+                    <Route
+                      path="/customer-imports"
+                      element={<CustomerImportListPage />}
+                    />
+                    <Route
+                      path="/customer-imports/:id"
+                      element={<CustomerImportDetailViewPage />}
+                    />
+                    <Route path="/tags" element={<TagsPageView />} />
+                    <Route
+                      path="/admin/companies"
+                      element={<AdminCompaniesListPage />}
+                    />
+                    <Route
+                      path="/admin/companies/:companyId"
+                      element={<CompanyDetailsViewPage />}
+                    />
+                    <Route
+                      path="/admin/companies/:companyId/workspaces/:workspaceId"
+                      element={<WorkspaceDetailsViewPage />}
+                    />
+                    <Route
+                      path="/company/settings"
+                      element={<CompanySettingsViewPage />}
+                    />
+                    <Route
+                      path="/company/workspaces/:workspaceId"
+                      element={<CompanyWorkspaceDetailsViewPage />}
+                    />
+                    <Route
+                      path="/workspace/settings"
+                      element={<WorkspaceSettingsViewPage />}
+                    />
+                    <Route path="*" element={<NotFoundPage />} />
+                  </Route>
+                </Routes>
+              </UnsavedChangesProvider>
             </BrowserRouter>
           </TooltipProvider>
         </WorkspaceProvider>

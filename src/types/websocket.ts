@@ -8,11 +8,13 @@ export interface MessageSentEvent {
   mediaUrl?: string;
   mediaMimetype?: string;
   createdAt: Date;
+  sentByUser?: { id: string; name: string } | null;
 }
 
 export interface ChatMarkedAsReadEvent {
   chatId: string;
   workspaceId: string;
+  userId?: string;
 }
 
 export interface InstanceStatusEvent {

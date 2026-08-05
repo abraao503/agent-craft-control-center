@@ -679,7 +679,7 @@ export function ReengagementConfigSection({
             emptyMessage="Nenhum negócio será excluído"
           />
           <p className="text-xs text-muted-foreground">
-            negócios com qualquer uma dessas tags NÃO receberão mensagens de
+            Negócios com qualquer uma dessas tags NÃO receberão mensagens de
             follow-up.
           </p>
         </div>
@@ -720,47 +720,53 @@ export function ReengagementConfigSection({
   };
 
   return (
-    <div className={cn("space-y-3", className)}>
-      {/* Status Display */}
-      <div className="flex items-center justify-between">
-        <div className="space-y-0.5">
-          <div className="flex items-center gap-2">
-            <Label className="text-sm font-medium">Follow-up Automático</Label>
-            {isEnabled && (
-              <Badge
-                variant="outline"
-                className="bg-green-500/10 text-green-700 border-green-200"
-              >
-                <CheckCircle2 className="h-3 w-3 mr-1" />
-                Configurado
-              </Badge>
-            )}
-          </div>
-          <p className="text-xs text-muted-foreground">
-            {isEnabled ? "Ativo" : "Desativado"}
+    <div
+      className={cn("rounded-md border bg-muted/20 px-2.5 py-1.5", className)}
+    >
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <Label className="text-xs font-medium">Follow-up automático</Label>
+          <p className="truncate text-[11px] text-muted-foreground">
+            Mensagens para negócios inativos
           </p>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          <span className="text-[11px] text-muted-foreground">
+            {isEnabled ? "Ativo" : "Inativo"}
+          </span>
+          {isEnabled && (
+            <Badge
+              variant="outline"
+              className="h-5 border-green-200 bg-green-500/10 px-1.5 text-[10px] text-green-700"
+            >
+              <CheckCircle2 className="mr-1 h-3 w-3" />
+              Configurado
+            </Badge>
+          )}
         </div>
       </div>
 
-      {/* Action Buttons */}
-      <div className="flex gap-2">
+      <div className="mt-2 flex items-center gap-1 border-t border-border/60 pt-2">
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button
               type="button"
-              variant="outline"
+              variant="ghost"
               size="sm"
               onClick={handleOpenModal}
-              className={cn(!isEnabled && "w-full")}
+              className={cn(
+                "h-7 justify-start px-1.5 text-xs hover:bg-background",
+                !isEnabled && "w-full",
+              )}
             >
               {isEnabled ? (
                 <>
-                  <Settings2 className="h-4 w-4 mr-2" />
-                  Configurar
+                  <Settings2 className="mr-1.5 h-3.5 w-3.5" />
+                  Gerenciar follow-up
                 </>
               ) : (
                 <>
-                  <Plus className="h-4 w-4 mr-2" />
+                  <Plus className="mr-1.5 h-3.5 w-3.5" />
                   Ativar Follow-up
                 </>
               )}
@@ -798,7 +804,7 @@ export function ReengagementConfigSection({
             variant="ghost"
             size="sm"
             onClick={handleDisable}
-            className="text-destructive hover:text-destructive"
+            className="ml-auto h-7 px-1.5 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
           >
             Desativar
           </Button>
@@ -807,7 +813,7 @@ export function ReengagementConfigSection({
 
       {/* Summary when configured */}
       {isEnabled && config && (
-        <div className="text-xs text-muted-foreground space-y-1 pt-2 border-t">
+        <div className="mt-2 space-y-1 border-t border-border/60 pt-2 text-[11px] text-muted-foreground">
           <p>• {config.minInactiveChatTimeHours}h de inatividade</p>
           <p>• {config.maxMessages} mensagem(ns) máxima(s)</p>
           {config.startTime && config.endTime && (

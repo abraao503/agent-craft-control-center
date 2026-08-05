@@ -15,6 +15,7 @@ type ApiResponse = {
   } | null;
   totalMessages: number;
   handledBy: "assistant" | "human";
+  primaryDeal: Conversation["primaryDeal"];
 };
 
 export const getConversationById = async (

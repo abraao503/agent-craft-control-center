@@ -26,9 +26,9 @@ const DashboardCards = () => {
             +{Math.floor(Math.random() * 5) + 1} from last month
           </p>
           <div className="mt-3">
-            <Link to="/agents">
+            <Link to="/deals">
               <Button variant="outline" size="sm" className="w-full">
-                View Agents
+                Ver Funis
               </Button>
             </Link>
           </div>

@@ -26,10 +26,10 @@ const Dashboard = () => {
               Configurações
             </Button>
           </Link>
-          <Link to="/agents/new">
+          <Link to="/deals/pipeline/create">
             <Button>
               <Plus className="mr-2 h-4 w-4" />
-              Novo Agente
+              Novo Funil
             </Button>
           </Link>
         </div>

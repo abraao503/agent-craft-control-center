@@ -2,6 +2,7 @@ import { api } from "@/services/api";
 import {
   ConversationsFilters,
   ConversationsResponse,
+  Conversation,
 } from "@/types/conversation";
 import { Pagination } from "@/types/pagination";
 
@@ -18,6 +19,10 @@ type ApiResponse = Pagination<{
   };
   totalMessages: number;
   handledBy: "assistant" | "human";
+  unreadCount: number;
+  lastMessage: string | null;
+  tags: Conversation["tags"];
+  primaryDeal: Conversation["primaryDeal"];
 }>;
 
 export const listConversations = async (
@@ -27,7 +32,6 @@ export const listConversations = async (
   const { data } = await api.get<ApiResponse>("/chat/list", {
     params: {
       ...filters,
-      assistantId: filters.agentId,
       workspaceId,
     },
   });

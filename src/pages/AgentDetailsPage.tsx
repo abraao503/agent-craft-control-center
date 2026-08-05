@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import AgentDetailsCard from "@/components/agents/AgentDetailsCard";
 import { FullAgent } from "@/types/agent";
-import { ArrowLeft, Edit, MessageSquare, Trash2, Loader } from "lucide-react";
+import { ArrowLeft, Edit, MessageSquare, Trash2, Loader, TestTube2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { getAgent } from "@/services/agent/getAgent";
@@ -104,6 +104,9 @@ const AgentDetailsPage = () => {
             <p className="text-muted-foreground">Agent ID: {agent.id}</p>
           </div>
           <div className="flex gap-2">
+            <Link to={`/agents/${agent.id}/playground`}>
+              <Button variant="outline"><TestTube2 className="mr-2 h-5 w-5" />Testar agente</Button>
+            </Link>
             <Link to={`/integrations/new?agentId=${agent.id}`}>
               <Button variant="outline">
                 <MessageSquare className="mr-2 h-5 w-5" />

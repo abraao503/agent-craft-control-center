@@ -2,6 +2,13 @@ import { AgentFormData } from "@/types/agent";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -60,7 +67,7 @@ export const PromptContextCard = ({
   const handleLinkChange = (
     index: number,
     field: "name" | "url",
-    value: string
+    value: string,
   ) => {
     const newLinks = [...(formData.links || [])];
     newLinks[index] = { ...newLinks[index], [field]: value };
@@ -69,6 +76,32 @@ export const PromptContextCard = ({
 
   return (
     <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Decisão de movimentação</CardTitle>
+          <CardDescription>
+            No modo dedicado, a regra é avaliada antes da resposta e a
+            ferramenta de movimentação não fica disponível para o agente.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Label htmlFor="transition-decision-mode">Modo</Label>
+          <Select
+            value={formData.transitionDecisionMode || "CONVERSATIONAL"}
+            onValueChange={(value: "CONVERSATIONAL" | "DEDICATED") =>
+              updateFormData({ transitionDecisionMode: value })
+            }
+          >
+            <SelectTrigger id="transition-decision-mode" className="mt-2">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="CONVERSATIONAL">Conversacional</SelectItem>
+              <SelectItem value="DEDICATED">Dedicado</SelectItem>
+            </SelectContent>
+          </Select>
+        </CardContent>
+      </Card>
       {/* Função */}
       <Card>
         <CardHeader>
@@ -192,7 +225,7 @@ Ex:
       </Card>
 
       {/* Links de Referência */}
-      <Card>
+      {/* <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -279,7 +312,7 @@ Ex:
             </div>
           )}
         </CardContent>
-      </Card>
+      </Card> */}
     </div>
   );
 };
