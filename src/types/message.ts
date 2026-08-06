@@ -17,6 +17,7 @@ export type Message = {
   deliveryErrorMessage?: string | null;
   providerCreatedAt?: string | null;
   providerUpdatedAt?: string | null;
+  companyWhatsappIntegrationId?: string | null;
 };
 
 export type ListMessagesParams = {
@@ -31,4 +32,6 @@ export type SendMessageParams = {
   chatId: string;
   message: string;
   agentId: string;
+  companyWhatsappIntegrationId?: string;
+  replyContextMessageId?: string;
 };

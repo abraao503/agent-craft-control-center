@@ -8,6 +8,8 @@ export const sendMessage = async (
     message: params.message,
     clientMessageId: crypto.randomUUID(),
     assistantId: params.agentId,
+    companyWhatsappIntegrationId: params.companyWhatsappIntegrationId,
+    replyContextMessageId: params.replyContextMessageId,
   });
 
   return data;

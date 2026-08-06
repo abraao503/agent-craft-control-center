@@ -9,6 +9,7 @@ export interface MessageSentEvent {
   mediaMimetype?: string;
   createdAt: Date;
   sentByUser?: { id: string; name: string } | null;
+  companyWhatsappIntegrationId?: string | null;
 }
 
 export interface ChatMarkedAsReadEvent {

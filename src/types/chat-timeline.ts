@@ -22,6 +22,12 @@ export type ChatTimelineEvent = {
     deliveryErrorMessage?: string | null;
     providerCreatedAt?: string | null;
     providerUpdatedAt?: string | null;
+    channel?: {
+      integrationId: string;
+      provider: string;
+      pipeline: Related;
+      displayPhoneNumber?: string | null;
+    } | null;
     sentByUser?: Related | null;
     stage?: Related & { color?: string };
     fromStage?: (Related & { color?: string }) | null;

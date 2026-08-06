@@ -7,6 +7,8 @@ export type SendMediaMessageParams = {
   file?: File;
   message?: string;
   caption?: string;
+  companyWhatsappIntegrationId?: string;
+  replyContextMessageId?: string;
 };
 
 export const sendMediaMessage = async (
@@ -17,6 +19,15 @@ export const sendMediaMessage = async (
   const formData = new FormData();
   formData.append("type", type);
   formData.append("clientMessageId", crypto.randomUUID());
+  if (params.companyWhatsappIntegrationId) {
+    formData.append(
+      "companyWhatsappIntegrationId",
+      params.companyWhatsappIntegrationId,
+    );
+  }
+  if (params.replyContextMessageId) {
+    formData.append("replyContextMessageId", params.replyContextMessageId);
+  }
 
   if (type === "text" && message) {
     formData.append("message", message);

@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import { format, isToday, isYesterday, isSameDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Send,
   MoreVertical,
@@ -37,6 +37,7 @@ import { Message } from "@/types/message";
 import { listMessages } from "@/services/conversation/listMessages";
 import { sendMessage } from "@/services/conversation/sendMessage";
 import { sendMediaMessage } from "@/services/conversation/sendMediaMessage";
+import { listReplyChannels } from "@/services/conversation/listReplyChannels";
 import { updateConversationHandler } from "@/services/conversation/updateConversationHandler";
 import { clearConversationExternalId } from "@/services/conversation/clearConversationExternalId";
 import { useToast } from "@/hooks/use-toast";
@@ -51,6 +52,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { assignUserToDeal } from "@/services/deal/assignUserToDeal";
 import { listUsers } from "@/services/user/listUsers";
 import { useWorkspaceManager } from "@/hooks/useWorkspaceManager";
+import { ReplyChannel } from "@/types/reply-channel";
 import {
   Select,
   SelectContent,
@@ -64,6 +66,8 @@ type MessageStatus = "pending" | "sent" | "failed";
 type MessageWithStatus = Message & {
   status?: MessageStatus;
   tempId?: string;
+  replyChannelId?: string;
+  replyContextMessageId?: string;
 };
 
 type ChatWindowProps = {
@@ -80,6 +84,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   const { toast } = useToast();
   const { has } = usePermissions();
   const { currentWorkspace } = useWorkspaceManager();
+  const queryClient = useQueryClient();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const lastScrollTop = useRef(0);
@@ -96,9 +101,127 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isMediaPreviewOpen, setIsMediaPreviewOpen] = useState(false);
   const [isRecordingAudio, setIsRecordingAudio] = useState(false);
+  const [selectedReplyChannelId, setSelectedReplyChannelId] = useState<string | null>(null);
+  const [replyContextMessageId, setReplyContextMessageId] = useState<string | null>(null);
+  const [pendingReplyChannel, setPendingReplyChannel] = useState<{
+    integrationId: string;
+    contextMessageId: string | null;
+  } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const canSend = has("send:message");
+  const canSendPermission = has("send:message");
   const canAssign = has("assign:deal");
+
+  const replyChannelsQuery = useQuery({
+    queryKey: ["chat-reply-channels", conversation.id],
+    queryFn: () => listReplyChannels(conversation.id),
+    enabled: canSendPermission,
+    staleTime: 0,
+  });
+
+  const replyChannels = replyChannelsQuery.data?.channels ?? [];
+  const selectedReplyChannel = replyChannels.find(
+    (channel) => channel.integrationId === selectedReplyChannelId,
+  );
+  const canSend = Boolean(
+    canSendPermission &&
+      selectedReplyChannelId &&
+      selectedReplyChannel?.available &&
+      !pendingReplyChannel,
+  );
+
+  const latestInbound = replyChannelsQuery.data?.latestInbound ?? null;
+  const hasComposerDraft = Boolean(
+    newMessage.trim() || selectedFile || isRecordingAudio || pendingQueue.length,
+  );
+
+  const formatReplyChannel = (channel?: ReplyChannel | null) => {
+    if (!channel) return "Canal não selecionado";
+    const provider = channel.provider === "meta-cloud"
+      ? "Meta Cloud"
+      : channel.provider;
+    return `${channel.pipeline.name} · ${provider}${
+      channel.metaDisplayPhoneNumber
+        ? ` · ${channel.metaDisplayPhoneNumber}`
+        : ""
+    }`;
+  };
+
+  useEffect(() => {
+    if (!replyChannelsQuery.data) return;
+
+    const suggestedIntegrationId =
+      replyChannelsQuery.data.suggestedIntegrationId;
+    const nextContextMessageId = latestInbound?.messageId ?? null;
+
+    if (!selectedReplyChannelId) {
+      setSelectedReplyChannelId(suggestedIntegrationId);
+      setReplyContextMessageId(nextContextMessageId);
+      return;
+    }
+
+    if (nextContextMessageId === replyContextMessageId) return;
+
+    if (
+      hasComposerDraft &&
+      suggestedIntegrationId &&
+      suggestedIntegrationId !== selectedReplyChannelId
+    ) {
+      setPendingReplyChannel({
+        integrationId: suggestedIntegrationId,
+        contextMessageId: nextContextMessageId,
+      });
+      return;
+    }
+
+    setSelectedReplyChannelId(suggestedIntegrationId);
+    setReplyContextMessageId(nextContextMessageId);
+    setPendingReplyChannel(null);
+  }, [
+    hasComposerDraft,
+    latestInbound?.messageId,
+    replyChannelsQuery.data,
+    replyContextMessageId,
+    selectedReplyChannelId,
+  ]);
+
+  useEffect(() => {
+    if (newMessageEvent?.chatId !== conversation.id) return;
+
+    void queryClient.invalidateQueries({
+      queryKey: ["chat-reply-channels", conversation.id],
+    });
+  }, [conversation.id, newMessageEvent, queryClient]);
+
+  const handleReplyChannelChange = (integrationId: string) => {
+    setSelectedReplyChannelId(integrationId);
+    setReplyContextMessageId(latestInbound?.messageId ?? null);
+    setPendingReplyChannel(null);
+  };
+
+  const confirmPendingReplyChannel = () => {
+    if (!pendingReplyChannel) return;
+
+    setSelectedReplyChannelId(pendingReplyChannel.integrationId);
+    setReplyContextMessageId(pendingReplyChannel.contextMessageId);
+    setPendingReplyChannel(null);
+  };
+
+  const handleReplyChannelError = useCallback((error: unknown): boolean => {
+    const status = (error as { response?: { status?: number } })?.response
+      ?.status;
+
+    if (status !== 409) return false;
+
+    void queryClient.invalidateQueries({
+      queryKey: ["chat-reply-channels", conversation.id],
+    });
+    toast({
+      title: "O canal da conversa mudou",
+      description: "Confirme o novo canal antes de enviar a mensagem.",
+      variant: "destructive",
+    });
+    return true;
+  }, [conversation.id, queryClient, toast]);
 
   const { data: workspaceUsers } = useQuery({
     queryKey: ["chat-assignment-users", currentWorkspace?.id],
@@ -203,6 +326,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         chatId: conversation.id,
         message: messageToSend.content,
         agentId: conversation.agent?.id || "",
+        companyWhatsappIntegrationId: messageToSend.replyChannelId,
+        replyContextMessageId: messageToSend.replyContextMessageId,
       });
 
       // Update message status to sent and replace with real message
@@ -229,15 +354,23 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       // Remove from queue
       setPendingQueue((prev) => prev.slice(1));
 
-      toast({
-        title: "Erro ao enviar mensagem",
-        description: "A mensagem não foi enviada. Tente novamente.",
-        variant: "destructive",
-      });
+      if (!handleReplyChannelError(error)) {
+        toast({
+          title: "Erro ao enviar mensagem",
+          description: "A mensagem não foi enviada. Tente novamente.",
+          variant: "destructive",
+        });
+      }
     } finally {
       isProcessingQueue.current = false;
     }
-  }, [pendingQueue, conversation.id, conversation.agent?.id, toast]);
+  }, [
+    pendingQueue,
+    conversation.id,
+    conversation.agent?.id,
+    handleReplyChannelError,
+    toast,
+  ]);
 
   // Validate file type and size
   const validateFile = (file: File): { valid: boolean; error?: string } => {
@@ -308,6 +441,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
 
   // Handle send audio
   const handleSendAudio = async (audioBlob: Blob) => {
+    if (!canSend || !selectedReplyChannelId) return;
+
     const tempId = `temp-${Date.now()}-${Math.random()}`;
     const audioFile = new File([audioBlob], `audio-${Date.now()}.ogg`, {
       type: "audio/ogg; codecs=opus",
@@ -324,6 +459,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       mediaMimetype: "audio/ogg; codecs=opus",
       createdAt: new Date().toISOString(),
       status: "pending",
+      replyChannelId: selectedReplyChannelId,
+      replyContextMessageId: replyContextMessageId ?? undefined,
     };
 
     // Add to messages immediately
@@ -345,6 +482,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         chatId: conversation.id,
         type: "audio",
         file: audioFile,
+        companyWhatsappIntegrationId: selectedReplyChannelId,
+        replyContextMessageId: replyContextMessageId ?? undefined,
       });
 
       // Update message status to sent
@@ -364,17 +503,19 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         ),
       );
 
-      toast({
-        title: "Error sending audio",
-        description: "Failed to send audio message. Please try again.",
-        variant: "destructive",
-      });
+      if (!handleReplyChannelError(error)) {
+        toast({
+          title: "Error sending audio",
+          description: "Failed to send audio message. Please try again.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
   // Handle send media
   const handleSendMedia = async (caption?: string) => {
-    if (!selectedFile) return;
+    if (!selectedFile || !canSend || !selectedReplyChannelId) return;
 
     const mediaType = getMediaTypeFromFile(selectedFile);
     const tempId = `temp-${Date.now()}-${Math.random()}`;
@@ -390,6 +531,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       mediaMimetype: selectedFile.type,
       createdAt: new Date().toISOString(),
       status: "pending",
+      replyChannelId: selectedReplyChannelId,
+      replyContextMessageId: replyContextMessageId ?? undefined,
     };
 
     // Add to messages immediately
@@ -413,6 +556,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         type: mediaType,
         file: selectedFile,
         caption,
+        companyWhatsappIntegrationId: selectedReplyChannelId,
+        replyContextMessageId: replyContextMessageId ?? undefined,
       });
 
       // Update message status to sent
@@ -432,17 +577,19 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         ),
       );
 
-      toast({
-        title: "Error sending media",
-        description: "Failed to send media message. Please try again.",
-        variant: "destructive",
-      });
+      if (!handleReplyChannelError(error)) {
+        toast({
+          title: "Error sending media",
+          description: "Failed to send media message. Please try again.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
   // Handle send message
   const handleSendMessage = () => {
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() || !canSend || !selectedReplyChannelId) return;
 
     const tempId = `temp-${Date.now()}-${Math.random()}`;
     const pendingMessage: MessageWithStatus = {
@@ -456,6 +603,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       mediaMimetype: null,
       createdAt: new Date().toISOString(),
       status: "pending",
+      replyChannelId: selectedReplyChannelId,
+      replyContextMessageId: replyContextMessageId ?? undefined,
     };
 
     // Add to messages immediately
@@ -515,6 +664,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           ? newMessageEvent.createdAt.toISOString()
           : newMessageEvent.createdAt,
       status: "sent",
+      replyChannelId: newMessageEvent.companyWhatsappIntegrationId ?? undefined,
     };
 
     setMessages((prev) => {
@@ -589,6 +739,12 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     setHasMore(true);
     setAlreadyScrolled(false);
     setPendingQueue([]);
+    setSelectedReplyChannelId(null);
+    setReplyContextMessageId(null);
+    setPendingReplyChannel(null);
+    setNewMessage("");
+    setSelectedFile(null);
+    setIsMediaPreviewOpen(false);
     previousMessagesLength.current = 0;
     previousScrollHeight.current = 0;
     lastScrollTop.current = 0;
@@ -731,6 +887,59 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     return null;
   };
 
+  const replyChannelControls = canSendPermission ? (
+    <div className="space-y-2 border-t bg-background px-3 py-2">
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-muted-foreground">Canal de resposta</span>
+        <Select
+          value={selectedReplyChannelId ?? ""}
+          onValueChange={handleReplyChannelChange}
+          disabled={replyChannelsQuery.isLoading || replyChannels.length === 0}
+        >
+          <SelectTrigger className="h-8 max-w-[420px] flex-1 text-xs">
+            <SelectValue placeholder="Selecione um canal" />
+          </SelectTrigger>
+          <SelectContent>
+            {replyChannels.map((channel) => (
+              <SelectItem
+                key={channel.integrationId}
+                value={channel.integrationId}
+                disabled={!channel.available}
+              >
+                {formatReplyChannel(channel)}
+                {!channel.available ? " · indisponível" : ""}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      {pendingReplyChannel && (
+        <div className="flex items-center justify-between gap-2 rounded-md border border-amber-300 bg-amber-50 px-2 py-1.5 text-xs text-amber-900">
+          <span>Chegou uma nova mensagem por outro canal. Confirme o canal antes de enviar.</span>
+          <Button size="sm" className="h-7" onClick={confirmPendingReplyChannel}>
+            Usar novo canal
+          </Button>
+        </div>
+      )}
+      {!pendingReplyChannel &&
+        latestInbound?.integrationId &&
+        !replyChannels.some(
+          (channel) => channel.integrationId === latestInbound.integrationId,
+        ) && (
+          <p className="text-xs text-amber-700">
+            A última mensagem chegou por um canal que não está atribuído a você.
+          </p>
+        )}
+      {!pendingReplyChannel &&
+        !selectedReplyChannelId &&
+        !replyChannelsQuery.isLoading && (
+          <p className="text-xs text-muted-foreground">
+            Selecione um canal para habilitar o envio.
+          </p>
+        )}
+    </div>
+  ) : null;
+
   return (
     <div className="flex h-full w-full">
       <div className="flex flex-col flex-1">
@@ -864,12 +1073,17 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
 
         {/* Input or Audio Recorder */}
         {isRecordingAudio ? (
-          <AudioRecorder
-            onSend={handleSendAudio}
-            onCancel={() => setIsRecordingAudio(false)}
-          />
+          <>
+            {replyChannelControls}
+            <AudioRecorder
+              onSend={handleSendAudio}
+              onCancel={() => setIsRecordingAudio(false)}
+            />
+          </>
         ) : (
-          <div className="bg-background border-t p-3">
+          <div className="bg-background">
+            {replyChannelControls}
+            <div className="border-t p-3">
             <div className="flex items-center gap-2">
               <input
                 ref={fileInputRef}
@@ -922,6 +1136,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                   <Mic className="h-5 w-5" />
                 </Button>
               )}
+            </div>
             </div>
           </div>
         )}
