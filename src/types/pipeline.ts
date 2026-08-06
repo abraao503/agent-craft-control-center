@@ -1,8 +1,6 @@
 // Types for Sales Pipeline and Deals
 // Comments in English as per project rules
 
-import { WhatsAppIntegrationName } from "./whatsapp-integration";
-
 export interface PipelineListItem {
   id: string;
   name: string;
@@ -85,13 +83,21 @@ export interface CreatePipelineStageInput {
   reengagementConfig?: ReengagementConfigInput | null;
 }
 
-export interface WhatsAppIntegrationConfig {
-  whatsappIntegrationName: WhatsAppIntegrationName;
-  initialPipelineStageOrder: number;
-  externalToken?: string;
-  externalClientToken?: string;
-  postbackUrl?: string;
-}
+export type LegacyWhatsAppIntegrationConfig =
+  | {
+      whatsappIntegrationName: "evolux";
+      initialPipelineStageOrder: number;
+    }
+  | {
+      whatsappIntegrationName: "z-api";
+      initialPipelineStageOrder: number;
+      externalToken: string;
+      externalClientToken: string;
+      postbackUrl: string;
+    };
+
+/** Meta Cloud is configured through its pipeline-scoped endpoint, never here. */
+export type WhatsAppIntegrationConfig = LegacyWhatsAppIntegrationConfig;
 
 export interface CreatePipelineInput {
   workspaceId: string; // UUID

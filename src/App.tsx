@@ -19,9 +19,6 @@ import DashboardV2Page from "./pages/DashboardV2Page";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import { UnsavedChangesProvider } from "./contexts/unsaved-changes/UnsavedChangesContext";
-import WhatsAppIntegrationsPage from "./pages/WhatsAppIntegrationsPage";
-import CreateWhatsAppIntegrationPage from "./pages/CreateWhatsAppIntegrationPage";
-import EditWhatsAppIntegrationPage from "./pages/EditWhatsAppIntegrationPage";
 import SettingsPage from "./pages/SettingsPage";
 import IntegrationsPage from "./pages/IntegrationsPage";
 import CalendarPage from "./pages/CalendarPage";
@@ -227,9 +224,6 @@ const AppLayout = () => {
 // Componentes de página simplificados sem o MainLayout
 const DashboardPage = () => <Dashboard />;
 const DashboardV2PageView = () => <DashboardV2Page />;
-const IntegrationsListPage = () => <WhatsAppIntegrationsPage />;
-const IntegrationsCreatePage = () => <CreateWhatsAppIntegrationPage />;
-const IntegrationsEditPage = () => <EditWhatsAppIntegrationPage />;
 const IntegrationsViewPage = () => <IntegrationsPage />;
 const CalendarPageView = () => <CalendarPage />;
 const SettingsConfigPage = () => <SettingsPage />;
@@ -303,18 +297,6 @@ const App = () => (
                       element={<DashboardPage />}
                     />
                     <Route path="/agents/*" element={<Navigate to="/deals" replace />} />
-                    <Route
-                      path="/whatsapp"
-                      element={<IntegrationsListPage />}
-                    />
-                    <Route
-                      path="/whatsapp/new"
-                      element={<IntegrationsCreatePage />}
-                    />
-                    <Route
-                      path="/whatsapp/edit/:id"
-                      element={<IntegrationsEditPage />}
-                    />
                     <Route
                       path="/integrations"
                       element={<IntegrationsViewPage />}

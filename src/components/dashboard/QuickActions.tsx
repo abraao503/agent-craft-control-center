@@ -37,7 +37,7 @@ const QuickActions = () => {
             </Button>
           </Link>
           
-          <Link to="/integrations/whatsapp/new">
+          <Link to="/deals/pipeline/create?tab=config">
             <Button variant="outline" className="w-full justify-start">
               <MessageSquare className="mr-2 h-4 w-4" />
               Conectar WhatsApp

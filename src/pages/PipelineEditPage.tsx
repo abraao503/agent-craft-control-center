@@ -4,9 +4,23 @@ import { PipelineEditorTabs } from "@/components/pipelines/editor/PipelineEditor
 import { AgentLoadingModal } from "@/components/pipelines/AgentLoadingModal";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { usePermissions } from "@/hooks/usePermissions";
 
 const PipelineEditPage = () => {
   const editor = usePipelineEditor();
+  const { has } = usePermissions();
+
+  const requiredPermission = editor.isCreating
+    ? "create:pipeline"
+    : "update:pipeline";
+
+  if (!has(requiredPermission)) {
+    return (
+      <div className="rounded-lg border p-8 text-center text-muted-foreground">
+        Você não tem permissão para {editor.isCreating ? "criar" : "editar"} este pipeline.
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -40,6 +54,12 @@ const PipelineEditPage = () => {
         companyWhatsappIntegrationId={
           editor.currentPipeline?.companyWhatsappIntegrationId
         }
+        pipelineId={editor.pipelineId}
+        metaCloudEnabled={editor.metaCloudEnabled}
+        canUpdatePipeline={editor.canUpdatePipeline}
+        canManageIntegrations={editor.canManageIntegrations}
+        metaPhoneNumberId={editor.metaPhoneNumberId}
+        metaIntegration={editor.metaIntegration}
         useAgent={editor.useAgent}
         isAgentConfigured={editor.isAgentConfigured}
         isAgentLoading={editor.isAgentLoading}
@@ -49,7 +69,6 @@ const PipelineEditPage = () => {
         agentFormData={editor.agentFormData}
         updateAgentFormData={editor.updateAgentFormData}
         isCreating={editor.isCreating}
-        pipelineId={editor.pipelineId}
         onUseAgentChange={editor.handleUseAgentChange}
         onLoadDeletedAgent={editor.handleLoadDeletedAgent}
         useWhatsApp={editor.useWhatsApp}
@@ -66,6 +85,7 @@ const PipelineEditPage = () => {
         onExternalTokenChange={editor.handleExternalTokenChange}
         onExternalClientTokenChange={editor.handleExternalClientTokenChange}
         onPostbackUrlChange={editor.handlePostbackUrlChange}
+        onMetaPhoneNumberIdChange={editor.handleMetaPhoneNumberIdChange}
       />
 
       <AgentLoadingModal

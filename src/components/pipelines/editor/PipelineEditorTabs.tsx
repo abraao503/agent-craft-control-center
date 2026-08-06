@@ -3,7 +3,10 @@ import { StagesTab, AgentTab, ConfigurationsTab } from "@/components/pipelines/t
 import { PipelineStageMinimal } from "@/types/pipeline";
 import { AgentFormData } from "@/types/agent";
 import { WhatsAppIntegrationName } from "@/types/whatsapp-integration";
-import { CompanyWhatsAppIntegration } from "@/types/whatsapp";
+import {
+  CompanyWhatsAppIntegration,
+  CompanyWhatsAppIntegrationFull,
+} from "@/types/whatsapp";
 
 interface PipelineEditorTabsProps {
   activeTab: "stages" | "agent" | "config";
@@ -13,6 +16,12 @@ interface PipelineEditorTabsProps {
   selectedAssistantId?: string;
   availableWhatsAppIntegrations: CompanyWhatsAppIntegration[];
   companyWhatsappIntegrationId?: string | null;
+  pipelineId?: string;
+  metaCloudEnabled: boolean;
+  canUpdatePipeline: boolean;
+  canManageIntegrations: boolean;
+  metaPhoneNumberId: string | null;
+  metaIntegration?: CompanyWhatsAppIntegrationFull | null;
   useAgent: boolean;
   isAgentConfigured: boolean;
   isAgentLoading: boolean;
@@ -22,7 +31,6 @@ interface PipelineEditorTabsProps {
   agentFormData: AgentFormData;
   updateAgentFormData: (data: Partial<AgentFormData>) => void;
   isCreating: boolean;
-  pipelineId?: string;
   onUseAgentChange: (value: boolean) => void;
   onLoadDeletedAgent: (agentData: AgentFormData) => void;
   useWhatsApp: boolean;
@@ -37,6 +45,7 @@ interface PipelineEditorTabsProps {
   onExternalTokenChange: (value: string) => void;
   onExternalClientTokenChange: (value: string) => void;
   onPostbackUrlChange: (value: string) => void;
+  onMetaPhoneNumberIdChange: (value: string | null) => void;
 }
 
 export function PipelineEditorTabs({
@@ -47,6 +56,12 @@ export function PipelineEditorTabs({
   selectedAssistantId,
   availableWhatsAppIntegrations,
   companyWhatsappIntegrationId,
+  pipelineId,
+  metaCloudEnabled,
+  canUpdatePipeline,
+  canManageIntegrations,
+  metaPhoneNumberId,
+  metaIntegration,
   useAgent,
   isAgentConfigured,
   isAgentLoading,
@@ -56,7 +71,6 @@ export function PipelineEditorTabs({
   agentFormData,
   updateAgentFormData,
   isCreating,
-  pipelineId,
   onUseAgentChange,
   onLoadDeletedAgent,
   useWhatsApp,
@@ -71,6 +85,7 @@ export function PipelineEditorTabs({
   onExternalTokenChange,
   onExternalClientTokenChange,
   onPostbackUrlChange,
+  onMetaPhoneNumberIdChange,
 }: PipelineEditorTabsProps) {
   return (
     <Tabs value={activeTab} onValueChange={(value) => onTabChange(value as typeof activeTab)}>
@@ -122,6 +137,12 @@ export function PipelineEditorTabs({
           stages={stages}
           availableWhatsAppIntegrations={availableWhatsAppIntegrations}
           companyWhatsappIntegrationId={companyWhatsappIntegrationId}
+          pipelineId={pipelineId}
+          metaCloudEnabled={metaCloudEnabled}
+          canUpdatePipeline={canUpdatePipeline}
+          canManageIntegrations={canManageIntegrations}
+          metaPhoneNumberId={metaPhoneNumberId}
+          metaIntegration={metaIntegration}
           useWhatsApp={useWhatsApp}
           whatsAppIntegrationName={whatsAppIntegrationName}
           initialStageOrder={initialStageOrder}
@@ -134,6 +155,7 @@ export function PipelineEditorTabs({
           onExternalTokenChange={onExternalTokenChange}
           onExternalClientTokenChange={onExternalClientTokenChange}
           onPostbackUrlChange={onPostbackUrlChange}
+          onMetaPhoneNumberIdChange={onMetaPhoneNumberIdChange}
         />
       </TabsContent>
     </Tabs>

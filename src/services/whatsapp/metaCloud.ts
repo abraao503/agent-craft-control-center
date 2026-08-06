@@ -8,6 +8,7 @@ export type MetaCloudPhoneNumber = {
   qualityRating: string | null;
   status: string | null;
   lastSyncedAt: string | null;
+  assignedPipelineId: string | null;
 };
 
 export type MetaCloudTemplate = {
@@ -31,10 +32,19 @@ export type MetaCloudDiagnostic = {
   integrations: Array<{
     id: string;
     pipelineId: string;
+    status: string;
     connectionStatus: string;
     diagnosticCode: string | null;
     diagnosticMessage: string | null;
-    metaPhoneNumber: { phoneNumberId: string; status: string | null } | null;
+    metaPhoneNumber:
+      | {
+          phoneNumberId: string;
+          displayPhoneNumber: string;
+          status: string | null;
+        }
+      | null;
+    active: boolean;
+    initialPipelineStage: { order: number; name: string };
   }>;
 };
 
@@ -57,12 +67,26 @@ export async function syncMetaCloudPhoneNumbers() {
   return response.data;
 }
 
-export async function linkMetaCloudPhoneNumber(params: {
+export async function configureMetaCloudPipelineIntegration(
+  pipelineId: string,
+  params: {
   phoneNumberId: string;
-  pipelineId: string;
-  initialPipelineStageId: string;
-}) {
-  const response = await api.post("/meta-cloud/integrations", params);
+  initialPipelineStageOrder: number;
+  },
+) {
+  const response = await api.put(
+    `/meta-cloud/pipelines/${pipelineId}/integration`,
+    params,
+  );
+  return response.data;
+}
+
+export async function disconnectMetaCloudPipelineIntegration(
+  pipelineId: string,
+) {
+  const response = await api.delete(
+    `/meta-cloud/pipelines/${pipelineId}/integration`,
+  );
   return response.data;
 }
 

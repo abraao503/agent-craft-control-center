@@ -107,10 +107,10 @@ const AgentDetailsPage = () => {
             <Link to={`/agents/${agent.id}/playground`}>
               <Button variant="outline"><TestTube2 className="mr-2 h-5 w-5" />Testar agente</Button>
             </Link>
-            <Link to={`/integrations/new?agentId=${agent.id}`}>
+            <Link to="/deals/pipeline/create?tab=config">
               <Button variant="outline">
                 <MessageSquare className="mr-2 h-5 w-5" />
-                Connect to WhatsApp
+                Configurar WhatsApp no pipeline
               </Button>
             </Link>
             <Link to={`/agents/edit/${agent.id}`}>

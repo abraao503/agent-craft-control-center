@@ -1,15 +1,4 @@
-import {
-  WhatsAppIntegrationName,
-  WhatsAppProviderCapabilities,
-} from './whatsapp-integration';
-
-export interface WhatsAppIntegration {
-  id: string;
-  name: string;
-  alias: string;
-  active?: boolean;
-  capabilities?: WhatsAppProviderCapabilities;
-}
+import { WhatsAppIntegrationName } from './whatsapp-integration';
 
 export interface CompanyWhatsAppIntegration {
   id: string;
@@ -26,6 +15,8 @@ export interface CompanyWhatsAppIntegration {
   connectionStatus?: string;
   diagnosticCode?: string | null;
   diagnosticMessage?: string | null;
+  initialPipelineStageOrder?: number;
+  metaDisplayPhoneNumber?: string | null;
 }
 
 export interface CompanyWhatsAppIntegrationFull {
@@ -41,16 +32,10 @@ export interface CompanyWhatsAppIntegrationFull {
   status: "close" | "open" | "connecting";
   metaPhoneNumberId?: string | null;
   connectionStatus?: string;
-}
-
-export interface WhatsAppFormData {
-  externalToken: string;
-  externalClientToken: string;
-  postbackUrl: string;
-  agentId: string;
-  whatsappIntegrationName: WhatsAppIntegrationName;
-  id?: string; // For edit mode
-  companyId?: string; // For edit mode
+  diagnosticCode?: string | null;
+  diagnosticMessage?: string | null;
+  initialPipelineStageOrder?: number;
+  metaDisplayPhoneNumber?: string | null;
 }
 
 export type InstanceQrCodeEvent = {
