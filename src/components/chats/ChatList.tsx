@@ -187,7 +187,7 @@ export const ChatList: React.FC<ChatListProps> = ({
                             {conversation.customer.name ||
                               formatPhone(conversation.customer.phone)}
                           </h3>
-                          {conversation.customer.name && (
+                          {conversation.customer.phone && (
                             <p className="text-xs text-muted-foreground truncate">
                               {formatPhone(conversation.customer.phone)}
                             </p>

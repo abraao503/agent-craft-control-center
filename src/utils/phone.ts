@@ -4,6 +4,25 @@ import {
 } from "libphonenumber-js";
 
 /**
+ * Meta can send Brazilian mobile numbers without the ninth digit. Keep the
+ * frontend display and outbound normalization aligned with the API rule.
+ */
+const canonicalizeBrazilianMobile = (phone: string): string => {
+  const digits = phone.replace(/\D/g, "");
+  const subscriber = digits.slice(4);
+
+  if (
+    digits.startsWith("55") &&
+    digits.length === 12 &&
+    /^[6-9]/.test(subscriber)
+  ) {
+    return `${digits.slice(0, 4)}9${subscriber}`;
+  }
+
+  return digits;
+};
+
+/**
  * Format phone number for display (supports international numbers)
  *
  * - Brazilian numbers: displayed in national format "(11) 99988-7766"
@@ -23,7 +42,9 @@ export const formatPhone = (
   if (!phone) return phone;
 
   try {
-    const parsed = parsePhoneNumber(`+${phone}`);
+    const parsed = parsePhoneNumber(
+      `+${canonicalizeBrazilianMobile(phone)}`,
+    );
     if (!parsed) return phone;
 
     // Brazilian numbers: national format by default
@@ -80,23 +101,24 @@ export const normalizePhone = (phone: string): string => {
   if (!phone) return phone;
 
   try {
+    const digits = canonicalizeBrazilianMobile(phone);
+
     // If starts with "+", parse directly
     if (phone.startsWith("+")) {
-      const parsed = parsePhoneNumber(phone);
+      const parsed = parsePhoneNumber(`+${digits}`);
       if (parsed) {
         return parsed.format("E.164");
       }
     }
 
     // Try parsing as international (with "+" prefix)
-    const digits = phone.replace(/\D/g, "");
     const parsedWithPlus = parsePhoneNumber(`+${digits}`);
     if (parsedWithPlus?.isValid()) {
       return parsedWithPlus.format("E.164");
     }
 
     // Fallback: assume Brazilian number
-    const parsed = parsePhoneNumber(phone, "BR");
+    const parsed = parsePhoneNumber(digits, "BR");
     if (parsed) {
       return parsed.format("E.164");
     }
@@ -104,7 +126,7 @@ export const normalizePhone = (phone: string): string => {
     // Return digits only as fallback
   }
 
-  return `+${phone.replace(/\D/g, "")}`;
+  return `+${canonicalizeBrazilianMobile(phone)}`;
 };
 
 /**
