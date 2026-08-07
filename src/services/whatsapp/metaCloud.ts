@@ -37,7 +37,7 @@ export type MetaCloudTemplatePreview = {
   body: string;
   parameters: Array<{ slot: string; binding: MetaCloudTemplateBinding; value: string }>;
   graphComponents: Array<Record<string, unknown>>;
-  serviceWindow: {
+  serviceWindow?: {
     status: "OPEN" | "CLOSED";
     expiresAt: string | null;
     lastInboundAt: string | null;
@@ -112,8 +112,8 @@ export async function syncMetaCloudPhoneNumbers() {
 export async function configureMetaCloudPipelineIntegration(
   pipelineId: string,
   params: {
-  phoneNumberId: string;
-  initialPipelineStageOrder: number;
+    phoneNumberId: string;
+    initialPipelineStageOrder: number;
   },
 ) {
   const response = await api.put(
@@ -199,6 +199,30 @@ export async function listMetaCloudChatTemplates(params: {
   const response = await api.get<MetaCloudTemplate[]>(
     `/meta-cloud/chats/${params.chatId}/templates`,
     { params: { integrationId: params.integrationId } },
+  );
+  return response.data;
+}
+
+export async function listMetaCloudPipelineTemplates(pipelineId: string) {
+  const response = await api.get<MetaCloudTemplate[]>(
+    `/meta-cloud/pipelines/${pipelineId}/templates`,
+  );
+  return response.data;
+}
+
+export async function previewMetaCloudPipelineTemplate(params: {
+  pipelineId: string;
+  templateId: string;
+  bindings: Record<string, MetaCloudTemplateBinding>;
+  dealId?: string;
+}) {
+  const response = await api.post<MetaCloudTemplatePreview>(
+    `/meta-cloud/pipelines/${params.pipelineId}/templates/preview`,
+    {
+      templateId: params.templateId,
+      bindings: params.bindings,
+      ...(params.dealId ? { dealId: params.dealId } : {}),
+    },
   );
   return response.data;
 }

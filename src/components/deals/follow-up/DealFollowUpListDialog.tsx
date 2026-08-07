@@ -185,6 +185,10 @@ export const DealFollowUpListDialog: React.FC<DealFollowUpListDialogProps> = ({
         variant = "default";
         Icon = CheckCircle;
       }
+    } else if (status === "BLOCKED_CONFIGURATION") {
+      label = "Configuração pendente";
+      variant = "outline";
+      Icon = AlertTriangle;
     } else {
       // PENDING
       label = isRecurring ? "Aguardando 1º envio" : "Pendente";
@@ -223,7 +227,11 @@ export const DealFollowUpListDialog: React.FC<DealFollowUpListDialogProps> = ({
 
           <div className="space-y-4">
             <div className="flex justify-end">
-              <Button onClick={() => setShowCreateDialog(true)}>
+              <Button
+                onClick={() => setShowCreateDialog(true)}
+                disabled={!data?.channel}
+                title={!data?.channel ? "Carregando o canal do negócio" : undefined}
+              >
                 Criar Agendamento
               </Button>
             </div>
@@ -272,6 +280,12 @@ export const DealFollowUpListDialog: React.FC<DealFollowUpListDialogProps> = ({
                           <div className="flex items-center gap-2 flex-wrap">
                             <h4 className="font-semibold">{followUp.title}</h4>
                             {getStatusBadge(followUp)}
+                            {followUp.configurationState ===
+                              "REQUIRES_TEMPLATE" && (
+                              <Badge variant="outline" className="text-xs">
+                                Template Meta necessário
+                              </Badge>
+                            )}
                           </div>
                           <p className="text-sm text-muted-foreground line-clamp-2">
                             {followUp.message}
@@ -411,6 +425,8 @@ export const DealFollowUpListDialog: React.FC<DealFollowUpListDialogProps> = ({
         onOpenChange={setShowCreateDialog}
         dealId={dealId}
         dealTitle={dealTitle}
+        pipelineId={data?.channel.pipelineId ?? ""}
+        isMetaCloud={data?.channel.requiresTemplate ?? false}
       />
 
       <EditDealFollowUpDialog
@@ -418,6 +434,8 @@ export const DealFollowUpListDialog: React.FC<DealFollowUpListDialogProps> = ({
         onOpenChange={setShowEditDialog}
         dealId={dealId}
         followUp={followUpToEdit}
+        pipelineId={data?.channel.pipelineId ?? ""}
+        isMetaCloud={data?.channel.requiresTemplate ?? false}
       />
 
       {occurrencesFollowUp && (

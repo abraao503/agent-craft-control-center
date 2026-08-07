@@ -618,14 +618,30 @@ export function usePipelineEditor(): PipelineEditorResult {
 
       const config = stage.reengagementConfig;
       if (config) {
+        const usesMetaTemplates =
+          (useWhatsApp &&
+            whatsAppIntegrationName === WHATSAPP_INTEGRATION_NAMES.META_CLOUD) ||
+          Boolean(config.metaTemplateId) ||
+          Boolean(config.templateAttempts?.length);
         if (config.minInactiveChatTimeHours < 1)
           errors.push(`Etapa #${index + 1}: Tempo de inatividade deve ser no mínimo 1 hora`);
         if (config.maxMessages < 1)
           errors.push(`Etapa #${index + 1}: Número máximo de mensagens deve ser no mínimo 1`);
         if (config.messagingIntervalHours && config.messagingIntervalHours < 1)
           errors.push(`Etapa #${index + 1}: Intervalo entre mensagens deve ser no mínimo 1 hora`);
-        if (!config.messages.filter((message) => message.trim()).length)
+        if (usesMetaTemplates) {
+          const attempts = config.templateAttempts ?? [];
+          if (
+            attempts.length !== config.maxMessages ||
+            attempts.some((attempt) => !attempt.templateId || !attempt.language)
+          ) {
+            errors.push(
+              `Etapa #${index + 1}: configure um template Meta para cada tentativa`,
+            );
+          }
+        } else if (!config.messages.filter((message) => message.trim()).length) {
           errors.push(`Etapa #${index + 1}: Adicione pelo menos uma mensagem de follow-up`);
+        }
       }
     });
 
@@ -748,6 +764,11 @@ export function usePipelineEditor(): PipelineEditorResult {
             startTime: stage.reengagementConfig.startTime,
             endTime: stage.reengagementConfig.endTime,
             mediaFileId: stage.reengagementConfig.mediaFileId ?? undefined,
+            configurationState: stage.reengagementConfig.configurationState,
+            metaTemplateId: stage.reengagementConfig.metaTemplateId,
+            metaTemplateLanguage: stage.reengagementConfig.metaTemplateLanguage,
+            metaTemplateBindings: stage.reengagementConfig.metaTemplateBindings,
+            templateAttempts: stage.reengagementConfig.templateAttempts,
           }
         : null,
     }));

@@ -57,6 +57,8 @@ interface StagesTabProps {
   selectedAssistantId?: string;
   availableWhatsAppIntegrations?: CompanyWhatsAppIntegration[];
   companyWhatsappIntegrationId?: string | null;
+  pipelineId?: string;
+  isMetaCloud?: boolean;
   assistantEnabled?: boolean;
   assistantConfigured?: boolean; // Indica se o agente foi configurado (tem campos obrigatórios)
   assistantLoading?: boolean; // Indica se o agente está sendo carregado
@@ -78,6 +80,8 @@ interface SortableStageProps {
   assistantLoading: boolean; // Indica se o agente está sendo carregado
   allStages: EditableStage[];
   workspaceId?: string; // Required for ReengagementConfigSection
+  pipelineId?: string;
+  isMetaCloud: boolean;
   focusStageId?: string;
   focusRuleIndex?: number;
 }
@@ -92,6 +96,8 @@ const SortableStage: React.FC<SortableStageProps> = ({
   assistantLoading,
   allStages,
   workspaceId,
+  pipelineId,
+  isMetaCloud,
   focusStageId,
   focusRuleIndex,
 }) => {
@@ -262,6 +268,8 @@ const SortableStage: React.FC<SortableStageProps> = ({
             <div className="mt-3">
               <ReengagementConfigSection
                 workspaceId={workspaceId}
+                pipelineId={pipelineId}
+                isMetaCloud={isMetaCloud}
                 config={stage.reengagementConfig ?? null}
                 onChange={(config) => {
                   onUpdate(index, {
@@ -300,6 +308,10 @@ export const StagesTab: React.FC<StagesTabProps> = ({
   stages,
   availableAgents = [],
   selectedAssistantId,
+  availableWhatsAppIntegrations = [],
+  companyWhatsappIntegrationId,
+  pipelineId,
+  isMetaCloud: metaCloudSelected = false,
   assistantEnabled = false,
   assistantConfigured = false,
   assistantLoading = false,
@@ -357,6 +369,12 @@ export const StagesTab: React.FC<StagesTabProps> = ({
 
     return result;
   };
+
+  const isMetaCloud = metaCloudSelected || availableWhatsAppIntegrations.some(
+    (integration) =>
+      integration.id === companyWhatsappIntegrationId &&
+      integration.whatsappIntegrationName === "meta-cloud",
+  );
 
   const [draftStages, setDraftStages] = useState<EditableStage[]>(() =>
     normalize(stages),
@@ -504,6 +522,8 @@ export const StagesTab: React.FC<StagesTabProps> = ({
                   assistantLoading={assistantLoading}
                   allStages={draftStages}
                   workspaceId={workspaceId}
+                  pipelineId={pipelineId}
+                  isMetaCloud={isMetaCloud}
                   focusStageId={focusStageId}
                   focusRuleIndex={focusRuleIndex}
                 />

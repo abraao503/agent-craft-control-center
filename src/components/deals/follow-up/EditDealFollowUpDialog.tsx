@@ -30,6 +30,10 @@ import { Loader2 } from "lucide-react";
 import { RecurrenceSelector } from "./RecurrenceSelector";
 import { MediaAttachment } from "./MediaAttachment";
 import { getFollowUpErrorMessage } from "./errorMessages";
+import {
+  MetaTemplateConfigurator,
+  MetaTemplateConfigValue,
+} from "@/components/message-template";
 
 // Schema de validação
 const formSchema = z.object({
@@ -37,7 +41,7 @@ const formSchema = z.object({
     .string()
     .min(1, "Título é obrigatório")
     .max(255, "Título deve ter no máximo 255 caracteres"),
-  message: z.string().min(1, "Mensagem é obrigatória"),
+  message: z.string().optional(),
   scheduledAt: z.string().min(1, "Data e hora são obrigatórias"),
 });
 
@@ -48,6 +52,8 @@ interface EditDealFollowUpDialogProps {
   onOpenChange: (open: boolean) => void;
   dealId: string;
   followUp: DealFollowUp | null;
+  pipelineId: string;
+  isMetaCloud: boolean;
 }
 
 export const EditDealFollowUpDialog: React.FC<EditDealFollowUpDialogProps> = ({
@@ -55,6 +61,8 @@ export const EditDealFollowUpDialog: React.FC<EditDealFollowUpDialogProps> = ({
   onOpenChange,
   dealId,
   followUp,
+  pipelineId,
+  isMetaCloud,
 }) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -62,6 +70,7 @@ export const EditDealFollowUpDialog: React.FC<EditDealFollowUpDialogProps> = ({
   const [recurrence, setRecurrence] = useState<Recurrence | undefined>(
     undefined,
   );
+  const [template, setTemplate] = useState<MetaTemplateConfigValue>();
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -92,6 +101,15 @@ export const EditDealFollowUpDialog: React.FC<EditDealFollowUpDialogProps> = ({
 
       // Restore recurrence and media state
       setRecurrence(followUp.recurrence ?? undefined);
+      setTemplate(
+        followUp.metaTemplateId
+          ? {
+              templateId: followUp.metaTemplateId,
+              language: followUp.metaTemplateLanguage ?? "",
+              bindings: (followUp.metaTemplateBindings ?? {}) as never,
+            }
+          : undefined,
+      );
       setSelectedFile(null);
     }
   }, [followUp, form]);
@@ -106,10 +124,13 @@ export const EditDealFollowUpDialog: React.FC<EditDealFollowUpDialogProps> = ({
 
       return updateDealFollowUp(dealId, followUp.id, {
         title: data.title,
-        message: data.message,
+        message: data.message ?? "",
         scheduledAt: utcDate,
         file: selectedFile ?? undefined,
         recurrence,
+        metaTemplateId: template?.templateId,
+        metaTemplateLanguage: template?.language,
+        metaTemplateBindings: template?.bindings,
       });
     },
     onSuccess: () => {
@@ -163,6 +184,7 @@ export const EditDealFollowUpDialog: React.FC<EditDealFollowUpDialogProps> = ({
       form.reset();
       setSelectedFile(null);
       setRecurrence(undefined);
+      setTemplate(undefined);
     }
     onOpenChange(open);
   };
@@ -212,7 +234,7 @@ export const EditDealFollowUpDialog: React.FC<EditDealFollowUpDialogProps> = ({
                 )}
               />
 
-              <FormField
+              {!isMetaCloud && <FormField
                 control={form.control}
                 name="message"
                 render={({ field }) => (
@@ -229,16 +251,26 @@ export const EditDealFollowUpDialog: React.FC<EditDealFollowUpDialogProps> = ({
                     <FormMessage />
                   </FormItem>
                 )}
-              />
+              />}
 
               {/* Anexo de mídia */}
-              <MediaAttachment
+              {!isMetaCloud && <MediaAttachment
                 file={selectedFile}
                 onChange={setSelectedFile}
                 existingMediaUrl={followUp.mediaUrl}
                 existingMediaType={followUp.mediaType}
                 disabled={updateMutation.isPending}
-              />
+              />}
+
+              {isMetaCloud && (
+                <MetaTemplateConfigurator
+                  pipelineId={pipelineId}
+                  dealId={dealId}
+                  value={template}
+                  onChange={setTemplate}
+                  disabled={updateMutation.isPending}
+                />
+              )}
 
               <FormField
                 control={form.control}

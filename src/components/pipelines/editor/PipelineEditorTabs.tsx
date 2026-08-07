@@ -3,6 +3,7 @@ import { StagesTab, AgentTab, ConfigurationsTab } from "@/components/pipelines/t
 import { PipelineStageMinimal } from "@/types/pipeline";
 import { AgentFormData } from "@/types/agent";
 import { WhatsAppIntegrationName } from "@/types/whatsapp-integration";
+import { WHATSAPP_INTEGRATION_NAMES } from "@/types/whatsapp-integration";
 import {
   CompanyWhatsAppIntegration,
   CompanyWhatsAppIntegrationFull,
@@ -99,9 +100,14 @@ export function PipelineEditorTabs({
         <StagesTab
           pipelineName={pipelineName}
           stages={stages}
+          pipelineId={pipelineId}
           selectedAssistantId={selectedAssistantId}
           availableWhatsAppIntegrations={availableWhatsAppIntegrations}
           companyWhatsappIntegrationId={companyWhatsappIntegrationId}
+          isMetaCloud={
+            useWhatsApp &&
+            whatsAppIntegrationName === WHATSAPP_INTEGRATION_NAMES.META_CLOUD
+          }
           assistantEnabled={useAgent}
           assistantConfigured={isAgentConfigured}
           assistantLoading={isAgentLoading}

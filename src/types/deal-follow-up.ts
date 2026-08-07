@@ -5,7 +5,12 @@
  * API endpoints: /deals/:dealId/follow-ups
  */
 
-export type DealFollowUpStatus = "PENDING" | "SENT" | "FAILED" | "CANCELLED";
+export type DealFollowUpStatus =
+  | "PENDING"
+  | "SENT"
+  | "FAILED"
+  | "CANCELLED"
+  | "BLOCKED_CONFIGURATION";
 
 // Type alias para melhor legibilidade no frontend
 export type DealScheduledMessage = DealFollowUp;
@@ -86,6 +91,10 @@ export type DealFollowUp = {
   isRecurring: boolean;
   totalOccurrences: number;
   failedOccurrences: number;
+  configurationState?: "READY" | "REQUIRES_TEMPLATE";
+  metaTemplateId?: string | null;
+  metaTemplateLanguage?: string | null;
+  metaTemplateBindings?: Record<string, unknown> | null;
   // Timestamps
   createdAt: string;
   updatedAt: string;
@@ -116,10 +125,13 @@ export type FollowUpOccurrenceListResponse = {
 
 export type CreateDealFollowUpParams = {
   title: string;
-  message: string;
+  message?: string;
   scheduledAt: string;
   file?: File;
   recurrence?: Recurrence;
+  metaTemplateId?: string | null;
+  metaTemplateLanguage?: string | null;
+  metaTemplateBindings?: Record<string, unknown>;
 };
 
 export type DealFollowUpListResponse = {
@@ -128,4 +140,10 @@ export type DealFollowUpListResponse = {
   page: number;
   limit: number;
   totalPages: number;
+  channel: {
+    pipelineId: string;
+    provider: string;
+    integrationId: string | null;
+    requiresTemplate: boolean;
+  };
 };

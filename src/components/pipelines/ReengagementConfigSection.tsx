@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,6 +30,7 @@ import {
   Download,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { MetaTemplateConfigurator } from "@/components/message-template";
 import { useToast } from "@/hooks/use-toast";
 import { uploadMedia, UploadMediaResponse } from "@/services/file/uploadMedia";
 import {
@@ -57,6 +58,8 @@ const isoToTime = (isoString: string): string => {
 
 interface ReengagementConfigSectionProps {
   workspaceId: string;
+  pipelineId?: string;
+  isMetaCloud?: boolean;
   config: ReengagementConfig | null;
   onChange: (config: ReengagementConfigInput | null) => void;
   className?: string;
@@ -64,6 +67,8 @@ interface ReengagementConfigSectionProps {
 
 export function ReengagementConfigSection({
   workspaceId,
+  pipelineId,
+  isMetaCloud = false,
   config,
   onChange,
   className,
@@ -93,9 +98,44 @@ export function ReengagementConfigSection({
   // URL of image to show in the lightbox (null = closed)
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
 
+  const normalizeMetaConfig = useCallback((
+    value: ReengagementConfig | null,
+  ): ReengagementConfig | null => {
+    if (!value || !isMetaCloud) return value;
+
+    const configuredAttempts = value.templateAttempts ?? [];
+    const legacyAttempt =
+      value.metaTemplateId && value.metaTemplateLanguage
+        ? {
+            attemptNumber: 1,
+            templateId: value.metaTemplateId,
+            language: value.metaTemplateLanguage,
+            bindings: value.metaTemplateBindings ?? {},
+          }
+        : undefined;
+
+    return {
+      ...value,
+      messages: value.messages ?? [],
+      templateAttempts: Array.from(
+        { length: value.maxMessages },
+        (_, index) =>
+          configuredAttempts[index] ??
+          (index === 0 && legacyAttempt
+            ? legacyAttempt
+            : {
+                attemptNumber: index + 1,
+                templateId: "",
+                language: "",
+                bindings: {},
+              }),
+      ).map((attempt, index) => ({ ...attempt, attemptNumber: index + 1 })),
+    };
+  }, [isMetaCloud]);
+
   // Sync draft with prop changes (sempre que config muda)
   useEffect(() => {
-    setDraftConfig(config);
+    setDraftConfig(normalizeMetaConfig(config));
 
     // Extract time from ISO if config exists
     if (config?.startTime) {
@@ -109,7 +149,7 @@ export function ReengagementConfigSection({
     } else {
       setEndTimeInput("17:00");
     }
-  }, [config]);
+  }, [config, normalizeMetaConfig]);
 
   // Sync maxMessagesInput with draftConfig when modal opens or config changes
   useEffect(() => {
@@ -131,6 +171,17 @@ export function ReengagementConfigSection({
     isActive: true,
     startTime: timeToISO("08:00"),
     endTime: timeToISO("17:00"),
+    ...(isMetaCloud
+      ? {
+          messages: [],
+          templateAttempts: Array.from({ length: 3 }, (_, index) => ({
+            attemptNumber: index + 1,
+            templateId: "",
+            language: "",
+            bindings: {},
+          })),
+        }
+      : {}),
   };
 
   const handleOpenModal = () => {
@@ -171,12 +222,27 @@ export function ReengagementConfigSection({
       return;
     }
 
+    if (isMetaCloud) {
+      const attempts = draftConfig.templateAttempts ?? [];
+      if (
+        attempts.length !== draftConfig.maxMessages ||
+        attempts.some((attempt) => !attempt.templateId || !attempt.language)
+      ) {
+        toast({
+          title: "Templates obrigatórios",
+          description: `Configure um template para cada uma das ${draftConfig.maxMessages} tentativas.`,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     // Validação: verificar se todas as mensagens estão preenchidas
     const emptyMessages = draftConfig.messages.filter(
       (m) => m.trim() === "",
     ).length;
 
-    if (emptyMessages > 0) {
+    if (!isMetaCloud && emptyMessages > 0) {
       toast({
         title: "Campos obrigatórios",
         description: `Por favor, preencha todas as ${draftConfig.maxMessages} mensagens configuradas.`,
@@ -186,7 +252,10 @@ export function ReengagementConfigSection({
     }
 
     // Validação: verificar se o número de mensagens corresponde ao máximo
-    if (draftConfig.messages.length !== draftConfig.maxMessages) {
+    if (
+      !isMetaCloud &&
+      draftConfig.messages.length !== draftConfig.maxMessages
+    ) {
       toast({
         title: "Configuração inválida",
         description: `O número de mensagens (${draftConfig.messages.length}) não corresponde ao máximo configurado (${draftConfig.maxMessages}).`,
@@ -215,6 +284,17 @@ export function ReengagementConfigSection({
     // Converter horários para ISO antes de salvar
     const configToSave: ReengagementConfigInput = {
       ...draftConfig,
+      ...(isMetaCloud
+        ? {
+            messages: [],
+            mediaFileId: null,
+            configurationState: "READY" as const,
+            metaTemplateId: draftConfig.templateAttempts?.[0]?.templateId ?? null,
+            metaTemplateLanguage: draftConfig.templateAttempts?.[0]?.language ?? null,
+            metaTemplateBindings:
+              draftConfig.templateAttempts?.[0]?.bindings ?? {},
+          }
+        : {}),
       startTime: timeToISO(startTimeInput),
       endTime: timeToISO(endTimeInput),
     };
@@ -225,7 +305,7 @@ export function ReengagementConfigSection({
   };
 
   const handleCancel = () => {
-    setDraftConfig(config);
+    setDraftConfig(normalizeMetaConfig(config));
     setUploadError(null);
     setIsUploading(false);
     if (localPreviewUrl) URL.revokeObjectURL(localPreviewUrl);
@@ -394,6 +474,7 @@ export function ReengagementConfigSection({
 
               const newMax = Math.min(10, Math.max(1, value));
               const currentMessages = draftConfig.messages;
+              const currentAttempts = draftConfig.templateAttempts ?? [];
 
               // Adjust messages array to match the new max
               let newMessages = [...currentMessages];
@@ -411,6 +492,30 @@ export function ReengagementConfigSection({
               updateDraftConfig({
                 maxMessages: newMax,
                 messages: newMessages,
+                ...(isMetaCloud
+                  ? {
+                      templateAttempts:
+                        newMax > currentAttempts.length
+                          ? [
+                              ...currentAttempts,
+                              ...Array.from(
+                                { length: newMax - currentAttempts.length },
+                                (_, index) => ({
+                                  attemptNumber: currentAttempts.length + index + 1,
+                                  templateId: "",
+                                  language: "",
+                                  bindings: {},
+                                }),
+                              ),
+                            ]
+                          : currentAttempts
+                              .slice(0, newMax)
+                              .map((attempt, index) => ({
+                                ...attempt,
+                                attemptNumber: index + 1,
+                              })),
+                    }
+                  : {}),
               });
             }}
             onBlur={() => {
@@ -420,6 +525,21 @@ export function ReengagementConfigSection({
                 updateDraftConfig({
                   maxMessages: 1,
                   messages: [""],
+                  ...(isMetaCloud
+                    ? {
+                        templateAttempts: [
+                          draftConfig.templateAttempts?.[0] ?? {
+                            attemptNumber: 1,
+                            templateId: "",
+                            language: "",
+                            bindings: {},
+                          },
+                        ].map((attempt) => ({
+                          ...attempt,
+                          attemptNumber: 1,
+                        })),
+                      }
+                    : {}),
                 });
               }
             }}
@@ -431,7 +551,7 @@ export function ReengagementConfigSection({
         </div>
 
         {/* Messages */}
-        <div className="space-y-2">
+        {!isMetaCloud && <div className="space-y-2">
           <div className="flex items-center justify-between">
             <Label>
               Mensagens de Follow-up ({draftConfig.messages.length}/
@@ -461,10 +581,52 @@ export function ReengagementConfigSection({
             As mensagens serão enviadas de forma aleatória a cada tentativa de
             follow-up
           </p>
-        </div>
+        </div>}
+
+        {isMetaCloud && (
+          <div className="space-y-3">
+            <Label>Templates por tentativa</Label>
+            {Array.from({ length: draftConfig.maxMessages }, (_, index) => {
+              const attempt = draftConfig.templateAttempts?.[index] ?? {
+                attemptNumber: index + 1,
+                templateId: "",
+                language: "",
+                bindings: {},
+              };
+
+              return (
+                <MetaTemplateConfigurator
+                  key={attempt.attemptNumber}
+                  pipelineId={pipelineId}
+                  value={
+                    attempt.templateId
+                      ? {
+                          templateId: attempt.templateId,
+                          language: attempt.language,
+                          bindings: attempt.bindings as never,
+                        }
+                      : undefined
+                  }
+                  onChange={(value) => {
+                    const next = [...(draftConfig.templateAttempts ?? [])];
+                    next[index] = {
+                      attemptNumber: index + 1,
+                      templateId: value?.templateId ?? "",
+                      language: value?.language ?? "",
+                      bindings: value?.bindings ?? {},
+                    };
+                    updateDraftConfig({ templateAttempts: next });
+                  }}
+                  disabled={isUploading}
+                  label={`Tentativa ${index + 1}`}
+                />
+              );
+            })}
+          </div>
+        )}
 
         {/* Media Upload */}
-        <div className="space-y-2">
+        {!isMetaCloud && <div className="space-y-2">
           <Label>Mídia (opcional)</Label>
 
           {/* Hidden file input */}
@@ -645,7 +807,7 @@ export function ReengagementConfigSection({
                 MB.
               </p>
             )}
-        </div>
+        </div>}
 
         {/* Include Tags */}
         <div className="space-y-2">

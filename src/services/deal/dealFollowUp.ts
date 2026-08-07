@@ -12,7 +12,9 @@ import {
 function buildFollowUpFormData(data: CreateDealFollowUpParams): FormData {
   const formData = new FormData();
   formData.append("title", data.title);
-  formData.append("message", data.message);
+  if (data.message !== undefined) {
+    formData.append("message", data.message);
+  }
   formData.append("scheduledAt", data.scheduledAt);
 
   if (data.file) {
@@ -21,6 +23,19 @@ function buildFollowUpFormData(data: CreateDealFollowUpParams): FormData {
 
   if (data.recurrence) {
     formData.append("recurrence", JSON.stringify(data.recurrence));
+  }
+
+  if (data.metaTemplateId) {
+    formData.append("metaTemplateId", data.metaTemplateId);
+    if (data.metaTemplateLanguage) {
+      formData.append("metaTemplateLanguage", data.metaTemplateLanguage);
+    }
+    if (data.metaTemplateBindings) {
+      formData.append(
+        "metaTemplateBindings",
+        JSON.stringify(data.metaTemplateBindings),
+      );
+    }
   }
 
   return formData;

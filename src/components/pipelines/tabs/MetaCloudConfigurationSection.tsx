@@ -251,12 +251,29 @@ export function MetaCloudConfigurationSection({
           ) : !templatesQuery.data?.length ? (
             <p className="text-xs text-muted-foreground">Nenhum template aprovado sincronizado.</p>
           ) : (
-            <div className="flex flex-wrap gap-2">
-              {templatesQuery.data.map((template) => (
-                <Badge key={`${template.name}-${template.language}`} variant="secondary">
-                  {template.name} · {template.language}
-                </Badge>
-              ))}
+            <div className="space-y-2">
+              <div className="flex flex-wrap gap-2">
+                {templatesQuery.data.map((template) => (
+                  <Badge
+                    key={`${template.name}-${template.language}`}
+                    variant={template.compatible ? "secondary" : "outline"}
+                    title={
+                      template.compatible
+                        ? "Disponível para o configurador"
+                        : template.incompatibilityReason ||
+                          "Componente não suportado"
+                    }
+                  >
+                    {template.name} · {template.language}
+                    {!template.compatible ? " · indisponível" : ""}
+                  </Badge>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                O configurador usa somente templates aprovados do WABA do
+                pipeline e compatíveis com cabeçalho textual, corpo, rodapé
+                estático e botões de URL.
+              </p>
             </div>
           )}
         </div>

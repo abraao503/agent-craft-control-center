@@ -63,6 +63,12 @@ export interface ReengagementConfig {
   metaTemplateId?: string | null;
   metaTemplateLanguage?: string | null;
   metaTemplateBindings?: Record<string, unknown>;
+  templateAttempts?: Array<{
+    attemptNumber: number;
+    templateId: string;
+    language: string;
+    bindings: Record<string, unknown>;
+  }>;
 }
 
 export interface ReengagementConfigInput {
@@ -72,12 +78,19 @@ export interface ReengagementConfigInput {
   includeTags?: string[]; // optional, array of UUIDs, default: []
   excludeTags?: string[]; // optional, array of UUIDs, default: []
   isActive?: boolean; // optional, default: true
+  configurationState?: "READY" | "REQUIRES_TEMPLATE";
   startTime?: string; // optional, ISO 8601 datetime string (e.g., "2024-01-15T08:00:00.000Z")
   endTime?: string; // optional, ISO 8601 datetime string (e.g., "2024-01-15T17:00:00.000Z")
   mediaFileId?: string | null; // UUID returned by POST /file/media/upload
   metaTemplateId?: string | null;
   metaTemplateLanguage?: string | null;
   metaTemplateBindings?: Record<string, unknown>;
+  templateAttempts?: Array<{
+    attemptNumber: number;
+    templateId: string;
+    language: string;
+    bindings: Record<string, unknown>;
+  }>;
 }
 
 export interface CreatePipelineStageInput {
