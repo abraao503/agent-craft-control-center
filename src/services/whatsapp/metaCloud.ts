@@ -23,6 +23,27 @@ export type MetaCloudTemplate = {
   syncedAt: string;
 };
 
+export type MetaCloudTemplateBinding =
+  | { source: "fixed"; value: string }
+  | { source: "customer"; field: "name" | "firstName" | "phone" | "email" }
+  | { source: "deal"; field: "id" | "pipeline" | "stage" }
+  | { source: "owner"; field: "name" };
+
+export type MetaCloudTemplatePreview = {
+  templateId: string;
+  name: string;
+  language: string;
+  header: string | null;
+  body: string;
+  parameters: Array<{ slot: string; binding: MetaCloudTemplateBinding; value: string }>;
+  graphComponents: Array<Record<string, unknown>>;
+  serviceWindow: {
+    status: "OPEN" | "CLOSED";
+    expiresAt: string | null;
+    lastInboundAt: string | null;
+  };
+};
+
 export type MetaCloudDiagnostic = {
   enabled: boolean;
   companyFlag: boolean;
@@ -111,9 +132,18 @@ export async function disconnectMetaCloudPipelineIntegration(
   return response.data;
 }
 
-export async function listMetaCloudTemplates(status?: string) {
+export async function listMetaCloudTemplates(
+  status?: string,
+  integrationId?: string,
+) {
   const response = await api.get<MetaCloudTemplate[]>("/meta-cloud/templates", {
-    params: status ? { status } : undefined,
+    params:
+      status || integrationId
+        ? {
+            ...(status ? { status } : {}),
+            ...(integrationId ? { integrationId } : {}),
+          }
+        : undefined,
   });
   return response.data;
 }
@@ -139,10 +169,12 @@ export async function setMetaCloudConsent(params: {
 
 export type MetaCloudMessage = {
   chatId: string;
+  integrationId: string;
+  replyContextMessageId?: string;
+  clientMessageId: string;
   message:
     | {
         kind: "service";
-        clientMessageId: string;
         type: "text" | "image" | "audio" | "document";
         content: string;
         mediaUrl?: string;
@@ -150,16 +182,69 @@ export type MetaCloudMessage = {
       }
     | {
         kind: "template";
-        clientMessageId: string;
-        templateName: string;
-        language: string;
-        headerParameters: string[];
-        bodyParameters: string[];
-        buttonParameters: string[];
+        templateId: string;
+        bindings: Record<string, MetaCloudTemplateBinding>;
       };
 };
 
 export async function sendMetaCloudMessage(params: MetaCloudMessage) {
   const response = await api.post("/meta-cloud/messages", params);
+  return response.data;
+}
+
+export async function listMetaCloudChatTemplates(params: {
+  chatId: string;
+  integrationId: string;
+}) {
+  const response = await api.get<MetaCloudTemplate[]>(
+    `/meta-cloud/chats/${params.chatId}/templates`,
+    { params: { integrationId: params.integrationId } },
+  );
+  return response.data;
+}
+
+export async function previewMetaCloudChatTemplate(params: {
+  chatId: string;
+  integrationId: string;
+  templateId: string;
+  bindings: Record<string, MetaCloudTemplateBinding>;
+  replyContextMessageId?: string;
+}) {
+  const response = await api.post<MetaCloudTemplatePreview>(
+    `/meta-cloud/chats/${params.chatId}/templates/preview`,
+    params,
+  );
+  return response.data;
+}
+
+export async function sendMetaCloudTemplate(params: {
+  chatId: string;
+  integrationId: string;
+  clientMessageId: string;
+  templateId: string;
+  bindings: Record<string, MetaCloudTemplateBinding>;
+  replyContextMessageId?: string;
+  origin?: string;
+  flowId?: string;
+  contextDealId?: string;
+}) {
+  const response = await api.post(
+    "/meta-cloud/messages",
+    {
+      chatId: params.chatId,
+      integrationId: params.integrationId,
+      clientMessageId: params.clientMessageId,
+      replyContextMessageId: params.replyContextMessageId,
+      origin: params.origin ?? "CHAT_HUMAN",
+      flowId: params.flowId,
+      contextDealId: params.contextDealId,
+      message: {
+        kind: "template",
+        clientMessageId: params.clientMessageId,
+        templateId: params.templateId,
+        bindings: params.bindings,
+      },
+    },
+  );
   return response.data;
 }

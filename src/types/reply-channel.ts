@@ -7,6 +7,11 @@ export type ReplyChannel = {
   connectionStatus: string;
   metaDisplayPhoneNumber: string | null;
   available: boolean;
+  serviceWindow: {
+    status: "OPEN" | "CLOSED";
+    expiresAt: string | null;
+    lastInboundAt: string | null;
+  };
 };
 
 export type ReplyChannelsResponse = {

@@ -19,6 +19,7 @@ import { listTags } from "@/services/tag/listTags";
 import { listUsers } from "@/services/user/listUsers";
 import { Conversation, ConversationsFilters } from "@/types/conversation";
 import { MessageSentEvent } from "@/types/websocket";
+import { useToast } from "@/hooks/use-toast";
 
 const PAGE_SIZE = 30;
 
@@ -26,6 +27,7 @@ export default function ChatsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const { userProfile } = useAuth();
+  const { toast } = useToast();
   const isSalesRep = userProfile?.role === "SALES_REP";
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [lastMessageEvent, setLastMessageEvent] = useState<MessageSentEvent | null>(null);
@@ -138,6 +140,17 @@ export default function ChatsPage() {
         void queryClient.invalidateQueries({ queryKey: ["chat-timeline", event.chatId] });
       }
     };
+    const onBlocked = (event: { chatId: string; code?: string }) => {
+      if (event.chatId !== selectedConversation?.id) return;
+      toast({
+        title: "Mensagem automática bloqueada",
+        description:
+          event.code === "BLOCKED_WINDOW"
+            ? "A janela do WhatsApp expirou. Configure um template aprovado para este fluxo."
+            : "Revise a configuração da integração antes de reenviar.",
+        variant: "destructive",
+      });
+    };
 
     socket.on("message:sent", onMessage);
     socket.on("chat:marked-as-read", onRead);
@@ -145,6 +158,7 @@ export default function ChatsPage() {
     socket.on("chat:handler-changed", onHandler);
     socket.on("deal:stage-changed", onStage);
     socket.on("message:status", onStatus);
+    socket.on("message:blocked", onBlocked);
     return () => {
       socket.off("message:sent", onMessage);
       socket.off("chat:marked-as-read", onRead);
@@ -152,8 +166,17 @@ export default function ChatsPage() {
       socket.off("chat:handler-changed", onHandler);
       socket.off("deal:stage-changed", onStage);
       socket.off("message:status", onStatus);
+      socket.off("message:blocked", onBlocked);
     };
-  }, [joinedWorkspace, markAsRead, queryClient, selectedConversation, socket, workspaceId]);
+  }, [
+    joinedWorkspace,
+    markAsRead,
+    queryClient,
+    selectedConversation,
+    socket,
+    toast,
+    workspaceId,
+  ]);
 
   useEffect(() => {
     const chatId = searchParams.get("chatId");

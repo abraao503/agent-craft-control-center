@@ -59,6 +59,10 @@ export interface ReengagementConfig {
   mediaType?: "image" | "audio" | "document" | null;
   // Used when building request payload — set by ReengagementConfigSection
   mediaFileId?: string | null;
+  configurationState?: "READY" | "REQUIRES_TEMPLATE";
+  metaTemplateId?: string | null;
+  metaTemplateLanguage?: string | null;
+  metaTemplateBindings?: Record<string, unknown>;
 }
 
 export interface ReengagementConfigInput {
@@ -71,6 +75,9 @@ export interface ReengagementConfigInput {
   startTime?: string; // optional, ISO 8601 datetime string (e.g., "2024-01-15T08:00:00.000Z")
   endTime?: string; // optional, ISO 8601 datetime string (e.g., "2024-01-15T17:00:00.000Z")
   mediaFileId?: string | null; // UUID returned by POST /file/media/upload
+  metaTemplateId?: string | null;
+  metaTemplateLanguage?: string | null;
+  metaTemplateBindings?: Record<string, unknown>;
 }
 
 export interface CreatePipelineStageInput {

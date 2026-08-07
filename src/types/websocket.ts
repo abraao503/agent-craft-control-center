@@ -28,6 +28,13 @@ export interface WhatsappMessageStatusEvent {
   errorMessage?: string;
 }
 
+export interface WhatsappMessageBlockedEvent {
+  chatId: string;
+  clientMessageId: string;
+  code: string;
+  origin?: string;
+}
+
 export interface InstanceStatusEvent {
   companyWhatsappIntegrationId: string;
   status: 'connected' | 'disconnected' | 'connecting' | 'error' | 'open' | 'close';

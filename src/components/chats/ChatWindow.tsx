@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -53,6 +54,13 @@ import { assignUserToDeal } from "@/services/deal/assignUserToDeal";
 import { listUsers } from "@/services/user/listUsers";
 import { useWorkspaceManager } from "@/hooks/useWorkspaceManager";
 import { ReplyChannel } from "@/types/reply-channel";
+import {
+  listMetaCloudChatTemplates,
+  MetaCloudTemplate,
+  MetaCloudTemplateBinding,
+  previewMetaCloudChatTemplate,
+  sendMetaCloudTemplate,
+} from "@/services/whatsapp/metaCloud";
 import {
   Select,
   SelectContent,
@@ -99,6 +107,10 @@ const SEND_ERROR_MESSAGES: Record<
     title: "Consentimento necessário",
     description:
       "É necessário ter um opt-in registrado para enviar este template fora da janela de atendimento.",
+  },
+  INVALID_PHONE: {
+    title: "Telefone inválido",
+    description: "Atualize o telefone do cliente antes de tentar enviar.",
   },
   TEMPLATE_INVALID: {
     title: "Template indisponível",
@@ -184,11 +196,18 @@ const getApiErrorCode = (error: unknown): string | null => {
   const response = (
     error as {
       response?: {
-        data?: { message?: unknown; error?: unknown };
+        data?: { code?: unknown; message?: unknown; error?: unknown };
       };
     }
   )?.response;
+  const code = response?.data?.code;
+  if (typeof code === "string") return code.trim();
   const message = response?.data?.message;
+
+  if (message && typeof message === "object" && "code" in message) {
+    const nestedCode = (message as { code?: unknown }).code;
+    if (typeof nestedCode === "string") return nestedCode.trim();
+  }
 
   if (typeof message === "string") return message.trim();
   if (Array.isArray(message) && typeof message[0] === "string") {
@@ -231,6 +250,14 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     integrationId: string;
     contextMessageId: string | null;
   } | null>(null);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
+  const [templateBindings, setTemplateBindings] = useState<
+    Record<string, MetaCloudTemplateBinding>
+  >({});
+  const [templatePreview, setTemplatePreview] = useState<{
+    body: string;
+    header: string | null;
+  } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const canSendPermission = has("send:message");
   const canAssign = has("assign:deal");
@@ -240,6 +267,11 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     queryFn: () => listReplyChannels(conversation.id),
     enabled: canSendPermission,
     staleTime: 0,
+    // The 24-hour window can expire while the agent is typing. Refresh the
+    // server-computed channel state so the composer switches to templates
+    // without waiting for another inbound event or a failed send.
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: false,
     refetchOnMount: "always",
   });
 
@@ -257,6 +289,28 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   const effectiveReplyChannel = replyChannels.find(
     (channel) => channel.integrationId === effectiveReplyChannelId,
   );
+  const isMetaWindowClosed = Boolean(
+    effectiveReplyChannel?.provider === "meta-cloud" &&
+      effectiveReplyChannel.serviceWindow?.status !== "OPEN",
+  );
+
+  const metaTemplatesQuery = useQuery({
+    queryKey: [
+      "meta-chat-templates",
+      conversation.id,
+      effectiveReplyChannelId,
+    ],
+    queryFn: () =>
+      listMetaCloudChatTemplates({
+        chatId: conversation.id,
+        integrationId: effectiveReplyChannelId!,
+      }),
+    enabled: Boolean(isMetaWindowClosed && effectiveReplyChannelId),
+    staleTime: 60_000,
+  });
+  const selectedTemplate = metaTemplatesQuery.data?.find(
+    (template) => template.id === selectedTemplateId,
+  );
   const canSend = Boolean(
     canSendPermission &&
       effectiveReplyChannelId &&
@@ -268,6 +322,84 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   const hasComposerDraft = Boolean(
     newMessage.trim() || selectedFile || isRecordingAudio || pendingQueue.length,
   );
+
+  const getTemplateSlots = (template?: MetaCloudTemplate | null): string[] => {
+    if (!template || !Array.isArray(template.components)) return [];
+    const slots: string[] = [];
+    const variables = (value: unknown) =>
+      typeof value === "string" ? value.match(/\{\{\s*\d+\s*\}\}/g) ?? [] : [];
+    for (const component of template.components as Array<Record<string, unknown>>) {
+      const type = String(component.type ?? "").toUpperCase();
+      if (type === "HEADER" && String(component.format ?? "").toUpperCase() === "TEXT") {
+        variables(component.text).forEach((_value, index) => slots.push(`header.${index + 1}`));
+      }
+      if (type === "BODY") {
+        variables(component.text).forEach((_value, index) => slots.push(`body.${index + 1}`));
+      }
+      if (type === "BUTTONS" && Array.isArray(component.buttons)) {
+        (component.buttons as Array<Record<string, unknown>>).forEach((button, buttonIndex) => {
+          if (String(button.type ?? "").toUpperCase() !== "URL") return;
+          variables(button.url).forEach((_value, index) => slots.push(`button.${buttonIndex}.${index + 1}`));
+        });
+      }
+    }
+    return slots;
+  };
+
+  useEffect(() => {
+    if (!isMetaWindowClosed || !metaTemplatesQuery.data?.length) return;
+    const first = metaTemplatesQuery.data.find((template) => template.id === selectedTemplateId) ?? metaTemplatesQuery.data[0];
+    if (first.id !== selectedTemplateId) setSelectedTemplateId(first.id);
+    setTemplateBindings((current) => {
+      const next: Record<string, MetaCloudTemplateBinding> = {};
+      for (const slot of getTemplateSlots(first)) {
+        next[slot] = current[slot] ?? { source: "fixed", value: "" };
+      }
+      return next;
+    });
+  }, [isMetaWindowClosed, metaTemplatesQuery.data, selectedTemplateId]);
+
+  const templatePreviewMutation = useMutation({
+    mutationFn: () =>
+      previewMetaCloudChatTemplate({
+        chatId: conversation.id,
+        integrationId: effectiveReplyChannelId!,
+        templateId: selectedTemplateId!,
+        bindings: templateBindings,
+        replyContextMessageId: replyContextMessageId ?? undefined,
+      }),
+    onSuccess: (preview) => setTemplatePreview({ body: preview.body, header: preview.header }),
+    onError: (error) =>
+      handleSendError(error, {
+        title: "Não foi possível validar o template",
+        description: "Revise os campos preenchidos e tente novamente.",
+      }),
+  });
+
+  const sendTemplate = async () => {
+    if (!canSend || !isMetaWindowClosed || !selectedTemplateId || !effectiveReplyChannelId) return;
+    try {
+      const sentMessage = await sendMetaCloudTemplate({
+        chatId: conversation.id,
+        integrationId: effectiveReplyChannelId,
+        clientMessageId: crypto.randomUUID(),
+        templateId: selectedTemplateId,
+        bindings: templateBindings,
+        replyContextMessageId: replyContextMessageId ?? undefined,
+      });
+      setMessages((previous) => [
+        ...previous,
+        { ...sentMessage, status: "sent" } as MessageWithStatus,
+      ]);
+      setTemplatePreview(null);
+      await queryClient.invalidateQueries({ queryKey: ["messages", conversation.id] });
+    } catch (error) {
+      handleSendError(error, {
+        title: "Não foi possível enviar o template",
+        description: "Revise os campos e tente novamente.",
+      });
+    }
+  };
 
   const formatReplyChannel = (channel?: ReplyChannel | null) => {
     if (!channel) return "Canal não selecionado";
@@ -286,8 +418,12 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
 
     const suggestedIntegrationId =
       replyChannelsQuery.data.suggestedIntegrationId;
-    const nextContextMessageId = latestInbound?.messageId ?? null;
     const automaticIntegrationId = automaticReplyChannelId;
+    const nextContextMessageId =
+      automaticIntegrationId &&
+      latestInbound?.integrationId === automaticIntegrationId
+        ? latestInbound.messageId
+        : null;
 
     if (!selectedReplyChannelId) {
       setSelectedReplyChannelId(automaticIntegrationId);
@@ -319,8 +455,12 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     setSelectedReplyChannelId(automaticIntegrationId);
     setReplyContextMessageId(nextContextMessageId);
     setPendingReplyChannel(null);
+    setSelectedTemplateId(null);
+    setTemplateBindings({});
+    setTemplatePreview(null);
   }, [
     hasComposerDraft,
+    latestInbound?.integrationId,
     latestInbound?.messageId,
     replyChannelsQuery.data,
     replyContextMessageId,
@@ -340,7 +480,11 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
 
   const handleReplyChannelChange = (integrationId: string) => {
     setSelectedReplyChannelId(integrationId);
-    setReplyContextMessageId(latestInbound?.messageId ?? null);
+    setReplyContextMessageId(
+      latestInbound?.integrationId === integrationId
+        ? latestInbound.messageId
+        : null,
+    );
     setPendingReplyChannel(null);
   };
 
@@ -908,6 +1052,9 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     setNewMessage("");
     setSelectedFile(null);
     setIsMediaPreviewOpen(false);
+    setSelectedTemplateId(null);
+    setTemplateBindings({});
+    setTemplatePreview(null);
     previousMessagesLength.current = 0;
     previousScrollHeight.current = 0;
     lastScrollTop.current = 0;
@@ -1247,7 +1394,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         </div>
 
         {/* Input or Audio Recorder */}
-        {isRecordingAudio ? (
+        {isRecordingAudio && !isMetaWindowClosed ? (
           <>
             {replyChannelControls}
             <AudioRecorder
@@ -1258,7 +1405,153 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         ) : (
           <div className="bg-background">
             {replyChannelControls}
-            <div className="border-t p-3">
+            {isMetaWindowClosed ? (
+              <div className="space-y-3 border-t p-3">
+                <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                  A janela de atendimento está fechada. Envie um template aprovado para retomar a conversa.
+                  {newMessage.trim() && " O rascunho de texto foi preservado."}
+                </div>
+                <Select
+                  value={selectedTemplateId ?? ""}
+                  onValueChange={(value) => {
+                    setSelectedTemplateId(value);
+                    setTemplatePreview(null);
+                  }}
+                  disabled={metaTemplatesQuery.isLoading || !canSend}
+                >
+                  <SelectTrigger className="text-sm">
+                    <SelectValue placeholder="Selecione um template aprovado" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(metaTemplatesQuery.data ?? []).map((template) => (
+                      <SelectItem key={template.id} value={template.id}>
+                        {template.name} · {template.language}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {selectedTemplate &&
+                  getTemplateSlots(selectedTemplate).map((slot) => (
+                    <div key={slot} className="space-y-1">
+                      <label className="text-xs text-muted-foreground" htmlFor={`template-${slot}`}>
+                        {slot}
+                      </label>
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        <Select
+                          value={templateBindings[slot]?.source ?? "fixed"}
+                          onValueChange={(source) =>
+                            setTemplateBindings((current) => ({
+                              ...current,
+                              [slot]:
+                                source === "fixed"
+                                  ? { source: "fixed", value: "" }
+                                  : source === "customer"
+                                    ? { source: "customer", field: "name" }
+                                    : source === "deal"
+                                      ? { source: "deal", field: "id" }
+                                      : { source: "owner", field: "name" },
+                            }))
+                          }
+                          disabled={!canSend}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Origem" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="fixed">Valor fixo</SelectItem>
+                            <SelectItem value="customer">Cliente</SelectItem>
+                            <SelectItem value="deal">Deal contextual</SelectItem>
+                            <SelectItem value="owner">Responsável</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {templateBindings[slot]?.source === "fixed" ||
+                        !templateBindings[slot] ? (
+                          <Input
+                            id={`template-${slot}`}
+                            value={
+                              templateBindings[slot]?.source === "fixed"
+                                ? templateBindings[slot].value
+                                : ""
+                            }
+                            onChange={(event) =>
+                              setTemplateBindings((current) => ({
+                                ...current,
+                                [slot]: { source: "fixed", value: event.target.value },
+                              }))
+                            }
+                            placeholder="Valor do parâmetro"
+                            disabled={!canSend}
+                          />
+                        ) : (
+                          <Select
+                            value={`${templateBindings[slot].source}:${
+                              templateBindings[slot].field
+                            }`}
+                            onValueChange={(value) => {
+                              const [, field] = value.split(":");
+                              setTemplateBindings((current) => ({
+                                ...current,
+                                [slot]:
+                                  templateBindings[slot].source === "customer"
+                                    ? { source: "customer", field: field as "name" | "firstName" | "phone" | "email" }
+                                    : templateBindings[slot].source === "deal"
+                                      ? { source: "deal", field: field as "id" | "pipeline" | "stage" }
+                                      : { source: "owner", field: "name" },
+                              }));
+                            }}
+                            disabled={!canSend}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Campo" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {templateBindings[slot].source === "customer" && (
+                                <>
+                                  <SelectItem value="customer:name">Nome completo</SelectItem>
+                                  <SelectItem value="customer:firstName">Primeiro nome</SelectItem>
+                                  <SelectItem value="customer:phone">Telefone</SelectItem>
+                                  <SelectItem value="customer:email">E-mail</SelectItem>
+                                </>
+                              )}
+                              {templateBindings[slot].source === "deal" && (
+                                <>
+                                  <SelectItem value="deal:id">Identificador</SelectItem>
+                                  <SelectItem value="deal:pipeline">Pipeline</SelectItem>
+                                  <SelectItem value="deal:stage">Etapa</SelectItem>
+                                </>
+                              )}
+                              {templateBindings[slot].source === "owner" && (
+                                <SelectItem value="owner:name">Responsável</SelectItem>
+                              )}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                {templatePreview && (
+                  <div className="rounded-md bg-muted/50 px-3 py-2 text-sm">
+                    {templatePreview.header && <p className="font-medium">{templatePreview.header}</p>}
+                    <p>{templatePreview.body}</p>
+                  </div>
+                )}
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => templatePreviewMutation.mutate()}
+                    disabled={!selectedTemplateId || templatePreviewMutation.isPending || !canSend}
+                  >
+                    {templatePreviewMutation.isPending ? "Validando..." : "Pré-visualizar"}
+                  </Button>
+                  <Button
+                    onClick={() => void sendTemplate()}
+                    disabled={!selectedTemplateId || !canSend || templatePreviewMutation.isPending}
+                  >
+                    <Send className="mr-2 h-4 w-4" /> Enviar template
+                  </Button>
+                </div>
+              </div>
+            ) : <div className="border-t p-3">
             <div className="flex items-center gap-2">
               <input
                 ref={fileInputRef}
@@ -1312,7 +1605,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                 </Button>
               )}
             </div>
-            </div>
+            </div>}
           </div>
         )}
       </div>

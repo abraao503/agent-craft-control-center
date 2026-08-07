@@ -31,6 +31,10 @@ export const createMassBroadcast = async (
     formData.append("messages", JSON.stringify(input.messages));
     formData.append("pipelineId", input.pipelineId);
     formData.append("workspaceId", input.workspaceId);
+    if (input.provider) formData.append("provider", input.provider);
+    if (input.metaTemplateId) formData.append("metaTemplateId", input.metaTemplateId);
+    if (input.metaTemplateLanguage) formData.append("metaTemplateLanguage", input.metaTemplateLanguage);
+    if (input.metaTemplateBindings) formData.append("metaTemplateBindings", JSON.stringify(input.metaTemplateBindings));
 
     if (input.customerIds?.length)
       formData.append("customerIds", JSON.stringify(input.customerIds));

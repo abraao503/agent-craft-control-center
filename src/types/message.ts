@@ -15,6 +15,15 @@ export type Message = {
   deliveryUpdatedAt?: string | null;
   deliveryErrorCode?: string | null;
   deliveryErrorMessage?: string | null;
+  dispatchStatus?: string | null;
+  templateId?: string | null;
+  templateName?: string | null;
+  templateLanguage?: string | null;
+  templateParameters?: unknown;
+  templateSnapshot?: unknown;
+  outboundOrigin?: string | null;
+  outboundFlowId?: string | null;
+  contextDealId?: string | null;
   providerCreatedAt?: string | null;
   providerUpdatedAt?: string | null;
   companyWhatsappIntegrationId?: string | null;
