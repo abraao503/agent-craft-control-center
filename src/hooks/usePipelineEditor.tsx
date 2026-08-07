@@ -707,8 +707,12 @@ export function usePipelineEditor(): PipelineEditorResult {
           contentsIds: agentFormData.contents.map((content) => content.id),
           customFields: agentFormData.customFields,
           entryTags: agentFormData.entryTags,
-          googleCalendarIntegrationId:
-            agentFormData.googleCalendarIntegrationId || null,
+          ...(agentFormData.googleCalendarIntegrationId
+            ? {
+                googleCalendarIntegrationId:
+                  agentFormData.googleCalendarIntegrationId,
+              }
+            : {}),
           transitionDecisionMode: agentFormData.transitionDecisionMode,
         }
       : null;
