@@ -143,7 +143,7 @@ export interface CreatePipelineInput {
     contentsIds: string[];
     customFields: unknown[];
     entryTags: string[];
-    googleCalendarIntegrationId?: string | null;
+    googleCalendarIntegrationId?: string;
     transitionDecisionMode?: "CONVERSATIONAL" | "DEDICATED";
   } | null;
   assistantId?: string | null; // DEPRECATED: UUID of assistant to use in this pipeline (for backwards compatibility)
