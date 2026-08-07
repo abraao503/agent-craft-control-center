@@ -240,6 +240,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     queryFn: () => listReplyChannels(conversation.id),
     enabled: canSendPermission,
     staleTime: 0,
+    refetchOnMount: "always",
   });
 
   const replyChannels = replyChannelsQuery.data?.channels ?? [];
@@ -247,10 +248,19 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   const selectedReplyChannel = replyChannels.find(
     (channel) => channel.integrationId === selectedReplyChannelId,
   );
+  const automaticReplyChannelId =
+    replyChannelsQuery.data?.suggestedIntegrationId ??
+    singleReplyChannel?.integrationId ??
+    null;
+  const effectiveReplyChannelId =
+    selectedReplyChannel?.integrationId ?? automaticReplyChannelId;
+  const effectiveReplyChannel = replyChannels.find(
+    (channel) => channel.integrationId === effectiveReplyChannelId,
+  );
   const canSend = Boolean(
     canSendPermission &&
-      selectedReplyChannelId &&
-      selectedReplyChannel?.available &&
+      effectiveReplyChannelId &&
+      effectiveReplyChannel?.available &&
       !pendingReplyChannel,
   );
 
@@ -277,8 +287,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     const suggestedIntegrationId =
       replyChannelsQuery.data.suggestedIntegrationId;
     const nextContextMessageId = latestInbound?.messageId ?? null;
-    const automaticIntegrationId =
-      suggestedIntegrationId ?? singleReplyChannel?.integrationId ?? null;
+    const automaticIntegrationId = automaticReplyChannelId;
 
     if (!selectedReplyChannelId) {
       setSelectedReplyChannelId(automaticIntegrationId);
@@ -318,6 +327,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     selectedReplyChannelId,
     selectedReplyChannel,
     singleReplyChannel?.integrationId,
+    automaticReplyChannelId,
   ]);
 
   useEffect(() => {
@@ -600,7 +610,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
 
   // Handle send audio
   const handleSendAudio = async (audioBlob: Blob) => {
-    if (!canSend || !selectedReplyChannelId) return;
+    if (!canSend || !effectiveReplyChannelId) return;
 
     const tempId = `temp-${Date.now()}-${Math.random()}`;
     const audioFile = new File([audioBlob], `audio-${Date.now()}.ogg`, {
@@ -618,7 +628,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       mediaMimetype: "audio/ogg; codecs=opus",
       createdAt: new Date().toISOString(),
       status: "pending",
-      replyChannelId: selectedReplyChannelId,
+      replyChannelId: effectiveReplyChannelId,
       replyContextMessageId: replyContextMessageId ?? undefined,
     };
 
@@ -641,7 +651,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         chatId: conversation.id,
         type: "audio",
         file: audioFile,
-        companyWhatsappIntegrationId: selectedReplyChannelId,
+        companyWhatsappIntegrationId: effectiveReplyChannelId,
         replyContextMessageId: replyContextMessageId ?? undefined,
       });
 
@@ -671,7 +681,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
 
   // Handle send media
   const handleSendMedia = async (caption?: string) => {
-    if (!selectedFile || !canSend || !selectedReplyChannelId) return;
+    if (!selectedFile || !canSend || !effectiveReplyChannelId) return;
 
     const mediaType = getMediaTypeFromFile(selectedFile);
     const tempId = `temp-${Date.now()}-${Math.random()}`;
@@ -687,7 +697,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       mediaMimetype: selectedFile.type,
       createdAt: new Date().toISOString(),
       status: "pending",
-      replyChannelId: selectedReplyChannelId,
+      replyChannelId: effectiveReplyChannelId,
       replyContextMessageId: replyContextMessageId ?? undefined,
     };
 
@@ -712,7 +722,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         type: mediaType,
         file: selectedFile,
         caption,
-        companyWhatsappIntegrationId: selectedReplyChannelId,
+        companyWhatsappIntegrationId: effectiveReplyChannelId,
         replyContextMessageId: replyContextMessageId ?? undefined,
       });
 
@@ -742,7 +752,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
 
   // Handle send message
   const handleSendMessage = () => {
-    if (!newMessage.trim() || !canSend || !selectedReplyChannelId) return;
+    if (!newMessage.trim() || !canSend || !effectiveReplyChannelId) return;
 
     const tempId = `temp-${Date.now()}-${Math.random()}`;
     const pendingMessage: MessageWithStatus = {
@@ -756,7 +766,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       mediaMimetype: null,
       createdAt: new Date().toISOString(),
       status: "pending",
-      replyChannelId: selectedReplyChannelId,
+      replyChannelId: effectiveReplyChannelId,
       replyContextMessageId: replyContextMessageId ?? undefined,
     };
 
@@ -1053,7 +1063,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           </div>
         ) : (
           <Select
-            value={selectedReplyChannelId ?? ""}
+            value={effectiveReplyChannelId ?? ""}
             onValueChange={handleReplyChannelChange}
             disabled={
               replyChannelsQuery.isLoading || replyChannels.length === 0
@@ -1095,7 +1105,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           </p>
         )}
       {!pendingReplyChannel &&
-        !selectedReplyChannelId &&
+        !effectiveReplyChannelId &&
         !singleReplyChannel &&
         !replyChannelsQuery.isLoading && (
           <p className="text-xs text-muted-foreground">
