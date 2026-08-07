@@ -1,5 +1,7 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { AgentFormData } from "@/types/agent";
+import { useMainContainerRef } from "@/contexts/mainContainer";
+import { convertHtmlStringToText } from "@/lib/utils";
 import {
   Card,
   CardContent,
@@ -31,6 +33,7 @@ export const AgentWizard: React.FC<AgentWizardProps> = ({
   onCancel,
 }) => {
   const [currentStep, setCurrentStep] = useState<WizardStep>("intro");
+  const mainContainerRef = useMainContainerRef();
 
   const steps: WizardStep[] = [
     "intro",
@@ -41,6 +44,10 @@ export const AgentWizard: React.FC<AgentWizardProps> = ({
   ];
   const currentStepIndex = steps.indexOf(currentStep);
   const progress = ((currentStepIndex + 1) / steps.length) * 100;
+
+  useEffect(() => {
+    mainContainerRef.current?.scrollTo({ top: 0, behavior: "instant" });
+  }, [currentStep, mainContainerRef]);
 
   // Validações seguindo o schema do backend
   const isBasicValid = () => {
@@ -166,7 +173,7 @@ export const AgentWizard: React.FC<AgentWizardProps> = ({
                   <div>
                     <h4 className="font-medium">Informações Básicas</h4>
                     <p className="text-sm text-muted-foreground">
-                      Nome, descrição, idioma e configurações iniciais do agente
+                      Nome, descrição, idioma, modelo e preferências do agente
                     </p>
                   </div>
                 </div>
@@ -177,7 +184,7 @@ export const AgentWizard: React.FC<AgentWizardProps> = ({
                   <div>
                     <h4 className="font-medium">Configuração de Prompt</h4>
                     <p className="text-sm text-muted-foreground">
-                      Defina a personalidade, objetivo e comportamento do agente
+                      Defina a função, o estilo, as instruções e as regras do agente
                     </p>
                   </div>
                 </div>
@@ -320,12 +327,48 @@ export const AgentWizard: React.FC<AgentWizardProps> = ({
                       <dt className="text-muted-foreground">Fuso Horário:</dt>
                       <dd className="font-medium">{formData.timeZone}</dd>
                     </div>
+                    <div className="flex justify-between">
+                      <dt className="text-muted-foreground">Modelo:</dt>
+                      <dd className="font-medium">
+                        {formData.iaModelId || "Não informado"}
+                      </dd>
+                    </div>
+                    <div className="flex justify-between">
+                      <dt className="text-muted-foreground">
+                        Chave de API:
+                      </dt>
+                      <dd className="font-medium">
+                        {formData.iaProviderApiKey
+                          ? "Configurada"
+                          : "Não informada"}
+                      </dd>
+                    </div>
+                    {formData.skipMessages.length > 0 && (
+                      <div className="space-y-1">
+                        <dt className="text-muted-foreground">
+                          Mensagens ignoradas:
+                        </dt>
+                        <dd className="break-words font-medium">
+                          {formData.skipMessages.join(", ")}
+                        </dd>
+                      </div>
+                    )}
                   </dl>
                 </div>
 
                 <div className="rounded-lg border p-4">
                   <h4 className="mb-2 font-medium">Prompt</h4>
                   <dl className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <dt className="text-muted-foreground">
+                        Modo de movimentação:
+                      </dt>
+                      <dd className="font-medium">
+                        {formData.transitionDecisionMode === "DEDICATED"
+                          ? "Dedicado"
+                          : "Conversacional"}
+                      </dd>
+                    </div>
                     <div>
                       <dt className="text-muted-foreground">Função:</dt>
                       <dd className="font-medium">{formData.function}</dd>
@@ -334,6 +377,37 @@ export const AgentWizard: React.FC<AgentWizardProps> = ({
                       <dt className="text-muted-foreground">Estilo:</dt>
                       <dd className="font-medium">{formData.style}</dd>
                     </div>
+                    <div className="space-y-1">
+                      <dt className="text-muted-foreground">Instruções:</dt>
+                      <dd className="whitespace-pre-wrap break-words font-medium">
+                        {convertHtmlStringToText(formData.instructions) ||
+                          "Não informadas"}
+                      </dd>
+                    </div>
+                    {formData.blacklist && (
+                      <div className="space-y-1">
+                        <dt className="text-muted-foreground">
+                          Restrições:
+                        </dt>
+                        <dd className="whitespace-pre-wrap break-words font-medium">
+                          {formData.blacklist}
+                        </dd>
+                      </div>
+                    )}
+                    {(formData.links || []).length > 0 && (
+                      <div className="space-y-1">
+                        <dt className="text-muted-foreground">
+                          Links de referência:
+                        </dt>
+                        <dd className="space-y-1 font-medium">
+                          {(formData.links || []).map((link, index) => (
+                            <div key={`${link.name}-${index}`} className="break-words">
+                              {link.name}: {link.url}
+                            </div>
+                          ))}
+                        </dd>
+                      </div>
+                    )}
                   </dl>
                 </div>
 
@@ -349,6 +423,24 @@ export const AgentWizard: React.FC<AgentWizardProps> = ({
                           </dt>
                           <dd className="font-medium">
                             {formData.entryTags.length} tag(s)
+                          </dd>
+                        </div>
+                      )}
+                      {formData.customFields.length > 0 && (
+                        <div className="space-y-1">
+                          <dt className="text-muted-foreground">
+                            Campos personalizados:
+                          </dt>
+                          <dd className="space-y-1 font-medium">
+                            {formData.customFields.map((field, index) => (
+                              <div
+                                key={`${field.name}-${index}`}
+                                className="break-words"
+                              >
+                                {field.label} ({field.name}) — {field.type}
+                                {field.isIdentifier ? ", identificador" : ""}
+                              </div>
+                            ))}
                           </dd>
                         </div>
                       )}
