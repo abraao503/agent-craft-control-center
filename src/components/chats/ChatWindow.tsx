@@ -76,6 +76,130 @@ type ChatWindowProps = {
   newMessageEvent?: MessageSentEvent | null;
 };
 
+type SendErrorFallback = {
+  title: string;
+  description: string;
+};
+
+const SEND_ERROR_MESSAGES: Record<
+  string,
+  { title: string; description: string }
+> = {
+  WINDOW_CLOSED: {
+    title: "Janela de atendimento encerrada",
+    description:
+      "A janela de 24 horas do WhatsApp expirou. Aguarde uma nova mensagem do cliente para continuar ou use um template aprovado pela Meta.",
+  },
+  TEMPLATE_REQUIRED: {
+    title: "Template necessário",
+    description:
+      "A janela de atendimento expirou. Para iniciar uma nova conversa, é necessário enviar um template aprovado pela Meta.",
+  },
+  OPT_IN_REQUIRED: {
+    title: "Consentimento necessário",
+    description:
+      "É necessário ter um opt-in registrado para enviar este template fora da janela de atendimento.",
+  },
+  TEMPLATE_INVALID: {
+    title: "Template indisponível",
+    description: "O template não está aprovado ou não é compatível com este número.",
+  },
+  MEDIA_NOT_SUPPORTED: {
+    title: "Mídia não suportada",
+    description: "Não foi possível enviar este tipo de mídia pelo WhatsApp.",
+  },
+  RATE_LIMITED: {
+    title: "Limite de envio atingido",
+    description: "Aguarde alguns instantes antes de tentar enviar novamente.",
+  },
+  TOKEN_INVALID: {
+    title: "Integração indisponível",
+    description:
+      "A credencial da integração WhatsApp é inválida. Verifique a configuração da integração.",
+  },
+  FEATURE_DISABLED: {
+    title: "WhatsApp Meta desativado",
+    description: "O envio pela integração Meta não está habilitado para esta empresa.",
+  },
+  INTEGRATION_NOT_FOUND: {
+    title: "Integração não encontrada",
+    description: "O canal selecionado não está mais configurado para esta conversa.",
+  },
+  "Integration not found": {
+    title: "Integração não encontrada",
+    description: "O canal selecionado não está mais configurado para esta conversa.",
+  },
+  "Reply channel required": {
+    title: "Canal de resposta necessário",
+    description: "Selecione um canal de resposta antes de enviar a mensagem.",
+  },
+  "Reply channel unavailable": {
+    title: "Canal indisponível",
+    description: "O canal selecionado está desconectado ou indisponível.",
+  },
+  "Reply channel stale": {
+    title: "Canal de resposta desatualizado",
+    description: "A conversa recebeu uma atualização. Confirme o canal antes de enviar.",
+  },
+  Forbidden: {
+    title: "Envio não autorizado",
+    description: "Você não tem permissão para enviar por este canal.",
+  },
+  "User not found": {
+    title: "Sessão expirada",
+    description: "Atualize a página e entre novamente para continuar.",
+  },
+  "Chat has no pipeline": {
+    title: "Conversa sem pipeline",
+    description: "Associe a conversa a um pipeline antes de enviar mensagens.",
+  },
+  "Internal error": {
+    title: "Erro interno",
+    description: "O servidor não conseguiu concluir o envio. Tente novamente.",
+  },
+  "Internal Server Error": {
+    title: "Falha temporária no servidor",
+    description: "O envio não foi concluído. Aguarde alguns instantes e tente novamente.",
+  },
+  INVALID_CONSENT_TARGET: {
+    title: "Consentimento indisponível",
+    description: "Não foi possível validar o consentimento para este cliente e canal.",
+  },
+  CHAT_NOT_FOUND: {
+    title: "Conversa não encontrada",
+    description: "Atualize a conversa e tente novamente.",
+  },
+  "Chat not found": {
+    title: "Conversa não encontrada",
+    description: "Atualize a conversa e tente novamente.",
+  },
+  UNKNOWN: {
+    title: "Falha no envio",
+    description:
+      "O provedor não confirmou o envio. Verifique o status da mensagem antes de tentar novamente.",
+  },
+};
+
+const getApiErrorCode = (error: unknown): string | null => {
+  const response = (
+    error as {
+      response?: {
+        data?: { message?: unknown; error?: unknown };
+      };
+    }
+  )?.response;
+  const message = response?.data?.message;
+
+  if (typeof message === "string") return message.trim();
+  if (Array.isArray(message) && typeof message[0] === "string") {
+    return message[0].trim();
+  }
+
+  return typeof response?.data?.error === "string"
+    ? response.data.error.trim()
+    : null;
+};
+
 export const ChatWindow: React.FC<ChatWindowProps> = ({
   conversation,
   onUpdateConversation,
@@ -119,6 +243,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   });
 
   const replyChannels = replyChannelsQuery.data?.channels ?? [];
+  const singleReplyChannel = replyChannels.length === 1 ? replyChannels[0] : null;
   const selectedReplyChannel = replyChannels.find(
     (channel) => channel.integrationId === selectedReplyChannelId,
   );
@@ -152,10 +277,19 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     const suggestedIntegrationId =
       replyChannelsQuery.data.suggestedIntegrationId;
     const nextContextMessageId = latestInbound?.messageId ?? null;
+    const automaticIntegrationId =
+      suggestedIntegrationId ?? singleReplyChannel?.integrationId ?? null;
 
     if (!selectedReplyChannelId) {
-      setSelectedReplyChannelId(suggestedIntegrationId);
+      setSelectedReplyChannelId(automaticIntegrationId);
       setReplyContextMessageId(nextContextMessageId);
+      return;
+    }
+
+    if (!selectedReplyChannel) {
+      setSelectedReplyChannelId(automaticIntegrationId);
+      setReplyContextMessageId(nextContextMessageId);
+      setPendingReplyChannel(null);
       return;
     }
 
@@ -173,7 +307,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       return;
     }
 
-    setSelectedReplyChannelId(suggestedIntegrationId);
+    setSelectedReplyChannelId(automaticIntegrationId);
     setReplyContextMessageId(nextContextMessageId);
     setPendingReplyChannel(null);
   }, [
@@ -182,6 +316,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     replyChannelsQuery.data,
     replyContextMessageId,
     selectedReplyChannelId,
+    selectedReplyChannel,
+    singleReplyChannel?.integrationId,
   ]);
 
   useEffect(() => {
@@ -206,22 +342,49 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     setPendingReplyChannel(null);
   };
 
-  const handleReplyChannelError = useCallback((error: unknown): boolean => {
-    const status = (error as { response?: { status?: number } })?.response
-      ?.status;
+  const handleSendError = useCallback(
+    (error: unknown, fallback: SendErrorFallback) => {
+      const status = (error as { response?: { status?: number } })?.response
+        ?.status;
+      const code = getApiErrorCode(error);
+      const hasResponse = Boolean(
+        (error as { response?: unknown })?.response,
+      );
 
-    if (status !== 409) return false;
+      if (status === 409) {
+        void queryClient.invalidateQueries({
+          queryKey: ["chat-reply-channels", conversation.id],
+        });
 
-    void queryClient.invalidateQueries({
-      queryKey: ["chat-reply-channels", conversation.id],
-    });
-    toast({
-      title: "O canal da conversa mudou",
-      description: "Confirme o novo canal antes de enviar a mensagem.",
-      variant: "destructive",
-    });
-    return true;
-  }, [conversation.id, queryClient, toast]);
+        const channelMessage =
+          (code && SEND_ERROR_MESSAGES[code]) ?? {
+            title: "Canal de resposta indisponível",
+            description: "Atualize os canais da conversa e tente novamente.",
+          };
+        toast({
+          ...channelMessage,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!hasResponse && (error as { request?: unknown })?.request) {
+        toast({
+          title: "Sem conexão com o servidor",
+          description: "Verifique sua conexão e tente novamente.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const message = code ? SEND_ERROR_MESSAGES[code] : undefined;
+      toast({
+        ...(message ?? fallback),
+        variant: "destructive",
+      });
+    },
+    [conversation.id, queryClient, toast],
+  );
 
   const { data: workspaceUsers } = useQuery({
     queryKey: ["chat-assignment-users", currentWorkspace?.id],
@@ -354,13 +517,10 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       // Remove from queue
       setPendingQueue((prev) => prev.slice(1));
 
-      if (!handleReplyChannelError(error)) {
-        toast({
-          title: "Erro ao enviar mensagem",
-          description: "A mensagem não foi enviada. Tente novamente.",
-          variant: "destructive",
-        });
-      }
+      handleSendError(error, {
+        title: "Erro ao enviar mensagem",
+        description: "A mensagem não foi enviada. Tente novamente.",
+      });
     } finally {
       isProcessingQueue.current = false;
     }
@@ -368,8 +528,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     pendingQueue,
     conversation.id,
     conversation.agent?.id,
-    handleReplyChannelError,
-    toast,
+    handleSendError,
   ]);
 
   // Validate file type and size
@@ -503,13 +662,10 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         ),
       );
 
-      if (!handleReplyChannelError(error)) {
-        toast({
-          title: "Error sending audio",
-          description: "Failed to send audio message. Please try again.",
-          variant: "destructive",
-        });
-      }
+      handleSendError(error, {
+        title: "Erro ao enviar áudio",
+        description: "Não foi possível enviar o áudio. Tente novamente.",
+      });
     }
   };
 
@@ -577,13 +733,10 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         ),
       );
 
-      if (!handleReplyChannelError(error)) {
-        toast({
-          title: "Error sending media",
-          description: "Failed to send media message. Please try again.",
-          variant: "destructive",
-        });
-      }
+      handleSendError(error, {
+        title: "Erro ao enviar mídia",
+        description: "Não foi possível enviar a mídia. Tente novamente.",
+      });
     }
   };
 
@@ -891,27 +1044,38 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     <div className="space-y-2 border-t bg-background px-3 py-2">
       <div className="flex items-center gap-2">
         <span className="text-xs text-muted-foreground">Canal de resposta</span>
-        <Select
-          value={selectedReplyChannelId ?? ""}
-          onValueChange={handleReplyChannelChange}
-          disabled={replyChannelsQuery.isLoading || replyChannels.length === 0}
-        >
-          <SelectTrigger className="h-8 max-w-[420px] flex-1 text-xs">
-            <SelectValue placeholder="Selecione um canal" />
-          </SelectTrigger>
-          <SelectContent>
-            {replyChannels.map((channel) => (
-              <SelectItem
-                key={channel.integrationId}
-                value={channel.integrationId}
-                disabled={!channel.available}
-              >
-                {formatReplyChannel(channel)}
-                {!channel.available ? " · indisponível" : ""}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {singleReplyChannel ? (
+          <div className="flex h-8 min-w-0 flex-1 items-center rounded-md border bg-muted/40 px-3 text-xs">
+            <span className="truncate">
+              {formatReplyChannel(singleReplyChannel)}
+              {!singleReplyChannel.available ? " · indisponível" : ""}
+            </span>
+          </div>
+        ) : (
+          <Select
+            value={selectedReplyChannelId ?? ""}
+            onValueChange={handleReplyChannelChange}
+            disabled={
+              replyChannelsQuery.isLoading || replyChannels.length === 0
+            }
+          >
+            <SelectTrigger className="h-8 max-w-[420px] flex-1 text-xs">
+              <SelectValue placeholder="Selecione um canal" />
+            </SelectTrigger>
+            <SelectContent>
+              {replyChannels.map((channel) => (
+                <SelectItem
+                  key={channel.integrationId}
+                  value={channel.integrationId}
+                  disabled={!channel.available}
+                >
+                  {formatReplyChannel(channel)}
+                  {!channel.available ? " · indisponível" : ""}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
       {pendingReplyChannel && (
         <div className="flex items-center justify-between gap-2 rounded-md border border-amber-300 bg-amber-50 px-2 py-1.5 text-xs text-amber-900">
@@ -932,6 +1096,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         )}
       {!pendingReplyChannel &&
         !selectedReplyChannelId &&
+        !singleReplyChannel &&
         !replyChannelsQuery.isLoading && (
           <p className="text-xs text-muted-foreground">
             Selecione um canal para habilitar o envio.

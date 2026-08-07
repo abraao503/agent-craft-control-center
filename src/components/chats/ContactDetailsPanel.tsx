@@ -8,7 +8,6 @@ import {
   Check,
   X,
   Loader2,
-  ShieldCheck,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
@@ -19,18 +18,13 @@ import { updateCustomerName } from "@/services/customer/updateCustomerName";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { formatPhone, isValidPhone } from "@/utils/phone";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { updateCustomerEmail, updateCustomerPhone } from "@/services/customer";
 import { useWorkspaceContext } from "@/contexts/workspace/WorkspaceContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useToast } from "@/hooks/use-toast";
 import { AxiosError } from "axios";
 import { z } from "zod";
-import { useAuth } from "@/contexts/auth/hooks";
-import {
-  getMetaCloudDiagnostic,
-  setMetaCloudConsent,
-} from "@/services/whatsapp";
 
 const emailSchema = z
   .string()
@@ -61,7 +55,6 @@ export const ContactDetailsPanel: React.FC<ContactDetailsPanelProps> = ({
   const { toast } = useToast();
   const { currentWorkspace } = useWorkspaceContext();
   const { has } = usePermissions();
-  const { userProfile } = useAuth();
   const [editingField, setEditingField] = useState<EditableField>(null);
   const [nameValue, setNameValue] = useState(conversation.customer.name ?? "");
   const [phoneValue, setPhoneValue] = useState(
@@ -74,36 +67,6 @@ export const ContactDetailsPanel: React.FC<ContactDetailsPanelProps> = ({
   const [emailError, setEmailError] = useState<string | null>(null);
   const [nameError, setNameError] = useState<string | null>(null);
   const canEditName = has("view:chat");
-  const canManageConsent = has("manage:whatsapp-consent");
-  const metaDiagnosticQuery = useQuery({
-    queryKey: ["meta-cloud-diagnostic", "consent"],
-    queryFn: getMetaCloudDiagnostic,
-    enabled: userProfile?.metaCloudWhatsappEnabled === true && canManageConsent,
-    retry: false,
-  });
-  const metaIntegrationId = metaDiagnosticQuery.data?.integrations.find(
-    (integration) => integration.pipelineId === conversation.primaryDeal?.pipeline.id,
-  )?.id;
-  const consentMutation = useMutation({
-    mutationFn: (state: "GRANTED" | "REVOKED") =>
-      setMetaCloudConsent({
-        customerId: conversation.customer.id,
-        integrationId: metaIntegrationId!,
-        state,
-        source: "manual",
-      }),
-    onSuccess: (_, state) => {
-      toast({
-        title: state === "GRANTED" ? "Opt-in concedido" : "Opt-in revogado",
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Não foi possível atualizar o consentimento",
-        variant: "destructive",
-      });
-    },
-  });
 
   useEffect(() => {
     setNameValue(conversation.customer.name ?? "");
@@ -544,35 +507,6 @@ export const ContactDetailsPanel: React.FC<ContactDetailsPanelProps> = ({
                   { locale: ptBR },
                 )}
               </p>
-            </div>
-          </div>
-        )}
-
-        {metaDiagnosticQuery.data?.enabled && metaIntegrationId && (
-          <div className="flex items-start gap-3 border-t pt-3">
-            <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-            <div className="min-w-0 flex-1">
-              <p className="text-xs text-muted-foreground">
-                Consentimento WhatsApp
-              </p>
-              <div className="mt-2 flex flex-wrap gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => consentMutation.mutate("GRANTED")}
-                  disabled={consentMutation.isPending}
-                >
-                  Conceder opt-in
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => consentMutation.mutate("REVOKED")}
-                  disabled={consentMutation.isPending}
-                >
-                  Revogar
-                </Button>
-              </div>
             </div>
           </div>
         )}

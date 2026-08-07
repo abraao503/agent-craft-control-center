@@ -48,8 +48,29 @@ export type MetaCloudDiagnostic = {
   }>;
 };
 
+export type MetaCloudConsentState = "UNKNOWN" | "GRANTED" | "REVOKED";
+
+export type MetaCloudConsent = {
+  state: MetaCloudConsentState;
+  source: string | null;
+  grantedAt: string | null;
+  revokedAt: string | null;
+  note: string | null;
+  evidence: string | null;
+};
+
 export async function getMetaCloudDiagnostic() {
   const response = await api.get<MetaCloudDiagnostic>("/meta-cloud/diagnostic");
+  return response.data;
+}
+
+export async function getMetaCloudConsent(params: {
+  customerId: string;
+  integrationId: string;
+}): Promise<MetaCloudConsent> {
+  const response = await api.get<MetaCloudConsent>("/meta-cloud/consent", {
+    params,
+  });
   return response.data;
 }
 
