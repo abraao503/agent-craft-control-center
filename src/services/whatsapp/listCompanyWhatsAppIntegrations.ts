@@ -12,6 +12,10 @@ type ApiResponse = {
   };
   status: "close" | "open" | "connecting";
   active: boolean;
+  metaPhoneNumberId: string | null;
+  connectionStatus: string;
+  initialPipelineStageOrder?: number;
+  metaDisplayPhoneNumber?: string | null;
 }[];
 
 export const listCompanyWhatsAppIntegrations = async (
@@ -30,5 +34,9 @@ export const listCompanyWhatsAppIntegrations = async (
     agent: item.assistant,
     status: item.status,
     active: item.active,
+    metaPhoneNumberId: item.metaPhoneNumberId,
+    connectionStatus: item.connectionStatus,
+    initialPipelineStageOrder: item.initialPipelineStageOrder,
+    metaDisplayPhoneNumber: item.metaDisplayPhoneNumber,
   }));
 };

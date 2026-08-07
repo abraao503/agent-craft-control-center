@@ -1,7 +1,17 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { ArrowRight, Bot, BriefcaseBusiness, Loader2, UserCog } from "lucide-react";
+import {
+  AlertCircle,
+  ArrowRight,
+  Bot,
+  BriefcaseBusiness,
+  Check,
+  CheckCheck,
+  Clock,
+  Loader2,
+  UserCog,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MessageContent } from "./media/MessageContent";
 import { listChatTimeline } from "@/services/conversation/listChatTimeline";
@@ -108,6 +118,11 @@ function TimelineMessage({ event, chatId }: { event: ChatTimelineEvent; chatId: 
     mediaMimetype: event.payload.mediaMimetype ?? null,
     createdAt: event.createdAt,
     sentByUser: event.payload.sentByUser,
+    deliveryStatus: event.payload.deliveryStatus,
+    externalMessageId: event.payload.externalMessageId,
+    deliveryUpdatedAt: event.payload.deliveryUpdatedAt,
+    deliveryErrorCode: event.payload.deliveryErrorCode,
+    deliveryErrorMessage: event.payload.deliveryErrorMessage,
   };
   const isCustomer = sender === "customer";
   const author =
@@ -125,12 +140,58 @@ function TimelineMessage({ event, chatId }: { event: ChatTimelineEvent; chatId: 
           {author}
         </div>
         <MessageContent message={message} />
+        {event.payload.channel && (
+          <div className="mt-1 text-[10px] text-muted-foreground">
+            Canal: {event.payload.channel.pipeline.name} · {event.payload.channel.provider}
+          </div>
+        )}
         <div className="mt-1 text-right text-xs text-muted-foreground">
           {format(new Date(event.createdAt), "dd/MM/yyyy HH:mm")}
+          {message.deliveryStatus && message.sender !== "customer" && (
+            <span className="ml-2" title={message.deliveryErrorMessage ?? undefined}>
+              <DeliveryStatusIcon status={message.deliveryStatus} />
+            </span>
+          )}
         </div>
       </div>
     </div>
   );
+}
+
+function DeliveryStatusIcon({ status }: { status: string }) {
+  const normalizedStatus = status.toUpperCase();
+
+  if (normalizedStatus === "PENDING") {
+    return <Clock className="inline h-3.5 w-3.5" aria-label="Mensagem pendente" />;
+  }
+
+  if (normalizedStatus === "FAILED" || normalizedStatus === "UNKNOWN") {
+    return (
+      <AlertCircle
+        className="inline h-3.5 w-3.5 text-destructive"
+        aria-label="Falha no envio"
+      />
+    );
+  }
+
+  if (["DELIVERED", "READ", "PLAYED"].includes(normalizedStatus)) {
+    return (
+      <CheckCheck
+        className={`inline h-3.5 w-3.5 ${
+          ["READ", "PLAYED"].includes(normalizedStatus)
+            ? "text-blue-500"
+            : ""
+        }`}
+        aria-label={
+          ["READ", "PLAYED"].includes(normalizedStatus)
+            ? "Mensagem lida"
+            : "Mensagem entregue"
+        }
+      />
+    );
+  }
+
+  return <Check className="inline h-3.5 w-3.5" aria-label="Mensagem enviada" />;
 }
 
 function TimelineDealEvent({ event }: { event: ChatTimelineEvent }) {

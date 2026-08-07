@@ -47,7 +47,13 @@ export const PipelineWhatsAppConnection = ({
 
   useEffect(() => {
     if (!integration) return;
-    setConnectionStatus(integration.status);
+    if (integration.whatsappIntegrationName === WHATSAPP_INTEGRATION_NAMES.META_CLOUD) {
+      setConnectionStatus(
+        integration.connectionStatus === "CONNECTED" ? "open" : "close",
+      );
+    } else {
+      setConnectionStatus(integration.status);
+    }
   }, [integration]);
 
   const qrCodeMutation = useMutation({
@@ -186,8 +192,10 @@ export const PipelineWhatsAppConnection = ({
       <div className="flex items-center gap-2 px-3 py-1.5 border rounded-md bg-background">
         <MessageSquare className="h-4 w-4 text-green-600" />
         <span className="text-sm font-medium">WhatsApp</span>
-        {integration.whatsappIntegrationName ===
-          WHATSAPP_INTEGRATION_NAMES.EVOLUX && (
+        {(integration.whatsappIntegrationName ===
+          WHATSAPP_INTEGRATION_NAMES.EVOLUX ||
+          integration.whatsappIntegrationName ===
+            WHATSAPP_INTEGRATION_NAMES.META_CLOUD) && (
           <Badge variant="outline" className="flex items-center gap-1 h-5">
             <span className={`h-2 w-2 rounded-full ${getStatusColor()}`}></span>
             <span className="text-xs">{getStatusText()}</span>
@@ -210,7 +218,9 @@ export const PipelineWhatsAppConnection = ({
             </Button>
           )}
         {integration.whatsappIntegrationName !==
-          WHATSAPP_INTEGRATION_NAMES.EVOLUX && (
+          WHATSAPP_INTEGRATION_NAMES.EVOLUX &&
+          integration.whatsappIntegrationName !==
+            WHATSAPP_INTEGRATION_NAMES.META_CLOUD && (
           <Button
             variant="ghost"
             size="sm"
@@ -220,7 +230,14 @@ export const PipelineWhatsAppConnection = ({
             <Copy className="w-3.5 h-3.5 mr-1" />
             <span className="text-xs">Copiar Webhook</span>
           </Button>
-        )}
+          )}
+        {integration.whatsappIntegrationName ===
+          WHATSAPP_INTEGRATION_NAMES.META_CLOUD &&
+          integration.metaDisplayPhoneNumber && (
+            <span className="text-xs text-muted-foreground">
+              {integration.metaDisplayPhoneNumber}
+            </span>
+          )}
       </div>
 
       <Dialog open={qrCodeOpen} onOpenChange={setQrCodeOpen}>

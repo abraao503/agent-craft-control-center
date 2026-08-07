@@ -1,8 +1,6 @@
 // Types for Sales Pipeline and Deals
 // Comments in English as per project rules
 
-import { WhatsAppIntegrationName } from "./whatsapp-integration";
-
 export interface PipelineListItem {
   id: string;
   name: string;
@@ -61,6 +59,16 @@ export interface ReengagementConfig {
   mediaType?: "image" | "audio" | "document" | null;
   // Used when building request payload — set by ReengagementConfigSection
   mediaFileId?: string | null;
+  configurationState?: "READY" | "REQUIRES_TEMPLATE";
+  metaTemplateId?: string | null;
+  metaTemplateLanguage?: string | null;
+  metaTemplateBindings?: Record<string, unknown>;
+  templateAttempts?: Array<{
+    attemptNumber: number;
+    templateId: string;
+    language: string;
+    bindings: Record<string, unknown>;
+  }>;
 }
 
 export interface ReengagementConfigInput {
@@ -70,9 +78,19 @@ export interface ReengagementConfigInput {
   includeTags?: string[]; // optional, array of UUIDs, default: []
   excludeTags?: string[]; // optional, array of UUIDs, default: []
   isActive?: boolean; // optional, default: true
+  configurationState?: "READY" | "REQUIRES_TEMPLATE";
   startTime?: string; // optional, ISO 8601 datetime string (e.g., "2024-01-15T08:00:00.000Z")
   endTime?: string; // optional, ISO 8601 datetime string (e.g., "2024-01-15T17:00:00.000Z")
   mediaFileId?: string | null; // UUID returned by POST /file/media/upload
+  metaTemplateId?: string | null;
+  metaTemplateLanguage?: string | null;
+  metaTemplateBindings?: Record<string, unknown>;
+  templateAttempts?: Array<{
+    attemptNumber: number;
+    templateId: string;
+    language: string;
+    bindings: Record<string, unknown>;
+  }>;
 }
 
 export interface CreatePipelineStageInput {
@@ -85,13 +103,21 @@ export interface CreatePipelineStageInput {
   reengagementConfig?: ReengagementConfigInput | null;
 }
 
-export interface WhatsAppIntegrationConfig {
-  whatsappIntegrationName: WhatsAppIntegrationName;
-  initialPipelineStageOrder: number;
-  externalToken?: string;
-  externalClientToken?: string;
-  postbackUrl?: string;
-}
+export type LegacyWhatsAppIntegrationConfig =
+  | {
+      whatsappIntegrationName: "evolux";
+      initialPipelineStageOrder: number;
+    }
+  | {
+      whatsappIntegrationName: "z-api";
+      initialPipelineStageOrder: number;
+      externalToken: string;
+      externalClientToken: string;
+      postbackUrl: string;
+    };
+
+/** Meta Cloud is configured through its pipeline-scoped endpoint, never here. */
+export type WhatsAppIntegrationConfig = LegacyWhatsAppIntegrationConfig;
 
 export interface CreatePipelineInput {
   workspaceId: string; // UUID

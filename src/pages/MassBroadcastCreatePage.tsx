@@ -46,6 +46,12 @@ import {
 import { CreateMassBroadcastInput } from "@/types/mass-broadcast";
 import { PipelineStageMinimal } from "@/types/pipeline";
 import { formatPhone, getCustomerLabel } from "@/utils/phone";
+import {
+  getMetaCloudDiagnostic,
+  listMetaCloudTemplates,
+  MetaCloudTemplate,
+  MetaCloudTemplateBinding,
+} from "@/services/whatsapp/metaCloud";
 
 export default function MassBroadcastCreatePage() {
   const navigate = useNavigate();
@@ -67,6 +73,8 @@ export default function MassBroadcastCreatePage() {
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  const [metaTemplateId, setMetaTemplateId] = useState<string>("");
+  const [metaTemplateBindings, setMetaTemplateBindings] = useState<Record<string, MetaCloudTemplateBinding>>({});
 
   // Customer search state
   const [customerSearch, setCustomerSearch] = useState("");
@@ -84,6 +92,70 @@ export default function MassBroadcastCreatePage() {
     queryFn: () => listPipelines(workspaceId),
     enabled: !!workspaceId,
   });
+  const { data: metaDiagnostic } = useQuery({
+    queryKey: ["meta-cloud-diagnostic", workspaceId],
+    queryFn: getMetaCloudDiagnostic,
+    enabled: Boolean(workspaceId),
+  });
+  const selectedMetaIntegration = metaDiagnostic?.integrations.find(
+    (integration) => integration.pipelineId === selectedPipelineId,
+  );
+  const isMetaCampaign = Boolean(selectedMetaIntegration);
+  const { data: metaTemplates } = useQuery({
+    queryKey: [
+      "meta-cloud-templates",
+      workspaceId,
+      selectedMetaIntegration?.id,
+    ],
+    queryFn: () =>
+      listMetaCloudTemplates("APPROVED", selectedMetaIntegration?.id),
+    enabled: Boolean(
+      workspaceId && metaDiagnostic?.enabled && selectedMetaIntegration,
+    ),
+  });
+  const selectedMetaTemplate = metaTemplates?.find((template) => template.id === metaTemplateId);
+
+  const getMetaTemplateSlots = (template?: MetaCloudTemplate): string[] => {
+    if (!template || !Array.isArray(template.components)) return [];
+    const slots: string[] = [];
+    const variables = (value: unknown) =>
+      typeof value === "string" ? value.match(/\{\{\s*\d+\s*\}\}/g) ?? [] : [];
+    (template.components as Array<Record<string, unknown>>).forEach((component) => {
+      const type = String(component.type ?? "").toUpperCase();
+      if (type === "HEADER" && String(component.format ?? "").toUpperCase() === "TEXT") {
+        variables(component.text).forEach((_item, index) => slots.push(`header.${index + 1}`));
+      }
+      if (type === "BODY") {
+        variables(component.text).forEach((_item, index) => slots.push(`body.${index + 1}`));
+      }
+      if (type === "BUTTONS" && Array.isArray(component.buttons)) {
+        (component.buttons as Array<Record<string, unknown>>).forEach((button, buttonIndex) => {
+          if (String(button.type ?? "").toUpperCase() !== "URL") return;
+          variables(button.url).forEach((_item, index) => slots.push(`button.${buttonIndex}.${index + 1}`));
+        });
+      }
+    });
+    return slots;
+  };
+
+  useEffect(() => {
+    if (!isMetaCampaign || !metaTemplates?.length) return;
+    const nextTemplate = metaTemplates.find((template) => template.id === metaTemplateId) ?? metaTemplates[0];
+    if (nextTemplate.id !== metaTemplateId) setMetaTemplateId(nextTemplate.id);
+    setMetaTemplateBindings((current) => {
+      const next: Record<string, MetaCloudTemplateBinding> = {};
+      getMetaTemplateSlots(nextTemplate).forEach((slot) => {
+        next[slot] = current[slot] ?? { source: "fixed", value: "" };
+      });
+      return next;
+    });
+  }, [isMetaCampaign, metaTemplates, metaTemplateId]);
+
+  useEffect(() => {
+    // A file selected for a legacy provider must never leak into a Meta
+    // campaign payload, whose only outbound content is the approved template.
+    if (isMetaCampaign && file) setFile(null);
+  }, [file, isMetaCampaign]);
 
   // Fetch customers for direct selection
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -172,6 +244,10 @@ export default function MassBroadcastCreatePage() {
         excludeTagIds: excludeTagIds.length > 0 ? excludeTagIds : undefined,
         pipelineStageIds:
           selectedStageIds.length > 0 ? selectedStageIds : undefined,
+        pipelineId: selectedPipelineId || undefined,
+        integrationId: selectedMetaIntegration?.id,
+        templateId: isMetaCampaign ? metaTemplateId : undefined,
+        bindings: isMetaCampaign ? metaTemplateBindings : undefined,
       }),
     onSuccess: (data) => {
       toast({
@@ -271,13 +347,15 @@ export default function MassBroadcastCreatePage() {
     includeTagIds.length > 0 ||
     selectedStageIds.length > 0;
 
-  const hasValidMessages = messages.some((m) => m.trim().length > 0);
+  const hasValidMessages = isMetaCampaign || messages.some((m) => m.trim().length > 0);
+  const hasValidMetaTemplate = !isMetaCampaign || Boolean(metaTemplateId);
 
   const canSubmit =
     name.trim() &&
     selectedPipelineId &&
     hasValidMessages &&
-    hasSelectionCriteria;
+    hasSelectionCriteria &&
+    hasValidMetaTemplate;
 
   const canPreview = hasSelectionCriteria;
 
@@ -288,7 +366,7 @@ export default function MassBroadcastCreatePage() {
       toast({
         title: "Preencha todos os campos obrigatórios",
         description:
-          "Nome, funil, pelo menos uma mensagem e critérios de seleção são obrigatórios.",
+          "Nome, funil, template ou mensagem e critérios de seleção são obrigatórios.",
         variant: "destructive",
       });
       return;
@@ -298,7 +376,7 @@ export default function MassBroadcastCreatePage() {
 
     const input: CreateMassBroadcastInput = {
       name: name.trim(),
-      messages: filteredMessages,
+      messages: isMetaCampaign ? [] : filteredMessages,
       pipelineId: selectedPipelineId,
       workspaceId,
       customerIds:
@@ -312,6 +390,10 @@ export default function MassBroadcastCreatePage() {
       startTime: startTime ? new Date(startTime).toISOString() : undefined,
       endTime: endTime ? new Date(endTime).toISOString() : undefined,
       file: file || undefined,
+      provider: isMetaCampaign ? "meta-cloud" : undefined,
+      metaTemplateId: isMetaCampaign ? metaTemplateId : undefined,
+      metaTemplateLanguage: isMetaCampaign ? selectedMetaTemplate?.language : undefined,
+      metaTemplateBindings: isMetaCampaign ? metaTemplateBindings : undefined,
     };
 
     createMutation.mutate(input);
@@ -398,6 +480,7 @@ export default function MassBroadcastCreatePage() {
           </CardContent>
         </Card>
 
+        {!isMetaCampaign && <>
         {/* Mídia */}
         <Card>
           <CardHeader>
@@ -482,6 +565,103 @@ export default function MassBroadcastCreatePage() {
             )}
           </CardContent>
         </Card>
+        </>}
+
+        {isMetaCampaign && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Template Meta</CardTitle>
+              <CardDescription>
+                Campanhas Meta usam um único template aprovado e parâmetros resolvidos por destinatário.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Select value={metaTemplateId} onValueChange={setMetaTemplateId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione um template aprovado" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(metaTemplates ?? []).map((template) => (
+                    <SelectItem key={template.id} value={template.id}>
+                      {template.name} · {template.language}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {selectedMetaTemplate && getMetaTemplateSlots(selectedMetaTemplate).map((slot) => (
+                <div key={slot} className="space-y-1">
+                  <Label htmlFor={`broadcast-${slot}`}>{slot}</Label>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <Select
+                      value={metaTemplateBindings[slot]?.source ?? "fixed"}
+                      onValueChange={(source) => setMetaTemplateBindings((current) => ({
+                        ...current,
+                        [slot]:
+                          source === "fixed"
+                            ? { source: "fixed", value: "" }
+                            : source === "customer"
+                              ? { source: "customer", field: "name" }
+                              : source === "deal"
+                                ? { source: "deal", field: "id" }
+                                : { source: "owner", field: "name" },
+                      }))}
+                    >
+                      <SelectTrigger><SelectValue placeholder="Origem" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="fixed">Valor fixo</SelectItem>
+                        <SelectItem value="customer">Cliente</SelectItem>
+                        <SelectItem value="deal">Deal contextual</SelectItem>
+                        <SelectItem value="owner">Responsável</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {metaTemplateBindings[slot]?.source === "fixed" || !metaTemplateBindings[slot] ? (
+                      <Input
+                        id={`broadcast-${slot}`}
+                        value={metaTemplateBindings[slot]?.source === "fixed" ? metaTemplateBindings[slot].value : ""}
+                        onChange={(event) => setMetaTemplateBindings((current) => ({
+                          ...current,
+                          [slot]: { source: "fixed", value: event.target.value },
+                        }))}
+                        placeholder="Valor do parâmetro"
+                      />
+                    ) : (
+                      <Select
+                        value={`${metaTemplateBindings[slot].source}:${metaTemplateBindings[slot].field}`}
+                        onValueChange={(value) => setMetaTemplateBindings((current) => {
+                          const [source, field] = value.split(":");
+                          return {
+                            ...current,
+                            [slot]: source === "customer"
+                              ? { source: "customer", field: field as "name" | "firstName" | "phone" | "email" }
+                              : source === "deal"
+                                ? { source: "deal", field: field as "id" | "pipeline" | "stage" }
+                                : { source: "owner", field: "name" },
+                          };
+                        })}
+                      >
+                        <SelectTrigger><SelectValue placeholder="Campo" /></SelectTrigger>
+                        <SelectContent>
+                          {metaTemplateBindings[slot].source === "customer" && <>
+                            <SelectItem value="customer:name">Nome completo</SelectItem>
+                            <SelectItem value="customer:firstName">Primeiro nome</SelectItem>
+                            <SelectItem value="customer:phone">Telefone</SelectItem>
+                            <SelectItem value="customer:email">E-mail</SelectItem>
+                          </>}
+                          {metaTemplateBindings[slot].source === "deal" && <>
+                            <SelectItem value="deal:id">Identificador</SelectItem>
+                            <SelectItem value="deal:pipeline">Pipeline</SelectItem>
+                            <SelectItem value="deal:stage">Etapa</SelectItem>
+                          </>}
+                          {metaTemplateBindings[slot].source === "owner" && <SelectItem value="owner:name">Responsável</SelectItem>}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Selection Criteria */}
         <Card>

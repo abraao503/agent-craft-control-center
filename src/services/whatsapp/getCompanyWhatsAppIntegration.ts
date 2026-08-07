@@ -13,6 +13,12 @@ type ApiResponse = {
   initialPipelineStageId: string;
   active: boolean;
   status: "close" | "open" | "connecting";
+  metaPhoneNumberId: string | null;
+  connectionStatus: string;
+  diagnosticCode: string | null;
+  diagnosticMessage: string | null;
+  initialPipelineStageOrder?: number;
+  metaDisplayPhoneNumber?: string | null;
 };
 
 export const getCompanyWhatsAppIntegration = async (
@@ -33,5 +39,11 @@ export const getCompanyWhatsAppIntegration = async (
     active: data.active,
     initialPipelineStageId: data.initialPipelineStageId,
     status: data.status,
+    metaPhoneNumberId: data.metaPhoneNumberId,
+    connectionStatus: data.connectionStatus,
+    diagnosticCode: data.diagnosticCode,
+    diagnosticMessage: data.diagnosticMessage,
+    initialPipelineStageOrder: data.initialPipelineStageOrder,
+    metaDisplayPhoneNumber: data.metaDisplayPhoneNumber,
   };
 };

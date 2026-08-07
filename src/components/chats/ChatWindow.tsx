@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import { format, isToday, isYesterday, isSameDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Send,
   MoreVertical,
@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -37,6 +38,7 @@ import { Message } from "@/types/message";
 import { listMessages } from "@/services/conversation/listMessages";
 import { sendMessage } from "@/services/conversation/sendMessage";
 import { sendMediaMessage } from "@/services/conversation/sendMediaMessage";
+import { listReplyChannels } from "@/services/conversation/listReplyChannels";
 import { updateConversationHandler } from "@/services/conversation/updateConversationHandler";
 import { clearConversationExternalId } from "@/services/conversation/clearConversationExternalId";
 import { useToast } from "@/hooks/use-toast";
@@ -51,6 +53,14 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { assignUserToDeal } from "@/services/deal/assignUserToDeal";
 import { listUsers } from "@/services/user/listUsers";
 import { useWorkspaceManager } from "@/hooks/useWorkspaceManager";
+import { ReplyChannel } from "@/types/reply-channel";
+import {
+  listMetaCloudChatTemplates,
+  MetaCloudTemplate,
+  MetaCloudTemplateBinding,
+  previewMetaCloudChatTemplate,
+  sendMetaCloudTemplate,
+} from "@/services/whatsapp/metaCloud";
 import {
   Select,
   SelectContent,
@@ -64,12 +74,149 @@ type MessageStatus = "pending" | "sent" | "failed";
 type MessageWithStatus = Message & {
   status?: MessageStatus;
   tempId?: string;
+  replyChannelId?: string;
+  replyContextMessageId?: string;
 };
 
 type ChatWindowProps = {
   conversation: Conversation;
   onUpdateConversation: (conversation: Conversation) => void;
   newMessageEvent?: MessageSentEvent | null;
+};
+
+type SendErrorFallback = {
+  title: string;
+  description: string;
+};
+
+const SEND_ERROR_MESSAGES: Record<
+  string,
+  { title: string; description: string }
+> = {
+  WINDOW_CLOSED: {
+    title: "Janela de atendimento encerrada",
+    description:
+      "A janela de 24 horas do WhatsApp expirou. Aguarde uma nova mensagem do cliente para continuar ou use um template aprovado pela Meta.",
+  },
+  TEMPLATE_REQUIRED: {
+    title: "Template necessário",
+    description:
+      "A janela de atendimento expirou. Para iniciar uma nova conversa, é necessário enviar um template aprovado pela Meta.",
+  },
+  OPT_IN_REQUIRED: {
+    title: "Consentimento necessário",
+    description:
+      "É necessário ter um opt-in registrado para enviar este template fora da janela de atendimento.",
+  },
+  INVALID_PHONE: {
+    title: "Telefone inválido",
+    description: "Atualize o telefone do cliente antes de tentar enviar.",
+  },
+  TEMPLATE_INVALID: {
+    title: "Template indisponível",
+    description: "O template não está aprovado ou não é compatível com este número.",
+  },
+  MEDIA_NOT_SUPPORTED: {
+    title: "Mídia não suportada",
+    description: "Não foi possível enviar este tipo de mídia pelo WhatsApp.",
+  },
+  RATE_LIMITED: {
+    title: "Limite de envio atingido",
+    description: "Aguarde alguns instantes antes de tentar enviar novamente.",
+  },
+  TOKEN_INVALID: {
+    title: "Integração indisponível",
+    description:
+      "A credencial da integração WhatsApp é inválida. Verifique a configuração da integração.",
+  },
+  FEATURE_DISABLED: {
+    title: "WhatsApp Meta desativado",
+    description: "O envio pela integração Meta não está habilitado para esta empresa.",
+  },
+  INTEGRATION_NOT_FOUND: {
+    title: "Integração não encontrada",
+    description: "O canal selecionado não está mais configurado para esta conversa.",
+  },
+  "Integration not found": {
+    title: "Integração não encontrada",
+    description: "O canal selecionado não está mais configurado para esta conversa.",
+  },
+  "Reply channel required": {
+    title: "Canal de resposta necessário",
+    description: "Selecione um canal de resposta antes de enviar a mensagem.",
+  },
+  "Reply channel unavailable": {
+    title: "Canal indisponível",
+    description: "O canal selecionado está desconectado ou indisponível.",
+  },
+  "Reply channel stale": {
+    title: "Canal de resposta desatualizado",
+    description: "A conversa recebeu uma atualização. Confirme o canal antes de enviar.",
+  },
+  Forbidden: {
+    title: "Envio não autorizado",
+    description: "Você não tem permissão para enviar por este canal.",
+  },
+  "User not found": {
+    title: "Sessão expirada",
+    description: "Atualize a página e entre novamente para continuar.",
+  },
+  "Chat has no pipeline": {
+    title: "Conversa sem pipeline",
+    description: "Associe a conversa a um pipeline antes de enviar mensagens.",
+  },
+  "Internal error": {
+    title: "Erro interno",
+    description: "O servidor não conseguiu concluir o envio. Tente novamente.",
+  },
+  "Internal Server Error": {
+    title: "Falha temporária no servidor",
+    description: "O envio não foi concluído. Aguarde alguns instantes e tente novamente.",
+  },
+  INVALID_CONSENT_TARGET: {
+    title: "Consentimento indisponível",
+    description: "Não foi possível validar o consentimento para este cliente e canal.",
+  },
+  CHAT_NOT_FOUND: {
+    title: "Conversa não encontrada",
+    description: "Atualize a conversa e tente novamente.",
+  },
+  "Chat not found": {
+    title: "Conversa não encontrada",
+    description: "Atualize a conversa e tente novamente.",
+  },
+  UNKNOWN: {
+    title: "Falha no envio",
+    description:
+      "O provedor não confirmou o envio. Verifique o status da mensagem antes de tentar novamente.",
+  },
+};
+
+const getApiErrorCode = (error: unknown): string | null => {
+  const response = (
+    error as {
+      response?: {
+        data?: { code?: unknown; message?: unknown; error?: unknown };
+      };
+    }
+  )?.response;
+  const code = response?.data?.code;
+  if (typeof code === "string") return code.trim();
+  const message = response?.data?.message;
+
+  if (message && typeof message === "object" && "code" in message) {
+    const nestedCode = (message as { code?: unknown }).code;
+    if (typeof nestedCode === "string") return nestedCode.trim();
+  }
+
+  if (typeof message === "string") return message.trim();
+  if (Array.isArray(message) && typeof message[0] === "string") {
+    return message[0].trim();
+  }
+
+  return typeof response?.data?.error === "string"
+    ? response.data.error.trim()
+    : null;
 };
 
 export const ChatWindow: React.FC<ChatWindowProps> = ({
@@ -80,6 +227,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   const { toast } = useToast();
   const { has } = usePermissions();
   const { currentWorkspace } = useWorkspaceManager();
+  const queryClient = useQueryClient();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const lastScrollTop = useRef(0);
@@ -96,9 +244,301 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isMediaPreviewOpen, setIsMediaPreviewOpen] = useState(false);
   const [isRecordingAudio, setIsRecordingAudio] = useState(false);
+  const [selectedReplyChannelId, setSelectedReplyChannelId] = useState<string | null>(null);
+  const [replyContextMessageId, setReplyContextMessageId] = useState<string | null>(null);
+  const [pendingReplyChannel, setPendingReplyChannel] = useState<{
+    integrationId: string;
+    contextMessageId: string | null;
+  } | null>(null);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
+  const [templateBindings, setTemplateBindings] = useState<
+    Record<string, MetaCloudTemplateBinding>
+  >({});
+  const [templatePreview, setTemplatePreview] = useState<{
+    body: string;
+    header: string | null;
+  } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const canSend = has("send:message");
+  const canSendPermission = has("send:message");
   const canAssign = has("assign:deal");
+
+  const replyChannelsQuery = useQuery({
+    queryKey: ["chat-reply-channels", conversation.id],
+    queryFn: () => listReplyChannels(conversation.id),
+    enabled: canSendPermission,
+    staleTime: 0,
+    // The 24-hour window can expire while the agent is typing. Refresh the
+    // server-computed channel state so the composer switches to templates
+    // without waiting for another inbound event or a failed send.
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: false,
+    refetchOnMount: "always",
+  });
+
+  const replyChannels = replyChannelsQuery.data?.channels ?? [];
+  const singleReplyChannel = replyChannels.length === 1 ? replyChannels[0] : null;
+  const selectedReplyChannel = replyChannels.find(
+    (channel) => channel.integrationId === selectedReplyChannelId,
+  );
+  const automaticReplyChannelId =
+    replyChannelsQuery.data?.suggestedIntegrationId ??
+    singleReplyChannel?.integrationId ??
+    null;
+  const effectiveReplyChannelId =
+    selectedReplyChannel?.integrationId ?? automaticReplyChannelId;
+  const effectiveReplyChannel = replyChannels.find(
+    (channel) => channel.integrationId === effectiveReplyChannelId,
+  );
+  const isMetaWindowClosed = Boolean(
+    effectiveReplyChannel?.provider === "meta-cloud" &&
+      effectiveReplyChannel.serviceWindow?.status !== "OPEN",
+  );
+
+  const metaTemplatesQuery = useQuery({
+    queryKey: [
+      "meta-chat-templates",
+      conversation.id,
+      effectiveReplyChannelId,
+    ],
+    queryFn: () =>
+      listMetaCloudChatTemplates({
+        chatId: conversation.id,
+        integrationId: effectiveReplyChannelId!,
+      }),
+    enabled: Boolean(isMetaWindowClosed && effectiveReplyChannelId),
+    staleTime: 60_000,
+  });
+  const selectedTemplate = metaTemplatesQuery.data?.find(
+    (template) => template.id === selectedTemplateId,
+  );
+  const canSend = Boolean(
+    canSendPermission &&
+      effectiveReplyChannelId &&
+      effectiveReplyChannel?.available &&
+      !pendingReplyChannel,
+  );
+
+  const latestInbound = replyChannelsQuery.data?.latestInbound ?? null;
+  const hasComposerDraft = Boolean(
+    newMessage.trim() || selectedFile || isRecordingAudio || pendingQueue.length,
+  );
+
+  const getTemplateSlots = (template?: MetaCloudTemplate | null): string[] => {
+    if (!template || !Array.isArray(template.components)) return [];
+    const slots: string[] = [];
+    const variables = (value: unknown) =>
+      typeof value === "string" ? value.match(/\{\{\s*\d+\s*\}\}/g) ?? [] : [];
+    for (const component of template.components as Array<Record<string, unknown>>) {
+      const type = String(component.type ?? "").toUpperCase();
+      if (type === "HEADER" && String(component.format ?? "").toUpperCase() === "TEXT") {
+        variables(component.text).forEach((_value, index) => slots.push(`header.${index + 1}`));
+      }
+      if (type === "BODY") {
+        variables(component.text).forEach((_value, index) => slots.push(`body.${index + 1}`));
+      }
+      if (type === "BUTTONS" && Array.isArray(component.buttons)) {
+        (component.buttons as Array<Record<string, unknown>>).forEach((button, buttonIndex) => {
+          if (String(button.type ?? "").toUpperCase() !== "URL") return;
+          variables(button.url).forEach((_value, index) => slots.push(`button.${buttonIndex}.${index + 1}`));
+        });
+      }
+    }
+    return slots;
+  };
+
+  useEffect(() => {
+    if (!isMetaWindowClosed || !metaTemplatesQuery.data?.length) return;
+    const first = metaTemplatesQuery.data.find((template) => template.id === selectedTemplateId) ?? metaTemplatesQuery.data[0];
+    if (first.id !== selectedTemplateId) setSelectedTemplateId(first.id);
+    setTemplateBindings((current) => {
+      const next: Record<string, MetaCloudTemplateBinding> = {};
+      for (const slot of getTemplateSlots(first)) {
+        next[slot] = current[slot] ?? { source: "fixed", value: "" };
+      }
+      return next;
+    });
+  }, [isMetaWindowClosed, metaTemplatesQuery.data, selectedTemplateId]);
+
+  const templatePreviewMutation = useMutation({
+    mutationFn: () =>
+      previewMetaCloudChatTemplate({
+        chatId: conversation.id,
+        integrationId: effectiveReplyChannelId!,
+        templateId: selectedTemplateId!,
+        bindings: templateBindings,
+        replyContextMessageId: replyContextMessageId ?? undefined,
+      }),
+    onSuccess: (preview) => setTemplatePreview({ body: preview.body, header: preview.header }),
+    onError: (error) =>
+      handleSendError(error, {
+        title: "Não foi possível validar o template",
+        description: "Revise os campos preenchidos e tente novamente.",
+      }),
+  });
+
+  const sendTemplate = async () => {
+    if (!canSend || !isMetaWindowClosed || !selectedTemplateId || !effectiveReplyChannelId) return;
+    try {
+      const sentMessage = await sendMetaCloudTemplate({
+        chatId: conversation.id,
+        integrationId: effectiveReplyChannelId,
+        clientMessageId: crypto.randomUUID(),
+        templateId: selectedTemplateId,
+        bindings: templateBindings,
+        replyContextMessageId: replyContextMessageId ?? undefined,
+      });
+      setMessages((previous) => [
+        ...previous,
+        { ...sentMessage, status: "sent" } as MessageWithStatus,
+      ]);
+      setTemplatePreview(null);
+      await queryClient.invalidateQueries({ queryKey: ["messages", conversation.id] });
+    } catch (error) {
+      handleSendError(error, {
+        title: "Não foi possível enviar o template",
+        description: "Revise os campos e tente novamente.",
+      });
+    }
+  };
+
+  const formatReplyChannel = (channel?: ReplyChannel | null) => {
+    if (!channel) return "Canal não selecionado";
+    const provider = channel.provider === "meta-cloud"
+      ? "Meta Cloud"
+      : channel.provider;
+    return `${channel.pipeline.name} · ${provider}${
+      channel.metaDisplayPhoneNumber
+        ? ` · ${channel.metaDisplayPhoneNumber}`
+        : ""
+    }`;
+  };
+
+  useEffect(() => {
+    if (!replyChannelsQuery.data) return;
+
+    const suggestedIntegrationId =
+      replyChannelsQuery.data.suggestedIntegrationId;
+    const automaticIntegrationId = automaticReplyChannelId;
+    const nextContextMessageId =
+      automaticIntegrationId &&
+      latestInbound?.integrationId === automaticIntegrationId
+        ? latestInbound.messageId
+        : null;
+
+    if (!selectedReplyChannelId) {
+      setSelectedReplyChannelId(automaticIntegrationId);
+      setReplyContextMessageId(nextContextMessageId);
+      return;
+    }
+
+    if (!selectedReplyChannel) {
+      setSelectedReplyChannelId(automaticIntegrationId);
+      setReplyContextMessageId(nextContextMessageId);
+      setPendingReplyChannel(null);
+      return;
+    }
+
+    if (nextContextMessageId === replyContextMessageId) return;
+
+    if (
+      hasComposerDraft &&
+      suggestedIntegrationId &&
+      suggestedIntegrationId !== selectedReplyChannelId
+    ) {
+      setPendingReplyChannel({
+        integrationId: suggestedIntegrationId,
+        contextMessageId: nextContextMessageId,
+      });
+      return;
+    }
+
+    setSelectedReplyChannelId(automaticIntegrationId);
+    setReplyContextMessageId(nextContextMessageId);
+    setPendingReplyChannel(null);
+    setSelectedTemplateId(null);
+    setTemplateBindings({});
+    setTemplatePreview(null);
+  }, [
+    hasComposerDraft,
+    latestInbound?.integrationId,
+    latestInbound?.messageId,
+    replyChannelsQuery.data,
+    replyContextMessageId,
+    selectedReplyChannelId,
+    selectedReplyChannel,
+    singleReplyChannel?.integrationId,
+    automaticReplyChannelId,
+  ]);
+
+  useEffect(() => {
+    if (newMessageEvent?.chatId !== conversation.id) return;
+
+    void queryClient.invalidateQueries({
+      queryKey: ["chat-reply-channels", conversation.id],
+    });
+  }, [conversation.id, newMessageEvent, queryClient]);
+
+  const handleReplyChannelChange = (integrationId: string) => {
+    setSelectedReplyChannelId(integrationId);
+    setReplyContextMessageId(
+      latestInbound?.integrationId === integrationId
+        ? latestInbound.messageId
+        : null,
+    );
+    setPendingReplyChannel(null);
+  };
+
+  const confirmPendingReplyChannel = () => {
+    if (!pendingReplyChannel) return;
+
+    setSelectedReplyChannelId(pendingReplyChannel.integrationId);
+    setReplyContextMessageId(pendingReplyChannel.contextMessageId);
+    setPendingReplyChannel(null);
+  };
+
+  const handleSendError = useCallback(
+    (error: unknown, fallback: SendErrorFallback) => {
+      const status = (error as { response?: { status?: number } })?.response
+        ?.status;
+      const code = getApiErrorCode(error);
+      const hasResponse = Boolean(
+        (error as { response?: unknown })?.response,
+      );
+
+      if (status === 409) {
+        void queryClient.invalidateQueries({
+          queryKey: ["chat-reply-channels", conversation.id],
+        });
+
+        const channelMessage =
+          (code && SEND_ERROR_MESSAGES[code]) ?? {
+            title: "Canal de resposta indisponível",
+            description: "Atualize os canais da conversa e tente novamente.",
+          };
+        toast({
+          ...channelMessage,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!hasResponse && (error as { request?: unknown })?.request) {
+        toast({
+          title: "Sem conexão com o servidor",
+          description: "Verifique sua conexão e tente novamente.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const message = code ? SEND_ERROR_MESSAGES[code] : undefined;
+      toast({
+        ...(message ?? fallback),
+        variant: "destructive",
+      });
+    },
+    [conversation.id, queryClient, toast],
+  );
 
   const { data: workspaceUsers } = useQuery({
     queryKey: ["chat-assignment-users", currentWorkspace?.id],
@@ -203,6 +643,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         chatId: conversation.id,
         message: messageToSend.content,
         agentId: conversation.agent?.id || "",
+        companyWhatsappIntegrationId: messageToSend.replyChannelId,
+        replyContextMessageId: messageToSend.replyContextMessageId,
       });
 
       // Update message status to sent and replace with real message
@@ -229,15 +671,19 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       // Remove from queue
       setPendingQueue((prev) => prev.slice(1));
 
-      toast({
+      handleSendError(error, {
         title: "Erro ao enviar mensagem",
         description: "A mensagem não foi enviada. Tente novamente.",
-        variant: "destructive",
       });
     } finally {
       isProcessingQueue.current = false;
     }
-  }, [pendingQueue, conversation.id, conversation.agent?.id, toast]);
+  }, [
+    pendingQueue,
+    conversation.id,
+    conversation.agent?.id,
+    handleSendError,
+  ]);
 
   // Validate file type and size
   const validateFile = (file: File): { valid: boolean; error?: string } => {
@@ -308,6 +754,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
 
   // Handle send audio
   const handleSendAudio = async (audioBlob: Blob) => {
+    if (!canSend || !effectiveReplyChannelId) return;
+
     const tempId = `temp-${Date.now()}-${Math.random()}`;
     const audioFile = new File([audioBlob], `audio-${Date.now()}.ogg`, {
       type: "audio/ogg; codecs=opus",
@@ -324,6 +772,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       mediaMimetype: "audio/ogg; codecs=opus",
       createdAt: new Date().toISOString(),
       status: "pending",
+      replyChannelId: effectiveReplyChannelId,
+      replyContextMessageId: replyContextMessageId ?? undefined,
     };
 
     // Add to messages immediately
@@ -345,6 +795,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         chatId: conversation.id,
         type: "audio",
         file: audioFile,
+        companyWhatsappIntegrationId: effectiveReplyChannelId,
+        replyContextMessageId: replyContextMessageId ?? undefined,
       });
 
       // Update message status to sent
@@ -364,17 +816,16 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         ),
       );
 
-      toast({
-        title: "Error sending audio",
-        description: "Failed to send audio message. Please try again.",
-        variant: "destructive",
+      handleSendError(error, {
+        title: "Erro ao enviar áudio",
+        description: "Não foi possível enviar o áudio. Tente novamente.",
       });
     }
   };
 
   // Handle send media
   const handleSendMedia = async (caption?: string) => {
-    if (!selectedFile) return;
+    if (!selectedFile || !canSend || !effectiveReplyChannelId) return;
 
     const mediaType = getMediaTypeFromFile(selectedFile);
     const tempId = `temp-${Date.now()}-${Math.random()}`;
@@ -390,6 +841,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       mediaMimetype: selectedFile.type,
       createdAt: new Date().toISOString(),
       status: "pending",
+      replyChannelId: effectiveReplyChannelId,
+      replyContextMessageId: replyContextMessageId ?? undefined,
     };
 
     // Add to messages immediately
@@ -413,6 +866,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         type: mediaType,
         file: selectedFile,
         caption,
+        companyWhatsappIntegrationId: effectiveReplyChannelId,
+        replyContextMessageId: replyContextMessageId ?? undefined,
       });
 
       // Update message status to sent
@@ -432,17 +887,16 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         ),
       );
 
-      toast({
-        title: "Error sending media",
-        description: "Failed to send media message. Please try again.",
-        variant: "destructive",
+      handleSendError(error, {
+        title: "Erro ao enviar mídia",
+        description: "Não foi possível enviar a mídia. Tente novamente.",
       });
     }
   };
 
   // Handle send message
   const handleSendMessage = () => {
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() || !canSend || !effectiveReplyChannelId) return;
 
     const tempId = `temp-${Date.now()}-${Math.random()}`;
     const pendingMessage: MessageWithStatus = {
@@ -456,6 +910,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       mediaMimetype: null,
       createdAt: new Date().toISOString(),
       status: "pending",
+      replyChannelId: effectiveReplyChannelId,
+      replyContextMessageId: replyContextMessageId ?? undefined,
     };
 
     // Add to messages immediately
@@ -515,6 +971,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           ? newMessageEvent.createdAt.toISOString()
           : newMessageEvent.createdAt,
       status: "sent",
+      replyChannelId: newMessageEvent.companyWhatsappIntegrationId ?? undefined,
     };
 
     setMessages((prev) => {
@@ -589,6 +1046,15 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     setHasMore(true);
     setAlreadyScrolled(false);
     setPendingQueue([]);
+    setSelectedReplyChannelId(null);
+    setReplyContextMessageId(null);
+    setPendingReplyChannel(null);
+    setNewMessage("");
+    setSelectedFile(null);
+    setIsMediaPreviewOpen(false);
+    setSelectedTemplateId(null);
+    setTemplateBindings({});
+    setTemplatePreview(null);
     previousMessagesLength.current = 0;
     previousScrollHeight.current = 0;
     lastScrollTop.current = 0;
@@ -731,6 +1197,71 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     return null;
   };
 
+  const replyChannelControls = canSendPermission ? (
+    <div className="space-y-2 border-t bg-background px-3 py-2">
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-muted-foreground">Canal de resposta</span>
+        {singleReplyChannel ? (
+          <div className="flex h-8 min-w-0 flex-1 items-center rounded-md border bg-muted/40 px-3 text-xs">
+            <span className="truncate">
+              {formatReplyChannel(singleReplyChannel)}
+              {!singleReplyChannel.available ? " · indisponível" : ""}
+            </span>
+          </div>
+        ) : (
+          <Select
+            value={effectiveReplyChannelId ?? ""}
+            onValueChange={handleReplyChannelChange}
+            disabled={
+              replyChannelsQuery.isLoading || replyChannels.length === 0
+            }
+          >
+            <SelectTrigger className="h-8 max-w-[420px] flex-1 text-xs">
+              <SelectValue placeholder="Selecione um canal" />
+            </SelectTrigger>
+            <SelectContent>
+              {replyChannels.map((channel) => (
+                <SelectItem
+                  key={channel.integrationId}
+                  value={channel.integrationId}
+                  disabled={!channel.available}
+                >
+                  {formatReplyChannel(channel)}
+                  {!channel.available ? " · indisponível" : ""}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+      </div>
+      {pendingReplyChannel && (
+        <div className="flex items-center justify-between gap-2 rounded-md border border-amber-300 bg-amber-50 px-2 py-1.5 text-xs text-amber-900">
+          <span>Chegou uma nova mensagem por outro canal. Confirme o canal antes de enviar.</span>
+          <Button size="sm" className="h-7" onClick={confirmPendingReplyChannel}>
+            Usar novo canal
+          </Button>
+        </div>
+      )}
+      {!pendingReplyChannel &&
+        latestInbound?.integrationId &&
+        !replyChannels.some(
+          (channel) => channel.integrationId === latestInbound.integrationId,
+        ) && (
+          <p className="text-xs text-amber-700">
+            A última mensagem chegou por um canal que não está atribuído a você.
+          </p>
+        )}
+      {!pendingReplyChannel &&
+        !effectiveReplyChannelId &&
+        !singleReplyChannel &&
+        !replyChannelsQuery.isLoading && (
+          <p className="text-xs text-muted-foreground">
+            Selecione um canal para habilitar o envio.
+          </p>
+        )}
+    </div>
+  ) : null;
+
   return (
     <div className="flex h-full w-full">
       <div className="flex flex-col flex-1">
@@ -863,13 +1394,164 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         </div>
 
         {/* Input or Audio Recorder */}
-        {isRecordingAudio ? (
-          <AudioRecorder
-            onSend={handleSendAudio}
-            onCancel={() => setIsRecordingAudio(false)}
-          />
+        {isRecordingAudio && !isMetaWindowClosed ? (
+          <>
+            {replyChannelControls}
+            <AudioRecorder
+              onSend={handleSendAudio}
+              onCancel={() => setIsRecordingAudio(false)}
+            />
+          </>
         ) : (
-          <div className="bg-background border-t p-3">
+          <div className="bg-background">
+            {replyChannelControls}
+            {isMetaWindowClosed ? (
+              <div className="space-y-3 border-t p-3">
+                <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                  A janela de atendimento está fechada. Envie um template aprovado para retomar a conversa.
+                  {newMessage.trim() && " O rascunho de texto foi preservado."}
+                </div>
+                <Select
+                  value={selectedTemplateId ?? ""}
+                  onValueChange={(value) => {
+                    setSelectedTemplateId(value);
+                    setTemplatePreview(null);
+                  }}
+                  disabled={metaTemplatesQuery.isLoading || !canSend}
+                >
+                  <SelectTrigger className="text-sm">
+                    <SelectValue placeholder="Selecione um template aprovado" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(metaTemplatesQuery.data ?? []).map((template) => (
+                      <SelectItem key={template.id} value={template.id}>
+                        {template.name} · {template.language}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {selectedTemplate &&
+                  getTemplateSlots(selectedTemplate).map((slot) => (
+                    <div key={slot} className="space-y-1">
+                      <label className="text-xs text-muted-foreground" htmlFor={`template-${slot}`}>
+                        {slot}
+                      </label>
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        <Select
+                          value={templateBindings[slot]?.source ?? "fixed"}
+                          onValueChange={(source) =>
+                            setTemplateBindings((current) => ({
+                              ...current,
+                              [slot]:
+                                source === "fixed"
+                                  ? { source: "fixed", value: "" }
+                                  : source === "customer"
+                                    ? { source: "customer", field: "name" }
+                                    : source === "deal"
+                                      ? { source: "deal", field: "id" }
+                                      : { source: "owner", field: "name" },
+                            }))
+                          }
+                          disabled={!canSend}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Origem" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="fixed">Valor fixo</SelectItem>
+                            <SelectItem value="customer">Cliente</SelectItem>
+                            <SelectItem value="deal">Deal contextual</SelectItem>
+                            <SelectItem value="owner">Responsável</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {templateBindings[slot]?.source === "fixed" ||
+                        !templateBindings[slot] ? (
+                          <Input
+                            id={`template-${slot}`}
+                            value={
+                              templateBindings[slot]?.source === "fixed"
+                                ? templateBindings[slot].value
+                                : ""
+                            }
+                            onChange={(event) =>
+                              setTemplateBindings((current) => ({
+                                ...current,
+                                [slot]: { source: "fixed", value: event.target.value },
+                              }))
+                            }
+                            placeholder="Valor do parâmetro"
+                            disabled={!canSend}
+                          />
+                        ) : (
+                          <Select
+                            value={`${templateBindings[slot].source}:${
+                              templateBindings[slot].field
+                            }`}
+                            onValueChange={(value) => {
+                              const [, field] = value.split(":");
+                              setTemplateBindings((current) => ({
+                                ...current,
+                                [slot]:
+                                  templateBindings[slot].source === "customer"
+                                    ? { source: "customer", field: field as "name" | "firstName" | "phone" | "email" }
+                                    : templateBindings[slot].source === "deal"
+                                      ? { source: "deal", field: field as "id" | "pipeline" | "stage" }
+                                      : { source: "owner", field: "name" },
+                              }));
+                            }}
+                            disabled={!canSend}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Campo" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {templateBindings[slot].source === "customer" && (
+                                <>
+                                  <SelectItem value="customer:name">Nome completo</SelectItem>
+                                  <SelectItem value="customer:firstName">Primeiro nome</SelectItem>
+                                  <SelectItem value="customer:phone">Telefone</SelectItem>
+                                  <SelectItem value="customer:email">E-mail</SelectItem>
+                                </>
+                              )}
+                              {templateBindings[slot].source === "deal" && (
+                                <>
+                                  <SelectItem value="deal:id">Identificador</SelectItem>
+                                  <SelectItem value="deal:pipeline">Pipeline</SelectItem>
+                                  <SelectItem value="deal:stage">Etapa</SelectItem>
+                                </>
+                              )}
+                              {templateBindings[slot].source === "owner" && (
+                                <SelectItem value="owner:name">Responsável</SelectItem>
+                              )}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                {templatePreview && (
+                  <div className="rounded-md bg-muted/50 px-3 py-2 text-sm">
+                    {templatePreview.header && <p className="font-medium">{templatePreview.header}</p>}
+                    <p>{templatePreview.body}</p>
+                  </div>
+                )}
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => templatePreviewMutation.mutate()}
+                    disabled={!selectedTemplateId || templatePreviewMutation.isPending || !canSend}
+                  >
+                    {templatePreviewMutation.isPending ? "Validando..." : "Pré-visualizar"}
+                  </Button>
+                  <Button
+                    onClick={() => void sendTemplate()}
+                    disabled={!selectedTemplateId || !canSend || templatePreviewMutation.isPending}
+                  >
+                    <Send className="mr-2 h-4 w-4" /> Enviar template
+                  </Button>
+                </div>
+              </div>
+            ) : <div className="border-t p-3">
             <div className="flex items-center gap-2">
               <input
                 ref={fileInputRef}
@@ -923,6 +1605,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                 </Button>
               )}
             </div>
+            </div>}
           </div>
         )}
       </div>

@@ -30,6 +30,10 @@ import { Loader2 } from "lucide-react";
 import { RecurrenceSelector } from "./RecurrenceSelector";
 import { MediaAttachment } from "./MediaAttachment";
 import { getFollowUpErrorMessage } from "./errorMessages";
+import {
+  MetaTemplateConfigurator,
+  MetaTemplateConfigValue,
+} from "@/components/message-template";
 
 // Schema de validação
 const formSchema = z.object({
@@ -37,7 +41,7 @@ const formSchema = z.object({
     .string()
     .min(1, "Título é obrigatório")
     .max(255, "Título deve ter no máximo 255 caracteres"),
-  message: z.string().min(1, "Mensagem é obrigatória"),
+  message: z.string().optional(),
   scheduledAt: z.string().min(1, "Data e hora são obrigatórias"),
 });
 
@@ -48,17 +52,27 @@ interface CreateDealFollowUpDialogProps {
   onOpenChange: (open: boolean) => void;
   dealId: string;
   dealTitle: string;
+  pipelineId: string;
+  isMetaCloud: boolean;
 }
 
 export const CreateDealFollowUpDialog: React.FC<
   CreateDealFollowUpDialogProps
-> = ({ open, onOpenChange, dealId, dealTitle }) => {
+> = ({
+  open,
+  onOpenChange,
+  dealId,
+  dealTitle,
+  pipelineId,
+  isMetaCloud,
+}) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [recurrence, setRecurrence] = useState<Recurrence | undefined>(
     undefined,
   );
+  const [template, setTemplate] = useState<MetaTemplateConfigValue>();
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -77,10 +91,13 @@ export const CreateDealFollowUpDialog: React.FC<
 
       return createDealFollowUp(dealId, {
         title: data.title,
-        message: data.message,
+        message: data.message ?? "",
         scheduledAt: utcDate,
         file: selectedFile ?? undefined,
         recurrence,
+        metaTemplateId: template?.templateId,
+        metaTemplateLanguage: template?.language,
+        metaTemplateBindings: template?.bindings,
       });
     },
     onSuccess: () => {
@@ -92,6 +109,7 @@ export const CreateDealFollowUpDialog: React.FC<
       form.reset();
       setSelectedFile(null);
       setRecurrence(undefined);
+      setTemplate(undefined);
       onOpenChange(false);
     },
     onError: (error: unknown) => {
@@ -137,6 +155,7 @@ export const CreateDealFollowUpDialog: React.FC<
       form.reset();
       setSelectedFile(null);
       setRecurrence(undefined);
+      setTemplate(undefined);
     }
     onOpenChange(open);
   };
@@ -184,7 +203,7 @@ export const CreateDealFollowUpDialog: React.FC<
                 )}
               />
 
-              <FormField
+              {!isMetaCloud && <FormField
                 control={form.control}
                 name="message"
                 render={({ field }) => (
@@ -201,14 +220,24 @@ export const CreateDealFollowUpDialog: React.FC<
                     <FormMessage />
                   </FormItem>
                 )}
-              />
+              />}
 
               {/* Anexo de mídia */}
-              <MediaAttachment
+              {!isMetaCloud && <MediaAttachment
                 file={selectedFile}
                 onChange={setSelectedFile}
                 disabled={createMutation.isPending}
-              />
+              />}
+
+              {isMetaCloud && (
+                <MetaTemplateConfigurator
+                  pipelineId={pipelineId}
+                  dealId={dealId}
+                  value={template}
+                  onChange={setTemplate}
+                  disabled={createMutation.isPending}
+                />
+              )}
 
               <FormField
                 control={form.control}

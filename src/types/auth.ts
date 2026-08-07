@@ -42,6 +42,7 @@ export type Permission =
   | "manage:integrations"
   | "connect:whatsapp"
   | "view:integrations"
+  | "manage:whatsapp-consent"
   | "create:deal"
   | "update:deal"
   | "delete:deal"
@@ -66,6 +67,7 @@ export interface UserProfile {
   email: string;
   role: UserRole;
   companyId: string;
+  metaCloudWhatsappEnabled: boolean;
   workspaceId: string | null;
   permissions: Permission[];
 }

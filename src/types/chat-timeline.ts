@@ -15,6 +15,25 @@ export type ChatTimelineEvent = {
     messageType?: Message["type"];
     mediaUrl?: string | null;
     mediaMimetype?: string | null;
+    dispatchStatus?: string | null;
+    deliveryStatus?: string | null;
+    templateId?: string | null;
+    templateName?: string | null;
+    templateLanguage?: string | null;
+    templateParameters?: unknown;
+    templateSnapshot?: unknown;
+    externalMessageId?: string | null;
+    deliveryUpdatedAt?: string | null;
+    deliveryErrorCode?: string | null;
+    deliveryErrorMessage?: string | null;
+    providerCreatedAt?: string | null;
+    providerUpdatedAt?: string | null;
+    channel?: {
+      integrationId: string;
+      provider: string;
+      pipeline: Related;
+      displayPhoneNumber?: string | null;
+    } | null;
     sentByUser?: Related | null;
     stage?: Related & { color?: string };
     fromStage?: (Related & { color?: string }) | null;

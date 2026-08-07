@@ -16,18 +16,28 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { CompanyWhatsAppIntegration } from "@/types/whatsapp";
+import {
+  CompanyWhatsAppIntegration,
+  CompanyWhatsAppIntegrationFull,
+} from "@/types/whatsapp";
 import {
   WhatsAppIntegrationName,
   WHATSAPP_INTEGRATION_NAMES,
 } from "@/types/whatsapp-integration";
 import { PipelineStageMinimal } from "@/types/pipeline";
 import { Eye, EyeOff, MessageSquare } from "lucide-react";
+import { MetaCloudConfigurationSection } from "./MetaCloudConfigurationSection";
 
 interface ConfigurationsTabProps {
   stages: PipelineStageMinimal[];
   availableWhatsAppIntegrations: CompanyWhatsAppIntegration[];
   companyWhatsappIntegrationId?: string | null;
+  pipelineId?: string;
+  metaCloudEnabled: boolean;
+  canUpdatePipeline: boolean;
+  canManageIntegrations: boolean;
+  metaPhoneNumberId: string | null;
+  metaIntegration?: CompanyWhatsAppIntegrationFull | null;
   useWhatsApp: boolean;
   whatsAppIntegrationName: WhatsAppIntegrationName;
   initialStageOrder: number;
@@ -40,6 +50,7 @@ interface ConfigurationsTabProps {
   onExternalTokenChange: (value: string) => void;
   onExternalClientTokenChange: (value: string) => void;
   onPostbackUrlChange: (value: string) => void;
+  onMetaPhoneNumberIdChange: (value: string | null) => void;
 }
 
 export const ConfigurationsTab: React.FC<ConfigurationsTabProps> = ({
@@ -50,12 +61,19 @@ export const ConfigurationsTab: React.FC<ConfigurationsTabProps> = ({
   externalToken,
   externalClientToken,
   postbackUrl,
+  pipelineId,
+  metaCloudEnabled,
+  canUpdatePipeline,
+  canManageIntegrations,
+  metaPhoneNumberId,
+  metaIntegration,
   onUseWhatsAppChange,
   onWhatsAppIntegrationNameChange,
   onInitialStageOrderChange,
   onExternalTokenChange,
   onExternalClientTokenChange,
   onPostbackUrlChange,
+  onMetaPhoneNumberIdChange,
 }) => {
   const [showInstanceToken, setShowInstanceToken] = useState(false);
   const [showClientToken, setShowClientToken] = useState(false);
@@ -91,6 +109,13 @@ export const ConfigurationsTab: React.FC<ConfigurationsTabProps> = ({
             <Switch
               id="use-whatsapp"
               checked={useWhatsApp}
+              disabled={
+                !canUpdatePipeline ||
+                (useWhatsApp &&
+                  whatsAppIntegrationName ===
+                    WHATSAPP_INTEGRATION_NAMES.META_CLOUD &&
+                  !canManageIntegrations)
+              }
               onCheckedChange={(checked) => {
                 onUseWhatsAppChange(checked);
                 if (!checked) {
@@ -122,6 +147,12 @@ export const ConfigurationsTab: React.FC<ConfigurationsTabProps> = ({
                 <Label>Tipo de Integração</Label>
                 <Select
                   value={whatsAppIntegrationName}
+                  disabled={
+                    !canUpdatePipeline ||
+                    (whatsAppIntegrationName ===
+                      WHATSAPP_INTEGRATION_NAMES.META_CLOUD &&
+                      !canManageIntegrations)
+                  }
                   onValueChange={(value) =>
                     onWhatsAppIntegrationNameChange(
                       value as WhatsAppIntegrationName,
@@ -138,37 +169,64 @@ export const ConfigurationsTab: React.FC<ConfigurationsTabProps> = ({
                     <SelectItem value={WHATSAPP_INTEGRATION_NAMES.ZAPI}>
                       Z-API
                     </SelectItem>
+                    {metaCloudEnabled ? (
+                      <SelectItem
+                        value={WHATSAPP_INTEGRATION_NAMES.META_CLOUD}
+                        disabled={!canManageIntegrations}
+                      >
+                        WhatsApp Cloud API oficial
+                      </SelectItem>
+                    ) : null}
                   </SelectContent>
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label>Etapa Inicial</Label>
-                <Select
-                  value={initialStageOrder.toString()}
-                  onValueChange={(value) =>
-                    onInitialStageOrderChange(parseInt(value))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Escolha a etapa inicial" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {stages.map((stage, index) => (
-                      <SelectItem key={stage.id} value={index.toString()}>
-                        {stage.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  Novos leads do WhatsApp serão adicionados nesta etapa
-                </p>
-              </div>
+              {whatsAppIntegrationName !==
+                WHATSAPP_INTEGRATION_NAMES.META_CLOUD && (
+                <div className="space-y-2">
+                  <Label>Etapa Inicial</Label>
+                  <Select
+                    value={initialStageOrder.toString()}
+                    disabled={!canUpdatePipeline}
+                    onValueChange={(value) =>
+                      onInitialStageOrderChange(parseInt(value))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Escolha a etapa inicial" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {stages.map((stage, index) => (
+                        <SelectItem
+                          key={stage.id}
+                          value={(stage.order ?? index).toString()}
+                        >
+                          {stage.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Novos leads do WhatsApp serão adicionados nesta etapa
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
 
-          {whatsAppIntegrationName === WHATSAPP_INTEGRATION_NAMES.ZAPI && (
+          {whatsAppIntegrationName === WHATSAPP_INTEGRATION_NAMES.META_CLOUD ? (
+            <MetaCloudConfigurationSection
+              enabled={metaCloudEnabled}
+              canManageIntegrations={canManageIntegrations}
+              pipelineId={pipelineId}
+              stages={stages}
+              phoneNumberId={metaPhoneNumberId}
+              initialStageOrder={initialStageOrder}
+              integration={metaIntegration}
+              onPhoneNumberChange={onMetaPhoneNumberIdChange}
+              onInitialStageOrderChange={onInitialStageOrderChange}
+            />
+          ) : whatsAppIntegrationName === WHATSAPP_INTEGRATION_NAMES.ZAPI && (
             <Card className="border-primary/15">
               <CardHeader className="pb-4">
                 <CardTitle className="text-sm">Credenciais Z-API</CardTitle>

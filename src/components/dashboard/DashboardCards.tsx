@@ -38,7 +38,7 @@ const DashboardCards = () => {
       <Card>
         <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
           <CardTitle className="text-sm font-medium">
-            WhatsApp Integrations
+            WhatsApp nos pipelines
           </CardTitle>
           <MessageSquare className="w-4 h-4 text-muted-foreground" />
         </CardHeader>
@@ -47,9 +47,9 @@ const DashboardCards = () => {
             +{Math.floor(Math.random() * 5) + 1} from last month
           </p>
           <div className="mt-3">
-            <Link to="/integrations">
+            <Link to="/deals">
               <Button variant="outline" size="sm" className="w-full">
-                View Integrations
+                Ver pipelines
               </Button>
             </Link>
           </div>

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useWorkspaceManager } from "@/hooks/useWorkspaceManager";
@@ -15,6 +15,10 @@ import { getAgent } from "@/services/agent/getAgent";
 import { listCompanyWhatsAppIntegrations } from "@/services/whatsapp/listCompanyWhatsAppIntegrations";
 import { getCompanyWhatsAppIntegration } from "@/services/whatsapp/getCompanyWhatsAppIntegration";
 import {
+  configureMetaCloudPipelineIntegration,
+  disconnectMetaCloudPipelineIntegration,
+} from "@/services/whatsapp/metaCloud";
+import {
   AssistantPipelineStage,
   CreatePipelineInput,
   CreatePipelineStageInput,
@@ -27,6 +31,9 @@ import {
   WhatsAppIntegrationName,
 } from "@/types/whatsapp-integration";
 import { convertHtmlStringToText } from "@/lib/utils";
+import { useAuth } from "@/contexts/auth/hooks";
+import { usePermissions } from "@/hooks/usePermissions";
+import { CompanyWhatsAppIntegrationFull } from "@/types/whatsapp";
 
 export type PipelineEditorTab = "stages" | "agent" | "config";
 
@@ -57,6 +64,12 @@ export interface PipelineEditorResult {
   handleExternalClientTokenChange: (value: string) => void;
   postbackUrl: string;
   handlePostbackUrlChange: (value: string) => void;
+  metaPhoneNumberId: string | null;
+  handleMetaPhoneNumberIdChange: (value: string | null) => void;
+  metaCloudEnabled: boolean;
+  canUpdatePipeline: boolean;
+  canManageIntegrations: boolean;
+  metaIntegration?: CompanyWhatsAppIntegrationFull | null;
   currentPipeline?: { id: string; assistantId?: string | null; companyWhatsappIntegrationId?: string | null; name: string };
   availableWhatsAppIntegrations: Awaited<ReturnType<typeof listCompanyWhatsAppIntegrations>>;
   isAgentLoading: boolean;
@@ -223,8 +236,12 @@ const getSaveErrorFeedback = (error: unknown): SaveErrorFeedback => {
 export function usePipelineEditor(): PipelineEditorResult {
   const { pipelineId } = useParams<{ pipelineId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { userProfile } = useAuth();
+  const { has } = usePermissions();
   const isCreating = !pipelineId;
   const { setDirty, requestNavigation } = useUnsavedChanges();
   const { workspaceId } = useWorkspaceManager({
@@ -253,11 +270,47 @@ export function usePipelineEditor(): PipelineEditorResult {
   const [externalToken, setExternalToken] = useState("");
   const [externalClientToken, setExternalClientToken] = useState("");
   const [postbackUrl, setPostbackUrl] = useState("");
+  const [metaPhoneNumberId, setMetaPhoneNumberId] = useState<string | null>(null);
+  const consumedMetaQueryRef = useRef(false);
+  const metaSelectionFromQueryRef = useRef(false);
+
+  const metaCloudEnabled = Boolean(userProfile?.metaCloudWhatsappEnabled);
+  const canUpdatePipeline = has(
+    isCreating ? "create:pipeline" : "update:pipeline",
+  );
+  const canManageIntegrations = has("manage:integrations");
 
   useEffect(() => {
     hasInitializedDataRef.current = false;
+    consumedMetaQueryRef.current = false;
+    metaSelectionFromQueryRef.current = false;
     setDirty(false);
   }, [pipelineId, setDirty]);
+
+  useEffect(() => {
+    if (consumedMetaQueryRef.current) return;
+
+    const provider = searchParams.get("provider");
+    const tab = searchParams.get("tab");
+    if (provider !== WHATSAPP_INTEGRATION_NAMES.META_CLOUD && tab !== "config") {
+      consumedMetaQueryRef.current = true;
+      return;
+    }
+
+    if (provider === WHATSAPP_INTEGRATION_NAMES.META_CLOUD) {
+      metaSelectionFromQueryRef.current = true;
+      setUseWhatsApp(true);
+      setWhatsAppIntegrationName(WHATSAPP_INTEGRATION_NAMES.META_CLOUD);
+      const order = Number(searchParams.get("initialStageOrder"));
+      if (Number.isInteger(order) && order >= 0) setInitialStageOrder(order);
+    }
+    if (tab === "config" || provider === WHATSAPP_INTEGRATION_NAMES.META_CLOUD) {
+      setActiveTab("config");
+    }
+
+    consumedMetaQueryRef.current = true;
+    navigate(location.pathname, { replace: true });
+  }, [location.pathname, navigate, searchParams]);
 
   const updateAgentFormData = (data: Partial<AgentFormData>) => {
     if (hasInitializedDataRef.current) setDirty(true);
@@ -315,16 +368,30 @@ export function usePipelineEditor(): PipelineEditorResult {
     const data = whatsappIntegrationQuery.data;
     if (!data) return;
 
-    setUseWhatsApp(true);
-    setWhatsAppIntegrationName(data.whatsappIntegrationName);
+    const preserveRequestedMeta = metaSelectionFromQueryRef.current;
+    if (!preserveRequestedMeta) {
+      setUseWhatsApp(true);
+      setWhatsAppIntegrationName(data.whatsappIntegrationName);
+    }
     setExternalToken(data.externalToken || "");
     setExternalClientToken(data.externalClientToken || "");
     setPostbackUrl(data.postbackUrl || "");
+    if (!preserveRequestedMeta || data.whatsappIntegrationName === WHATSAPP_INTEGRATION_NAMES.META_CLOUD) {
+      setMetaPhoneNumberId(data.metaPhoneNumberId || null);
+    }
 
-    const stageIndex = stages.findIndex(
-      (stage) => stage.id === data.initialPipelineStageId,
-    );
-    if (stageIndex !== -1) setInitialStageOrder(stageIndex);
+    if (
+      data.initialPipelineStageOrder !== undefined &&
+      (!preserveRequestedMeta ||
+        data.whatsappIntegrationName === WHATSAPP_INTEGRATION_NAMES.META_CLOUD)
+    ) {
+      setInitialStageOrder(data.initialPipelineStageOrder);
+    } else {
+      const stageIndex = stages.findIndex(
+        (stage) => stage.id === data.initialPipelineStageId,
+      );
+      if (stageIndex !== -1) setInitialStageOrder(stageIndex);
+    }
   }, [whatsappIntegrationQuery.data, stages]);
 
   useEffect(() => {
@@ -551,14 +618,30 @@ export function usePipelineEditor(): PipelineEditorResult {
 
       const config = stage.reengagementConfig;
       if (config) {
+        const usesMetaTemplates =
+          (useWhatsApp &&
+            whatsAppIntegrationName === WHATSAPP_INTEGRATION_NAMES.META_CLOUD) ||
+          Boolean(config.metaTemplateId) ||
+          Boolean(config.templateAttempts?.length);
         if (config.minInactiveChatTimeHours < 1)
           errors.push(`Etapa #${index + 1}: Tempo de inatividade deve ser no mínimo 1 hora`);
         if (config.maxMessages < 1)
           errors.push(`Etapa #${index + 1}: Número máximo de mensagens deve ser no mínimo 1`);
         if (config.messagingIntervalHours && config.messagingIntervalHours < 1)
           errors.push(`Etapa #${index + 1}: Intervalo entre mensagens deve ser no mínimo 1 hora`);
-        if (!config.messages.filter((message) => message.trim()).length)
+        if (usesMetaTemplates) {
+          const attempts = config.templateAttempts ?? [];
+          if (
+            attempts.length !== config.maxMessages ||
+            attempts.some((attempt) => !attempt.templateId || !attempt.language)
+          ) {
+            errors.push(
+              `Etapa #${index + 1}: configure um template Meta para cada tentativa`,
+            );
+          }
+        } else if (!config.messages.filter((message) => message.trim()).length) {
           errors.push(`Etapa #${index + 1}: Adicione pelo menos uma mensagem de follow-up`);
+        }
       }
     });
 
@@ -583,6 +666,14 @@ export function usePipelineEditor(): PipelineEditorResult {
 
     if (!new Set(stages.map((stage) => stage.order)).has(initialStageOrder))
       errors.push(`Etapa inicial do WhatsApp (ordem ${initialStageOrder}) não existe`);
+
+    if (
+      whatsAppIntegrationName === WHATSAPP_INTEGRATION_NAMES.META_CLOUD &&
+      !isCreating &&
+      !metaPhoneNumberId
+    ) {
+      errors.push("Escolha um número Meta antes de salvar a conexão");
+    }
 
     if (whatsAppIntegrationName === WHATSAPP_INTEGRATION_NAMES.ZAPI) {
       if (!externalToken.trim()) errors.push("Token externo é obrigatório para Z-API");
@@ -623,19 +714,31 @@ export function usePipelineEditor(): PipelineEditorResult {
       : null;
 
   const buildWhatsAppIntegration = (): WhatsAppIntegrationConfig | null | undefined => {
+    if (!useWhatsApp) {
+      return currentPipeline?.companyWhatsappIntegrationId ? null : undefined;
+    }
+
+    if (whatsAppIntegrationName === WHATSAPP_INTEGRATION_NAMES.META_CLOUD) {
+      return undefined;
+    }
+
     if (useWhatsApp) {
-      const integration: WhatsAppIntegrationConfig = {
-        whatsappIntegrationName: whatsAppIntegrationName,
-        initialPipelineStageOrder: initialStageOrder,
-      };
-      if (whatsAppIntegrationName === WHATSAPP_INTEGRATION_NAMES.ZAPI) {
-        integration.externalToken = externalToken;
-        integration.externalClientToken = externalClientToken;
-        integration.postbackUrl = postbackUrl;
-      }
+      const integration: WhatsAppIntegrationConfig =
+        whatsAppIntegrationName === WHATSAPP_INTEGRATION_NAMES.EVOLUX
+          ? {
+              whatsappIntegrationName: WHATSAPP_INTEGRATION_NAMES.EVOLUX,
+              initialPipelineStageOrder: initialStageOrder,
+            }
+          : {
+              whatsappIntegrationName: WHATSAPP_INTEGRATION_NAMES.ZAPI,
+              initialPipelineStageOrder: initialStageOrder,
+              externalToken,
+              externalClientToken,
+              postbackUrl,
+            };
       return integration;
     }
-    return currentPipeline?.companyWhatsappIntegrationId ? null : undefined;
+    return undefined;
   };
 
   const buildStages = (): CreatePipelineStageInput[] =>
@@ -661,6 +764,11 @@ export function usePipelineEditor(): PipelineEditorResult {
             startTime: stage.reengagementConfig.startTime,
             endTime: stage.reengagementConfig.endTime,
             mediaFileId: stage.reengagementConfig.mediaFileId ?? undefined,
+            configurationState: stage.reengagementConfig.configurationState,
+            metaTemplateId: stage.reengagementConfig.metaTemplateId,
+            metaTemplateLanguage: stage.reengagementConfig.metaTemplateLanguage,
+            metaTemplateBindings: stage.reengagementConfig.metaTemplateBindings,
+            templateAttempts: stage.reengagementConfig.templateAttempts,
           }
         : null,
     }));
@@ -712,6 +820,43 @@ export function usePipelineEditor(): PipelineEditorResult {
       const assistant = buildAssistant();
       const whatsappIntegration = buildWhatsAppIntegration();
       const stagesInput = buildStages();
+      const currentIntegration = whatsappIntegrationQuery.data;
+
+      if (
+        !isCreating &&
+        currentPipeline?.companyWhatsappIntegrationId &&
+        whatsappIntegrationQuery.isPending
+      ) {
+        toast({
+          title: "Carregando a conexão do WhatsApp",
+          description: "Aguarde a leitura da integração antes de salvar.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const targetMeta =
+        useWhatsApp &&
+        whatsAppIntegrationName === WHATSAPP_INTEGRATION_NAMES.META_CLOUD;
+      const currentMeta =
+        currentIntegration?.whatsappIntegrationName ===
+        WHATSAPP_INTEGRATION_NAMES.META_CLOUD;
+      const activeMetaMigration =
+        currentMeta &&
+        currentIntegration.active &&
+        (!targetMeta || currentIntegration.metaPhoneNumberId !== metaPhoneNumberId);
+      const shouldConfigureMeta =
+        targetMeta &&
+        canManageIntegrations &&
+        (!currentMeta ||
+          !currentIntegration ||
+          !currentIntegration.active ||
+          currentIntegration.metaPhoneNumberId !== metaPhoneNumberId ||
+          currentIntegration.initialPipelineStageOrder !== initialStageOrder);
+
+      if (activeMetaMigration && !window.confirm("A conexão Meta ativa será alterada. Deseja continuar?")) {
+        return;
+      }
 
       if (isCreating) {
         const payload: CreatePipelineInput = {
@@ -731,7 +876,16 @@ export function usePipelineEditor(): PipelineEditorResult {
             : `${pipelineName} foi criado.`,
         });
         setDirty(false);
-        navigate(`/deals/pipeline/${response.id}`);
+        await queryClient.invalidateQueries({
+          queryKey: ["listPipelines", workspaceId],
+        });
+        if (targetMeta) {
+          navigate(
+            `/deals/pipeline/${response.id}/edit?tab=config&provider=meta-cloud&initialStageOrder=${initialStageOrder}`,
+          );
+        } else {
+          navigate(`/deals/pipeline/${response.id}`);
+        }
         return;
       }
 
@@ -757,6 +911,35 @@ export function usePipelineEditor(): PipelineEditorResult {
         whatsappIntegration,
       });
 
+      if (shouldConfigureMeta) {
+        try {
+          await configureMetaCloudPipelineIntegration(pipelineId!, {
+            phoneNumberId: metaPhoneNumberId!,
+            initialPipelineStageOrder: initialStageOrder,
+          });
+        } catch {
+          setActiveTab("config");
+          toast({
+            title: "Pipeline salvo; WhatsApp não atualizado",
+            description: "Revise a conexão Meta e tente novamente.",
+            variant: "destructive",
+          });
+          return;
+        }
+      } else if (currentMeta && !useWhatsApp) {
+        try {
+          await disconnectMetaCloudPipelineIntegration(pipelineId!);
+        } catch {
+          setActiveTab("config");
+          toast({
+            title: "Pipeline salvo; WhatsApp não desconectado",
+            description: "A conexão Meta continua ativa. Tente desconectar novamente.",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+
       toast({
         title: "Funil atualizado com sucesso",
         description: useAgent
@@ -767,6 +950,10 @@ export function usePipelineEditor(): PipelineEditorResult {
         queryClient.invalidateQueries({ queryKey: ["listPipelines"] }),
         queryClient.invalidateQueries({ queryKey: ["listPipelineStages"] }),
         queryClient.invalidateQueries({ queryKey: ["getAgent"] }),
+        queryClient.invalidateQueries({
+          queryKey: ["getCompanyWhatsAppIntegration", currentPipeline?.companyWhatsappIntegrationId],
+        }),
+        queryClient.invalidateQueries({ queryKey: ["meta-cloud-diagnostic"] }),
       ]);
       setDirty(false);
       navigate(`/deals/pipeline/${pipelineId}`);
@@ -830,6 +1017,7 @@ export function usePipelineEditor(): PipelineEditorResult {
     },
     whatsAppIntegrationName,
     handleWhatsAppIntegrationNameChange: (value: WhatsAppIntegrationName) => {
+      metaSelectionFromQueryRef.current = false;
       setWhatsAppIntegrationName(value);
       markDirty();
     },
@@ -853,6 +1041,15 @@ export function usePipelineEditor(): PipelineEditorResult {
       setPostbackUrl(value);
       markDirty();
     },
+    metaPhoneNumberId,
+    handleMetaPhoneNumberIdChange: (value: string | null) => {
+      setMetaPhoneNumberId(value);
+      markDirty();
+    },
+    metaCloudEnabled,
+    canUpdatePipeline,
+    canManageIntegrations,
+    metaIntegration: whatsappIntegrationQuery.data,
     currentPipeline,
     availableWhatsAppIntegrations: whatsappIntegrationsQuery.data || [],
     isAgentLoading: agentQuery.isLoading,

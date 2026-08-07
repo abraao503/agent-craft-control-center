@@ -30,6 +30,14 @@ export interface MassBroadcast {
   totalRecipients: number;
   sentCount: number;
   failedCount: number;
+  skippedCount?: number;
+  deliveredCount?: number;
+  readCount?: number;
+  provider?: string | null;
+  metaTemplateId?: string | null;
+  metaTemplateLanguage?: string | null;
+  metaTemplateBindings?: Record<string, unknown> | null;
+  configurationState?: "READY" | "REQUIRES_TEMPLATE" | string;
   customerIds: string[];
   includeTagIds: string[];
   excludeTagIds: string[];
@@ -53,6 +61,9 @@ export interface MassBroadcastRecipient {
   customerPhone: string;
   chatId: string;
   status: MassBroadcastRecipientStatus;
+  dispatchStatus?: string;
+  deliveryStatus?: string;
+  skipReason?: string | null;
   messageContent: string;
   messageId: string | null;
   sentAt: string | null;
@@ -83,6 +94,10 @@ export interface PreviewRecipientsParams {
   includeTagIds?: string[];
   excludeTagIds?: string[];
   pipelineStageIds?: string[];
+  pipelineId?: string;
+  integrationId?: string;
+  templateId?: string;
+  bindings?: Record<string, unknown>;
 }
 
 export interface PreviewRecipient {
@@ -95,6 +110,8 @@ export interface PreviewRecipient {
 export interface PreviewRecipientsResponse {
   recipients: PreviewRecipient[];
   total: number;
+  eligible?: number;
+  ignoredByReason?: Record<string, number>;
 }
 
 export interface CreateMassBroadcastInput {
@@ -111,6 +128,10 @@ export interface CreateMassBroadcastInput {
   startTime?: string;
   endTime?: string;
   file?: File;
+  provider?: string;
+  metaTemplateId?: string;
+  metaTemplateLanguage?: string;
+  metaTemplateBindings?: Record<string, unknown>;
 }
 
 export interface ListMassBroadcastsParams {
