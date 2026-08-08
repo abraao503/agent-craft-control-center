@@ -44,6 +44,7 @@ import {
   X,
   Bot,
   Clock,
+  ExternalLink,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { DealListItem, DealNote } from "@/types/deal";
@@ -103,6 +104,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { usePermissions } from "@/hooks/usePermissions";
 import { DealFollowUpListDialog } from "./follow-up/DealFollowUpListDialog";
+import { getDealAttributions } from "@/services/deal/getDealAttributions";
 
 // Utility functions for datetime conversion
 // Converts UTC datetime to local datetime-local input format
@@ -232,6 +234,13 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
   const { data: notes = [], isLoading: notesLoading } = useQuery({
     queryKey: ["getDealNotes", deal?.id],
     queryFn: () => getDealNotes(deal!.id, { limit: 50, offset: 0 }),
+    enabled: open && !!deal?.id,
+  });
+
+  const { data: attributionHistory } = useQuery({
+    queryKey: ["getDealAttributions", deal?.id, workspaceId],
+    queryFn: () =>
+      getDealAttributions(deal!.id, { workspaceId, page: 1, limit: 50 }),
     enabled: open && !!deal?.id,
   });
 
@@ -1306,6 +1315,114 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
                           )}
                         </div>
                       </div>
+                    </div>
+
+                    <div className="border-t pt-4 mt-4 px-1">
+                      <h3 className="font-semibold mb-3">Atribuição de origem</h3>
+                      {dealDetails?.attribution?.firstTouch ? (
+                        <div className="space-y-3 text-sm">
+                          <div className="rounded-md border p-3">
+                            <p className="text-xs text-muted-foreground">
+                              Primeiro toque
+                            </p>
+                            <p className="font-medium">
+                              {dealDetails.attribution.firstTouch.campaignName ||
+                                dealDetails.attribution.firstTouch.adName ||
+                                dealDetails.attribution.firstTouch.title ||
+                                dealDetails.attribution.firstTouch.sourceId ||
+                                "Origem identificada"}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {dealDetails.attribution.firstTouch.sourceType ===
+                              "META_AD"
+                                ? "Meta · anúncio"
+                                : dealDetails.attribution.firstTouch.sourceType ===
+                                    "META_POST"
+                                  ? "Meta · publicação"
+                                  : dealDetails.attribution.firstTouch.sourceType ===
+                                      "META_LEAD_FORM"
+                                    ? "Meta · formulário"
+                                    : "Sem atribuição"}{" "}
+                              · {new Date(
+                                dealDetails.attribution.firstTouch.attributedAt,
+                              ).toLocaleString("pt-BR")}
+                            </p>
+                            {(() => {
+                              const value =
+                                dealDetails.attribution.firstTouch.sourceUrl;
+                              if (!value) return null;
+                              try {
+                                const url = new URL(value);
+                                if (!/^https?:$/.test(url.protocol)) return null;
+                                return (
+                                  <a
+                                    href={url.href}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 mt-2 text-xs text-primary hover:underline"
+                                  >
+                                    Abrir origem
+                                    <ExternalLink className="h-3 w-3" />
+                                  </a>
+                                );
+                              } catch {
+                                return null;
+                              }
+                            })()}
+                          </div>
+                          {dealDetails.attribution.lastTouch &&
+                            dealDetails.attribution.lastTouch.id !==
+                              dealDetails.attribution.firstTouch.id && (
+                              <div className="rounded-md border p-3">
+                                <p className="text-xs text-muted-foreground">
+                                  Último toque
+                                </p>
+                                <p className="font-medium">
+                                  {dealDetails.attribution.lastTouch.campaignName ||
+                                    dealDetails.attribution.lastTouch.adName ||
+                                    dealDetails.attribution.lastTouch.title ||
+                                    dealDetails.attribution.lastTouch.sourceId ||
+                                    "Origem identificada"}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {new Date(
+                                    dealDetails.attribution.lastTouch.attributedAt,
+                                  ).toLocaleString("pt-BR")}
+                                </p>
+                              </div>
+                            )}
+                          {attributionHistory && attributionHistory.total > 0 && (
+                            <div className="space-y-1">
+                              <p className="text-xs font-medium text-muted-foreground">
+                                Histórico ({attributionHistory.total})
+                              </p>
+                              {attributionHistory.items.map((touch) => (
+                                <div
+                                  key={touch.id}
+                                  className="flex items-center justify-between rounded border px-2 py-1.5 text-xs"
+                                >
+                                  <span className="truncate">
+                                    {touch.campaignName ||
+                                      touch.adName ||
+                                      touch.title ||
+                                      touch.sourceId ||
+                                      "Origem identificada"}
+                                  </span>
+                                  <span className="ml-2 shrink-0 text-muted-foreground">
+                                    {new Date(
+                                      touch.attributedAt,
+                                    ).toLocaleDateString("pt-BR")}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">
+                          Sem atribuição
+                        </p>
+                      )}
                     </div>
 
                     {/* Tags Section */}

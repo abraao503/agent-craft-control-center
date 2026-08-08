@@ -21,6 +21,9 @@ type DealApiItem = {
   tags?: string[];
   tagIds?: string[];
   dueDate?: string | null;
+  attribution?: {
+    firstTouch: import("@/types/deal").LeadAttributionSummary | null;
+  };
 };
 
 type ApiResponse = {
@@ -38,6 +41,9 @@ export const getDealsByStage = async ({
   page = 1,
   search,
   assignedUserId,
+  attributionSource,
+  campaignId,
+  adId,
 }: GetDealsByStageParams): Promise<GetDealsByStageResponse> => {
   const { data } = await api.get<ApiResponse>(`/deal/stage/${stageId}`, {
     params: {
@@ -46,6 +52,9 @@ export const getDealsByStage = async ({
       page,
       search,
       assignedUserId,
+      attributionSource,
+      campaignId,
+      adId,
     },
   });
 
@@ -63,6 +72,18 @@ export const getDealsByStage = async ({
     assignedUser: apiDeal.assignedUser,
     tags: apiDeal.tags || apiDeal.tagIds || [],
     dueDate: apiDeal.dueDate,
+    attribution: apiDeal.attribution
+      ? {
+          firstTouch: apiDeal.attribution.firstTouch
+            ? {
+                ...apiDeal.attribution.firstTouch,
+                attributedAt: new Date(
+                  apiDeal.attribution.firstTouch.attributedAt,
+                ).toISOString(),
+              }
+            : null,
+        }
+      : undefined,
   }));
 
   return {

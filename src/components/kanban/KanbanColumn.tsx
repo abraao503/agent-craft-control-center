@@ -6,10 +6,16 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { DealListItem } from "@/types/deal";
+import { DealListItem, LeadAttributionSource } from "@/types/deal";
 import { PipelineStageMinimal } from "@/types/pipeline";
 import { cn, isColorDark } from "@/lib/utils";
-import { MessageCircle, Tag as TagIcon, Search, Bot } from "lucide-react";
+import {
+  MessageCircle,
+  Tag as TagIcon,
+  Search,
+  Bot,
+  ExternalLink,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
   Popover,
@@ -33,11 +39,15 @@ interface KanbanColumnProps {
   isMoving?: boolean;
   stageMeta?: { color?: string; winProbability?: number };
   workspaceId?: string;
+  pipelineId?: string;
   onDealClick: (deal: DealListItem) => void;
   dragOverStage: string | null;
   onDragEnter: () => void;
   onDragLeave: (e: React.DragEvent) => void;
   assignedUserId?: string;
+  attributionSource?: LeadAttributionSource | "UNATTRIBUTED";
+  campaignId?: string;
+  adId?: string;
 }
 
 const formatCurrency = (value: number | null | undefined, currency = "BRL") => {
@@ -68,6 +78,29 @@ const getInitials = (name: string) => {
 const formatUnreadMessagesTitle = (count: number): string => {
   if (count === 1) return "1 nova mensagem";
   return `${count} novas mensagens`;
+};
+
+const attributionLabel = (source?: string) => {
+  switch (source) {
+    case "META_AD":
+      return "Meta · anúncio";
+    case "META_POST":
+      return "Meta · publicação";
+    case "META_LEAD_FORM":
+      return "Meta · formulário";
+    default:
+      return "Sem atribuição";
+  }
+};
+
+const safeExternalUrl = (value?: string | null): string | null => {
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:" ? url.href : null;
+  } catch {
+    return null;
+  }
 };
 
 // Customizar posição do badge: offsetX e offsetY em pixels
@@ -199,11 +232,15 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
   isMoving,
   stageMeta,
   workspaceId,
+  pipelineId,
   onDealClick,
   dragOverStage,
   onDragEnter,
   onDragLeave,
   assignedUserId,
+  attributionSource,
+  campaignId,
+  adId,
 }) => {
   const navigate = useNavigate();
   const viewportRef = useRef<HTMLDivElement | null>(null);
@@ -226,8 +263,12 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
         "dealsByStage",
         stage.id,
         workspaceId,
+        pipelineId,
         debouncedSearchTerm,
         assignedUserId,
+        attributionSource,
+        campaignId,
+        adId,
       ],
       queryFn: ({ pageParam = 1 }) =>
         getDealsByStage({
@@ -237,6 +278,9 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
           page: pageParam,
           search: debouncedSearchTerm || undefined,
           assignedUserId: assignedUserId || undefined,
+          attributionSource,
+          campaignId,
+          adId,
         }),
       getNextPageParam: (lastPage) => {
         return lastPage.page < lastPage.totalPages
@@ -420,6 +464,38 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
 
                     <div className="font-medium text-sm truncate text-foreground/90 pr-8">
                       {deal.title}
+                    </div>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <Badge
+                        variant="secondary"
+                        className="text-[10px] font-medium"
+                      >
+                        {attributionLabel(deal.attribution?.firstTouch?.sourceType)}
+                      </Badge>
+                      {deal.attribution?.firstTouch && (
+                        <span className="text-[10px] text-muted-foreground truncate">
+                          {deal.attribution.firstTouch.campaignName ||
+                            deal.attribution.firstTouch.adName ||
+                            deal.attribution.firstTouch.title ||
+                            deal.attribution.firstTouch.sourceId ||
+                            "Origem identificada"}
+                        </span>
+                      )}
+                      {safeExternalUrl(deal.attribution?.firstTouch?.sourceUrl) && (
+                        <a
+                          href={safeExternalUrl(
+                            deal.attribution?.firstTouch?.sourceUrl,
+                          )!}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          data-no-drag="true"
+                          className="ml-auto text-muted-foreground hover:text-foreground"
+                          aria-label="Abrir origem da atribuição"
+                          onClick={(event) => event.stopPropagation()}
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
+                      )}
                     </div>
                     {deal.description && (
                       <div className="text-xs text-muted-foreground line-clamp-2 mt-1">

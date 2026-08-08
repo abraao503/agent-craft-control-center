@@ -5,7 +5,11 @@ import { Button } from "@/components/ui/button";
 import { useWorkspaceManager } from "@/hooks/useWorkspaceManager";
 import { listPipelineStages } from "@/services/pipeline/listPipelineStages";
 import { moveDealStage } from "@/services/deal/moveDealStage";
-import { DealListItem, GetDealsByStageResponse } from "@/types/deal";
+import {
+  DealListItem,
+  GetDealsByStageResponse,
+  LeadAttributionSource,
+} from "@/types/deal";
 import KanbanBoard from "@/components/kanban/KanbanBoard";
 import { KanbanSkeleton } from "@/components/kanban/KanbanSkeleton";
 import { CreateDealModal } from "@/components/deals/CreateDealModal";
@@ -24,6 +28,14 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { useAuth } from "@/contexts/auth/hooks";
 import { MessageSentEvent } from "@/types/websocket";
 import { Inbox } from "lucide-react";
+import { getDealAttributionOptions } from "@/services/deal/getDealAttributionOptions";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const PipelineDetailPage = () => {
   const { pipelineId } = useParams();
@@ -46,6 +58,11 @@ const PipelineDetailPage = () => {
   const [selectedUserId, setSelectedUserId] = useState<string | undefined>(
     undefined,
   );
+  const [attributionSource, setAttributionSource] = useState<
+    LeadAttributionSource | "UNATTRIBUTED" | undefined
+  >(undefined);
+  const [campaignId, setCampaignId] = useState<string | undefined>(undefined);
+  const [adId, setAdId] = useState<string | undefined>(undefined);
   const [activitiesSidebarOpen, setActivitiesSidebarOpen] = useState(false);
 
   // SALES_REP sempre filtra pelos próprios cards
@@ -117,6 +134,22 @@ const PipelineDetailPage = () => {
     queryFn: () => listPipelines(workspaceId!),
     enabled: !!workspaceId,
   });
+
+  const attributionOptionsQuery = useQuery({
+    queryKey: ["dealAttributionOptions", workspaceId, pipelineId],
+    queryFn: () =>
+      getDealAttributionOptions({
+        workspaceId: workspaceId!,
+        pipelineId: pipelineId || undefined,
+      }),
+    enabled: !!workspaceId,
+  });
+
+  useEffect(() => {
+    setAttributionSource(undefined);
+    setCampaignId(undefined);
+    setAdId(undefined);
+  }, [workspaceId, pipelineId]);
 
   useEffect(() => {
     if (!workspaceId || pipelineId) return;
@@ -395,6 +428,9 @@ const PipelineDetailPage = () => {
       workspaceId={workspaceId}
       pipelineId={pipelineId}
       assignedUserId={effectiveAssignedUserId}
+      attributionSource={attributionSource}
+      campaignId={campaignId}
+      adId={adId}
       onDealUpdated={() => {
         stages.forEach((stage) => {
           queryClient.invalidateQueries({
@@ -428,6 +464,77 @@ const PipelineDetailPage = () => {
               selectedUserId={selectedUserId}
               onSelectUser={setSelectedUserId}
             />
+          )}
+          {workspaceId && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <Select
+                value={attributionSource || "__all"}
+                onValueChange={(value) =>
+                  setAttributionSource(
+                    value === "__all"
+                      ? undefined
+                      : (value as LeadAttributionSource | "UNATTRIBUTED"),
+                  )
+                }
+              >
+                <SelectTrigger className="h-8 w-[150px] text-xs">
+                  <SelectValue placeholder="Origem" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all">Todas as origens</SelectItem>
+                  <SelectItem value="UNATTRIBUTED">Sem atribuição</SelectItem>
+                  {(attributionOptionsQuery.data?.sources || [])
+                    .filter((source) => source !== "UNKNOWN")
+                    .map((source) => (
+                      <SelectItem key={source} value={source}>
+                        {source === "META_AD"
+                          ? "Meta · anúncio"
+                          : source === "META_POST"
+                            ? "Meta · publicação"
+                            : "Meta · formulário"}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+              <Select
+                value={campaignId || "__all"}
+                onValueChange={(value) =>
+                  setCampaignId(value === "__all" ? undefined : value)
+                }
+              >
+                <SelectTrigger className="h-8 w-[160px] text-xs">
+                  <SelectValue placeholder="Campanha" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all">Todas as campanhas</SelectItem>
+                  {(attributionOptionsQuery.data?.campaigns || []).map(
+                    (campaign) => (
+                      <SelectItem key={campaign.id} value={campaign.id}>
+                        {campaign.name}
+                      </SelectItem>
+                    ),
+                  )}
+                </SelectContent>
+              </Select>
+              <Select
+                value={adId || "__all"}
+                onValueChange={(value) =>
+                  setAdId(value === "__all" ? undefined : value)
+                }
+              >
+                <SelectTrigger className="h-8 w-[160px] text-xs">
+                  <SelectValue placeholder="Anúncio" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all">Todos os anúncios</SelectItem>
+                  {(attributionOptionsQuery.data?.ads || []).map((ad) => (
+                    <SelectItem key={ad.id} value={ad.id}>
+                      {ad.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           )}
         </div>
         <div className="flex items-center gap-2">

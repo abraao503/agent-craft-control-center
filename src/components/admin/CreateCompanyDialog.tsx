@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { AxiosError } from "axios";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createCompany } from "@/services/company/createCompany";
 import { useToast } from "@/hooks/use-toast";
@@ -49,9 +50,15 @@ export function CreateCompanyDialog({
       });
       onOpenChange(false);
     },
-    onError: (error) => {
+    onError: (error: unknown) => {
+      const response = error instanceof AxiosError ? error.response?.data : null;
       const message =
-        (error as any).response?.data?.message || "Erro ao criar empresa";
+        response &&
+        typeof response === "object" &&
+        "message" in response &&
+        typeof response.message === "string"
+          ? response.message
+          : "Erro ao criar empresa";
       toast({
         title: "Erro",
         description: message,
