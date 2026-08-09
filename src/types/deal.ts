@@ -27,10 +27,14 @@ export interface LeadAttributionSummary {
   campaignName: string | null;
   adSetId: string | null;
   adSetName: string | null;
+  adAccountId?: string | null;
+  adAccountName?: string | null;
   adId: string | null;
   adName: string | null;
   formId: string | null;
   formName: string | null;
+  pageId?: string | null;
+  pageName?: string | null;
   thumbnailUrl: string | null;
   videoUrl: string | null;
   mediaType: string | null;

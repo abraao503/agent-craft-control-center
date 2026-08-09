@@ -11,11 +11,22 @@ export default function IntegrationResponsePage() {
   const [searchParams] = useSearchParams();
   const [status, setStatus] = useState<Status>("loading");
   const [countdown, setCountdown] = useState(AUTO_CLOSE_DELAY_MS / 1000);
+  const isMeta = searchParams.get("meta") !== null;
 
   useEffect(() => {
     const googleCalendar = searchParams.get("google_calendar");
+    const meta = searchParams.get("meta");
 
-    if (googleCalendar === "connected") {
+    if (meta === "meta_connected") {
+      setStatus("connected");
+    } else if (
+      meta === "meta_missing_scopes" ||
+      meta === "meta_permission_denied"
+    ) {
+      setStatus("permission_denied");
+    } else if (meta) {
+      setStatus("unknown_error");
+    } else if (googleCalendar === "connected") {
       setStatus("connected");
     } else if (googleCalendar === "permission_denied") {
       setStatus("permission_denied");
@@ -56,7 +67,7 @@ export default function IntegrationResponsePage() {
         <div className="text-center max-w-sm space-y-4">
           <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto" />
           <h1 className="text-2xl font-bold text-foreground">
-            Google Calendar conectado!
+            {isMeta ? "Meta conectado!" : "Google Calendar conectado!"}
           </h1>
           <p className="text-muted-foreground">
             Sua conta foi vinculada com sucesso. Esta janela será fechada
@@ -72,6 +83,7 @@ export default function IntegrationResponsePage() {
   }
 
   if (status === "permission_denied") {
+    const integrationName = isMeta ? "Meta" : "Google Calendar";
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <div className="text-center max-w-sm space-y-4">
@@ -80,9 +92,8 @@ export default function IntegrationResponsePage() {
             Permissão negada
           </h1>
           <p className="text-muted-foreground">
-            O acesso ao Google Calendar não foi concedido. Para concluir a
-            integração, é necessário permitir o acesso aos eventos do
-            calendário.
+            O acesso ao {integrationName} não foi concedido. Para concluir a
+            integração, autorize as permissões solicitadas e tente novamente.
           </p>
           <div className="flex flex-col sm:flex-row gap-2 justify-center">
             <Button onClick={() => window.close()} variant="outline">
@@ -104,8 +115,9 @@ export default function IntegrationResponsePage() {
         <XCircle className="h-16 w-16 text-destructive mx-auto" />
         <h1 className="text-2xl font-bold text-foreground">Ocorreu um erro</h1>
         <p className="text-muted-foreground">
-          Não foi possível completar a integração com o Google Calendar. Por
-          favor, feche esta janela e tente novamente.
+          Não foi possível completar a integração com{" "}
+          {isMeta ? "a Meta" : "o Google Calendar"}. Por favor, feche esta
+          janela e tente novamente.
         </p>
         <Button onClick={() => window.close()} variant="outline">
           Fechar
