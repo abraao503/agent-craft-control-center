@@ -44,6 +44,7 @@ export const getDealsByStage = async ({
   attributionSource,
   campaignId,
   adId,
+  formId,
 }: GetDealsByStageParams): Promise<GetDealsByStageResponse> => {
   const { data } = await api.get<ApiResponse>(`/deal/stage/${stageId}`, {
     params: {
@@ -55,6 +56,7 @@ export const getDealsByStage = async ({
       attributionSource,
       campaignId,
       adId,
+      formId,
     },
   });
 

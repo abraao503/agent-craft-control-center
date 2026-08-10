@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { Link } from "react-router-dom";
 import {
   Dialog,
   DialogContent,
@@ -47,7 +48,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { DealListItem, DealNote } from "@/types/deal";
+import { DealListItem, DealNote, LeadAttributionSummary } from "@/types/deal";
 import {
   StageFormField,
   FieldType,
@@ -105,6 +106,13 @@ import {
 import { usePermissions } from "@/hooks/usePermissions";
 import { DealFollowUpListDialog } from "./follow-up/DealFollowUpListDialog";
 import { getDealAttributions } from "@/services/deal/getDealAttributions";
+import {
+  formatAttributionChannel,
+  formatAttributionEnrichmentState,
+  formatAttributionOrigin,
+  formatAttributionSourceLabel,
+  isAttributionConfigurationIssue,
+} from "@/utils/deal-attribution";
 
 // Utility functions for datetime conversion
 // Converts UTC datetime to local datetime-local input format
@@ -156,6 +164,81 @@ interface DealViewModalProps {
   pipelineId?: string; // Optional pipeline ID to fetch stages
 }
 
+const attributionValue = (
+  name: string | null | undefined,
+  id: string | null | undefined,
+) => name || id || "Não informado";
+
+const AttributionDetails: React.FC<{
+  attribution: LeadAttributionSummary;
+  title: string;
+  canAccessIntegrations: boolean;
+}> = ({ attribution, title, canAccessIntegrations }) => {
+  const sourceUrl = (() => {
+    if (!attribution.sourceUrl) return null;
+    try {
+      const url = new URL(attribution.sourceUrl);
+      return /^https?:$/.test(url.protocol) ? url.href : null;
+    } catch {
+      return null;
+    }
+  })();
+
+  return (
+    <div className="rounded-md border p-3 space-y-3">
+      <div>
+        <p className="text-xs text-muted-foreground">{title}</p>
+        <p className="font-medium">{formatAttributionOrigin(attribution)}</p>
+        <p className="text-xs text-muted-foreground">
+          {formatAttributionSourceLabel(attribution.sourceType)} ·{" "}
+          {new Date(attribution.attributedAt).toLocaleString("pt-BR")}
+        </p>
+      </div>
+
+      <dl className="grid grid-cols-[auto,1fr] gap-x-3 gap-y-1 text-xs">
+        <dt className="text-muted-foreground">Canal/plataforma</dt>
+        <dd>{formatAttributionChannel(attribution)} · Meta</dd>
+        <dt className="text-muted-foreground">Campanha</dt>
+        <dd>
+          {attributionValue(attribution.campaignName, attribution.campaignId)}
+        </dd>
+        <dt className="text-muted-foreground">Conjunto</dt>
+        <dd>{attributionValue(attribution.adSetName, attribution.adSetId)}</dd>
+        <dt className="text-muted-foreground">Anúncio</dt>
+        <dd>{attributionValue(attribution.adName, attribution.adId)}</dd>
+        <dt className="text-muted-foreground">Formulário</dt>
+        <dd>{attributionValue(attribution.formName, attribution.formId)}</dd>
+        <dt className="text-muted-foreground">Página</dt>
+        <dd>{attributionValue(attribution.pageName, attribution.pageId)}</dd>
+        <dt className="text-muted-foreground">Estado</dt>
+        <dd>{formatAttributionEnrichmentState(attribution)}</dd>
+      </dl>
+
+      {isAttributionConfigurationIssue(attribution) &&
+        canAccessIntegrations && (
+          <Link
+            to="/integrations"
+            className="inline-flex text-xs text-primary hover:underline"
+          >
+            Configurar integração
+          </Link>
+        )}
+
+      {sourceUrl && (
+        <a
+          href={sourceUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+        >
+          Abrir origem
+          <ExternalLink className="h-3 w-3" />
+        </a>
+      )}
+    </div>
+  );
+};
+
 export const DealViewModal: React.FC<DealViewModalProps> = ({
   open,
   onOpenChange,
@@ -166,6 +249,8 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { has } = usePermissions();
+  const canAccessIntegrations =
+    has("manage:integrations") || has("view:integrations");
 
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -1318,109 +1403,52 @@ export const DealViewModal: React.FC<DealViewModalProps> = ({
                     </div>
 
                     <div className="border-t pt-4 mt-4 px-1">
-                      <h3 className="font-semibold mb-3">Atribuição de origem</h3>
+                      <h3 className="font-semibold mb-3">
+                        Atribuição de origem
+                      </h3>
                       {dealDetails?.attribution?.firstTouch ? (
                         <div className="space-y-3 text-sm">
-                          <div className="rounded-md border p-3">
-                            <p className="text-xs text-muted-foreground">
-                              Primeiro toque
-                            </p>
-                            <p className="font-medium">
-                              {dealDetails.attribution.firstTouch.campaignName ||
-                                dealDetails.attribution.firstTouch.adName ||
-                                dealDetails.attribution.firstTouch.title ||
-                                dealDetails.attribution.firstTouch.sourceId ||
-                                "Origem identificada"}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {dealDetails.attribution.firstTouch.sourceType ===
-                              "META_AD"
-                                ? "Meta · anúncio"
-                                : dealDetails.attribution.firstTouch.sourceType ===
-                                    "META_POST"
-                                  ? "Meta · publicação"
-                                  : dealDetails.attribution.firstTouch.sourceType ===
-                                      "META_LEAD_FORM"
-                                    ? "Meta · formulário"
-                                    : "Sem atribuição"}{" "}
-                              · {new Date(
-                                dealDetails.attribution.firstTouch.attributedAt,
-                              ).toLocaleString("pt-BR")}
-                            </p>
-                            {(() => {
-                              const value =
-                                dealDetails.attribution.firstTouch.sourceUrl;
-                              if (!value) return null;
-                              try {
-                                const url = new URL(value);
-                                if (!/^https?:$/.test(url.protocol)) return null;
-                                return (
-                                  <a
-                                    href={url.href}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-1 mt-2 text-xs text-primary hover:underline"
-                                  >
-                                    Abrir origem
-                                    <ExternalLink className="h-3 w-3" />
-                                  </a>
-                                );
-                              } catch {
-                                return null;
-                              }
-                            })()}
-                          </div>
+                          <AttributionDetails
+                            attribution={dealDetails.attribution.firstTouch}
+                            title="Primeiro toque"
+                            canAccessIntegrations={canAccessIntegrations}
+                          />
                           {dealDetails.attribution.lastTouch &&
                             dealDetails.attribution.lastTouch.id !==
                               dealDetails.attribution.firstTouch.id && (
-                              <div className="rounded-md border p-3">
-                                <p className="text-xs text-muted-foreground">
-                                  Último toque
+                              <AttributionDetails
+                                attribution={dealDetails.attribution.lastTouch}
+                                title="Último toque"
+                                canAccessIntegrations={canAccessIntegrations}
+                              />
+                            )}
+                          {attributionHistory &&
+                            attributionHistory.total > 0 && (
+                              <div className="space-y-1">
+                                <p className="text-xs font-medium text-muted-foreground">
+                                  Histórico ({attributionHistory.total})
                                 </p>
-                                <p className="font-medium">
-                                  {dealDetails.attribution.lastTouch.campaignName ||
-                                    dealDetails.attribution.lastTouch.adName ||
-                                    dealDetails.attribution.lastTouch.title ||
-                                    dealDetails.attribution.lastTouch.sourceId ||
-                                    "Origem identificada"}
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                  {new Date(
-                                    dealDetails.attribution.lastTouch.attributedAt,
-                                  ).toLocaleString("pt-BR")}
-                                </p>
+                                {attributionHistory.items.map((touch) => (
+                                  <div
+                                    key={touch.id}
+                                    className="flex items-center justify-between rounded border px-2 py-1.5 text-xs"
+                                  >
+                                    <span className="truncate">
+                                      {formatAttributionOrigin(touch)}
+                                    </span>
+                                    <span className="ml-2 shrink-0 text-muted-foreground">
+                                      {new Date(
+                                        touch.attributedAt,
+                                      ).toLocaleDateString("pt-BR")}
+                                    </span>
+                                  </div>
+                                ))}
                               </div>
                             )}
-                          {attributionHistory && attributionHistory.total > 0 && (
-                            <div className="space-y-1">
-                              <p className="text-xs font-medium text-muted-foreground">
-                                Histórico ({attributionHistory.total})
-                              </p>
-                              {attributionHistory.items.map((touch) => (
-                                <div
-                                  key={touch.id}
-                                  className="flex items-center justify-between rounded border px-2 py-1.5 text-xs"
-                                >
-                                  <span className="truncate">
-                                    {touch.campaignName ||
-                                      touch.adName ||
-                                      touch.title ||
-                                      touch.sourceId ||
-                                      "Origem identificada"}
-                                  </span>
-                                  <span className="ml-2 shrink-0 text-muted-foreground">
-                                    {new Date(
-                                      touch.attributedAt,
-                                    ).toLocaleDateString("pt-BR")}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          )}
                         </div>
                       ) : (
                         <p className="text-sm text-muted-foreground">
-                          Sem atribuição
+                          Origem não informada
                         </p>
                       )}
                     </div>

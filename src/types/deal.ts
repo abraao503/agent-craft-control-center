@@ -40,6 +40,7 @@ export interface LeadAttributionSummary {
   mediaType: string | null;
   attributedAt: string;
   enrichmentStatus: "PENDING" | "PROCESSING" | "ENRICHED" | "FAILED_PERMANENT";
+  enrichmentErrorCode: string | null;
 }
 
 export interface DealAttributionHistory extends LeadAttributionSummary {
@@ -178,4 +179,5 @@ export interface GetDealsByStageParams {
   attributionSource?: LeadAttributionSource | "UNATTRIBUTED";
   campaignId?: string;
   adId?: string;
+  formId?: string;
 }

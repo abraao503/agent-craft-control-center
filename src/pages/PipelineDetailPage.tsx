@@ -29,13 +29,7 @@ import { useAuth } from "@/contexts/auth/hooks";
 import { MessageSentEvent } from "@/types/websocket";
 import { Inbox } from "lucide-react";
 import { getDealAttributionOptions } from "@/services/deal/getDealAttributionOptions";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { MetaAttributionFilters } from "@/components/deals/MetaAttributionFilters";
 
 const PipelineDetailPage = () => {
   const { pipelineId } = useParams();
@@ -63,6 +57,7 @@ const PipelineDetailPage = () => {
   >(undefined);
   const [campaignId, setCampaignId] = useState<string | undefined>(undefined);
   const [adId, setAdId] = useState<string | undefined>(undefined);
+  const [formId, setFormId] = useState<string | undefined>(undefined);
   const [activitiesSidebarOpen, setActivitiesSidebarOpen] = useState(false);
 
   // SALES_REP sempre filtra pelos próprios cards
@@ -142,13 +137,28 @@ const PipelineDetailPage = () => {
         workspaceId: workspaceId!,
         pipelineId: pipelineId || undefined,
       }),
-    enabled: !!workspaceId,
+    enabled: !!workspaceId && !!pipelineId,
   });
+
+  const attributionOptions = attributionOptionsQuery.data;
+  const hasMetaAttributionData = Boolean(
+    attributionOptions &&
+      (attributionOptions.sources.some((source) => source !== "UNKNOWN") ||
+        attributionOptions.campaigns.length > 0 ||
+        attributionOptions.ads.length > 0 ||
+        (attributionOptions.forms?.length ?? 0) > 0),
+  );
+  const showAttributionFilters =
+    attributionOptionsQuery.isSuccess &&
+    Boolean(attributionOptions) &&
+    (attributionOptions?.metaAttributionActive === true ||
+      hasMetaAttributionData);
 
   useEffect(() => {
     setAttributionSource(undefined);
     setCampaignId(undefined);
     setAdId(undefined);
+    setFormId(undefined);
   }, [workspaceId, pipelineId]);
 
   useEffect(() => {
@@ -431,6 +441,7 @@ const PipelineDetailPage = () => {
       attributionSource={attributionSource}
       campaignId={campaignId}
       adId={adId}
+      formId={formId}
       onDealUpdated={() => {
         stages.forEach((stage) => {
           queryClient.invalidateQueries({
@@ -450,133 +461,94 @@ const PipelineDetailPage = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <h1 className="text-3xl font-bold tracking-tight">Negócios</h1>
-          {canCreateDeal && pipelineId && stages.length > 0 && (
-            <Button onClick={() => setOpenCreateDeal(true)} className="mr-2">
-              Novo Negócio
-            </Button>
-          )}
-          {workspaceId && canListUsers && !isSalesRep && (
-            <UserFilter
-              workspaceId={workspaceId}
-              selectedUserId={selectedUserId}
-              onSelectUser={setSelectedUserId}
-            />
-          )}
-          {workspaceId && (
-            <div className="flex items-center gap-2 flex-wrap">
-              <Select
-                value={attributionSource || "__all"}
-                onValueChange={(value) =>
-                  setAttributionSource(
-                    value === "__all"
-                      ? undefined
-                      : (value as LeadAttributionSource | "UNATTRIBUTED"),
-                  )
-                }
+      <div className="space-y-3">
+        <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+          <div className="flex min-w-0 flex-wrap items-center gap-3">
+            <h1 className="text-3xl font-bold tracking-tight">Negócios</h1>
+            {canCreateDeal && pipelineId && stages.length > 0 && (
+              <Button onClick={() => setOpenCreateDeal(true)} className="mr-2">
+                Novo Negócio
+              </Button>
+            )}
+          </div>
+          <div className="flex flex-wrap items-center gap-2 xl:justify-end">
+            {pipelineId && canViewPipeline && (
+              <Button
+                variant="outline"
+                onClick={() => navigate(`/deals/pipeline/${pipelineId}/queue`)}
               >
-                <SelectTrigger className="h-8 w-[150px] text-xs">
-                  <SelectValue placeholder="Origem" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__all">Todas as origens</SelectItem>
-                  <SelectItem value="UNATTRIBUTED">Sem atribuição</SelectItem>
-                  {(attributionOptionsQuery.data?.sources || [])
-                    .filter((source) => source !== "UNKNOWN")
-                    .map((source) => (
-                      <SelectItem key={source} value={source}>
-                        {source === "META_AD"
-                          ? "Meta · anúncio"
-                          : source === "META_POST"
-                            ? "Meta · publicação"
-                            : "Meta · formulário"}
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-              <Select
-                value={campaignId || "__all"}
-                onValueChange={(value) =>
-                  setCampaignId(value === "__all" ? undefined : value)
+                <Inbox className="h-4 w-4 mr-2" />
+                Fila de Mensagens
+              </Button>
+            )}
+            {currentPipelineWhatsappIntegrationId && workspaceId && (
+              <PipelineWhatsAppConnection
+                companyWhatsappIntegrationId={
+                  currentPipelineWhatsappIntegrationId
                 }
-              >
-                <SelectTrigger className="h-8 w-[160px] text-xs">
-                  <SelectValue placeholder="Campanha" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__all">Todas as campanhas</SelectItem>
-                  {(attributionOptionsQuery.data?.campaigns || []).map(
-                    (campaign) => (
-                      <SelectItem key={campaign.id} value={campaign.id}>
-                        {campaign.name}
-                      </SelectItem>
-                    ),
-                  )}
-                </SelectContent>
-              </Select>
-              <Select
-                value={adId || "__all"}
-                onValueChange={(value) =>
-                  setAdId(value === "__all" ? undefined : value)
+                workspaceId={workspaceId}
+              />
+            )}
+            {workspaceId && (
+              <PipelineSwitcher
+                workspaceId={workspaceId}
+                currentPipelineId={pipelineId}
+                onSelect={handleSelectPipeline}
+                onEditCurrent={() =>
+                  navigate(`/deals/pipeline/${pipelineId}/edit`)
                 }
-              >
-                <SelectTrigger className="h-8 w-[160px] text-xs">
-                  <SelectValue placeholder="Anúncio" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__all">Todos os anúncios</SelectItem>
-                  {(attributionOptionsQuery.data?.ads || []).map((ad) => (
-                    <SelectItem key={ad.id} value={ad.id}>
-                      {ad.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
+                onCreateNew={() => navigate("/deals/pipeline/create")}
+                canEdit={canUpdatePipeline}
+                canCreate={canCreatePipeline}
+              />
+            )}
+            {workspaceId && (
+              <ActivitiesButton
+                workspaceId={workspaceId}
+                onClick={() => setActivitiesSidebarOpen(!activitiesSidebarOpen)}
+                isOpen={activitiesSidebarOpen}
+                socket={socket}
+              />
+            )}
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          {pipelineId && canViewPipeline && (
-            <Button
-              variant="outline"
-              onClick={() => navigate(`/deals/pipeline/${pipelineId}/queue`)}
-            >
-              <Inbox className="h-4 w-4 mr-2" />
-              Fila de Mensagens
-            </Button>
-          )}
-          {currentPipelineWhatsappIntegrationId && workspaceId && (
-            <PipelineWhatsAppConnection
-              companyWhatsappIntegrationId={
-                currentPipelineWhatsappIntegrationId
-              }
-              workspaceId={workspaceId}
-            />
-          )}
-          {workspaceId && (
-            <PipelineSwitcher
-              workspaceId={workspaceId}
-              currentPipelineId={pipelineId}
-              onSelect={handleSelectPipeline}
-              onEditCurrent={() =>
-                navigate(`/deals/pipeline/${pipelineId}/edit`)
-              }
-              onCreateNew={() => navigate("/deals/pipeline/create")}
-              canEdit={canUpdatePipeline}
-              canCreate={canCreatePipeline}
-            />
-          )}
-          {workspaceId && (
-            <ActivitiesButton
-              workspaceId={workspaceId}
-              onClick={() => setActivitiesSidebarOpen(!activitiesSidebarOpen)}
-              isOpen={activitiesSidebarOpen}
-              socket={socket}
-            />
-          )}
-        </div>
+        {(showAttributionFilters ||
+          (workspaceId && canListUsers && !isSalesRep)) && (
+          <div className="flex min-h-10 flex-wrap items-center gap-x-3 gap-y-2">
+            {workspaceId && canListUsers && !isSalesRep && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">
+                  Responsável
+                </span>
+                <UserFilter
+                  workspaceId={workspaceId}
+                  selectedUserId={selectedUserId}
+                  onSelectUser={setSelectedUserId}
+                />
+              </div>
+            )}
+
+            {showAttributionFilters && attributionOptions && (
+              <>
+                {workspaceId && canListUsers && !isSalesRep && (
+                  <div className="hidden h-6 w-px bg-border sm:block" />
+                )}
+                <MetaAttributionFilters
+                  options={attributionOptions}
+                  hasData={hasMetaAttributionData}
+                  attributionSource={attributionSource}
+                  campaignId={campaignId}
+                  adId={adId}
+                  formId={formId}
+                  onAttributionSourceChange={setAttributionSource}
+                  onCampaignChange={setCampaignId}
+                  onAdChange={setAdId}
+                  onFormChange={setFormId}
+                />
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       {renderMainContent()}

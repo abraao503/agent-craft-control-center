@@ -15,6 +15,8 @@ import {
   Search,
   Bot,
   ExternalLink,
+  AlertCircle,
+  Clock3,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -32,6 +34,11 @@ import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { listTags } from "@/services/tag/listTags";
 import { getDealsByStage } from "@/services/deal/getDealsByStage";
 import { DealCardSkeleton } from "./DealCardSkeleton";
+import {
+  formatAttributionOrigin,
+  formatAttributionSourceLabel,
+  hasAttributionEnrichmentIssue,
+} from "@/utils/deal-attribution";
 
 interface KanbanColumnProps {
   stage: PipelineStageMinimal;
@@ -48,6 +55,7 @@ interface KanbanColumnProps {
   attributionSource?: LeadAttributionSource | "UNATTRIBUTED";
   campaignId?: string;
   adId?: string;
+  formId?: string;
 }
 
 const formatCurrency = (value: number | null | undefined, currency = "BRL") => {
@@ -80,24 +88,13 @@ const formatUnreadMessagesTitle = (count: number): string => {
   return `${count} novas mensagens`;
 };
 
-const attributionLabel = (source?: string) => {
-  switch (source) {
-    case "META_AD":
-      return "Meta · anúncio";
-    case "META_POST":
-      return "Meta · publicação";
-    case "META_LEAD_FORM":
-      return "Meta · formulário";
-    default:
-      return "Sem atribuição";
-  }
-};
-
 const safeExternalUrl = (value?: string | null): string | null => {
   if (!value) return null;
   try {
     const url = new URL(value);
-    return url.protocol === "http:" || url.protocol === "https:" ? url.href : null;
+    return url.protocol === "http:" || url.protocol === "https:"
+      ? url.href
+      : null;
   } catch {
     return null;
   }
@@ -241,6 +238,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
   attributionSource,
   campaignId,
   adId,
+  formId,
 }) => {
   const navigate = useNavigate();
   const viewportRef = useRef<HTMLDivElement | null>(null);
@@ -269,6 +267,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
         attributionSource,
         campaignId,
         adId,
+        formId,
       ],
       queryFn: ({ pageParam = 1 }) =>
         getDealsByStage({
@@ -281,6 +280,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
           attributionSource,
           campaignId,
           adId,
+          formId,
         }),
       getNextPageParam: (lastPage) => {
         return lastPage.page < lastPage.totalPages
@@ -470,22 +470,49 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                         variant="secondary"
                         className="text-[10px] font-medium"
                       >
-                        {attributionLabel(deal.attribution?.firstTouch?.sourceType)}
+                        {formatAttributionSourceLabel(
+                          deal.attribution?.firstTouch?.sourceType,
+                          Boolean(deal.attribution?.firstTouch),
+                        )}
                       </Badge>
                       {deal.attribution?.firstTouch && (
                         <span className="text-[10px] text-muted-foreground truncate">
-                          {deal.attribution.firstTouch.campaignName ||
-                            deal.attribution.firstTouch.adName ||
-                            deal.attribution.firstTouch.title ||
-                            deal.attribution.firstTouch.sourceId ||
-                            "Origem identificada"}
+                          {formatAttributionOrigin(deal.attribution.firstTouch)}
                         </span>
                       )}
-                      {safeExternalUrl(deal.attribution?.firstTouch?.sourceUrl) && (
+                      {hasAttributionEnrichmentIssue(
+                        deal.attribution?.firstTouch,
+                      ) && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span
+                                className="ml-1 inline-flex shrink-0 text-muted-foreground"
+                                aria-label="Há uma pendência no processamento da origem"
+                              >
+                                {deal.attribution?.firstTouch
+                                  ?.enrichmentStatus === "PROCESSING" ? (
+                                  <Clock3 className="h-3 w-3" />
+                                ) : (
+                                  <AlertCircle className="h-3 w-3" />
+                                )}
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              Processamento da origem pendente ou com problema
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
+                      {safeExternalUrl(
+                        deal.attribution?.firstTouch?.sourceUrl,
+                      ) && (
                         <a
-                          href={safeExternalUrl(
-                            deal.attribution?.firstTouch?.sourceUrl,
-                          )!}
+                          href={
+                            safeExternalUrl(
+                              deal.attribution?.firstTouch?.sourceUrl,
+                            )!
+                          }
                           target="_blank"
                           rel="noopener noreferrer"
                           data-no-drag="true"

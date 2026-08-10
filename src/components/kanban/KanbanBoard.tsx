@@ -16,6 +16,7 @@ interface KanbanBoardProps {
   attributionSource?: LeadAttributionSource | "UNATTRIBUTED";
   campaignId?: string;
   adId?: string;
+  formId?: string;
 }
 
 export const KanbanBoard: React.FC<KanbanBoardProps> = ({
@@ -29,6 +30,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   attributionSource,
   campaignId,
   adId,
+  formId,
 }) => {
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
   const [selectedDeal, setSelectedDeal] = useState<DealListItem | null>(null);
@@ -67,6 +69,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
               attributionSource={attributionSource}
               campaignId={campaignId}
               adId={adId}
+              formId={formId}
             />
           ))}
         </div>
