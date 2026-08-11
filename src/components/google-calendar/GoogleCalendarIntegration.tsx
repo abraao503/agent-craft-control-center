@@ -11,14 +11,19 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Calendar, Unplug, Loader2, CheckCircle2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Calendar, Unplug, Loader2, CheckCircle2, Plus } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 
 interface Props {
   workspaceId: string;
+  showHeader?: boolean;
 }
 
-export function GoogleCalendarIntegration({ workspaceId }: Props) {
+export function GoogleCalendarIntegration({
+  workspaceId,
+  showHeader = true,
+}: Props) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isAuthOpen, setIsAuthOpen] = useState(false);
@@ -147,33 +152,37 @@ export function GoogleCalendarIntegration({ workspaceId }: Props) {
   });
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Calendar className="h-5 w-5" />
-          Google Calendar
-        </CardTitle>
-        <CardDescription>
-          Vincule suas contas do Google para gerenciar agendamentos através do
-          assistente ou da agendamentos de sua empresa.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <Card className="w-full">
+      {showHeader && (
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-xl">
+            <Calendar className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+            Google Calendar
+          </CardTitle>
+          <CardDescription>
+            Vincule uma ou mais contas para gerenciar agendamentos pelo
+            assistente e pela agenda da empresa.
+          </CardDescription>
+        </CardHeader>
+      )}
+      <CardContent className={showHeader ? "space-y-4" : "space-y-4 pt-6"}>
         {isLoading ? (
-          <div className="flex justify-center items-center py-4">
+          <div className="flex items-center justify-center rounded-lg border py-8">
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
           </div>
         ) : (
           <>
             {integrations.length > 0 && (
-              <div className="space-y-3">
+              <div className="overflow-hidden rounded-lg border">
                 {integrations.map((integration) => (
                   <div
                     key={integration.id}
-                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border rounded-lg bg-green-50/50 dark:bg-green-900/10 border-green-200 dark:border-green-900"
+                    className="flex flex-col gap-3 border-b p-4 last:border-b-0 sm:flex-row sm:items-center sm:justify-between"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <CheckCircle2 className="h-6 w-6 text-green-600 dark:text-green-500 shrink-0" />
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                        <CheckCircle2 className="h-5 w-5" aria-hidden="true" />
+                      </span>
                       <div className="min-w-0">
                         <p
                           className="font-medium text-green-800 dark:text-green-300 truncate"
@@ -181,9 +190,12 @@ export function GoogleCalendarIntegration({ workspaceId }: Props) {
                         >
                           {integration.googleEmail}
                         </p>
-                        <p className="text-sm text-green-600 dark:text-green-400">
+                        <Badge
+                          variant={integration.isActive ? "default" : "outline"}
+                          className="mt-1"
+                        >
                           {integration.isActive ? "Ativo" : "Inativo"}
-                        </p>
+                        </Badge>
                       </div>
                     </div>
                     <Button
@@ -191,12 +203,12 @@ export function GoogleCalendarIntegration({ workspaceId }: Props) {
                       size="sm"
                       onClick={() => disconnectMutation.mutate(integration.id)}
                       disabled={disconnectMutation.isPending}
-                      className="text-destructive hover:bg-destructive/10 shrink-0 w-full sm:w-auto"
+                      className="w-full shrink-0 text-destructive hover:bg-destructive/10 sm:w-auto"
                     >
                       {disconnectMutation.isPending ? (
-                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       ) : (
-                        <Unplug className="h-4 w-4 mr-2" />
+                        <Unplug className="mr-2 h-4 w-4" />
                       )}
                       Desconectar
                     </Button>
@@ -205,23 +217,26 @@ export function GoogleCalendarIntegration({ workspaceId }: Props) {
               </div>
             )}
 
-            <div className="flex flex-col items-center justify-center p-6 border rounded-lg bg-muted/30 mt-4">
+            <div className="flex flex-col gap-3 rounded-lg border border-dashed bg-muted/20 p-5 sm:flex-row sm:items-center sm:justify-between">
               {integrations.length === 0 && (
-                <>
-                  <Calendar className="h-10 w-10 text-muted-foreground mb-4" />
-                  <p className="text-center text-muted-foreground mb-4 max-w-sm">
-                    Conecte seu Google Calendar para o envio de e-mails, criação
-                    de eventos automáticos e sincronização.
+                <div className="flex items-center gap-3">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                    <Calendar className="h-4 w-4" aria-hidden="true" />
+                  </span>
+                  <p className="text-sm text-muted-foreground">
+                    Nenhuma conta vinculada a este workspace.
                   </p>
-                </>
+                </div>
               )}
               <Button
                 onClick={() => connectMutation.mutate()}
                 disabled={connectMutation.isPending}
               >
                 {connectMutation.isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                ) : null}
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Plus className="mr-2 h-4 w-4" />
+                )}
                 {integrations.length > 0
                   ? "Vincular outra conta"
                   : "Vincular Google Calendar"}

@@ -53,6 +53,7 @@ import {
 
 interface Props {
   workspaceId?: string;
+  showHeader?: boolean;
 }
 
 const statusLabel: Record<string, string> = {
@@ -75,6 +76,18 @@ const eventStatusOptions: Array<{
   { value: "WAITING_REAUTHORIZATION", label: "Aguardando reautorização" },
   { value: "FAILED_PERMANENT", label: "Falha permanente" },
 ];
+
+const eventStatusLabel: Record<string, string> = Object.fromEntries(
+  eventStatusOptions
+    .filter((option) => option.value !== "ALL")
+    .map((option) => [option.value, option.label]),
+);
+
+const subscriptionStatusLabel: Record<string, string> = {
+  SUBSCRIBED: "Leitura ativa",
+  UNSUBSCRIBED: "Não inscrita",
+  ERROR: "Problema na inscrição",
+};
 
 type MetaQuestion = {
   key: string;
@@ -109,7 +122,10 @@ function addCurrentQuestion(
   return [{ key: currentValue, label: currentValue }, ...questions];
 }
 
-export function MetaIntegrationCard({ workspaceId }: Props) {
+export function MetaIntegrationCard({
+  workspaceId,
+  showHeader = true,
+}: Props) {
   const { userProfile } = useAuth();
   const { has, isCompanyLevel } = usePermissions();
   const { toast } = useToast();
@@ -426,17 +442,19 @@ export function MetaIntegrationCard({ workspaceId }: Props) {
   );
 
   return (
-    <Card className="md:col-span-2 lg:col-span-3">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Facebook className="h-5 w-5 text-blue-600" /> Meta Ads e Lead Ads
-        </CardTitle>
-        <CardDescription>
-          Conexão da empresa para leitura de anúncios, Páginas e formulários.
-          Nenhuma campanha é alterada.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
+    <Card className="w-full">
+      {showHeader && (
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-xl">
+            <Facebook className="h-5 w-5 text-blue-600" /> Meta Ads e Lead Ads
+          </CardTitle>
+          <CardDescription>
+            Conexão da empresa para leitura de anúncios, Páginas e formulários.
+            Nenhuma campanha é alterada.
+          </CardDescription>
+        </CardHeader>
+      )}
+      <CardContent className={showHeader ? "space-y-6" : "space-y-6 pt-6"}>
         {integrationQuery.isLoading ? (
           <div className="flex justify-center py-6">
             <Loader2 className="h-6 w-6 animate-spin" />
@@ -457,7 +475,7 @@ export function MetaIntegrationCard({ workspaceId }: Props) {
         ) : (
           <>
             <div className="flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-3">
+              <div className="flex min-w-0 items-center gap-3">
                 {integration?.status === "CONNECTED" ? (
                   <CheckCircle2 className="h-6 w-6 text-emerald-600" />
                 ) : (
@@ -471,11 +489,11 @@ export function MetaIntegrationCard({ workspaceId }: Props) {
                   </p>
                   <p className="text-sm text-muted-foreground">
                     {integration?.lastDiagnosticMessage ??
-                      "Use uma conta Meta com as permissões somente leitura exigidas."}
+                      "Use uma conta Meta com as permissões exigidas para ler anúncios, Páginas e formulários."}
                   </p>
                 </div>
               </div>
-              <div className="flex gap-2">
+              <div className="flex shrink-0 flex-wrap gap-2 sm:flex-nowrap sm:justify-end">
                 {canManageConnection && (
                   <Button
                     onClick={() => connectMutation.mutate()}
@@ -558,29 +576,52 @@ export function MetaIntegrationCard({ workspaceId }: Props) {
                     <Save /> Salvar ativos ({selectedSummary})
                   </Button>
                 )}
-                <div className="rounded-lg border p-3 text-sm text-muted-foreground">
-                  <p>
-                    Permissões concedidas:{" "}
-                    {integration?.grantedScopes?.length
-                      ? integration.grantedScopes.join(", ")
-                      : "nenhuma"}
-                  </p>
-                  <p>Permissões exigidas: {data.requiredScopes.join(", ")}</p>
-                  {integration?.tokenExpiresAt && (
+                <details className="group rounded-lg border bg-muted/20">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-medium [&::-webkit-details-marker]:hidden">
+                    <span>Detalhes técnicos da conexão</span>
+                    <span className="text-xs font-normal text-muted-foreground group-open:hidden">
+                      Permissões e validade do token
+                    </span>
+                    <span className="hidden text-xs font-normal text-muted-foreground group-open:inline">
+                      Ocultar
+                    </span>
+                  </summary>
+                  <div className="space-y-1 border-t px-4 py-3 text-xs text-muted-foreground">
                     <p>
-                      Token válido até:{" "}
-                      {new Date(integration.tokenExpiresAt).toLocaleString()}
+                      Permissões concedidas:{" "}
+                      {integration?.grantedScopes?.length
+                        ? integration.grantedScopes.join(", ")
+                        : "nenhuma"}
                     </p>
-                  )}
-                  {integration?.lastValidatedAt && (
-                    <p>
-                      Última validação: {" "}
-                      {new Date(integration.lastValidatedAt).toLocaleString()}
-                    </p>
-                  )}
-                </div>
+                    <p>Permissões exigidas: {data.requiredScopes.join(", ")}</p>
+                    {integration?.tokenExpiresAt && (
+                      <p>
+                        Token válido até:{" "}
+                        {new Date(integration.tokenExpiresAt).toLocaleString()}
+                      </p>
+                    )}
+                    {integration?.lastValidatedAt && (
+                      <p>
+                        Última validação: {new Date(integration.lastValidatedAt).toLocaleString()}
+                      </p>
+                    )}
+                  </div>
+                </details>
                 <div className="space-y-3">
-                  <h3 className="font-semibold">Formulários selecionados</h3>
+                  <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                      <h3 className="font-semibold">Formulários e captura</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Escolha um formulário para conectar as respostas ao CRM.
+                      </p>
+                    </div>
+                    {formsQuery.data?.length ? (
+                      <Badge variant="secondary" className="w-fit">
+                        {formsQuery.data.length}{" "}
+                        {formsQuery.data.length === 1 ? "formulário" : "formulários"}
+                      </Badge>
+                    ) : null}
+                  </div>
                   {formsQuery.isLoading ? (
                     <Loader2 className="h-5 w-5 animate-spin" />
                   ) : formsQuery.isError ? (
@@ -597,7 +638,14 @@ export function MetaIntegrationCard({ workspaceId }: Props) {
                       </AlertDescription>
                     </Alert>
                   ) : formsQuery.data?.length ? (
-                    formsQuery.data.map((form) => {
+                    <div
+                      className={
+                        mappingForm
+                          ? "rounded-lg border"
+                          : "max-h-[32rem] overflow-y-auto rounded-lg border"
+                      }
+                    >
+                      {formsQuery.data.map((form) => {
                       const questionOptions = addCurrentQuestion(
                         getMetaQuestions(form.questions),
                         mappingValues.phone,
@@ -625,26 +673,31 @@ export function MetaIntegrationCard({ workspaceId }: Props) {
                           (page) => page.pageId === form.pageId && page.selected,
                         ),
                       );
-                      return (
-                        <div key={form.id} className="rounded-lg border p-3">
-                        <div className="flex items-center justify-between gap-3">
-                          <div>
-                            <p className="font-medium">{form.name}</p>
-                            <p className="text-xs text-muted-foreground">
-                              Página {form.pageName ?? form.pageId} ·{" "}
-                              {form.mapping?.active
-                                ? "mapping ativo"
-                                : "sem mapping ativo"}
-                            </p>
-                          </div>
-                          <Badge
-                            variant={
-                              form.mapping?.active ? "default" : "outline"
-                            }
-                          >
-                            {form.mapping?.active ? "Ativo" : "Pendente"}
-                          </Badge>
-                        </div>
+                        return (
+                          <div key={form.id} className="border-b p-4 last:border-b-0">
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                              <div className="min-w-0">
+                                <p className="font-medium">{form.name}</p>
+                                <p className="mt-1 text-sm text-muted-foreground">
+                                  Página {form.pageName ?? form.pageId}
+                                </p>
+                                <p className="mt-1 text-xs text-muted-foreground">
+                                  {form.mapping?.active
+                                    ? "Respostas conectadas ao CRM"
+                                    : "Ainda não conectado ao CRM"}
+                                </p>
+                              </div>
+                              <Badge
+                                variant={
+                                  form.mapping?.active ? "default" : "outline"
+                                }
+                                className="w-fit shrink-0"
+                              >
+                                {form.mapping?.active
+                                  ? "Ativo"
+                                  : "Configuração pendente"}
+                              </Badge>
+                            </div>
                         {canManageIntegration &&
                           workspaceId &&
                           pageIsSelected &&
@@ -653,9 +706,13 @@ export function MetaIntegrationCard({ workspaceId }: Props) {
                           <>
                             <Button
                               size="sm"
-                              variant="ghost"
-                              className="mt-2"
+                              variant="outline"
+                              className="mt-4"
                               onClick={() => {
+                                if (mappingForm === form.id) {
+                                  setMappingForm(null);
+                                  return;
+                                }
                                 setMappingForm(form.id);
                                 setMappingValues({
                                   phone: form.mapping?.fields.phone ?? "",
@@ -667,10 +724,12 @@ export function MetaIntegrationCard({ workspaceId }: Props) {
                                 });
                               }}
                             >
-                              Configurar mapping
+                              {mappingForm === form.id
+                                ? "Fechar configuração"
+                                : "Configurar conexão"}
                             </Button>
                             {mappingForm === form.id && (
-                              <div className="mt-3 grid gap-2 rounded border bg-muted/30 p-3 sm:grid-cols-2">
+                              <div className="mt-3 grid gap-4 rounded-lg border bg-muted/20 p-4 sm:grid-cols-2">
                                 <datalist id={`meta-questions-${form.id}`}>
                                   {questionOptions.map((question) => (
                                     <option
@@ -681,12 +740,14 @@ export function MetaIntegrationCard({ workspaceId }: Props) {
                                     </option>
                                   ))}
                                 </datalist>
-                                <p className="text-xs text-muted-foreground sm:col-span-2">
-                                  O mapping será salvo no workspace atual.
-                                  {" "}
-                                  Selecione os campos pelas perguntas sincronizadas
-                                  do formulário. O valor enviado é a chave Meta.
-                                </p>
+                                <div className="space-y-1 sm:col-span-2">
+                                  <p className="font-medium">Conectar campos ao CRM</p>
+                                  <p className="text-sm text-muted-foreground">
+                                    Indique onde cada resposta do formulário deve ser
+                                    salva. Esta configuração vale para o workspace
+                                    atual.
+                                  </p>
+                                </div>
                                 {pipelinesQuery.isError && (
                                   <Alert
                                     variant="destructive"
@@ -718,8 +779,13 @@ export function MetaIntegrationCard({ workspaceId }: Props) {
                                     </AlertDescription>
                                   </Alert>
                                 )}
-                                <label className="text-sm">
-                                  Campo telefone (obrigatório)
+                                <label className="space-y-1 text-sm">
+                                  <span className="font-medium">
+                                    Telefone <span className="text-destructive">*</span>
+                                  </span>
+                                  <span className="block text-xs text-muted-foreground">
+                                    Pergunta do formulário usada para falar com o lead.
+                                  </span>
                                   <Input
                                     list={`meta-questions-${form.id}`}
                                     value={mappingValues.phone}
@@ -731,8 +797,8 @@ export function MetaIntegrationCard({ workspaceId }: Props) {
                                     }
                                   />
                                 </label>
-                                <label className="text-sm">
-                                  Campo nome (opcional)
+                                <label className="space-y-1 text-sm">
+                                  <span className="font-medium">Nome <span className="font-normal text-muted-foreground">(opcional)</span></span>
                                   <Input
                                     list={`meta-questions-${form.id}`}
                                     value={mappingValues.name}
@@ -744,8 +810,8 @@ export function MetaIntegrationCard({ workspaceId }: Props) {
                                     }
                                   />
                                 </label>
-                                <label className="text-sm">
-                                  Campo e-mail (opcional)
+                                <label className="space-y-1 text-sm">
+                                  <span className="font-medium">E-mail <span className="font-normal text-muted-foreground">(opcional)</span></span>
                                   <Input
                                     list={`meta-questions-${form.id}`}
                                     value={mappingValues.email}
@@ -758,7 +824,7 @@ export function MetaIntegrationCard({ workspaceId }: Props) {
                                   />
                                 </label>
                                 <label className="space-y-1 text-sm">
-                                  <span>Pipeline</span>
+                                  <span className="font-medium">Pipeline de destino</span>
                                   <Select
                                     value={mappingValues.pipelineId || undefined}
                                     onValueChange={(value) =>
@@ -770,7 +836,7 @@ export function MetaIntegrationCard({ workspaceId }: Props) {
                                     }
                                   >
                                     <SelectTrigger>
-                                      <SelectValue placeholder="Selecione o pipeline" />
+                                      <SelectValue placeholder="Escolha um pipeline" />
                                     </SelectTrigger>
                                     <SelectContent>
                                       {(pipelinesQuery.data ?? []).map(
@@ -787,7 +853,7 @@ export function MetaIntegrationCard({ workspaceId }: Props) {
                                   </Select>
                                 </label>
                                 <label className="space-y-1 text-sm">
-                                  <span>Etapa</span>
+                                  <span className="font-medium">Etapa inicial</span>
                                   <Select
                                     value={mappingValues.stageId || undefined}
                                     onValueChange={(value) =>
@@ -806,7 +872,7 @@ export function MetaIntegrationCard({ workspaceId }: Props) {
                                         placeholder={
                                           stagesQuery.isLoading
                                             ? "Carregando etapas..."
-                                            : "Selecione a etapa"
+                                            : "Escolha uma etapa"
                                         }
                                       />
                                     </SelectTrigger>
@@ -822,73 +888,87 @@ export function MetaIntegrationCard({ workspaceId }: Props) {
                                     </SelectContent>
                                   </Select>
                                 </label>
-                                <div className="sm:col-span-2 space-y-2">
-                                  <p className="text-sm">
-                                    Campos personalizados
-                                  </p>
+                                <div className="space-y-3 sm:col-span-2">
+                                  <div>
+                                    <p className="font-medium text-sm">
+                                      Campos personalizados <span className="font-normal text-muted-foreground">(opcional)</span>
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                      Use somente se o formulário tiver perguntas
+                                      adicionais que também devam ir para o CRM.
+                                    </p>
+                                  </div>
                                   {mappingValues.custom.map((field, index) => (
                                     <div
-                                      className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]"
+                                      className="grid items-end gap-2 rounded-md border bg-background p-3 sm:grid-cols-[1fr_1fr_auto]"
                                       key={`${field.metaField}-${index}`}
                                     >
-                                      <Input
-                                        aria-label="Campo Meta"
-                                        placeholder="Campo Meta"
-                                        list={`meta-questions-${form.id}`}
-                                        value={field.metaField}
-                                        onChange={(event) =>
-                                          setMappingValues((current) => ({
-                                            ...current,
-                                            custom: current.custom.map(
-                                              (item, itemIndex) =>
-                                                itemIndex === index
-                                                  ? {
-                                                      ...item,
-                                                      metaField:
-                                                        event.target.value,
-                                                    }
-                                                  : item,
-                                            ),
-                                          }))
-                                        }
-                                      />
-                                      <Select
-                                        value={
-                                          field.customerCustomFieldId || undefined
-                                        }
-                                        onValueChange={(value) =>
-                                          setMappingValues((current) => ({
-                                            ...current,
-                                            custom: current.custom.map(
-                                              (item, itemIndex) =>
-                                                itemIndex === index
-                                                  ? {
-                                                      ...item,
-                                                      customerCustomFieldId:
-                                                        value,
-                                                    }
-                                                  : item,
-                                            ),
-                                          }))
-                                        }
-                                      >
-                                        <SelectTrigger aria-label="Campo personalizado CRM">
-                                          <SelectValue placeholder="Campo CRM" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                          {customFieldOptions.map((fieldOption) => (
-                                            <SelectItem
-                                              key={fieldOption.id}
-                                              value={fieldOption.id}
-                                            >
-                                              {fieldOption.label || fieldOption.name}
-                                            </SelectItem>
-                                          ))}
-                                        </SelectContent>
-                                      </Select>
+                                      <label className="space-y-1 text-sm">
+                                        <span className="font-medium">Resposta do formulário</span>
+                                        <Input
+                                          aria-label="Resposta do formulário"
+                                          placeholder="Ex.: cargo"
+                                          list={`meta-questions-${form.id}`}
+                                          value={field.metaField}
+                                          onChange={(event) =>
+                                            setMappingValues((current) => ({
+                                              ...current,
+                                              custom: current.custom.map(
+                                                (item, itemIndex) =>
+                                                  itemIndex === index
+                                                    ? {
+                                                        ...item,
+                                                        metaField:
+                                                          event.target.value,
+                                                      }
+                                                    : item,
+                                              ),
+                                            }))
+                                          }
+                                        />
+                                      </label>
+                                      <label className="space-y-1 text-sm">
+                                        <span className="font-medium">Campo do CRM</span>
+                                        <Select
+                                          value={
+                                            field.customerCustomFieldId || undefined
+                                          }
+                                          onValueChange={(value) =>
+                                            setMappingValues((current) => ({
+                                              ...current,
+                                              custom: current.custom.map(
+                                                (item, itemIndex) =>
+                                                  itemIndex === index
+                                                    ? {
+                                                        ...item,
+                                                        customerCustomFieldId:
+                                                          value,
+                                                      }
+                                                    : item,
+                                              ),
+                                            }))
+                                          }
+                                        >
+                                          <SelectTrigger aria-label="Campo do CRM">
+                                            <SelectValue placeholder="Escolha o campo" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            {customFieldOptions.map((fieldOption) => (
+                                              <SelectItem
+                                                key={fieldOption.id}
+                                                value={fieldOption.id}
+                                              >
+                                                {fieldOption.label || fieldOption.name}
+                                              </SelectItem>
+                                            ))}
+                                          </SelectContent>
+                                        </Select>
+                                      </label>
                                       <Button
                                         type="button"
                                         variant="ghost"
+                                        className="text-muted-foreground hover:text-destructive"
+                                        aria-label={`Remover campo personalizado ${index + 1}`}
                                         onClick={() =>
                                           setMappingValues((current) => ({
                                             ...current,
@@ -920,7 +1000,7 @@ export function MetaIntegrationCard({ workspaceId }: Props) {
                                       }))
                                     }
                                   >
-                                    Adicionar campo
+                                    Adicionar campo personalizado
                                   </Button>
                                 </div>
                                 {mappingValidationErrors.length > 0 && (
@@ -986,9 +1066,10 @@ export function MetaIntegrationCard({ workspaceId }: Props) {
                               Mapping configurado em outro workspace.
                             </p>
                           )}
-                        </div>
-                      );
-                    })
+                          </div>
+                        );
+                      })}
+                    </div>
                   ) : (
                     <p className="text-sm text-muted-foreground">
                       Nenhum formulário disponível. Sincronize as Páginas
@@ -998,9 +1079,13 @@ export function MetaIntegrationCard({ workspaceId }: Props) {
                 </div>
                 <div className="space-y-3">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <h3 className="font-semibold">
-                      Pendências de Lead Ads ({pendingEvents.length})
-                    </h3>
+                    <div>
+                      <h3 className="font-semibold">Atividade de Lead Ads</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Acompanhe eventos que precisam de revisão ou reprocessamento.
+                        A lista é paginada para continuar leve mesmo com muitos leads.
+                      </p>
+                    </div>
                     <Select
                       value={eventsStatus}
                       onValueChange={(value) => {
@@ -1036,67 +1121,89 @@ export function MetaIntegrationCard({ workspaceId }: Props) {
                   ) : eventsQuery.isLoading ? (
                     <Loader2 className="h-5 w-5 animate-spin" />
                   ) : pendingEvents.length ? (
-                    pendingEvents.map((event) => (
-                      <div
-                        key={event.id}
-                        className="flex flex-col gap-2 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between"
-                      >
-                        <div>
-                          <p className="font-medium">
-                            {event.formExternalId ?? "Formulário desconhecido"}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {event.status} · {event.leadgenId}
-                            {event.errorCode ? ` · ${event.errorCode}` : ""}
-                          </p>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          {event.status === "WAITING_PHONE" && (
-                            <>
-                              <Input
-                                aria-label="Telefone do lead"
-                                placeholder="Telefone"
-                                value={phoneOverrides[event.id] ?? ""}
-                                onChange={(input) =>
-                                  setPhoneOverrides((current) => ({
-                                    ...current,
-                                    [event.id]: input.target.value,
-                                  }))
+                    <div className="max-h-[22rem] space-y-2 overflow-y-auto rounded-lg border p-2">
+                      {pendingEvents.map((event) => (
+                        <div
+                          key={event.id}
+                          className="flex flex-col gap-3 rounded-md border bg-background p-3 sm:flex-row sm:items-center sm:justify-between"
+                        >
+                          <div className="min-w-0 space-y-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <Badge
+                                variant={
+                                  event.status === "FAILED_PERMANENT"
+                                    ? "destructive"
+                                    : "outline"
                                 }
-                                className="w-36"
-                              />
-                              <Button
-                                size="sm"
-                                onClick={() =>
-                                  phoneMutation.mutate({
-                                    id: event.id,
-                                    phone: phoneOverrides[event.id] ?? "",
-                                  })
-                                }
-                                disabled={
-                                  phoneMutation.isPending ||
-                                  !phoneOverrides[event.id]?.trim()
-                                }
-                                isLoading={phoneMutation.isPending}
                               >
-                                Resolver
-                              </Button>
-                            </>
-                          )}
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => retryMutation.mutate(event.id)}
-                            disabled={
-                              retryMutation.isPending || phoneMutation.isPending
-                            }
-                            isLoading={retryMutation.isPending}
-                          >
-                            <RefreshCw /> Reprocessar
-                          </Button>
+                                {eventStatusLabel[event.status] ?? event.status}
+                              </Badge>
+                              <p className="truncate text-sm font-medium">
+                                {event.formExternalId ?? "Formulário não identificado"}
+                              </p>
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              Recebido{" "}
+                              {event.eventTime
+                                ? new Date(event.eventTime).toLocaleString()
+                                : "sem data"}
+                              {event.errorCode ? ` · ${event.errorCode}` : ""}
+                            </p>
+                            <details className="text-xs text-muted-foreground">
+                              <summary className="cursor-pointer hover:text-foreground">
+                                Ver identificador técnico
+                              </summary>
+                              <p className="mt-1 break-all">Lead ID: {event.leadgenId}</p>
+                            </details>
+                          </div>
+                          <div className="flex flex-wrap gap-2 sm:justify-end">
+                            {event.status === "WAITING_PHONE" && (
+                              <>
+                                <Input
+                                  aria-label="Telefone do lead"
+                                  placeholder="Telefone"
+                                  value={phoneOverrides[event.id] ?? ""}
+                                  onChange={(input) =>
+                                    setPhoneOverrides((current) => ({
+                                      ...current,
+                                      [event.id]: input.target.value,
+                                    }))
+                                  }
+                                  className="w-full sm:w-36"
+                                />
+                                <Button
+                                  size="sm"
+                                  onClick={() =>
+                                    phoneMutation.mutate({
+                                      id: event.id,
+                                      phone: phoneOverrides[event.id] ?? "",
+                                    })
+                                  }
+                                  disabled={
+                                    phoneMutation.isPending ||
+                                    !phoneOverrides[event.id]?.trim()
+                                  }
+                                  isLoading={phoneMutation.isPending}
+                                >
+                                  Resolver telefone
+                                </Button>
+                              </>
+                            )}
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => retryMutation.mutate(event.id)}
+                              disabled={
+                                retryMutation.isPending || phoneMutation.isPending
+                              }
+                              isLoading={retryMutation.isPending}
+                            >
+                              <RefreshCw /> Reprocessar
+                            </Button>
+                          </div>
                         </div>
-                      </div>
-                    ))
+                      ))}
+                    </div>
                   ) : (
                     <p className="text-sm text-muted-foreground">
                       Nenhuma pendência operacional nesta consulta.
@@ -1164,9 +1271,16 @@ function AssetList<
   keyFor: (item: T) => string;
   onToggle: (id: string) => void;
 }) {
+  const selectedCount = items.filter((item) => item.selected).length;
+
   return (
-    <div className="rounded-lg border p-4">
-      <h3 className="mb-3 font-semibold">{title}</h3>
+    <div className="rounded-lg border bg-muted/10 p-4">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <h3 className="font-semibold">{title}</h3>
+        <span className="text-xs text-muted-foreground">
+          {selectedCount} selecionado{selectedCount === 1 ? "" : "s"}
+        </span>
+      </div>
       {items.length ? (
         <div className="max-h-48 space-y-2 overflow-auto">
           {items.map((item) => {
@@ -1191,7 +1305,8 @@ function AssetList<
                         : "outline"
                     }
                   >
-                    {item.leadgenSubscriptionStatus}
+                    {subscriptionStatusLabel[item.leadgenSubscriptionStatus] ??
+                      item.leadgenSubscriptionStatus}
                   </Badge>
                 )}
               </label>
