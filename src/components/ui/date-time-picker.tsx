@@ -1,5 +1,5 @@
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { es, ptBR } from "date-fns/locale";
 import { Calendar as CalendarIcon, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import { useState, useEffect } from "react";
 import { Input } from "./input";
 import { Label } from "./label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./tabs";
+import { useAppLocale } from "@/i18n/LocaleProvider";
 
 interface DateTimePickerProps {
   date: Date | undefined;
@@ -22,6 +23,8 @@ interface DateTimePickerProps {
 
 export function DateTimePicker({ date, setDate, placeholder }: DateTimePickerProps) {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(date);
+  const { locale } = useAppLocale();
+  const dateLocale = locale === "es-ES" ? es : ptBR;
   const [time, setTime] = useState<string>(
     date ? format(date, "HH:mm") : "00:00"
   );
@@ -88,14 +91,14 @@ export function DateTimePicker({ date, setDate, placeholder }: DateTimePickerPro
         >
           <CalendarIcon className="mr-2 h-4 w-4" />
           {date
-            ? format(date, "PPP", { locale: ptBR }) + " " + format(date, "HH:mm")
-            : placeholder || "Selecione data e hora"}
+            ? format(date, "PPP", { locale: dateLocale }) + " " + format(date, "HH:mm")
+            : placeholder || (locale === "es-ES" ? "Selecciona fecha y hora" : "Selecione data e hora")}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0">
         <Tabs defaultValue="date">
           <TabsList className="grid grid-cols-2">
-            <TabsTrigger value="date">Data</TabsTrigger>
+            <TabsTrigger value="date">{locale === "es-ES" ? "Fecha" : "Data"}</TabsTrigger>
             <TabsTrigger value="time">Hora</TabsTrigger>
           </TabsList>
           <TabsContent value="date" className="p-0">
@@ -104,7 +107,7 @@ export function DateTimePicker({ date, setDate, placeholder }: DateTimePickerPro
               selected={selectedDate}
               onSelect={handleDateChange}
               initialFocus
-              locale={ptBR}
+              locale={dateLocale}
             />
           </TabsContent>
           <TabsContent value="time" className="p-4">

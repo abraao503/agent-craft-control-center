@@ -4,6 +4,7 @@ import * as RPNInput from "react-phone-number-input";
 import { parsePhoneNumber } from "react-phone-number-input";
 import flags from "react-phone-number-input/flags";
 import ptBR from "react-phone-number-input/locale/pt-BR";
+import es from "react-phone-number-input/locale/es.json";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -22,6 +23,7 @@ import {
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { useAppLocale } from "@/i18n/LocaleProvider";
 
 type PhoneInputProps = Omit<
   React.ComponentProps<"input">,
@@ -34,6 +36,7 @@ type PhoneInputProps = Omit<
 const PhoneInput: React.ForwardRefExoticComponent<PhoneInputProps> =
   React.forwardRef<React.ElementRef<typeof RPNInput.default>, PhoneInputProps>(
     ({ className, onChange, value, ...props }, ref) => {
+      const { locale } = useAppLocale();
       return (
         <RPNInput.default
           ref={ref}
@@ -41,7 +44,7 @@ const PhoneInput: React.ForwardRefExoticComponent<PhoneInputProps> =
           flagComponent={FlagComponent}
           countrySelectComponent={CountrySelect}
           inputComponent={InputComponent}
-          labels={ptBR}
+          labels={locale === "es-ES" ? es : ptBR}
           international={false}
           smartCaret={false}
           value={value || undefined}

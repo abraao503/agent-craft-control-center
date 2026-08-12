@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { ArrowRight, Calendar, Facebook, Settings2 } from "lucide-react";
 import { useWorkspaceManager } from "@/hooks/useWorkspaceManager";
+import { useTranslation } from "react-i18next";
 
 type IntegrationItemProps = {
   to: string;
@@ -43,24 +44,24 @@ function IntegrationItem({
 
 export default function IntegrationsPage() {
   const { workspaceId } = useWorkspaceManager();
+  const { t } = useTranslation();
 
   return (
     <div className="mx-auto w-full max-w-5xl space-y-8">
       <header className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">Integrações</h1>
+        <h1 className="text-3xl font-bold tracking-tight">{t("integrations.title")}</h1>
         <p className="max-w-2xl text-muted-foreground">
-          Escolha uma integração para abrir sua página de configuração. Cada
-          serviço mantém seus ativos e ações separados.
+          {t("integrations.description")}
         </p>
       </header>
 
       <section aria-labelledby="integrations-list-title" className="space-y-3">
         <div>
           <h2 id="integrations-list-title" className="text-lg font-semibold">
-            Integrações disponíveis
+            {t("integrations.availableTitle")}
           </h2>
           <p className="text-sm text-muted-foreground">
-            Selecione um serviço para ver o status e configurar sua conexão.
+            {t("integrations.availableDescription")}
           </p>
         </div>
 
@@ -70,7 +71,7 @@ export default function IntegrationsPage() {
             icon={<Facebook className="h-5 w-5" aria-hidden="true" />}
             iconClassName="bg-blue-500/10 text-blue-600 dark:text-blue-400"
             title="Meta Ads e Lead Ads"
-            description="Anúncios, Páginas, formulários e origem dos leads"
+            description={t("integrations.metaDescription")}
           />
           {workspaceId && (
             <IntegrationItem
@@ -78,7 +79,7 @@ export default function IntegrationsPage() {
               icon={<Calendar className="h-5 w-5" aria-hidden="true" />}
               iconClassName="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
               title="Google Calendar"
-              description="Agendamentos do assistente e da equipe"
+              description={t("integrations.calendarDescription")}
             />
           )}
         </div>

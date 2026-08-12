@@ -2,6 +2,8 @@ import LoginForm from "@/components/auth/LoginForm";
 import { useAuth } from "@/contexts/auth/hooks";
 import { Navigate, useLocation } from "react-router-dom";
 import { Loader2 } from "lucide-react";
+import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
+import { useTranslation } from "react-i18next";
 
 type LocationState = {
   from?: {
@@ -12,6 +14,7 @@ type LocationState = {
 const Login = () => {
   const { user, isLoading } = useAuth();
   const location = useLocation();
+  const { t } = useTranslation();
   const from =
     (location.state as LocationState | null)?.from?.pathname || "/dashboard";
 
@@ -28,7 +31,8 @@ const Login = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4 relative">
+      <LanguageSwitcher className="absolute right-4 top-4" />
       <div className="w-full max-w-md mb-8 text-center">
         <div className="flex items-center justify-center space-x-2 mb-4">
           <div className="w-10 h-10 bg-primary rounded-md flex items-center justify-center">
@@ -36,10 +40,9 @@ const Login = () => {
           </div>
           <span className="text-2xl font-bold">7 Agentes</span>
         </div>
-        <h1 className="text-3xl font-bold">Bem-vindo ao 7 Agentes</h1>
+        <h1 className="text-3xl font-bold">{t("auth.welcomeTo")}</h1>
         <p className="text-muted-foreground mt-2">
-          Crie, gerencie e implemente agentes inteligentes sob medida para as
-          necessidades do seu negócio.
+          {t("auth.signupDescription")}
         </p>
       </div>
       <LoginForm />

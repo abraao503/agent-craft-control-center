@@ -19,6 +19,7 @@ import {
   Clock3,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   Popover,
   PopoverContent,
@@ -241,6 +242,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
   formId,
 }) => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const [localSearchTerm, setLocalSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
@@ -382,7 +384,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                       </span>
                     </TooltipTrigger>
                     <TooltipContent side="top">
-                      <p>Assistente de IA ativo nesta etapa</p>
+                      <p>{t("deals.assistantActive")}</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -390,7 +392,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
             </div>
             <div className="flex items-center gap-1 text-xs text-muted-foreground/80">
               <span>{formatCurrency(totalValue)}</span>
-              <span>• {totalDeals} negócios</span>
+              <span>{t("deals.totalDeals", { count: totalDeals })}</span>
               {totalWeighted != null && (
                 <span className="hidden md:inline">
                   • {formatCurrency(totalWeighted)}
@@ -401,7 +403,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
           <div className="relative mt-2">
             <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
             <Input
-              placeholder="Buscar negócios..."
+              placeholder={t("deals.searchPlaceholder")}
               value={localSearchTerm}
               onChange={(e) => setLocalSearchTerm(e.target.value)}
               className="h-8 pl-8 text-xs"
@@ -628,7 +630,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
 
                 {stageDeals.length === 0 && !isLoading && (
                   <div className="text-sm text-muted-foreground/70 py-8 text-center border rounded-md bg-muted/20">
-                    Arraste negócios para esta etapa
+                    {t("deals.emptyStage")}
                   </div>
                 )}
 

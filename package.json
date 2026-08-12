@@ -8,6 +8,7 @@
     "build": "npm run typecheck && vite build",
     "build:dev": "npm run typecheck && vite build --mode development",
     "lint": "eslint .",
+    "i18n:check": "node scripts/check-i18n.mjs",
     "typecheck": "tsc -b --pretty false",
     "preview": "vite preview"
   },
@@ -67,6 +68,7 @@
     "date-fns": "^3.6.0",
     "embla-carousel-react": "^8.3.0",
     "highlight.run": "^9.16.0",
+    "i18next": "^26.3.6",
     "input-otp": "^1.2.4",
     "libphonenumber-js": "^1.12.41",
     "lucide-react": "^0.462.0",
@@ -77,6 +79,7 @@
     "react-dom": "^18.3.1",
     "react-grid-layout": "^2.2.2",
     "react-hook-form": "^7.53.0",
+    "react-i18next": "^17.0.11",
     "react-mentions": "^4.4.10",
     "react-phone-number-input": "^3.4.16",
     "react-resizable-panels": "^2.1.3",

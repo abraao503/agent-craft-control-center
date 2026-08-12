@@ -28,12 +28,16 @@ import { listPipelineStages } from "@/services/pipeline/listPipelineStages";
 import { createDealWebhook } from "@/services/deal-webhook";
 import { CreateDealWebhookInput } from "@/types/deal-webhook";
 import { Separator } from "@/components/ui/separator";
+import { useTranslation } from "react-i18next";
+import { useAppLocale } from "@/i18n/LocaleProvider";
 
 export default function DealWebhookCreatePage() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { currentWorkspace } = useWorkspaceContext();
+  const { t } = useTranslation();
+  const { locale } = useAppLocale();
   const workspaceId = currentWorkspace?.id || "";
 
   const [name, setName] = useState("");
@@ -70,8 +74,8 @@ export default function DealWebhookCreatePage() {
     mutationFn: (data: CreateDealWebhookInput) => createDealWebhook(data),
     onSuccess: (response) => {
       toast({
-        title: "Webhook criado",
-        description: "O webhook foi criado com sucesso!",
+        title: t("webhookForm.createSuccess"),
+        description: t("webhookForm.createSuccessDescription"),
       });
       queryClient.invalidateQueries({
         queryKey: ["deal-webhooks", workspaceId],
@@ -80,8 +84,8 @@ export default function DealWebhookCreatePage() {
     },
     onError: (error: Error) => {
       toast({
-        title: "Erro ao criar webhook",
-        description: error?.message || "Ocorreu um erro ao criar o webhook.",
+        title: t("webhookForm.createError"),
+        description: error?.message || t("webhookForm.createErrorDescription"),
         variant: "destructive",
       });
     },
@@ -92,8 +96,8 @@ export default function DealWebhookCreatePage() {
 
     if (!name.trim()) {
       toast({
-        title: "Nome obrigatório",
-        description: "Por favor, informe um nome para o webhook.",
+        title: t("webhookForm.nameRequired"),
+        description: t("webhookForm.nameRequiredDescription"),
         variant: "destructive",
       });
       return;
@@ -101,8 +105,8 @@ export default function DealWebhookCreatePage() {
 
     if (!selectedPipelineId) {
       toast({
-        title: "Pipeline obrigatória",
-        description: "Por favor, selecione uma pipeline.",
+        title: t("webhookForm.pipelineRequired"),
+        description: t("webhookForm.pipelineRequiredDescription"),
         variant: "destructive",
       });
       return;
@@ -110,9 +114,8 @@ export default function DealWebhookCreatePage() {
 
     if (sendWelcomeMessage && !welcomeMessage.trim()) {
       toast({
-        title: "Mensagem obrigatória",
-        description:
-          "Por favor, informe a mensagem de boas-vindas ou desative a opção.",
+        title: t("webhookForm.messageRequired"),
+        description: t("webhookForm.messageRequiredDescription"),
         variant: "destructive",
       });
       return;
@@ -137,8 +140,8 @@ export default function DealWebhookCreatePage() {
   const handleCopyUrl = (text: string) => {
     navigator.clipboard.writeText(text);
     toast({
-      title: "Copiado!",
-      description: "Texto copiado para a área de transferência.",
+      title: t("webhookForm.copied"),
+      description: t("webhookForm.copiedDescription"),
     });
   };
 
@@ -150,7 +153,7 @@ export default function DealWebhookCreatePage() {
     return (
       <div className="flex items-center justify-center h-full">
         <p className="text-muted-foreground">
-          Selecione um workspace para criar um webhook
+          {t("webhookForm.noWorkspaceCreate")}
         </p>
       </div>
     );
@@ -159,10 +162,13 @@ export default function DealWebhookCreatePage() {
   // Show success state after creation
   if (createdWebhook) {
     const examplePayload = {
-      title: "Nome do negócio",
-      description: "Descrição opcional do negócio",
+      title: locale === "es-ES" ? "Nombre de la oportunidad" : "Nome do negócio",
+      description:
+        locale === "es-ES"
+          ? "Descripción opcional de la oportunidad"
+          : "Descrição opcional do negócio",
       value: 1000,
-      customerName: "João Silva",
+      customerName: locale === "es-ES" ? "Juan García" : "João Silva",
       customerPhone: "+5511999887766",
       customerEmail: "joao.silva@exemplo.com",
     };
@@ -180,10 +186,10 @@ export default function DealWebhookCreatePage() {
           </Button>
           <div>
             <h1 className="text-3xl font-bold tracking-tight">
-              Webhook Criado!
+              {t("webhookForm.createdTitle")}
             </h1>
             <p className="text-muted-foreground">
-              Configure seu sistema externo com as informações abaixo
+              {t("webhookForm.createdDescription")}
             </p>
           </div>
         </div>
@@ -193,15 +199,15 @@ export default function DealWebhookCreatePage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Webhook className="h-5 w-5" />
-                Informações do Webhook
+                {t("webhookForm.integrationInformation")}
               </CardTitle>
               <CardDescription>
-                Use estas informações para configurar a integração
+                {t("webhookForm.integrationInformationDescription")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label className="text-sm font-medium">URL do Webhook</Label>
+                <Label className="text-sm font-medium">{t("webhookForm.urlLabel")}</Label>
                 <div className="flex items-center gap-2 mt-1">
                   <code className="flex-1 bg-muted px-3 py-2 rounded text-sm break-all">
                     {createdWebhook.webhookUrl}
@@ -217,7 +223,7 @@ export default function DealWebhookCreatePage() {
               </div>
 
               <div>
-                <Label className="text-sm font-medium">Método HTTP</Label>
+                <Label className="text-sm font-medium">{t("webhookForm.httpMethod")}</Label>
                 <div className="mt-1">
                   <code className="bg-green-100 text-green-800 px-3 py-1 rounded text-sm font-semibold">
                     POST
@@ -229,15 +235,15 @@ export default function DealWebhookCreatePage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Exemplo de Requisição</CardTitle>
+              <CardTitle>{t("webhookForm.requestExample")}</CardTitle>
               <CardDescription>
-                Envie uma requisição POST com o seguinte formato
+                {t("webhookForm.requestExampleDescription")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
                 <Label className="text-sm font-medium mb-2 block">
-                  Headers
+                  {t("webhookForm.headers")}
                 </Label>
                 <div className="bg-muted p-4 rounded-lg relative">
                   <pre className="text-sm overflow-x-auto">
@@ -270,7 +276,7 @@ export default function DealWebhookCreatePage() {
 
               <div>
                 <Label className="text-sm font-medium mb-2 block">
-                  Body (JSON)
+                  {t("webhookForm.bodyJson")}
                 </Label>
                 <div className="bg-muted p-4 rounded-lg relative">
                   <pre className="text-sm overflow-x-auto">
@@ -293,43 +299,43 @@ export default function DealWebhookCreatePage() {
 
               <div>
                 <Label className="text-sm font-medium mb-2 block">
-                  Campos do Body
+                  {t("webhookForm.bodyFields")}
                 </Label>
                 <div className="space-y-2 text-sm">
                   <div className="grid grid-cols-3 gap-2 p-2 bg-muted/50 rounded font-medium">
-                    <span>Campo</span>
-                    <span>Tipo</span>
-                    <span>Obrigatório</span>
+                    <span>{t("webhookForm.field")}</span>
+                    <span>{t("webhookForm.type")}</span>
+                    <span>{t("webhookForm.required")}</span>
                   </div>
                   <div className="grid grid-cols-3 gap-2 p-2">
                     <code>title</code>
                     <span>string</span>
-                    <span className="text-green-600">Sim</span>
+                    <span className="text-green-600">{t("webhookForm.yes")}</span>
                   </div>
                   <div className="grid grid-cols-3 gap-2 p-2 bg-muted/30">
                     <code>customerPhone</code>
                     <span>string (formato internacional)</span>
-                    <span className="text-green-600">Sim</span>
+                    <span className="text-green-600">{t("webhookForm.yes")}</span>
                   </div>
                   <div className="grid grid-cols-3 gap-2 p-2">
                     <code>description</code>
                     <span>string</span>
-                    <span className="text-muted-foreground">Não</span>
+                    <span className="text-muted-foreground">{t("webhookForm.no")}</span>
                   </div>
                   <div className="grid grid-cols-3 gap-2 p-2 bg-muted/30">
                     <code>value</code>
                     <span>number</span>
-                    <span className="text-muted-foreground">Não</span>
+                    <span className="text-muted-foreground">{t("webhookForm.no")}</span>
                   </div>
                   <div className="grid grid-cols-3 gap-2 p-2">
                     <code>customerName</code>
                     <span>string</span>
-                    <span className="text-muted-foreground">Não</span>
+                    <span className="text-muted-foreground">{t("webhookForm.no")}</span>
                   </div>
                   <div className="grid grid-cols-3 gap-2 p-2 bg-muted/30">
                     <code>customerEmail</code>
                     <span>email</span>
-                    <span className="text-muted-foreground">Não</span>
+                    <span className="text-muted-foreground">{t("webhookForm.no")}</span>
                   </div>
                 </div>
               </div>
@@ -338,11 +344,11 @@ export default function DealWebhookCreatePage() {
 
               <div>
                 <Label className="text-sm font-medium mb-2 block">
-                  Configuração do Webhook
+                  {t("webhookForm.webhookConfiguration")}
                 </Label>
                 <div className="space-y-2 text-sm">
                   <div className="flex items-center justify-between p-3 bg-muted/50 rounded">
-                    <span className="text-muted-foreground">Pipeline:</span>
+                    <span className="text-muted-foreground">{t("webhookForm.pipeline")}</span>
                     <span className="font-medium">
                       {pipelines?.find((p) => p.id === selectedPipelineId)
                         ?.name || "N/A"}
@@ -350,19 +356,18 @@ export default function DealWebhookCreatePage() {
                   </div>
                   <div className="flex items-center justify-between p-3 bg-muted/50 rounded">
                     <span className="text-muted-foreground">
-                      Etapa inicial:
+                      {t("webhookForm.firstStage")}
                     </span>
                     <span className="font-medium">
                       {selectedStageId
                         ? stages?.find((s) => s.id === selectedStageId)?.name ||
                           "N/A"
-                        : "Primeira etapa da pipeline"}
+                        : t("webhookForm.firstStageDefault")}
                     </span>
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
-                  Os deals serão criados automaticamente nesta pipeline e etapa
-                  quando o webhook for acionado.
+                  {t("webhookForm.createdDealsNote")}
                 </p>
               </div>
 
@@ -370,29 +375,15 @@ export default function DealWebhookCreatePage() {
 
               <div>
                 <Label className="text-sm font-medium mb-2 block">
-                  Observações Importantes
+                  {t("webhookForm.notes")}
                 </Label>
                 <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
                   <li>
-                    O telefone aceita formato internacional com DDI (ex:
-                    +5511999887766, +16505551234). Números sem DDI são assumidos
-                    como brasileiros.
+                    {t("webhookForm.phoneNote")}
                   </li>
-                  <li>
-                    O campo{" "}
-                    <code className="text-xs bg-muted px-1 py-0.5 rounded">
-                      title
-                    </code>{" "}
-                    é obrigatório e será o nome do negócio
-                  </li>
-                  <li>
-                    O campo{" "}
-                    <code className="text-xs bg-muted px-1 py-0.5 rounded">
-                      customerPhone
-                    </code>{" "}
-                    é obrigatório
-                  </li>
-                  <li>Todos os outros campos são opcionais</li>
+                  <li>{t("webhookForm.titleNote")}</li>
+                  <li>{t("webhookForm.phoneRequiredNote")}</li>
+                  <li>{t("webhookForm.otherFieldsOptional")}</li>
                 </ul>
               </div>
             </CardContent>
@@ -400,10 +391,10 @@ export default function DealWebhookCreatePage() {
 
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={handleGoBack}>
-              Voltar para lista
+              {t("webhookForm.backToList")}
             </Button>
             <Button onClick={() => navigate(`/webhooks/${createdWebhook.id}`)}>
-              Ver detalhes do webhook
+              {t("webhookForm.viewDetails")}
             </Button>
           </div>
         </div>
@@ -423,9 +414,9 @@ export default function DealWebhookCreatePage() {
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Novo Webhook</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{t("webhookForm.createTitle")}</h1>
           <p className="text-muted-foreground">
-            Crie um webhook para permitir integrações externas
+            {t("webhookForm.createDescription")}
           </p>
         </div>
       </div>
@@ -433,28 +424,28 @@ export default function DealWebhookCreatePage() {
       <div className="max-w-2xl mx-auto">
         <Card>
           <CardHeader>
-            <CardTitle>Configurações do Webhook</CardTitle>
+            <CardTitle>{t("webhookForm.webhookConfiguration")}</CardTitle>
             <CardDescription>
-              Configure as opções do webhook para criação de deals
+              {t("webhookForm.formDescription")}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="name">Nome do Webhook *</Label>
+                <Label htmlFor="name">{t("webhookForm.nameLabel")}</Label>
                 <Input
                   id="name"
-                  placeholder="Ex: Integração CRM, Landing Page..."
+                  placeholder={t("webhookForm.namePlaceholder")}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="pipeline">Pipeline *</Label>
+                <Label htmlFor="pipeline">{t("webhookForm.pipelineLabel")}</Label>
                 {isLoadingPipelines ? (
                   <div className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm flex items-center text-muted-foreground">
-                    Carregando pipelines...
+                    {t("webhookForm.loadingPipelines")}
                   </div>
                 ) : (
                   <Select
@@ -462,7 +453,7 @@ export default function DealWebhookCreatePage() {
                     onValueChange={setSelectedPipelineId}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione uma pipeline" />
+                      <SelectValue placeholder={t("webhookForm.pipelinePlaceholder")} />
                     </SelectTrigger>
                     <SelectContent>
                       {pipelines?.map((pipeline) => (
@@ -474,20 +465,19 @@ export default function DealWebhookCreatePage() {
                   </Select>
                 )}
                 <p className="text-xs text-muted-foreground">
-                  Os deals criados pelo webhook serão adicionados a esta
-                  pipeline
+                  {t("webhookForm.pipelineHelp")}
                 </p>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="stage">Etapa Inicial</Label>
+                <Label htmlFor="stage">{t("webhookForm.stageLabel")}</Label>
                 {!selectedPipelineId ? (
                   <div className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm flex items-center text-muted-foreground">
-                    Selecione uma pipeline primeiro
+                    {t("webhookForm.selectPipelineFirst")}
                   </div>
                 ) : !stages || stages.length === 0 ? (
                   <div className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm flex items-center text-muted-foreground">
-                    Carregando etapas...
+                    {t("webhookForm.loadingStages")}
                   </div>
                 ) : (
                   <Select
@@ -495,7 +485,7 @@ export default function DealWebhookCreatePage() {
                     onValueChange={setSelectedStageId}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione uma etapa (opcional)" />
+                      <SelectValue placeholder={t("webhookForm.stagePlaceholder")} />
                     </SelectTrigger>
                     <SelectContent>
                       {stages.map((stage) => (
@@ -509,8 +499,7 @@ export default function DealWebhookCreatePage() {
                   </Select>
                 )}
                 <p className="text-xs text-muted-foreground">
-                  Opcional: Se não informado, a primeira etapa da pipeline será
-                  usada
+                  {t("webhookForm.stageHelp")}
                 </p>
               </div>
 
@@ -520,10 +509,10 @@ export default function DealWebhookCreatePage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <Label htmlFor="sendWelcomeMessage">
-                      Mensagem de boas-vindas
+                      {t("webhookForm.welcomeMessage")}
                     </Label>
                     <p className="text-sm text-muted-foreground">
-                      Enviar mensagem automática ao criar o deal
+                      {t("webhookForm.welcomeHelp")}
                     </p>
                   </div>
                   <Switch
@@ -535,10 +524,10 @@ export default function DealWebhookCreatePage() {
 
                 {sendWelcomeMessage && (
                   <div className="space-y-2">
-                    <Label htmlFor="welcomeMessage">Mensagem *</Label>
+                    <Label htmlFor="welcomeMessage">{t("webhookForm.messageLabel")}</Label>
                     <Textarea
                       id="welcomeMessage"
-                      placeholder="Digite a mensagem de boas-vindas..."
+                      placeholder={t("webhookForm.messagePlaceholder")}
                       value={welcomeMessage}
                       onChange={(e) => setWelcomeMessage(e.target.value)}
                       rows={4}
@@ -549,10 +538,12 @@ export default function DealWebhookCreatePage() {
 
               <div className="flex justify-end gap-2 pt-4">
                 <Button type="button" variant="outline" onClick={handleGoBack}>
-                  Cancelar
+                  {t("webhookForm.cancel")}
                 </Button>
                 <Button type="submit" disabled={createMutation.isPending}>
-                  {createMutation.isPending ? "Criando..." : "Criar Webhook"}
+                  {createMutation.isPending
+                    ? t("webhookForm.creating")
+                    : t("webhookForm.createButton")}
                 </Button>
               </div>
             </form>

@@ -1,8 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { BarChart3, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 export function DashboardEmptyState() {
+  const { t } = useTranslation();
   return (
     <div className="flex flex-col items-center justify-center py-20 space-y-6">
       {/* Ícone decorativo */}
@@ -20,16 +22,15 @@ export function DashboardEmptyState() {
       </div>
 
       <div className="text-center space-y-2 max-w-md">
-        <h2 className="text-xl font-semibold">Sua dashboard está vazia</h2>
+        <h2 className="text-xl font-semibold">{t("dashboard.emptyTitle")}</h2>
         <p className="text-muted-foreground text-sm">
-          Comece criando deals e conversando com clientes para ver seus
-          indicadores aqui.
+          {t("dashboard.emptyDescription")}
         </p>
       </div>
 
       <Link to="/deals">
         <Button className="gap-2">
-          Criar primeiro deal
+          {t("dashboard.createFirstOpportunity")}
           <ArrowRight className="h-4 w-4" />
         </Button>
       </Link>

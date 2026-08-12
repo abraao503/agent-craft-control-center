@@ -15,6 +15,7 @@ import {
   useResetDashboardConfig,
 } from "@/hooks/useDashboardV2";
 import { WidgetRenderer } from "@/components/dashboard-v2/widgets";
+import { useTranslation } from "react-i18next";
 import { PeriodSelector } from "@/components/dashboard-v2/PeriodSelector";
 import { CustomizerDialog } from "@/components/dashboard-v2/CustomizerDialog";
 import { DashboardEmptyState } from "@/components/dashboard-v2/DashboardEmptyState";
@@ -76,6 +77,7 @@ const COLS = { xl: 12, lg: 12, md: 12, sm: 6 };
 
 export default function DashboardV2Page() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const { currentWorkspace } = useWorkspaceContext();
   const [period, setPeriod] = useState<PeriodPreset>("last_30_days");
   const [customizerOpen, setCustomizerOpen] = useState(false);
@@ -215,17 +217,17 @@ export default function DashboardV2Page() {
   // Subtítulo por role
   const subtitle = useMemo(() => {
     const role = user?.role;
-    if (role === "PLATFORM_ADMIN") return "Visão geral da plataforma";
+    if (role === "PLATFORM_ADMIN") return t("dashboard.platformOverview");
     if (role === "COMPANY_OWNER" || role === "COMPANY_ADMIN")
-      return "Visão geral da empresa";
+      return t("dashboard.companyOverview");
     if (
       role === "WORKSPACE_MANAGER" ||
       role === "WORKSPACE_ADMIN" ||
       role === "WORKSPACE_OWNER"
     )
-      return "Visão geral do workspace";
-    return "Seus indicadores de vendas";
-  }, [user?.role]);
+      return t("dashboard.workspaceOverview");
+    return t("dashboard.salesIndicators");
+  }, [user?.role, t]);
 
   if (isLoading) {
     return (
@@ -245,14 +247,14 @@ export default function DashboardV2Page() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{t("dashboard.title")}</h1>
           <p className="text-muted-foreground">{subtitle}</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           {saveLayoutMutation.isPending && (
             <div className="flex items-center gap-2 mr-2 text-sm text-muted-foreground bg-muted/50 px-2.5 py-1.5 rounded-md animate-in fade-in zoom-in duration-200">
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              <span>Salvando layout...</span>
+              <span>{t("dashboard.savingLayout")}</span>
             </div>
           )}
           <PeriodSelector value={period} onChange={setPeriod} />
@@ -263,7 +265,7 @@ export default function DashboardV2Page() {
             onClick={() => setCustomizerOpen(true)}
           >
             <Settings2 className="h-4 w-4" />
-            Personalizar
+            {t("dashboard.customize")}
           </Button>
         </div>
       </div>

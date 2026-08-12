@@ -30,6 +30,7 @@ import { MessageSentEvent } from "@/types/websocket";
 import { Inbox } from "lucide-react";
 import { getDealAttributionOptions } from "@/services/deal/getDealAttributionOptions";
 import { MetaAttributionFilters } from "@/components/deals/MetaAttributionFilters";
+import { useTranslation } from "react-i18next";
 
 const PipelineDetailPage = () => {
   const { pipelineId } = useParams();
@@ -38,6 +39,7 @@ const PipelineDetailPage = () => {
   const { toast } = useToast();
   const { has } = usePermissions();
   const { userProfile } = useAuth();
+  const { t } = useTranslation();
 
   const { workspaceId, isChangingWorkspace } = useWorkspaceManager({
     queryKeys: ["listPipelineStages", "listPipelines"],
@@ -324,7 +326,7 @@ const PipelineDetailPage = () => {
         });
       });
 
-      toast({ title: "Sucesso", description: "Negócio movido com sucesso." });
+      toast({ title: t("common.success"), description: t("deals.moveSuccess") });
     } catch (e: unknown) {
       // Rollback optimistic update on error - restore all queries
       previousData.forEach((data, key) => {
@@ -348,21 +350,21 @@ const PipelineDetailPage = () => {
         if (match) {
           const fields = match[1];
           toast({
-            title: "Campos obrigatórios não preenchidos",
-            description: `Preencha os seguintes campos antes de mover o negócio: ${fields}`,
+            title: t("deals.requiredTitle"),
+            description: t("deals.requiredDescription", { fields }),
             variant: "destructive",
           });
         } else {
           toast({
-            title: "Erro de validação",
+            title: t("deals.validationError"),
             description: errorMessage,
             variant: "destructive",
           });
         }
       } else {
         toast({
-          title: "Erro",
-          description: "Falha ao mover negócio.",
+          title: t("common.error"),
+          description: t("deals.moveError"),
           variant: "destructive",
         });
       }
@@ -397,7 +399,7 @@ const PipelineDetailPage = () => {
     if (hasPipelines) {
       return (
         <div className="border rounded-lg py-12 text-center text-muted-foreground">
-          Selecione um funil no topo ou crie um novo.
+          {t("deals.selectPipeline")}
         </div>
       );
     }
@@ -407,15 +409,15 @@ const PipelineDetailPage = () => {
         <div className="space-y-4">
           {isSalesRep ? (
             <p className="text-muted-foreground">
-              Você ainda não possui negócios atribuídos a você.
+              {t("deals.noAssignedDeals")}
             </p>
           ) : (
             <>
               <p className="text-muted-foreground">
-                Você ainda não tem nenhum funil.
+                {t("deals.noPipeline")}
               </p>
               <Button onClick={() => navigate("/deals/pipeline/create")}>
-                Criar funil
+                {t("deals.createPipeline")}
               </Button>
             </>
           )}
@@ -426,7 +428,7 @@ const PipelineDetailPage = () => {
 
   const renderEmptyStagesState = () => (
     <div className="border rounded-lg py-12 text-center text-muted-foreground">
-      Este pipeline não possui etapas. Crie etapas para visualizar o Kanban.
+      {t("deals.noStages")}
     </div>
   );
 
@@ -464,10 +466,10 @@ const PipelineDetailPage = () => {
       <div className="space-y-3">
         <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex min-w-0 flex-wrap items-center gap-3">
-            <h1 className="text-3xl font-bold tracking-tight">Negócios</h1>
+            <h1 className="text-3xl font-bold tracking-tight">{t("deals.title")}</h1>
             {canCreateDeal && pipelineId && stages.length > 0 && (
               <Button onClick={() => setOpenCreateDeal(true)} className="mr-2">
-                Novo Negócio
+                {t("deals.new")}
               </Button>
             )}
           </div>
@@ -478,7 +480,7 @@ const PipelineDetailPage = () => {
                 onClick={() => navigate(`/deals/pipeline/${pipelineId}/queue`)}
               >
                 <Inbox className="h-4 w-4 mr-2" />
-                Fila de Mensagens
+                {t("deals.messageQueue")}
               </Button>
             )}
             {currentPipelineWhatsappIntegrationId && workspaceId && (
@@ -518,7 +520,7 @@ const PipelineDetailPage = () => {
             {workspaceId && canListUsers && !isSalesRep && (
               <div className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground">
-                  Responsável
+                  {t("deals.responsible")}
                 </span>
                 <UserFilter
                   workspaceId={workspaceId}

@@ -47,20 +47,11 @@ import {
 } from "@/services/mass-broadcast";
 import { MassBroadcast, MassBroadcastStatus } from "@/types/mass-broadcast";
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { es, ptBR } from "date-fns/locale";
+import { useTranslation } from "react-i18next";
+import { useAppLocale } from "@/i18n/LocaleProvider";
 
 const ITEMS_PER_PAGE = 9;
-
-const STATUS_LABELS: Record<MassBroadcastStatus, string> = {
-  DRAFT: "Rascunho",
-  PROCESSING: "Processando",
-  READY: "Pronta",
-  SENDING: "Enviando",
-  PAUSED: "Pausada",
-  COMPLETED: "Concluída",
-  CANCELLED: "Cancelada",
-  FAILED: "Falhou",
-};
 
 const STATUS_COLORS: Record<MassBroadcastStatus, string> = {
   DRAFT: "bg-gray-100 text-gray-800",
@@ -78,7 +69,24 @@ export default function MassBroadcastPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { currentWorkspace } = useWorkspaceContext();
+  const { t } = useTranslation();
+  const { locale } = useAppLocale();
   const workspaceId = currentWorkspace?.id || "";
+  const dateLocale = locale === "es-ES" ? es : ptBR;
+
+  const getStatusLabel = (status: MassBroadcastStatus) => {
+    const labels: Record<MassBroadcastStatus, string> = {
+      DRAFT: t("broadcasts.draft"),
+      PROCESSING: t("broadcasts.processing"),
+      READY: t("broadcasts.ready"),
+      SENDING: t("broadcasts.sending"),
+      PAUSED: t("broadcasts.paused"),
+      COMPLETED: t("broadcasts.completed"),
+      CANCELLED: t("broadcasts.cancelled"),
+      FAILED: t("broadcasts.failed"),
+    };
+    return labels[status];
+  };
 
   const [currentPage, setCurrentPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
@@ -114,14 +122,14 @@ export default function MassBroadcastPage() {
       setIsDeleteDialogOpen(false);
       setSelectedBroadcast(null);
       toast({
-        title: "Campanha excluída",
-        description: "A campanha foi excluída com sucesso.",
+        title: t("broadcasts.deleteSuccess"),
+        description: t("broadcasts.deleteSuccessDescription"),
       });
     },
     onError: () => {
       toast({
-        title: "Erro ao excluir campanha",
-        description: "Ocorreu um erro ao excluir a campanha. Tente novamente.",
+        title: t("broadcasts.deleteError"),
+        description: t("broadcasts.deleteErrorDescription"),
         variant: "destructive",
       });
     },
@@ -145,7 +153,7 @@ export default function MassBroadcastPage() {
 
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return "—";
-    return format(new Date(dateStr), "dd/MM/yyyy HH:mm", { locale: ptBR });
+    return format(new Date(dateStr), "dd/MM/yyyy HH:mm", { locale: dateLocale });
   };
 
   const getProgressPercent = (broadcast: MassBroadcast) => {
@@ -161,7 +169,7 @@ export default function MassBroadcastPage() {
     return (
       <div className="flex items-center justify-center h-full">
         <p className="text-muted-foreground">
-          Selecione um workspace para visualizar os disparos
+          {t("broadcasts.selectWorkspace")}
         </p>
       </div>
     );
@@ -171,20 +179,20 @@ export default function MassBroadcastPage() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">Disparos em Massa</h1>
+          <h1 className="text-3xl font-bold">{t("broadcasts.title")}</h1>
           <p className="text-muted-foreground mt-1">
-            Gerencie campanhas de envio de mensagens via WhatsApp
+            {t("broadcasts.description")}
           </p>
         </div>
         <Button onClick={() => navigate("/broadcasts/create")}>
-          <Plus className="mr-2 h-4 w-4" /> Nova Campanha
+          <Plus className="mr-2 h-4 w-4" /> {t("broadcasts.new")}
         </Button>
       </div>
 
       {/* Filtro de status */}
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Status:</span>
+          <span className="text-sm text-muted-foreground">{t("broadcasts.status")}</span>
           <Select
             value={statusFilter}
             onValueChange={(value) => {
@@ -193,16 +201,16 @@ export default function MassBroadcastPage() {
             }}
           >
             <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Todos os status" />
+              <SelectValue placeholder={t("broadcasts.allStatuses")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="ALL">Todos</SelectItem>
-              <SelectItem value="READY">Pronta</SelectItem>
-              <SelectItem value="SENDING">Enviando</SelectItem>
-              <SelectItem value="PAUSED">Pausada</SelectItem>
-              <SelectItem value="COMPLETED">Concluída</SelectItem>
-              <SelectItem value="CANCELLED">Cancelada</SelectItem>
-              <SelectItem value="FAILED">Falhou</SelectItem>
+              <SelectItem value="ALL">{t("broadcasts.all")}</SelectItem>
+              <SelectItem value="READY">{t("broadcasts.ready")}</SelectItem>
+              <SelectItem value="SENDING">{t("broadcasts.sending")}</SelectItem>
+              <SelectItem value="PAUSED">{t("broadcasts.paused")}</SelectItem>
+              <SelectItem value="COMPLETED">{t("broadcasts.completed")}</SelectItem>
+              <SelectItem value="CANCELLED">{t("broadcasts.cancelled")}</SelectItem>
+              <SelectItem value="FAILED">{t("broadcasts.failed")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -261,12 +269,11 @@ export default function MassBroadcastPage() {
                         variant="secondary"
                         className={STATUS_COLORS[broadcast.status]}
                       >
-                        {STATUS_LABELS[broadcast.status]}
+                        {getStatusLabel(broadcast.status)}
                       </Badge>
                     </div>
                     <CardDescription className="text-sm mt-2">
-                      {broadcast.messageVariations.length} variação(ões) de
-                      mensagem • {broadcast.totalRecipients} destinatário(s)
+                      {t("broadcasts.variations", { count: broadcast.messageVariations.length })} • {t("broadcasts.recipients", { count: broadcast.totalRecipients })}
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="pt-0 flex flex-col justify-between h-full">
@@ -277,7 +284,7 @@ export default function MassBroadcastPage() {
                       broadcast.status === "COMPLETED" ? (
                         <div className="mb-3">
                           <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                            <span>Progresso</span>
+                            <span>{t("broadcasts.progress")}</span>
                             <span>{progress}%</span>
                           </div>
                           <div className="w-full bg-muted rounded-full h-2">
@@ -288,28 +295,25 @@ export default function MassBroadcastPage() {
                           </div>
                           <div className="flex justify-between text-xs text-muted-foreground mt-1">
                             <span>
-                              {broadcast.sentCount} enviado(s)
+                              {broadcast.sentCount} {t("broadcasts.sent")}
                               {broadcast.failedCount > 0 && (
                                 <span className="text-red-600">
-                                  {" "}
-                                  • {broadcast.failedCount} falha(s)
+                                  {" "}• {broadcast.failedCount} {t("broadcasts.failures")}
                                 </span>
                               )}
                             </span>
-                            <span>de {broadcast.totalRecipients}</span>
+                            <span>{t("broadcasts.of", { count: broadcast.totalRecipients })}</span>
                           </div>
                         </div>
                       ) : null}
 
                       <div className="text-xs text-muted-foreground space-y-1">
-                        <p>Criado em: {formatDate(broadcast.createdAt)}</p>
+                        <p>{t("broadcasts.createdAt", { date: formatDate(broadcast.createdAt) })}</p>
                         {broadcast.startedAt && (
-                          <p>Iniciado em: {formatDate(broadcast.startedAt)}</p>
+                          <p>{t("broadcasts.startedAt", { date: formatDate(broadcast.startedAt) })}</p>
                         )}
                         {broadcast.completedAt && (
-                          <p>
-                            Concluído em: {formatDate(broadcast.completedAt)}
-                          </p>
+                          <p>{t("broadcasts.completedAt", { date: formatDate(broadcast.completedAt) })}</p>
                         )}
                       </div>
                     </div>
@@ -323,7 +327,7 @@ export default function MassBroadcastPage() {
                           navigate(`/broadcasts/${broadcast.id}`);
                         }}
                       >
-                        <Eye className="h-4 w-4 mr-1" /> Detalhes
+                        <Eye className="h-4 w-4 mr-1" /> {t("broadcasts.details")}
                       </Button>
                       {broadcast.status !== "SENDING" && (
                         <Button
@@ -332,7 +336,7 @@ export default function MassBroadcastPage() {
                           className="text-destructive hover:text-destructive"
                           onClick={(e) => handleDeleteClick(e, broadcast)}
                         >
-                          <Trash2 className="h-4 w-4 mr-1" /> Excluir
+                          <Trash2 className="h-4 w-4 mr-1" /> {t("broadcasts.delete")}
                         </Button>
                       )}
                     </div>
@@ -350,7 +354,7 @@ export default function MassBroadcastPage() {
               showItemCount
               itemsPerPage={ITEMS_PER_PAGE}
               totalItems={broadcastsData.total}
-              itemLabel="campanhas"
+              itemLabel={t("broadcasts.campaigns")}
             />
           )}
         </>
@@ -359,14 +363,13 @@ export default function MassBroadcastPage() {
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Megaphone className="h-12 w-12 text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold mb-2">
-              Nenhuma campanha criada
+              {t("broadcasts.emptyTitle")}
             </h3>
             <p className="text-muted-foreground text-center mb-4">
-              Crie uma campanha para enviar mensagens em massa via WhatsApp para
-              seus clientes.
+              {t("broadcasts.emptyDescription")}
             </p>
             <Button onClick={() => navigate("/broadcasts/create")}>
-              <Plus className="mr-2 h-4 w-4" /> Criar primeira campanha
+              <Plus className="mr-2 h-4 w-4" /> {t("broadcasts.createFirst")}
             </Button>
           </CardContent>
         </Card>
@@ -379,14 +382,13 @@ export default function MassBroadcastPage() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+            <AlertDialogTitle>{t("broadcasts.confirmDelete")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir a campanha "
-              {selectedBroadcast?.name}"? Esta ação não pode ser desfeita.
+              {t("broadcasts.confirmDeleteDescription", { name: selectedBroadcast?.name ?? "" })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirmDelete}
               className="bg-red-600 hover:bg-red-700"
@@ -394,7 +396,7 @@ export default function MassBroadcastPage() {
               {deleteMutation.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
               ) : null}
-              Excluir
+              {t("broadcasts.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

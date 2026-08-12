@@ -7,9 +7,11 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { useToast } from "@/hooks/use-toast";
 import { listDealDistribution, setDealDistributionMember } from "@/services/workspace/dealDistribution";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 export function DealDistributionSection({ workspaceId }: { workspaceId: string }) {
   const { has, role } = usePermissions();
+  const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
@@ -54,14 +56,14 @@ export function DealDistributionSection({ workspaceId }: { workspaceId: string }
           </div>
           <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
             {activeMembers === 1
-              ? "1 pessoa ativada"
-              : `${activeMembers} pessoas ativadas`}
+              ? t("administration.activeMemberOne")
+              : t("administration.activeMemberMany", { count: activeMembers })}
           </span>
         </div>
       </CardHeader>
       <CardContent className="space-y-4 p-5 pt-0 md:p-6 md:pt-0">
         <Input
-          placeholder="Buscar pessoa"
+          placeholder={t("administration.searchPerson")}
           type="search"
           value={search}
           onChange={(event) => setSearch(event.target.value)}
@@ -72,7 +74,7 @@ export function DealDistributionSection({ workspaceId }: { workspaceId: string }
           </div>
         ) : query.isError ? (
           <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-center text-sm text-destructive">
-            <p>Não foi possível carregar as pessoas deste workspace.</p>
+            <p>{t("administration.distributionLoadError")}</p>
             <button
               type="button"
               onClick={() => query.refetch()}
@@ -105,9 +107,9 @@ export function DealDistributionSection({ workspaceId }: { workspaceId: string }
             ))}
             {query.data?.items.length === 0 && (
               <div className="p-8 text-center">
-                <p className="font-medium">Nenhuma pessoa disponível</p>
+                <p className="font-medium">{t("administration.noAvailablePeople")}</p>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Adicione uma pessoa a este workspace para incluí-la na distribuição.
+                  {t("administration.addPersonToDistribution")}
                 </p>
               </div>
             )}

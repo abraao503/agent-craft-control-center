@@ -7,12 +7,15 @@ import { SessionRecorder } from "@/components/SessionRecorder";
 import { UserProfile } from "@/types/auth";
 import { getUserProfile } from "@/services/auth/getUserProfile";
 import { AxiosError } from "axios";
+import { useTranslation } from "react-i18next";
+import { translateAuthError } from "@/utils/authErrorTranslations";
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
@@ -45,15 +48,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       saveUserData(data);
 
       toast({
-        title: "Login realizado com sucesso",
-        description: `Bem-vindo, ${data.user.name}!`,
+        title: t("auth.loginSuccess"),
+        description: t("auth.loginWelcome", { name: data.user.name }),
       });
     } catch (error) {
       if (error instanceof AxiosError) {
+        const message = error.response?.data?.message || error.message;
         toast({
-          title: "Erro ao realizar login",
-          description:
-            error.response?.data?.message || error.message || "Erro inesperado",
+          title: t("auth.loginFailed"),
+          description: translateAuthError(message, t("auth.genericError")),
           variant: "destructive",
         });
       }
@@ -71,15 +74,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
 
       toast({
-        title: "Cadastro realizado com sucesso",
-        description: "Conta criada com sucesso. Você pode agora fazer login.",
+        title: t("auth.signupSuccess"),
+        description: t("auth.accountCreated"),
       });
     } catch (error) {
       if (error instanceof AxiosError) {
+        const message = error.response?.data?.message || error.message;
         toast({
-          title: "Erro ao realizar cadastro",
-          description:
-            error.response?.data?.message || error.message || "Erro inesperado",
+          title: t("auth.signupFailed"),
+          description: translateAuthError(message, t("auth.genericError")),
           variant: "destructive",
         });
       }
@@ -91,8 +94,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     removeUserData();
 
     toast({
-      title: "Logout realizado com sucesso",
-      description: "Você foi deslogado com sucesso.",
+      title: t("auth.logoutSuccess"),
+      description: t("auth.loggedOut"),
     });
   };
 

@@ -12,12 +12,15 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { requestPasswordReset } from "@/services/user/requestPasswordReset";
+import { useTranslation } from "react-i18next";
+import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
 
 const ForgotPasswordPage = () => {
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
+  const { t } = useTranslation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,7 +32,7 @@ const ForgotPasswordPage = () => {
       setSubmitted(true);
     } catch {
       setError(
-        "Ocorreu um erro ao processar sua solicitação. Tente novamente.",
+        t("auth.genericError"),
       );
     } finally {
       setIsSubmitting(false);
@@ -37,23 +40,23 @@ const ForgotPasswordPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
+    <div className="min-h-screen flex items-center justify-center bg-background px-4 relative">
+      <LanguageSwitcher className="absolute right-4 top-4" />
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="text-2xl font-bold text-center">
-            Esqueceu sua senha?
+            {t("auth.forgotTitle")}
           </CardTitle>
           <CardDescription className="text-center">
             {submitted
-              ? "Verifique seu email"
-              : "Informe seu email para receber o link de redefinição"}
+              ? t("auth.checkEmail")
+              : t("auth.forgotDescription")}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {submitted ? (
             <p className="text-sm text-center text-muted-foreground">
-              Se o email informado estiver cadastrado, você receberá um link
-              para redefinir sua senha em breve.
+              {t("auth.resetEmailSent")}
             </p>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -63,7 +66,7 @@ const ForgotPasswordPage = () => {
                 </div>
               )}
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">{t("auth.email")}</Label>
                 <Input
                   id="email"
                   type="email"
@@ -74,14 +77,14 @@ const ForgotPasswordPage = () => {
                 />
               </div>
               <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {isSubmitting ? "Enviando..." : "Enviar link de redefinição"}
+                {isSubmitting ? t("auth.sending") : t("auth.sendResetLink")}
               </Button>
             </form>
           )}
         </CardContent>
         <CardFooter className="justify-center">
           <Link to="/login" className="text-sm text-primary hover:underline">
-            Voltar ao login
+            {t("auth.backToLogin")}
           </Link>
         </CardFooter>
       </Card>

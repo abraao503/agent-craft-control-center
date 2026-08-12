@@ -7,6 +7,7 @@ import {
   ArrowRight,
   type LucideIcon,
 } from "lucide-react";
+import { useAppLocale } from "@/i18n/LocaleProvider";
 
 interface KpiCardWidgetProps {
   title: string;
@@ -43,9 +44,10 @@ export function KpiCardWidget({
   linkText,
   onLinkClick,
 }: KpiCardWidgetProps) {
+  const { locale } = useAppLocale();
   const isPositive = changeText?.startsWith("+");
   const isNegative = changeText?.startsWith("-");
-  const displayValue = data.formatted ?? data.value.toLocaleString("pt-BR");
+  const displayValue = data.formatted ?? data.value.toLocaleString(locale);
 
   return (
     <Card

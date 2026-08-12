@@ -53,6 +53,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { assignUserToDeal } from "@/services/deal/assignUserToDeal";
 import { listUsers } from "@/services/user/listUsers";
 import { useWorkspaceManager } from "@/hooks/useWorkspaceManager";
+import { useTranslation } from "react-i18next";
 import { ReplyChannel } from "@/types/reply-channel";
 import {
   listMetaCloudChatTemplates,
@@ -225,6 +226,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   newMessageEvent,
 }) => {
   const { toast } = useToast();
+  const { t } = useTranslation();
   const { has } = usePermissions();
   const { currentWorkspace } = useWorkspaceManager();
   const queryClient = useQueryClient();
@@ -1408,8 +1410,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
             {isMetaWindowClosed ? (
               <div className="space-y-3 border-t p-3">
                 <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-                  A janela de atendimento está fechada. Envie um template aprovado para retomar a conversa.
-                  {newMessage.trim() && " O rascunho de texto foi preservado."}
+                  {t("chats.closedWindowMessage")}
+                  {newMessage.trim() && t("chats.draftPreserved")}
                 </div>
                 <Select
                   value={selectedTemplateId ?? ""}
@@ -1420,7 +1422,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                   disabled={metaTemplatesQuery.isLoading || !canSend}
                 >
                   <SelectTrigger className="text-sm">
-                    <SelectValue placeholder="Selecione um template aprovado" />
+                    <SelectValue placeholder={t("chats.selectTemplate")} />
                   </SelectTrigger>
                   <SelectContent>
                     {(metaTemplatesQuery.data ?? []).map((template) => (
@@ -1541,13 +1543,15 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                     onClick={() => templatePreviewMutation.mutate()}
                     disabled={!selectedTemplateId || templatePreviewMutation.isPending || !canSend}
                   >
-                    {templatePreviewMutation.isPending ? "Validando..." : "Pré-visualizar"}
+                    {templatePreviewMutation.isPending
+                      ? t("chats.previewingTemplate")
+                      : t("chats.previewTemplate")}
                   </Button>
                   <Button
                     onClick={() => void sendTemplate()}
                     disabled={!selectedTemplateId || !canSend || templatePreviewMutation.isPending}
                   >
-                    <Send className="mr-2 h-4 w-4" /> Enviar template
+                    <Send className="mr-2 h-4 w-4" /> {t("chats.sendTemplate")}
                   </Button>
                 </div>
               </div>

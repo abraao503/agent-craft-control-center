@@ -33,6 +33,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { useTranslation } from "react-i18next";
 
 interface AssistantStageConfigProps {
   stageId: string;
@@ -59,14 +60,6 @@ const sameRule = (
   right: AssistantAllowedTargetStage | null,
 ) => JSON.stringify(left) === JSON.stringify(right);
 
-const formatConditionsCount = (count: number) =>
-  `${count} ${count === 1 ? "condição" : "condições"}`;
-
-const formatRulesCount = (count: number) =>
-  count === 0
-    ? "Nenhuma regra"
-    : `${count} ${count === 1 ? "regra" : "regras"}`;
-
 export const AssistantStageConfig: React.FC<AssistantStageConfigProps> = ({
   stageId,
   stageName,
@@ -76,6 +69,7 @@ export const AssistantStageConfig: React.FC<AssistantStageConfigProps> = ({
   focusRuleIndex,
   onConfigChange,
 }) => {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [draft, setDraft] = useState<AssistantAllowedTargetStage | null>(null);
@@ -206,7 +200,11 @@ export const AssistantStageConfig: React.FC<AssistantStageConfigProps> = ({
               <span>Regras de movimentação</span>
               <span className="flex items-center gap-1 text-muted-foreground">
                 <span className="text-[11px]">
-                  {formatRulesCount(rules.length)}
+                  {rules.length === 0
+                    ? t("pipelineRules.none")
+                    : rules.length === 1
+                      ? t("pipelineRules.one", { count: rules.length })
+                      : t("pipelineRules.many", { count: rules.length })}
                 </span>
                 <ChevronRight className="h-3.5 w-3.5" />
               </span>
@@ -276,7 +274,13 @@ export const AssistantStageConfig: React.FC<AssistantStageConfigProps> = ({
                       {targetName(rule)}
                     </span>
                     <span className="text-xs text-muted-foreground">
-                      {formatConditionsCount(criteriaOf(rule).length)}
+                      {criteriaOf(rule).length === 1
+                        ? t("pipelineRules.conditionOne", {
+                            count: criteriaOf(rule).length,
+                          })
+                        : t("pipelineRules.conditionMany", {
+                            count: criteriaOf(rule).length,
+                          })}
                     </span>
                   </button>
                 ))}

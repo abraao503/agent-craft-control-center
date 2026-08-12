@@ -14,6 +14,7 @@ import { createTag } from "@/services/tag/createTag";
 import { useToast } from "@/hooks/use-toast";
 import { Tag } from "@/types/tag";
 import { Check } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 // Predefined modern colors for tags
 const TAG_COLORS = [
@@ -52,6 +53,7 @@ export const CreateTagDialog: React.FC<CreateTagDialogProps> = ({
   onSuccess,
 }) => {
   const { toast } = useToast();
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [name, setName] = useState(initialName);
   const [color, setColor] = useState(TAG_COLORS[10]); // Default to blue
@@ -79,8 +81,8 @@ export const CreateTagDialog: React.FC<CreateTagDialogProps> = ({
       // Invalidate queries so lists update
       queryClient.invalidateQueries({ queryKey: ["tags", workspaceId] });
       toast({
-        title: "Sucesso",
-        description: `Tag "${newTag.name}" criada com sucesso.`,
+        title: t("common.success"),
+        description: `${t("tags.createdDescription")} ${newTag.name}`,
       });
       onSuccess?.(newTag);
       onOpenChange(false);
@@ -88,8 +90,8 @@ export const CreateTagDialog: React.FC<CreateTagDialogProps> = ({
     },
     onError: () => {
       toast({
-        title: "Erro ao criar tag",
-        description: "Verifique se a tag já existe ou tente novamente.",
+        title: t("tags.createError"),
+        description: t("tags.createErrorDescription"),
         variant: "destructive",
       });
     },
@@ -105,14 +107,14 @@ export const CreateTagDialog: React.FC<CreateTagDialogProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Criar Nova Tag</DialogTitle>
+          <DialogTitle>{t("tags.createDialogTitle")}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 pt-4">
           <div className="space-y-2">
-            <Label htmlFor="tag-name">Nome da Tag</Label>
+            <Label htmlFor="tag-name">{t("tags.nameLabel")}</Label>
             <Input
               id="tag-name"
-              placeholder="Ex: Cliente VIP, Urgente..."
+              placeholder={t("tags.namePlaceholder")}
               value={name}
               onChange={(e) => setName(e.target.value)}
               autoFocus
@@ -120,7 +122,7 @@ export const CreateTagDialog: React.FC<CreateTagDialogProps> = ({
           </div>
           
           <div className="space-y-2">
-            <Label>Cor da Tag</Label>
+            <Label>{t("tags.colorLabel")}</Label>
             <div className="flex flex-wrap gap-2 pt-2">
               {TAG_COLORS.map((c) => (
                 <button
@@ -131,7 +133,7 @@ export const CreateTagDialog: React.FC<CreateTagDialogProps> = ({
                   onClick={() => setColor(c)}
                 >
                   {color === c && <Check className="w-4 h-4 text-white" />}
-                  <span className="sr-only">Selecionar cor {c}</span>
+                  <span className="sr-only">{t("tags.selectColor")} {c}</span>
                 </button>
               ))}
             </div>
@@ -144,13 +146,15 @@ export const CreateTagDialog: React.FC<CreateTagDialogProps> = ({
               onClick={() => onOpenChange(false)}
               disabled={createTagMutation.isPending}
             >
-              Cancelar
+              {t("tags.cancel")}
             </Button>
             <Button
               type="submit"
               disabled={!name.trim() || createTagMutation.isPending}
             >
-              {createTagMutation.isPending ? "Criando..." : "Criar Tag"}
+              {createTagMutation.isPending
+                ? t("tags.creating")
+                : t("tags.createButton")}
             </Button>
           </DialogFooter>
         </form>

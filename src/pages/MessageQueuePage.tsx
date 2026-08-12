@@ -25,14 +25,19 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { isColorDark } from "@/lib/utils";
 import { formatPhone } from "@/utils/phone";
+import { useTranslation } from "react-i18next";
+import { useAppLocale } from "@/i18n/LocaleProvider";
+import { es, ptBR as dateFnsPtBR } from "date-fns/locale";
 
 export default function MessageQueuePage() {
   const { pipelineId } = useParams<{ pipelineId: string }>();
   const navigate = useNavigate();
   const { has } = usePermissions();
+  const { t } = useTranslation();
+  const { locale } = useAppLocale();
+  const dateLocale = locale === "es-ES" ? es : dateFnsPtBR;
 
   const { workspaceId, isChangingWorkspace } = useWorkspaceManager({
     queryKeys: ["pipelineQueue", "queueMessages"],
@@ -74,7 +79,7 @@ export default function MessageQueuePage() {
     return (
       <Alert variant="destructive">
         <AlertDescription>
-          Você não tem permissão para visualizar filas de mensagens.
+          {t("messageQueue.noPermission")}
         </AlertDescription>
       </Alert>
     );
@@ -89,11 +94,11 @@ export default function MessageQueuePage() {
           className="mb-4"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Voltar para Negócios
+          {t("messageQueue.backToDeals")}
         </Button>
         <Alert variant="destructive">
           <AlertDescription>
-            Erro ao carregar fila de mensagens. Tente novamente.
+            {t("messageQueue.loadError")}
           </AlertDescription>
         </Alert>
       </div>
@@ -117,10 +122,10 @@ export default function MessageQueuePage() {
           className="mb-4"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Voltar para Negócios
+          {t("messageQueue.backToDeals")}
         </Button>
         <Alert>
-          <AlertDescription>Fila de mensagens não encontrada.</AlertDescription>
+          <AlertDescription>{t("messageQueue.notFound")}</AlertDescription>
         </Alert>
       </div>
     );
@@ -146,7 +151,7 @@ export default function MessageQueuePage() {
         className="mb-4"
       >
         <ArrowLeft className="h-4 w-4 mr-2" />
-        Voltar para Pipeline
+        {t("common.back")}
       </Button>
 
       <QueueHeader
@@ -157,11 +162,11 @@ export default function MessageQueuePage() {
       />
 
       <div>
-        <h2 className="text-xl font-semibold mb-4">Mensagens na Fila</h2>
+        <h2 className="text-xl font-semibold mb-4">{t("messageQueue.title")}</h2>
 
         {messages.length === 0 ? (
           <Alert>
-            <AlertDescription>Não há mensagens nesta fila.</AlertDescription>
+            <AlertDescription>{t("messageQueue.empty")}</AlertDescription>
           </Alert>
         ) : (
           <>
@@ -169,13 +174,13 @@ export default function MessageQueuePage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Cliente</TableHead>
-                    <TableHead>Mensagem</TableHead>
-                    <TableHead>Negócio</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Criada em</TableHead>
-                    <TableHead>Envio agendado</TableHead>
-                    <TableHead className="text-center">Tentativas</TableHead>
+                    <TableHead>{t("messageQueue.customer")}</TableHead>
+                    <TableHead>{t("messageQueue.message")}</TableHead>
+                    <TableHead>{t("messageQueue.deal")}</TableHead>
+                    <TableHead>{t("messageQueue.status")}</TableHead>
+                    <TableHead>{t("messageQueue.createdAt")}</TableHead>
+                    <TableHead>{t("messageQueue.scheduledSend")}</TableHead>
+                    <TableHead className="text-center">{t("messageQueue.attempts")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -184,22 +189,22 @@ export default function MessageQueuePage() {
                       message.status.toUpperCase() as QueuedMessageStatus;
                     const statusConfig = {
                       [QueuedMessageStatus.PENDING]: {
-                        label: "Pendente",
+                        label: t("messageQueue.pending"),
                         bgColor: "#fef3c7",
                         textColor: "#92400e",
                       },
                       [QueuedMessageStatus.SENT]: {
-                        label: "Enviada",
+                        label: t("messageQueue.sent"),
                         bgColor: "#d1fae5",
                         textColor: "#065f46",
                       },
                       [QueuedMessageStatus.FAILED]: {
-                        label: "Falhou",
+                        label: t("messageQueue.failed"),
                         bgColor: "#fee2e2",
                         textColor: "#991b1b",
                       },
                       [QueuedMessageStatus.SCHEDULED]: {
-                        label: "Agendada",
+                        label: t("messageQueue.scheduled"),
                         bgColor: "#e0e7ff",
                         textColor: "#3730a3",
                       },
@@ -215,7 +220,7 @@ export default function MessageQueuePage() {
                       <TableRow key={message.id}>
                         <TableCell>
                           <div className="font-medium">
-                            {message.customer.name || "Sem nome"}
+                            {message.customer.name || t("messageQueue.unnamed")}
                           </div>
                           <div className="text-xs text-muted-foreground">
                             {formatPhone(message.customer.phone)}
@@ -245,7 +250,7 @@ export default function MessageQueuePage() {
                           {format(
                             new Date(message.createdAt),
                             "dd/MM/yyyy 'às' HH:mm",
-                            { locale: ptBR },
+                            { locale: dateLocale },
                           )}
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
@@ -253,7 +258,7 @@ export default function MessageQueuePage() {
                             ? format(
                                 new Date(message.sendAt),
                                 "dd/MM/yyyy 'às' HH:mm",
-                                { locale: ptBR },
+                                { locale: dateLocale },
                               )
                             : "-"}
                         </TableCell>
@@ -276,7 +281,7 @@ export default function MessageQueuePage() {
                   showItemCount
                   itemsPerPage={limit}
                   totalItems={messagesQuery.data?.total || 0}
-                  itemLabel="mensagens"
+                  itemLabel={t("messageQueue.messages")}
                 />
               </div>
             )}

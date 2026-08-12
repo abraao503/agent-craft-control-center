@@ -30,6 +30,7 @@ import {
 import { useToast } from "@/components/ui/use-toast";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useAuth } from "@/contexts/auth/hooks";
+import { useTranslation } from "react-i18next";
 import { getAgent } from "@/services/agent/getAgent";
 import { listPipelineStages } from "@/services/pipeline/listPipelineStages";
 import { listPipelines } from "@/services/pipeline/listPipelines";
@@ -127,6 +128,7 @@ export function MetaIntegrationCard({
   showHeader = true,
 }: Props) {
   const { userProfile } = useAuth();
+  const { t } = useTranslation();
   const { has, isCompanyLevel } = usePermissions();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -235,8 +237,12 @@ export function MetaIntegrationCard({
   });
 
   const selectedSummary = useMemo(
-    () => `${selectedAccounts.length} contas · ${selectedPages.length} Páginas`,
-    [selectedAccounts.length, selectedPages.length],
+    () =>
+      t("integrations.metaSelectedSummary", {
+        accounts: selectedAccounts.length,
+        pages: selectedPages.length,
+      }),
+    [selectedAccounts.length, selectedPages.length, t],
   );
 
   useEffect(() => {
@@ -573,7 +579,10 @@ export function MetaIntegrationCard({
                     }
                     isLoading={assetsMutation.isPending}
                   >
-                    <Save /> Salvar ativos ({selectedSummary})
+                    <Save />
+                    {t("integrations.saveSelectedAssets", {
+                      summary: selectedSummary,
+                    })}
                   </Button>
                 )}
                 <details className="group rounded-lg border bg-muted/20">
@@ -1271,6 +1280,7 @@ function AssetList<
   keyFor: (item: T) => string;
   onToggle: (id: string) => void;
 }) {
+  const { t } = useTranslation();
   const selectedCount = items.filter((item) => item.selected).length;
 
   return (
@@ -1278,7 +1288,9 @@ function AssetList<
       <div className="mb-3 flex items-center justify-between gap-3">
         <h3 className="font-semibold">{title}</h3>
         <span className="text-xs text-muted-foreground">
-          {selectedCount} selecionado{selectedCount === 1 ? "" : "s"}
+          {selectedCount === 1
+            ? t("integrations.metaSelectedOne", { count: selectedCount })
+            : t("integrations.metaSelectedMany", { count: selectedCount })}
         </span>
       </div>
       {items.length ? (

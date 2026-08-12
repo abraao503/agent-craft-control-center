@@ -22,11 +22,13 @@ import { DealWebhookOverview } from "@/components/deal-webhooks/DealWebhookOverv
 import { DealWebhookExecutions } from "@/components/deal-webhooks/DealWebhookExecutions";
 import { DealWebhookDocumentation } from "@/components/deal-webhooks/DealWebhookDocumentation";
 import { DealWebhookExecutionDialog } from "@/components/deal-webhooks/DealWebhookExecutionDialog";
+import { useTranslation } from "react-i18next";
 
 export default function DealWebhookDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useTranslation();
   const [executionsPage, setExecutionsPage] = useState(0);
   const executionsLimit = 10;
   const [statusFilter, setStatusFilter] =
@@ -62,8 +64,8 @@ export default function DealWebhookDetailPage() {
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
     toast({
-      title: "Copiado!",
-      description: "Texto copiado para a área de transferência.",
+      title: t("webhookForm.copied"),
+      description: t("webhookForm.copiedDescription"),
     });
   };
 
@@ -113,10 +115,10 @@ export default function DealWebhookDetailPage() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <p className="text-muted-foreground">
-              Webhook não encontrado ou ocorreu um erro ao carregar.
+              {t("legacy.Webhook não encontrado ou ocorreu um erro ao carregar.")}
             </p>
             <Button onClick={handleGoBack} className="mt-4">
-              Voltar para lista
+              {t("webhookForm.backToList")}
             </Button>
           </CardContent>
         </Card>
@@ -142,7 +144,7 @@ export default function DealWebhookDetailPage() {
               {webhook.name}
             </h1>
             <p className="text-muted-foreground">
-              Detalhes e documentação do webhook
+              {t("webhookForm.detailDescription")}
             </p>
           </div>
         </div>
@@ -155,13 +157,15 @@ export default function DealWebhookDetailPage() {
                 : ""
             }
           >
-            {webhook.status === "ACTIVE" ? "Ativo" : "Inativo"}
+            {webhook.status === "ACTIVE"
+              ? t("webhooks.active")
+              : t("webhooks.inactive")}
           </Badge>
           <Button
             variant="outline"
             onClick={() => navigate(`/webhooks/${webhook.id}/edit`)}
           >
-            <Edit className="h-4 w-4 mr-2" /> Editar
+            <Edit className="h-4 w-4 mr-2" /> {t("webhookForm.editButton")}
           </Button>
         </div>
       </div>
@@ -171,18 +175,18 @@ export default function DealWebhookDetailPage() {
           <TabsList className="grid grid-cols-3 w-full max-w-lg">
             <TabsTrigger value="overview" className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
-              Visão Geral
+              {t("webhookForm.overviewTab")}
             </TabsTrigger>
             <TabsTrigger value="history" className="flex items-center gap-2">
               <History className="h-4 w-4" />
-              Histórico de envios
+              {t("webhookForm.historyTab")}
             </TabsTrigger>
             <TabsTrigger
               value="documentation"
               className="flex items-center gap-2"
             >
               <FileText className="h-4 w-4" />
-              Documentação
+              {t("webhookForm.documentationTab")}
             </TabsTrigger>
           </TabsList>
         </div>

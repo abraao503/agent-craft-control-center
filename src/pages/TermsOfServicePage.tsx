@@ -2,11 +2,19 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
+import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
+import { useTranslation } from "react-i18next";
+import { useAppLocale } from "@/i18n/LocaleProvider";
 
 const TermsOfServicePage = () => {
+  const { t } = useTranslation();
+  const { locale } = useAppLocale();
   return (
     <div className="h-screen overflow-y-auto bg-background dark:bg-[#0f0f0f] text-foreground">
       <div className="container max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-end mb-4">
+          <LanguageSwitcher />
+        </div>
         <div className="mb-8">
           <Link
             to="/login"
@@ -16,13 +24,13 @@ const TermsOfServicePage = () => {
             })}
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Voltar
+            {t("common.back")}
           </Link>
           <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl mb-4 text-primary">
-            Termos de Serviço
+            {t("legal.termsTitle")}
           </h1>
           <p className="text-lg text-muted-foreground">
-            Última atualização: {new Date().toLocaleDateString("pt-BR")}
+            {t("legal.lastUpdatedTerms", { date: new Date().toLocaleDateString(locale) })}
           </p>
         </div>
 

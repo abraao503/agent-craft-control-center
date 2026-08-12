@@ -20,6 +20,7 @@ import { listUsers } from "@/services/user/listUsers";
 import { Conversation, ConversationsFilters } from "@/types/conversation";
 import { MessageSentEvent } from "@/types/websocket";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 
 const PAGE_SIZE = 30;
 
@@ -28,6 +29,7 @@ export default function ChatsPage() {
   const queryClient = useQueryClient();
   const { userProfile } = useAuth();
   const { toast } = useToast();
+  const { t } = useTranslation();
   const isSalesRep = userProfile?.role === "SALES_REP";
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [lastMessageEvent, setLastMessageEvent] = useState<MessageSentEvent | null>(null);
@@ -143,11 +145,11 @@ export default function ChatsPage() {
     const onBlocked = (event: { chatId: string; code?: string }) => {
       if (event.chatId !== selectedConversation?.id) return;
       toast({
-        title: "Mensagem automática bloqueada",
+        title: t("chats.blockedTitle"),
         description:
           event.code === "BLOCKED_WINDOW"
-            ? "A janela do WhatsApp expirou. Configure um template aprovado para este fluxo."
-            : "Revise a configuração da integração antes de reenviar.",
+            ? t("chats.blockedWindow")
+            : t("chats.blockedRetry"),
         variant: "destructive",
       });
     };
@@ -204,7 +206,7 @@ export default function ChatsPage() {
     <div className="flex h-[calc(100vh-64px)] overflow-hidden">
       {conversationsQuery.isError ? (
         <div className="flex flex-1 items-center justify-center p-4">
-          <Alert variant="destructive" className="max-w-md"><AlertDescription>Não foi possível carregar as conversas.</AlertDescription></Alert>
+          <Alert variant="destructive" className="max-w-md"><AlertDescription>{t("chats.loadError")}</AlertDescription></Alert>
         </div>
       ) : (
         <>
@@ -244,7 +246,7 @@ export default function ChatsPage() {
             ) : (
               <div className="flex flex-1 flex-col items-center justify-center bg-muted/30 text-muted-foreground">
                 <MessageSquare className="mb-4 h-24 w-24 opacity-20" />
-                <h2 className="text-2xl font-semibold">Selecione uma conversa</h2>
+                <h2 className="text-2xl font-semibold">{t("chats.selectConversation")}</h2>
               </div>
             )}
           </div>

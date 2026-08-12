@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { CheckCircle2, XCircle, ShieldOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "react-i18next";
+import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
 
 type Status = "connected" | "permission_denied" | "unknown_error" | "loading";
 
@@ -12,6 +14,7 @@ export default function IntegrationResponsePage() {
   const [status, setStatus] = useState<Status>("loading");
   const [countdown, setCountdown] = useState(AUTO_CLOSE_DELAY_MS / 1000);
   const isMeta = searchParams.get("meta") !== null;
+  const { t } = useTranslation();
 
   useEffect(() => {
     const googleCalendar = searchParams.get("google_calendar");
@@ -63,19 +66,18 @@ export default function IntegrationResponsePage() {
 
   if (status === "connected") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <div className="min-h-screen flex items-center justify-center bg-background p-4 relative">
+        <LanguageSwitcher className="absolute right-4 top-4" />
         <div className="text-center max-w-sm space-y-4">
           <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto" />
           <h1 className="text-2xl font-bold text-foreground">
-            {isMeta ? "Meta conectado!" : "Google Calendar conectado!"}
+            {isMeta ? t("integrationResponse.metaConnected") : t("integrationResponse.calendarConnected")}
           </h1>
           <p className="text-muted-foreground">
-            Sua conta foi vinculada com sucesso. Esta janela será fechada
-            automaticamente em{" "}
-            <span className="font-semibold text-foreground">{countdown}s</span>.
+            {t("integrationResponse.linkedSuccessfully", { seconds: countdown })}
           </p>
           <Button variant="outline" onClick={() => window.close()}>
-            Fechar agora
+            {t("integrationResponse.closeNow")}
           </Button>
         </div>
       </div>
@@ -85,22 +87,22 @@ export default function IntegrationResponsePage() {
   if (status === "permission_denied") {
     const integrationName = isMeta ? "Meta" : "Google Calendar";
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <div className="min-h-screen flex items-center justify-center bg-background p-4 relative">
+        <LanguageSwitcher className="absolute right-4 top-4" />
         <div className="text-center max-w-sm space-y-4">
           <ShieldOff className="h-16 w-16 text-yellow-500 mx-auto" />
           <h1 className="text-2xl font-bold text-foreground">
-            Permissão negada
+            {t("integrationResponse.permissionDenied")}
           </h1>
           <p className="text-muted-foreground">
-            O acesso ao {integrationName} não foi concedido. Para concluir a
-            integração, autorize as permissões solicitadas e tente novamente.
+            {t("integrationResponse.permissionDescription", { integration: integrationName })}
           </p>
           <div className="flex flex-col sm:flex-row gap-2 justify-center">
             <Button onClick={() => window.close()} variant="outline">
-              Fechar
+              {t("common.close")}
             </Button>
             <Button onClick={() => window.history.back()}>
-              Tentar novamente
+              {t("integrationResponse.retry")}
             </Button>
           </div>
         </div>
@@ -110,17 +112,16 @@ export default function IntegrationResponsePage() {
 
   // unknown_error
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4 relative">
+      <LanguageSwitcher className="absolute right-4 top-4" />
       <div className="text-center max-w-sm space-y-4">
         <XCircle className="h-16 w-16 text-destructive mx-auto" />
-        <h1 className="text-2xl font-bold text-foreground">Ocorreu um erro</h1>
+        <h1 className="text-2xl font-bold text-foreground">{t("integrationResponse.unknownError")}</h1>
         <p className="text-muted-foreground">
-          Não foi possível completar a integração com{" "}
-          {isMeta ? "a Meta" : "o Google Calendar"}. Por favor, feche esta
-          janela e tente novamente.
+          {t("integrationResponse.unknownDescription", { integration: isMeta ? "Meta" : "Google Calendar" })}
         </p>
         <Button onClick={() => window.close()} variant="outline">
-          Fechar
+          {t("common.close")}
         </Button>
       </div>
     </div>

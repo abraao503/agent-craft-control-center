@@ -2,6 +2,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TableIndicatorData } from "@/types/dashboard-v2";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useAppLocale } from "@/i18n/LocaleProvider";
+import { useTranslation } from "react-i18next";
 
 interface TableWidgetProps {
   title: string;
@@ -36,6 +38,7 @@ function RankingTable({
   title: string;
   data: TableIndicatorData;
 }) {
+  const { locale } = useAppLocale();
   return (
     <Card className="h-full flex flex-col">
       <CardHeader className="pb-2 shrink-0">
@@ -47,8 +50,8 @@ function RankingTable({
             <tr className="border-b text-muted-foreground text-xs">
               <th className="text-left pb-2 font-medium">POS</th>
               <th className="text-left pb-2 font-medium">VENDEDOR</th>
-              <th className="text-right pb-2 font-medium">GANHOS</th>
-              <th className="text-right pb-2 font-medium">META</th>
+              <th className="text-right pb-2 font-medium">{locale === "es-ES" ? "GANADOS" : "GANHOS"}</th>
+              <th className="text-right pb-2 font-medium">{locale === "es-ES" ? "OBJETIVO" : "META"}</th>
             </tr>
           </thead>
           <tbody>
@@ -82,7 +85,7 @@ function RankingTable({
                     </div>
                   </td>
                   <td className="py-2.5 text-right font-medium tabular-nums">
-                    R$ {value.toLocaleString("pt-BR")}
+                    {value.toLocaleString(locale, { style: "currency", currency: "BRL" })}
                   </td>
                   <td className="py-2.5 text-right">
                     <span
@@ -115,6 +118,8 @@ function BroadcastTable({
   title: string;
   data: TableIndicatorData;
 }) {
+  const { locale } = useAppLocale();
+  const { t } = useTranslation();
   const statusColor: Record<string, string> = {
     COMPLETED: "bg-emerald-500/10 text-emerald-500",
     SENDING: "bg-blue-500/10 text-blue-500",
@@ -137,7 +142,7 @@ function BroadcastTable({
               <div>
                 <p className="text-sm font-medium">{item.name as string}</p>
                 <p className="text-xs text-muted-foreground">
-                  {(item.sentCount as number).toLocaleString("pt-BR")} enviados
+                  {(item.sentCount as number).toLocaleString(locale)} {t("dashboard.sent")}
                 </p>
               </div>
               <Badge

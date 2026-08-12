@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
-import { ptBR } from "date-fns/locale";
+import { es, ptBR } from "date-fns/locale";
 import {
   useQuery,
   useQueries,
@@ -14,6 +14,7 @@ import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import listPlugin from "@fullcalendar/list";
 import ptBrLocale from "@fullcalendar/core/locales/pt-br";
+import esLocale from "@fullcalendar/core/locales/es";
 import { DatesSetArg } from "@fullcalendar/core";
 import { DateClickArg } from "@fullcalendar/interaction";
 import { useWorkspaceManager } from "@/hooks/useWorkspaceManager";
@@ -58,6 +59,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Calendar as MiniCalendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useAppLocale } from "@/i18n/LocaleProvider";
+import { useTranslation } from "react-i18next";
 
 import "./CalendarPage.css";
 
@@ -70,6 +73,10 @@ function getLocalDatetimeString(dateObj: Date) {
 
 export default function CalendarPage() {
   const { workspaceId } = useWorkspaceManager();
+  const { locale } = useAppLocale();
+  const { t } = useTranslation();
+  const dateLocale = locale === "es-ES" ? es : ptBR;
+  const calendarLocale = locale === "es-ES" ? esLocale : ptBrLocale;
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const calendarRef = useRef<FullCalendar>(null);
@@ -219,36 +226,36 @@ export default function CalendarPage() {
   const createMutation = useMutation({
     mutationFn: createGoogleCalendarEvent,
     onSuccess: () => {
-      toast({ title: "Evento criado com sucesso!" });
+      toast({ title: t("calendar.createdSuccess") });
       queryClient.invalidateQueries({ queryKey: ["google-calendar-events"] });
       setIsEventModalOpen(false);
     },
     onError: () => {
-      toast({ title: "Erro ao criar evento", variant: "destructive" });
+      toast({ title: t("calendar.createError"), variant: "destructive" });
     },
   });
 
   const updateMutation = useMutation({
     mutationFn: updateGoogleCalendarEvent,
     onSuccess: () => {
-      toast({ title: "Evento atualizado com sucesso!" });
+      toast({ title: t("calendar.updatedSuccess") });
       queryClient.invalidateQueries({ queryKey: ["google-calendar-events"] });
       setIsEventModalOpen(false);
     },
     onError: () => {
-      toast({ title: "Erro ao atualizar evento", variant: "destructive" });
+      toast({ title: t("calendar.updateError"), variant: "destructive" });
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: deleteGoogleCalendarEvent,
     onSuccess: () => {
-      toast({ title: "Evento excluído com sucesso!" });
+      toast({ title: t("calendar.deletedSuccess") });
       queryClient.invalidateQueries({ queryKey: ["google-calendar-events"] });
       setIsEventModalOpen(false);
     },
     onError: () => {
-      toast({ title: "Erro ao excluir evento", variant: "destructive" });
+      toast({ title: t("calendar.deleteError"), variant: "destructive" });
     },
   });
 
@@ -309,7 +316,7 @@ export default function CalendarPage() {
   const handleSaveEvent = () => {
     if (!formTitle || !formStartDate || !formEndDate || !formIntegrationId) {
       toast({
-        title: "Preencha os campos obrigatórios",
+        title: t("calendar.requiredFields"),
         variant: "destructive",
       });
       return;
@@ -352,9 +359,9 @@ export default function CalendarPage() {
     return (
       <div className="flex items-center justify-center min-h-[80vh]">
         <div className="text-center">
-          <h2 className="text-2xl font-bold mb-2">Workspace não encontrado</h2>
+          <h2 className="text-2xl font-bold mb-2">{t("calendar.workspaceNotFound")}</h2>
           <p className="text-muted-foreground">
-            Você não está vinculado a nenhum workspace.
+            {t("calendar.noWorkspace")}
           </p>
         </div>
       </div>
@@ -366,13 +373,13 @@ export default function CalendarPage() {
       <div className="flex flex-col sm:flex-row gap-4 sm:items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-            Calendário
+            {t("calendar.title")}
             {isFetchingEvents && (
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground ml-2" />
             )}
           </h1>
           <p className="text-muted-foreground mt-1">
-            Visualize e gerencie os eventos das contas Google conectadas.
+            {t("calendar.description")}
           </p>
         </div>
       </div>
@@ -389,7 +396,7 @@ export default function CalendarPage() {
               <div className="bg-primary/10 rounded-full p-1 -ml-1 flex items-center justify-center">
                 <Plus className="h-4 w-4 text-primary" strokeWidth={3} />
               </div>
-              <span className="font-semibold text-sm">Criar Evento</span>
+              <span className="font-semibold text-sm">{t("calendar.createEvent")}</span>
             </Button>
           )}
 
@@ -404,22 +411,22 @@ export default function CalendarPage() {
                 }
               }}
               className="p-0 pointer-events-auto"
-              locale={ptBR}
+              locale={dateLocale}
             />
           </div>
 
           <div className="space-y-4 px-2">
             <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              Minhas Agendas
+              {t("calendar.myCalendars")}
             </h3>
             {isLoadingIntegrations ? (
               <div className="flex items-center space-x-2 text-muted-foreground">
                 <Loader2 className="animate-spin w-4 h-4" />
-                <span className="text-sm">Carregando contas...</span>
+                <span className="text-sm">{t("calendar.loadingAccounts")}</span>
               </div>
             ) : activeIntegrations.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                Nenhuma conta conectada.
+                {t("calendar.noConnectedAccount")}
               </p>
             ) : (
               <div className="space-y-3">
@@ -469,14 +476,13 @@ export default function CalendarPage() {
               <div className="h-full flex flex-col items-center justify-center text-center max-w-md mx-auto min-h-[400px]">
                 <CalendarIcon className="h-12 w-12 text-muted-foreground mb-4 opacity-50" />
                 <h3 className="text-lg font-semibold mb-2">
-                  Nenhum calendário conectado
+                  {t("calendar.noConnectedCalendar")}
                 </h3>
                 <p className="text-muted-foreground mb-4">
-                  Você precisa conectar pelo menos uma conta do Google Calendar
-                  na página de Integrações para ver seus eventos aqui.
+                  {t("calendar.noConnectedCalendarDescription")}
                 </p>
                 <Link to="/integrations">
-                  <Button variant="outline">Ir para Integrações</Button>
+                  <Button variant="outline">{t("calendar.goToIntegrations")}</Button>
                 </Link>
               </div>
             ) : (
@@ -490,7 +496,7 @@ export default function CalendarPage() {
                     listPlugin,
                   ]}
                   initialView="timeGridWeek"
-                  locale={ptBrLocale}
+                  locale={calendarLocale}
                   headerToolbar={{
                     left: "today prev,next",
                     center: "title",
@@ -511,7 +517,7 @@ export default function CalendarPage() {
                         window.open(info.event.url, "_blank");
                       } else {
                         toast({
-                          title: "Este evento não pode ser editado.",
+                          title: t("calendar.eventNotEditable"),
                           variant: "destructive",
                         });
                       }
@@ -566,19 +572,19 @@ export default function CalendarPage() {
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>
-              {modalMode === "create" ? "Criar Evento" : "Editar Evento"}
+              {modalMode === "create" ? t("calendar.createEvent") : t("calendar.editEvent")}
             </DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             {modalMode === "create" && (
               <div className="grid gap-2">
-                <Label htmlFor="integration">Conta *</Label>
+                <Label htmlFor="integration">{t("calendar.account")}</Label>
                 <Select
                   value={formIntegrationId}
                   onValueChange={setFormIntegrationId}
                 >
                   <SelectTrigger id="integration">
-                    <SelectValue placeholder="Selecione uma conta" />
+                    <SelectValue placeholder={t("calendar.selectAccount")} />
                   </SelectTrigger>
                   <SelectContent>
                     {activeIntegrations.map((integ) => (
@@ -592,18 +598,18 @@ export default function CalendarPage() {
             )}
 
             <div className="grid gap-2">
-              <Label htmlFor="title">Título *</Label>
+              <Label htmlFor="title">{t("calendar.titleLabel")}</Label>
               <Input
                 id="title"
                 value={formTitle}
                 onChange={(e) => setFormTitle(e.target.value)}
-                placeholder="Ex: Reunião de alinhamento"
+                placeholder={t("calendar.titlePlaceholder")}
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label htmlFor="start">Início *</Label>
+                <Label htmlFor="start">{t("calendar.start")}</Label>
                 <Input
                   id="start"
                   type="datetime-local"
@@ -612,7 +618,7 @@ export default function CalendarPage() {
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="end">Término *</Label>
+                <Label htmlFor="end">{t("calendar.end")}</Label>
                 <Input
                   id="end"
                   type="datetime-local"
@@ -623,18 +629,18 @@ export default function CalendarPage() {
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="location">Local</Label>
+              <Label htmlFor="location">{t("calendar.location")}</Label>
               <Input
                 id="location"
                 value={formLocation}
                 onChange={(e) => setFormLocation(e.target.value)}
-                placeholder="Ex: Google Meet"
+                placeholder={t("calendar.locationPlaceholder")}
               />
             </div>
 
             <div className="grid gap-2">
               <Label htmlFor="attendees">
-                Participantes (separados por vírgula)
+                {t("calendar.attendees")}
               </Label>
               <Input
                 id="attendees"
@@ -645,12 +651,12 @@ export default function CalendarPage() {
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="description">Descrição</Label>
+              <Label htmlFor="description">{t("calendar.descriptionLabel")}</Label>
               <Textarea
                 id="description"
                 value={formDescription}
                 onChange={(e) => setFormDescription(e.target.value)}
-                placeholder="Descrição do evento..."
+                placeholder={t("calendar.eventDescriptionPlaceholder")}
                 className="resize-none"
               />
             </div>
@@ -662,7 +668,7 @@ export default function CalendarPage() {
                 className="justify-start p-0 h-auto"
                 onClick={() => window.open(editingEventGoogleUrl, "_blank")}
               >
-                Abrir no Google Calendar
+                {t("calendar.openGoogleCalendar")}
               </Button>
             )}
           </div>
@@ -672,20 +678,18 @@ export default function CalendarPage() {
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button type="button" variant="destructive">
-                      Excluir
+                      {t("common.delete")}
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>Excluir evento</AlertDialogTitle>
+                      <AlertDialogTitle>{t("calendar.deleteEvent")}</AlertDialogTitle>
                       <AlertDialogDescription>
-                        Tem certeza que deseja excluir este evento? Esta ação
-                        não pode ser desfeita e removerá o evento do Google
-                        Calendar e do sistema.
+                        {t("calendar.deleteEventDescription")}
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
                       <AlertDialogAction
                         className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                         disabled={deleteMutation.isPending}
@@ -699,7 +703,7 @@ export default function CalendarPage() {
                         {deleteMutation.isPending && (
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         )}
-                        Sim, Excluir
+                        {t("calendar.confirmDelete")}
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
@@ -712,7 +716,7 @@ export default function CalendarPage() {
                 variant="outline"
                 onClick={() => setIsEventModalOpen(false)}
               >
-                Cancelar
+                {t("common.cancel")}
               </Button>
               <Button
                 type="button"
@@ -722,7 +726,7 @@ export default function CalendarPage() {
                 {(createMutation.isPending || updateMutation.isPending) && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                Salvar
+                {t("common.save")}
               </Button>
             </div>
           </DialogFooter>

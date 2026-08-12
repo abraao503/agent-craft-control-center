@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { es, ptBR } from "date-fns/locale";
 import { Briefcase, Edit2, Ellipsis, Plus, Trash2 } from "lucide-react";
 import { listUsers } from "@/services/user/listUsers";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -37,6 +37,8 @@ import {
   adminTabClassName,
 } from "./AdminCompanyManagement";
 import { User } from "@/types/user";
+import { useTranslation } from "react-i18next";
+import { useAppLocale } from "@/i18n/LocaleProvider";
 
 const roleLabels: Record<string, string> = {
   WORKSPACE_OWNER: "Dono do workspace",
@@ -72,6 +74,9 @@ export function AdminWorkspaceManagement({
   breadcrumbItems,
 }: AdminWorkspaceManagementProps) {
   const { has, role } = usePermissions();
+  const { t } = useTranslation();
+  const { locale } = useAppLocale();
+  const dateLocale = locale === "es-ES" ? es : ptBR;
   const canManageDistribution =
     has("manage:deal-distribution") ||
     Boolean(role && distributionRoles.has(role));
@@ -139,8 +144,8 @@ export function AdminWorkspaceManagement({
         title={workspaceName}
         description={
           companyName
-            ? `Workspace da empresa ${companyName}`
-            : "Administração do workspace"
+            ? t("administration.workspaceCompany", { name: companyName })
+            : t("administration.workspaceAdministration")
         }
         action={isDefault ? <Badge variant="secondary">Padrão</Badge> : undefined}
       />
@@ -203,8 +208,10 @@ export function AdminWorkspaceManagement({
                         {user.email}
                         {user.createdAt && (
                           <span className="hidden sm:inline">
-                            {` · Desde ${format(new Date(user.createdAt), "dd/MM/yyyy", {
-                              locale: ptBR,
+                            {` · ${t("administration.since", {
+                              date: format(new Date(user.createdAt), "dd/MM/yyyy", {
+                                locale: dateLocale,
+                              }),
                             })}`}
                           </span>
                         )}

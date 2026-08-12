@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { es, ptBR } from "date-fns/locale";
 import {
   Building2,
   Edit2,
@@ -35,6 +35,8 @@ import { DeleteWorkspaceDialog } from "./DeleteWorkspaceDialog";
 import { DeleteUserDialog } from "./DeleteUserDialog";
 import { User } from "@/types/user";
 import { Workspace } from "@/types/workspace";
+import { useTranslation } from "react-i18next";
+import { useAppLocale } from "@/i18n/LocaleProvider";
 
 const roleLabels: Record<string, string> = {
   PLATFORM_ADMIN: "Admin de plataforma",
@@ -68,6 +70,9 @@ export function AdminCompanyManagement({
 }: AdminCompanyManagementProps) {
   const navigate = useNavigate();
   const { has, role } = usePermissions();
+  const { t } = useTranslation();
+  const { locale } = useAppLocale();
+  const dateLocale = locale === "es-ES" ? es : ptBR;
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get("tab") === "team" ? "team" : "workspaces";
   const [workspaceSearch, setWorkspaceSearch] = useState("");
@@ -160,9 +165,11 @@ export function AdminCompanyManagement({
       <AdminPageHeader
         icon={<Building2 className="h-6 w-6" />}
         title={company.name || "Empresa sem nome"}
-        description={`Criada em ${format(new Date(company.createdAt), "dd/MM/yyyy", {
-          locale: ptBR,
-        })}`}
+        description={t("administration.createdAt", {
+          date: format(new Date(company.createdAt), "dd/MM/yyyy", {
+            locale: dateLocale,
+          }),
+        })}
       />
 
       <Tabs
@@ -316,8 +323,10 @@ export function AdminCompanyManagement({
                       <p className="mt-1 truncate text-sm text-muted-foreground">
                         {admin.email}
                         <span className="hidden sm:inline">
-                          {` · Desde ${format(new Date(admin.createdAt), "dd/MM/yyyy", {
-                            locale: ptBR,
+                          {` · ${t("administration.since", {
+                            date: format(new Date(admin.createdAt), "dd/MM/yyyy", {
+                              locale: dateLocale,
+                            }),
                           })}`}
                         </span>
                       </p>

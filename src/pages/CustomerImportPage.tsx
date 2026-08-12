@@ -43,16 +43,11 @@ import {
 } from "@/services/customer-import";
 import { CustomerImport, CustomerImportStatus } from "@/types/customer-import";
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { es, ptBR } from "date-fns/locale";
+import { useTranslation } from "react-i18next";
+import { useAppLocale } from "@/i18n/LocaleProvider";
 
 const ITEMS_PER_PAGE = 10;
-
-const STATUS_LABELS: Record<CustomerImportStatus, string> = {
-  PENDING: "Pendente",
-  PROCESSING: "Processando",
-  COMPLETED: "Concluída",
-  FAILED: "Falhou",
-};
 
 const STATUS_COLORS: Record<CustomerImportStatus, string> = {
   PENDING: "bg-gray-100 text-gray-800",
@@ -73,7 +68,20 @@ export default function CustomerImportPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { currentWorkspace } = useWorkspaceContext();
+  const { t } = useTranslation();
+  const { locale } = useAppLocale();
+  const dateLocale = locale === "es-ES" ? es : ptBR;
   const workspaceId = currentWorkspace?.id || "";
+
+  const getStatusLabel = (status: CustomerImportStatus) => {
+    const labels: Record<CustomerImportStatus, string> = {
+      PENDING: t("customerImport.pending"),
+      PROCESSING: t("customerImport.processing"),
+      COMPLETED: t("customerImport.completed"),
+      FAILED: t("customerImport.failed"),
+    };
+    return labels[status];
+  };
 
   const [currentPage, setCurrentPage] = useState(1);
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
@@ -106,8 +114,11 @@ export default function CustomerImportPage() {
       setIsUploadDialogOpen(false);
       setSelectedFile(null);
       toast({
-        title: "Importação iniciada",
-        description: `Arquivo "${data.fileName}" enviado com sucesso. ${data.totalRows} linhas serão processadas.`,
+        title: t("customerImport.uploadStarted"),
+        description: t("customerImport.uploadStartedDescription", {
+          fileName: data.fileName,
+          count: data.totalRows,
+        }),
       });
       // Navegar para os detalhes da importação
       navigate(`/customer-imports/${data.importId}`);
@@ -118,9 +129,9 @@ export default function CustomerImportPage() {
       };
       const message =
         axiosError?.response?.data?.message ||
-        "Ocorreu um erro ao enviar o arquivo. Tente novamente.";
+        t("customerImport.uploadErrorDescription");
       toast({
-        title: "Erro no upload",
+        title: t("customerImport.uploadError"),
         description: message,
         variant: "destructive",
       });
@@ -137,9 +148,8 @@ export default function CustomerImportPage() {
           "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
       ) {
         toast({
-          title: "Formato inválido",
-          description:
-            "Por favor, selecione um arquivo no formato .xlsx (Excel 2007+).",
+          title: t("customerImport.invalidFormat"),
+          description: t("customerImport.invalidFormatDescription"),
           variant: "destructive",
         });
         return;
@@ -148,8 +158,8 @@ export default function CustomerImportPage() {
       // Validar tamanho (10 MB)
       if (file.size > 10 * 1024 * 1024) {
         toast({
-          title: "Arquivo muito grande",
-          description: "O arquivo deve ter no máximo 10 MB.",
+          title: t("customerImport.fileTooLarge"),
+          description: t("customerImport.fileTooLargeDescription"),
           variant: "destructive",
         });
         return;
@@ -178,13 +188,13 @@ export default function CustomerImportPage() {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
       toast({
-        title: "Download iniciado",
-        description: "O template de importação está sendo baixado.",
+        title: t("customerImport.downloadStarted"),
+        description: t("customerImport.downloadStartedDescription"),
       });
     } catch {
       toast({
-        title: "Erro ao baixar template",
-        description: "Ocorreu um erro ao baixar o template. Tente novamente.",
+        title: t("customerImport.downloadError"),
+        description: t("customerImport.downloadErrorDescription"),
         variant: "destructive",
       });
     } finally {
@@ -198,7 +208,7 @@ export default function CustomerImportPage() {
 
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return "—";
-    return format(new Date(dateStr), "dd/MM/yyyy HH:mm", { locale: ptBR });
+    return format(new Date(dateStr), "dd/MM/yyyy HH:mm", { locale: dateLocale });
   };
 
   const getProgressPercent = (item: CustomerImport) => {
@@ -212,7 +222,7 @@ export default function CustomerImportPage() {
     return (
       <div className="flex items-center justify-center h-full">
         <p className="text-muted-foreground">
-          Selecione um workspace para visualizar as importações
+          {t("customerImport.selectWorkspace")}
         </p>
       </div>
     );
@@ -223,9 +233,9 @@ export default function CustomerImportPage() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">Importação de Clientes</h1>
+          <h1 className="text-3xl font-bold">{t("customerImport.title")}</h1>
           <p className="text-muted-foreground mt-1">
-            Importe clientes em massa através de planilhas Excel (.xlsx)
+            {t("customerImport.description")}
           </p>
         </div>
         <div className="flex gap-2">
@@ -239,10 +249,10 @@ export default function CustomerImportPage() {
             ) : (
               <Download className="mr-2 h-4 w-4" />
             )}
-            Baixar Template
+            {t("customerImport.downloadTemplate")}
           </Button>
           <Button onClick={() => setIsUploadDialogOpen(true)}>
-            <Upload className="mr-2 h-4 w-4" /> Importar Planilha
+            <Upload className="mr-2 h-4 w-4" /> {t("customerImport.importSpreadsheet")}
           </Button>
         </div>
       </div>
@@ -273,7 +283,7 @@ export default function CustomerImportPage() {
       ) : error ? (
         <div className="bg-red-50 p-4 rounded-md border border-red-200">
           <p className="text-red-800">
-            Erro ao carregar importações. Tente novamente mais tarde.
+            {t("customerImport.loadError")}
           </p>
         </div>
       ) : importsData && importsData.items.length > 0 ? (
@@ -301,16 +311,15 @@ export default function CustomerImportPage() {
                         className={`${STATUS_COLORS[importItem.status]} flex items-center gap-1`}
                       >
                         {STATUS_ICONS[importItem.status]}
-                        {STATUS_LABELS[importItem.status]}
+                        {getStatusLabel(importItem.status)}
                       </Badge>
                     </div>
                     <CardDescription className="text-sm mt-2">
-                      {importItem.totalRows} linha(s) •{" "}
-                      {importItem.successCount} sucesso(s)
+                      {importItem.totalRows} {t("customerImport.rows")} •{" "}
+                      {importItem.successCount} {t("customerImport.successes")}
                       {importItem.errorCount > 0 && (
                         <span className="text-red-600">
-                          {" "}
-                          • {importItem.errorCount} erro(s)
+                          {" "}• {importItem.errorCount} {t("customerImport.errors")}
                         </span>
                       )}
                     </CardDescription>
@@ -320,7 +329,7 @@ export default function CustomerImportPage() {
                     {importItem.status === "PROCESSING" && (
                       <div className="mb-3">
                         <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                          <span>Progresso</span>
+                          <span>{t("customerImport.progress")}</span>
                           <span>{progress}%</span>
                         </div>
                         <div className="w-full bg-muted rounded-full h-2">
@@ -334,10 +343,10 @@ export default function CustomerImportPage() {
 
                     <div className="flex items-center justify-between">
                       <div className="text-xs text-muted-foreground space-y-1">
-                        <p>Enviado em: {formatDate(importItem.createdAt)}</p>
+                        <p>{t("customerImport.sentAt", { date: formatDate(importItem.createdAt) })}</p>
                         {importItem.completedAt && (
                           <p>
-                            Concluído em: {formatDate(importItem.completedAt)}
+                            {t("customerImport.completedAt", { date: formatDate(importItem.completedAt) })}
                           </p>
                         )}
                       </div>
@@ -349,7 +358,7 @@ export default function CustomerImportPage() {
                           navigate(`/customer-imports/${importItem.id}`);
                         }}
                       >
-                        <Eye className="h-4 w-4 mr-1" /> Detalhes
+                        <Eye className="h-4 w-4 mr-1" /> {t("customerImport.details")}
                       </Button>
                     </div>
                   </CardContent>
@@ -366,7 +375,7 @@ export default function CustomerImportPage() {
               showItemCount
               itemsPerPage={ITEMS_PER_PAGE}
               totalItems={importsData.total}
-              itemLabel="importações"
+              itemLabel={t("customerImport.imports")}
             />
           )}
         </>
@@ -375,19 +384,19 @@ export default function CustomerImportPage() {
           <CardContent className="flex flex-col items-center justify-center py-12">
             <FileSpreadsheet className="h-12 w-12 text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold mb-2">
-              Nenhuma importação realizada
+              {t("customerImport.emptyTitle")}
             </h3>
             <p className="text-muted-foreground text-center mb-4">
-              Importe clientes em massa através de uma planilha Excel (.xlsx).
+              {t("customerImport.emptyDescription")}
               <br />
-              Baixe o template para garantir o formato correto.
+              {t("customerImport.emptyTemplateHint")}
             </p>
             <div className="flex gap-2">
               <Button variant="outline" onClick={handleDownloadTemplate}>
-                <Download className="mr-2 h-4 w-4" /> Baixar Template
+                <Download className="mr-2 h-4 w-4" /> {t("customerImport.downloadTemplate")}
               </Button>
               <Button onClick={() => setIsUploadDialogOpen(true)}>
-                <Upload className="mr-2 h-4 w-4" /> Importar Planilha
+                <Upload className="mr-2 h-4 w-4" /> {t("customerImport.importSpreadsheet")}
               </Button>
             </div>
           </CardContent>
@@ -398,18 +407,16 @@ export default function CustomerImportPage() {
       <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Importar Clientes</DialogTitle>
+            <DialogTitle>{t("customerImport.dialogTitle")}</DialogTitle>
             <DialogDescription>
-              Selecione um arquivo Excel (.xlsx) com os dados dos clientes.
-              <br />O arquivo deve conter a coluna obrigatória{" "}
-              <strong>Telefone</strong>, e opcionalmente <strong>Nome</strong> e{" "}
-              <strong>Email</strong>.
+              {t("customerImport.dialogDescription")}<br />
+              {t("customerImport.requiredColumn")}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="file">Arquivo (.xlsx)</Label>
+              <Label htmlFor="file">{t("customerImport.fileLabel")}</Label>
               <Input
                 id="file"
                 ref={fileInputRef}
@@ -438,18 +445,13 @@ export default function CustomerImportPage() {
                 <AlertCircle className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
                 <div className="text-xs text-blue-800 dark:text-blue-300 space-y-1">
                   <p>
-                    <strong>Limites:</strong> Máximo de 10.000 linhas e 10 MB
-                    por arquivo.
+                    <strong>{t("customerImport.limits")}</strong>
                   </p>
                   <p>
-                    <strong>Formato do telefone:</strong> DDD + Número para
-                    Brasil (ex: 11987654321) ou formato internacional com DDI
-                    (ex: +16505551234). Números sem DDI são assumidos como
-                    brasileiros.
+                    <strong>{t("customerImport.phoneFormat")}</strong>
                   </p>
                   <p>
-                    <strong>Atualização:</strong> Clientes com o mesmo telefone
-                    serão atualizados.
+                    <strong>{t("customerImport.updateExisting")}</strong>
                   </p>
                 </div>
               </div>
@@ -465,7 +467,7 @@ export default function CustomerImportPage() {
               }}
               disabled={uploadMutation.isPending}
             >
-              Cancelar
+              {t("customerImport.cancel")}
             </Button>
             <Button
               onClick={handleUpload}
@@ -476,7 +478,9 @@ export default function CustomerImportPage() {
               ) : (
                 <Upload className="mr-2 h-4 w-4" />
               )}
-              {uploadMutation.isPending ? "Enviando..." : "Enviar"}
+              {uploadMutation.isPending
+                ? t("customerImport.uploading")
+                : t("customerImport.send")}
             </Button>
           </DialogFooter>
         </DialogContent>

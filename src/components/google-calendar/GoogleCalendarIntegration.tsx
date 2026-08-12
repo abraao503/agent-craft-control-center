@@ -14,6 +14,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Unplug, Loader2, CheckCircle2, Plus } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   workspaceId: string;
@@ -25,6 +26,7 @@ export function GoogleCalendarIntegration({
   showHeader = true,
 }: Props) {
   const { toast } = useToast();
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [isAuthOpen, setIsAuthOpen] = useState(false);
 
@@ -115,16 +117,16 @@ export function GoogleCalendarIntegration({
         }
       } else {
         toast({
-          title: "Erro",
-          description: "Não foi possível gerar a URL de autorização.",
+          title: t("common.error"),
+          description: t("integrations.authorizationError"),
           variant: "destructive",
         });
       }
     },
     onError: () => {
       toast({
-        title: "Erro",
-        description: "Falha ao conectar com Google Calendar.",
+        title: t("common.error"),
+        description: t("integrations.connectError"),
         variant: "destructive",
       });
     },
@@ -138,14 +140,14 @@ export function GoogleCalendarIntegration({
         queryKey: ["googleCalendarIntegrations", workspaceId],
       });
       toast({
-        title: "Sucesso",
-        description: "Google Calendar desconectado com sucesso.",
+        title: t("common.success"),
+        description: t("integrations.disconnectSuccess"),
       });
     },
     onError: () => {
       toast({
-        title: "Erro",
-        description: "Falha ao desconectar Google Calendar.",
+        title: t("common.error"),
+        description: t("integrations.disconnectError"),
         variant: "destructive",
       });
     },
@@ -160,8 +162,7 @@ export function GoogleCalendarIntegration({
             Google Calendar
           </CardTitle>
           <CardDescription>
-            Vincule uma ou mais contas para gerenciar agendamentos pelo
-            assistente e pela agenda da empresa.
+            {t("integrations.googleDescription")}
           </CardDescription>
         </CardHeader>
       )}
@@ -194,7 +195,9 @@ export function GoogleCalendarIntegration({
                           variant={integration.isActive ? "default" : "outline"}
                           className="mt-1"
                         >
-                          {integration.isActive ? "Ativo" : "Inativo"}
+                          {integration.isActive
+                            ? t("integrations.active")
+                            : t("integrations.inactive")}
                         </Badge>
                       </div>
                     </div>
@@ -210,7 +213,7 @@ export function GoogleCalendarIntegration({
                       ) : (
                         <Unplug className="mr-2 h-4 w-4" />
                       )}
-                      Desconectar
+                      {t("integrations.disconnect")}
                     </Button>
                   </div>
                 ))}
@@ -224,7 +227,7 @@ export function GoogleCalendarIntegration({
                     <Calendar className="h-4 w-4" aria-hidden="true" />
                   </span>
                   <p className="text-sm text-muted-foreground">
-                    Nenhuma conta vinculada a este workspace.
+                    {t("integrations.noLinkedAccount")}
                   </p>
                 </div>
               )}
@@ -238,8 +241,8 @@ export function GoogleCalendarIntegration({
                   <Plus className="mr-2 h-4 w-4" />
                 )}
                 {integrations.length > 0
-                  ? "Vincular outra conta"
-                  : "Vincular Google Calendar"}
+                  ? t("integrations.linkAnother")
+                  : t("integrations.linkGoogle")}
               </Button>
             </div>
           </>

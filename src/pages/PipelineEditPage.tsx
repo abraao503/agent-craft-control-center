@@ -5,10 +5,12 @@ import { AgentLoadingModal } from "@/components/pipelines/AgentLoadingModal";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useTranslation } from "react-i18next";
 
 const PipelineEditPage = () => {
   const editor = usePipelineEditor();
   const { has } = usePermissions();
+  const { t } = useTranslation();
 
   const requiredPermission = editor.isCreating
     ? "create:pipeline"
@@ -17,7 +19,9 @@ const PipelineEditPage = () => {
   if (!has(requiredPermission)) {
     return (
       <div className="rounded-lg border p-8 text-center text-muted-foreground">
-        Você não tem permissão para {editor.isCreating ? "criar" : "editar"} este pipeline.
+        {t("pipelineEditor.permission", {
+          action: t(editor.isCreating ? "pipelineEditor.create" : "pipelineEditor.edit"),
+        })}
       </div>
     );
   }
@@ -32,7 +36,7 @@ const PipelineEditPage = () => {
       />
 
       <div className="space-y-2">
-        <Label htmlFor="pipeline-name">Nome do funil</Label>
+        <Label htmlFor="pipeline-name">{t("pipelineEditor.name")}</Label>
         <Input
           id="pipeline-name"
           placeholder="4 Novo funil"
