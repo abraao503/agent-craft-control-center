@@ -97,7 +97,6 @@ export interface UpdateDealInput {
   value?: number;
   currency?: string;
   expectedCloseDate?: string;
-  assignedUserId?: string;
   customer?: {
     name?: string;
     email?: string;
