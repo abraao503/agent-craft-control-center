@@ -1,5 +1,5 @@
 import { format } from "date-fns";
-import { es, ptBR } from "date-fns/locale";
+import { enUS, es, ptBR } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -18,7 +18,7 @@ interface DealWebhookOverviewProps {
 
 export function DealWebhookOverview({ webhook }: DealWebhookOverviewProps) {
   const { locale } = useAppLocale();
-  const dateLocale = locale === "es-ES" ? es : ptBR;
+  const dateLocale = locale === "es-ES" ? es : locale === "en-US" ? enUS : ptBR;
   const datePattern = locale === "es-ES" ? "dd/MM/yyyy 'a las' HH:mm" : "dd/MM/yyyy 'às' HH:mm";
 
   return (

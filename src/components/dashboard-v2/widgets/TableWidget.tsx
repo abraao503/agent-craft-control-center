@@ -39,6 +39,7 @@ function RankingTable({
   data: TableIndicatorData;
 }) {
   const { locale } = useAppLocale();
+  const { t } = useTranslation();
   return (
     <Card className="h-full flex flex-col">
       <CardHeader className="pb-2 shrink-0">
@@ -48,10 +49,10 @@ function RankingTable({
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b text-muted-foreground text-xs">
-              <th className="text-left pb-2 font-medium">POS</th>
-              <th className="text-left pb-2 font-medium">VENDEDOR</th>
-              <th className="text-right pb-2 font-medium">{locale === "es-ES" ? "GANADOS" : "GANHOS"}</th>
-              <th className="text-right pb-2 font-medium">{locale === "es-ES" ? "OBJETIVO" : "META"}</th>
+              <th className="text-left pb-2 font-medium">{t("dashboard.position")}</th>
+              <th className="text-left pb-2 font-medium">{t("dashboard.seller")}</th>
+              <th className="text-right pb-2 font-medium">{t("dashboard.won")}</th>
+              <th className="text-right pb-2 font-medium">{t("dashboard.target")}</th>
             </tr>
           </thead>
           <tbody>

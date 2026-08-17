@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { es, ptBR } from "date-fns/locale";
+import { enUS, es, ptBR } from "date-fns/locale";
 import { Building2, Edit2, Ellipsis, Plus } from "lucide-react";
 import { listCompanies } from "@/services/company/listCompanies";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -37,7 +37,7 @@ export default function AdminCompaniesPage() {
   const { has } = usePermissions();
   const { t } = useTranslation();
   const { locale } = useAppLocale();
-  const dateLocale = locale === "es-ES" ? es : ptBR;
+  const dateLocale = locale === "es-ES" ? es : locale === "en-US" ? enUS : ptBR;
   const queryClient = useQueryClient();
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);

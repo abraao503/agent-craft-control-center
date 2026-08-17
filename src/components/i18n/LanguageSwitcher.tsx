@@ -21,12 +21,13 @@ export function LanguageSwitcher({ compact = false, className = "" }: LanguageSw
   const { locale, setLocale } = useAppLocale();
   const options: Array<{ value: SupportedLocale; label: string }> = [
     { value: "pt-BR", label: t("common.portugueseBrazil") },
+    { value: "en-US", label: t("common.englishUnitedStates") },
     { value: "es-ES", label: t("common.spanishSpain") },
   ];
   const selectedOption = options.find((option) => option.value === locale) ?? options[0];
 
   const handleLocaleChange = (nextLocale: string) => {
-    if (nextLocale === "pt-BR" || nextLocale === "es-ES") {
+    if (nextLocale === "pt-BR" || nextLocale === "en-US" || nextLocale === "es-ES") {
       void setLocale(nextLocale);
     }
   };

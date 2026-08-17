@@ -1,5 +1,5 @@
 import { format } from "date-fns";
-import { es, ptBR } from "date-fns/locale";
+import { enUS, es, ptBR } from "date-fns/locale";
 import { Calendar as CalendarIcon, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -24,7 +24,7 @@ interface DateTimePickerProps {
 export function DateTimePicker({ date, setDate, placeholder }: DateTimePickerProps) {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(date);
   const { locale } = useAppLocale();
-  const dateLocale = locale === "es-ES" ? es : ptBR;
+  const dateLocale = locale === "es-ES" ? es : locale === "en-US" ? enUS : ptBR;
   const [time, setTime] = useState<string>(
     date ? format(date, "HH:mm") : "00:00"
   );

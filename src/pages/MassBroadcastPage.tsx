@@ -47,7 +47,7 @@ import {
 } from "@/services/mass-broadcast";
 import { MassBroadcast, MassBroadcastStatus } from "@/types/mass-broadcast";
 import { format } from "date-fns";
-import { es, ptBR } from "date-fns/locale";
+import { enUS, es, ptBR } from "date-fns/locale";
 import { useTranslation } from "react-i18next";
 import { useAppLocale } from "@/i18n/LocaleProvider";
 
@@ -72,7 +72,7 @@ export default function MassBroadcastPage() {
   const { t } = useTranslation();
   const { locale } = useAppLocale();
   const workspaceId = currentWorkspace?.id || "";
-  const dateLocale = locale === "es-ES" ? es : ptBR;
+  const dateLocale = locale === "es-ES" ? es : locale === "en-US" ? enUS : ptBR;
 
   const getStatusLabel = (status: MassBroadcastStatus) => {
     const labels: Record<MassBroadcastStatus, string> = {

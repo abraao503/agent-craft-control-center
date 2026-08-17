@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import i18n from "@/i18n/index";
-import { esES } from "@/i18n/resources";
+import { enUS, esES } from "@/i18n/resources";
 import { legacyTranslations } from "@/i18n/legacyTranslations";
 import { legacyTranslationsExtra } from "@/i18n/legacyTranslationsExtra";
 
@@ -18,6 +18,9 @@ for (const [source, translated] of Object.entries(legacyTranslations)) {
 for (const [source, translated] of Object.entries(legacyTranslationsExtra)) {
   reverseLegacy.set(translated, source);
 }
+for (const [source, translated] of Object.entries(enUS.legacy)) {
+  reverseLegacy.set(translated, source);
+}
 
 function translate(value: string) {
   const trimmed = value.trim();
@@ -25,7 +28,9 @@ function translate(value: string) {
   const source = reverseLegacy.get(trimmed) ?? trimmed;
   const translated = i18n.language === "es-ES"
     ? esES.legacy[source as keyof typeof esES.legacy] ?? legacyTranslations[source] ?? legacyTranslationsExtra[source] ?? source
-    : source;
+    : i18n.language === "en-US"
+      ? enUS.legacy[source as keyof typeof enUS.legacy] ?? source
+      : source;
   if (translated === trimmed) return value;
   return value.replace(trimmed, translated);
 }
@@ -45,7 +50,7 @@ function translateTree(root: Node) {
     const current = textNode.nodeValue ?? "";
     const source = originalText.get(textNode) ?? reverseLegacy.get(current.trim()) ?? current;
     originalText.set(textNode, source);
-    const nextValue = i18n.language === "es-ES" ? translate(source) : source;
+    const nextValue = i18n.language === "pt-BR" ? source : translate(source);
     if (current !== nextValue) textNode.nodeValue = nextValue;
   }
 
@@ -62,7 +67,7 @@ function translateTree(root: Node) {
       if (current === null) continue;
       const source = attributes.get(attribute) ?? reverseLegacy.get(current.trim()) ?? current;
       attributes.set(attribute, source);
-      const nextValue = i18n.language === "es-ES" ? translate(source) : source;
+      const nextValue = i18n.language === "pt-BR" ? source : translate(source);
       if (current !== nextValue) element.setAttribute(attribute, nextValue);
     }
   }

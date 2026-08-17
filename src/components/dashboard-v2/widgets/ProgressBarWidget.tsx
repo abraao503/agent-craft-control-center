@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { KpiIndicatorData } from "@/types/dashboard-v2";
+import { useTranslation } from "react-i18next";
 
 interface ProgressBarWidgetProps {
   title: string;
@@ -14,6 +15,7 @@ export function ProgressBarWidget({
   data,
   color = "default",
 }: ProgressBarWidgetProps) {
+  const { t } = useTranslation();
   const pct = Math.min(100, Math.max(0, data.value));
   const displayValue = data.formatted ?? `${pct}%`;
 
@@ -52,10 +54,10 @@ export function ProgressBarWidget({
         <Progress value={pct} className={`h-2 ${colorClasses[finalColor]}`} />
         <p className="text-xs text-muted-foreground">
           {pct >= 90
-            ? "Próximo do limite"
+            ? t("dashboard.nearLimit")
             : pct >= 70
-              ? "Uso moderado"
-              : "Uso saudável"}
+              ? t("dashboard.moderateUsage")
+              : t("dashboard.healthyUsage")}
         </p>
       </CardContent>
     </Card>

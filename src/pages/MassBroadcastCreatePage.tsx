@@ -507,14 +507,16 @@ export default function MassBroadcastCreatePage() {
             <CardTitle>{t("broadcastCreate.messages")}</CardTitle>
             <CardDescription>
               {t("broadcastCreate.messagesDescription")} {t("broadcastCreate.messageVariables")} {" "}
-              <code className="text-xs bg-muted px-1 py-0.5 rounded">NOME</code>
+              <code className="text-xs bg-muted px-1 py-0.5 rounded">
+                {t("broadcastCreate.variableFirstName")}
+              </code>
               ,{" "}
               <code className="text-xs bg-muted px-1 py-0.5 rounded">
-                NOME COMPLETO
+                {t("broadcastCreate.variableFullName")}
               </code>{" "}
-              e{" "}
+              {t("broadcastCreate.messageVariablesAnd")} {" "}
               <code className="text-xs bg-muted px-1 py-0.5 rounded">
-                EMAIL
+                {t("broadcastCreate.variableEmail")}
               </code>{" "}
               {t("broadcastCreate.messageVariablesSuffix")}
             </CardDescription>

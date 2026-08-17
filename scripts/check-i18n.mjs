@@ -27,15 +27,33 @@ function collectKeys(block) {
 }
 
 const portuguese = collectKeys(blockBetween("export const ptBR", "export const esES"));
-const spanish = collectKeys(blockBetween("export const esES", "export const resources"));
+const spanish = collectKeys(blockBetween("export const esES", "export const enUS"));
+const english = collectKeys(blockBetween("export const enUS", "export const resources"));
 const missingInSpanish = [...portuguese.keys()].filter((key) => !spanish.has(key));
 const missingInPortuguese = [...spanish.keys()].filter((key) => !portuguese.has(key));
+const missingInEnglish = [...portuguese.keys()].filter((key) => !english.has(key));
+const extraInEnglish = [...english.keys()].filter((key) => !portuguese.has(key));
+const nonLegacyEnglishExtras = extraInEnglish.filter((key) => !key.startsWith("legacy."));
 
-if (missingInSpanish.length || missingInPortuguese.length) {
+if (
+  missingInSpanish.length ||
+  missingInPortuguese.length ||
+  missingInEnglish.length ||
+  nonLegacyEnglishExtras.length
+) {
   console.error("Catálogos de idioma fora de sincronia.");
   if (missingInSpanish.length) console.error("Ausentes em es-ES:", missingInSpanish.join(", "));
   if (missingInPortuguese.length) console.error("Ausentes em pt-BR:", missingInPortuguese.join(", "));
+  if (missingInEnglish.length) console.error("Ausentes em en-US:", missingInEnglish.join(", "));
+  if (nonLegacyEnglishExtras.length) {
+    console.error("Extras não-legados em en-US:", nonLegacyEnglishExtras.join(", "));
+  }
   process.exit(1);
 }
 
-console.log(`Catálogos válidos: ${portuguese.size} chaves em pt-BR e es-ES.`);
+console.log(
+  `Catálogos alinhados: ${portuguese.size} chaves em pt-BR, es-ES e en-US.`,
+);
+if (extraInEnglish.length) {
+  console.log(`Compatibilidade legacy adicional em en-US: ${extraInEnglish.length} chaves.`);
+}

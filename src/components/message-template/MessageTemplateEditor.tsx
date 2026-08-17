@@ -172,7 +172,7 @@ export function MessageTemplateEditor({
               onClick={() => insertVariable(variable)}
             >
               <Icon className="h-3 w-3" />
-              {variable.displayLabel}
+              {getVariableDisplayLabel(variable.id)}
             </Button>
           );
         })}

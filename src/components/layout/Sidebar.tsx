@@ -202,7 +202,7 @@ const WorkspaceDialog = ({
             onClick={onCreateWorkspace}
             disabled={!workspaceName.trim() || isCreating}
           >
-            {isCreating ? "Criando..." : t("common.create")}
+            {isCreating ? t("common.creating") : t("common.create")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -325,15 +325,15 @@ const WorkspaceSelector = ({ isCollapsed }: { isCollapsed: boolean }) => {
   return (
     <div className="px-4 py-2">
       <div className="flex justify-between items-center mb-1">
-        <p className="text-sm text-muted-foreground">Workspace</p>
+        <p className="text-sm text-muted-foreground">{t("navigation.workspace")}</p>
       </div>
       {isLoading ? (
         <div className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm flex items-center text-muted-foreground">
-          Carregando...
+          {t("common.loading")}
         </div>
       ) : isSalesRep ? (
         <div className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm flex items-center text-foreground">
-          {selectedWorkspace?.name || "Carregando..."}
+          {selectedWorkspace?.name || t("common.loading")}
         </div>
       ) : (
         <Select
@@ -342,7 +342,7 @@ const WorkspaceSelector = ({ isCollapsed }: { isCollapsed: boolean }) => {
           disabled={isLoading || workspaces.length === 0}
         >
           <SelectTrigger className="w-full">
-            <SelectValue placeholder="Selecione um workspace" />
+          <SelectValue placeholder={t("legacy.Selecione um workspace")} />
           </SelectTrigger>
           <SelectContent>
             {workspaces.map((workspace) => (

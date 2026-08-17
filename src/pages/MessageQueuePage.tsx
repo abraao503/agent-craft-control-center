@@ -29,7 +29,7 @@ import { isColorDark } from "@/lib/utils";
 import { formatPhone } from "@/utils/phone";
 import { useTranslation } from "react-i18next";
 import { useAppLocale } from "@/i18n/LocaleProvider";
-import { es, ptBR as dateFnsPtBR } from "date-fns/locale";
+import { enUS, es, ptBR as dateFnsPtBR } from "date-fns/locale";
 
 export default function MessageQueuePage() {
   const { pipelineId } = useParams<{ pipelineId: string }>();
@@ -37,7 +37,7 @@ export default function MessageQueuePage() {
   const { has } = usePermissions();
   const { t } = useTranslation();
   const { locale } = useAppLocale();
-  const dateLocale = locale === "es-ES" ? es : dateFnsPtBR;
+  const dateLocale = locale === "es-ES" ? es : locale === "en-US" ? enUS : dateFnsPtBR;
 
   const { workspaceId, isChangingWorkspace } = useWorkspaceManager({
     queryKeys: ["pipelineQueue", "queueMessages"],

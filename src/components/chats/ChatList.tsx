@@ -7,6 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useTranslation } from "react-i18next";
 import { Conversation } from "@/types/conversation";
 import { isColorDark } from "@/lib/utils";
 import { formatPhone } from "@/utils/phone";
@@ -36,6 +37,7 @@ export const ChatList: React.FC<ChatListProps> = ({
   isLoadingMore,
   onLoadMore,
 }) => {
+  const { t } = useTranslation();
   const [localSearchValue, setLocalSearchValue] = useState(searchValue);
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
@@ -76,7 +78,7 @@ export const ChatList: React.FC<ChatListProps> = ({
     if (diffInDays === 0) {
       return format(messageDate, "HH:mm");
     } else if (diffInDays === 1) {
-      return "Ontem";
+      return t("dashboard.yesterday");
     } else if (diffInDays < 7) {
       return format(messageDate, "EEEE", { locale: ptBR });
     } else {
@@ -102,7 +104,7 @@ export const ChatList: React.FC<ChatListProps> = ({
     <div className="flex flex-col h-full border-r bg-background">
       {/* Header */}
       <div className="p-4 border-b">
-        <h2 className="text-xl font-semibold mb-3">Conversas</h2>
+        <h2 className="text-xl font-semibold mb-3">{t("chats.inboxTitle")}</h2>
         <div className="relative">
           <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
             {isLoading && localSearchValue ? (
@@ -113,7 +115,7 @@ export const ChatList: React.FC<ChatListProps> = ({
           </div>
           <Input
             type="search"
-            placeholder="Buscar conversas"
+            placeholder={t("chats.searchPlaceholder")}
             className="pl-10"
             value={localSearchValue}
             onChange={(e) => setLocalSearchValue(e.target.value)}
@@ -148,7 +150,7 @@ export const ChatList: React.FC<ChatListProps> = ({
           </div>
         ) : conversations.length === 0 ? (
           <div className="p-4 text-center text-muted-foreground">
-            Nenhuma conversa encontrada
+            {t("chats.empty")}
           </div>
         ) : (
           <div className="relative">
@@ -226,14 +228,20 @@ export const ChatList: React.FC<ChatListProps> = ({
                           }
                           className="text-xs"
                         >
-                          {conversation.handledBy === "ai" ? "IA" : "Humano"}
+                          {conversation.handledBy === "ai"
+                            ? t("chats.ai")
+                            : t("chats.human")}
                         </Badge>
                         <span className="text-xs text-muted-foreground truncate">
                           {conversation.primaryDeal.pipeline.name} / {conversation.primaryDeal.stage.name}
                         </span>
                       </div>
                       <p className="truncate text-xs text-muted-foreground">
-                        Responsável: {conversation.primaryDeal.assignedUser?.name ?? "Não atribuído"}
+                        {t("chats.responsibleLabel", {
+                          name:
+                            conversation.primaryDeal.assignedUser?.name ??
+                            t("chats.unassigned"),
+                        })}
                       </p>
 
                       {/* Tags */}
@@ -264,7 +272,14 @@ export const ChatList: React.FC<ChatListProps> = ({
                   </div>
                 </div>
               ))}
-              {hasMore && <div ref={loadMoreRef} className="p-3 text-center text-sm text-primary">{isLoadingMore ? "Carregando..." : "Carregar mais"}</div>}
+              {hasMore && (
+                <div
+                  ref={loadMoreRef}
+                  className="p-3 text-center text-sm text-primary"
+                >
+                  {isLoadingMore ? t("common.loading") : t("chats.loadMore")}
+                </div>
+              )}
             </div>
           </div>
         )}

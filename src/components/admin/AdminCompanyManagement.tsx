@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { es, ptBR } from "date-fns/locale";
+import { enUS, es, ptBR } from "date-fns/locale";
 import {
   Building2,
   Edit2,
@@ -72,7 +72,7 @@ export function AdminCompanyManagement({
   const { has, role } = usePermissions();
   const { t } = useTranslation();
   const { locale } = useAppLocale();
-  const dateLocale = locale === "es-ES" ? es : ptBR;
+  const dateLocale = locale === "es-ES" ? es : locale === "en-US" ? enUS : ptBR;
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get("tab") === "team" ? "team" : "workspaces";
   const [workspaceSearch, setWorkspaceSearch] = useState("");

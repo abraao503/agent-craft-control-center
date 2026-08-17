@@ -1,5 +1,5 @@
 import { format } from "date-fns";
-import { es, ptBR } from "date-fns/locale";
+import { enUS, es, ptBR } from "date-fns/locale";
 import { AlertCircle, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -41,7 +41,7 @@ export function DealWebhookExecutionDialog({
   onTechnicalDetailsChange,
 }: DealWebhookExecutionDialogProps) {
   const { locale } = useAppLocale();
-  const dateLocale = locale === "es-ES" ? es : ptBR;
+  const dateLocale = locale === "es-ES" ? es : locale === "en-US" ? enUS : ptBR;
   const datePattern = locale === "es-ES" ? "dd/MM/yyyy 'a las' HH:mm:ss" : "dd/MM/yyyy 'às' HH:mm:ss";
 
   const parsedError = execution?.errorMessage

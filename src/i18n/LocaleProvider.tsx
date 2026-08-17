@@ -21,7 +21,9 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
         "content",
         locale === "es-ES"
           ? "Automatiza ventas y atención con agentes de inteligencia artificial."
-          : "Controle de agentes IA",
+          : locale === "en-US"
+            ? "Automate sales and customer support with AI agents."
+            : "Controle de agentes IA",
       );
     }
     const ogDescription = document.querySelector('meta[property="og:description"]');
@@ -30,14 +32,16 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
         "content",
         locale === "es-ES"
           ? "Automatiza ventas y atención con agentes de inteligencia artificial."
-          : "Controle de agentes IA",
+          : locale === "en-US"
+            ? "Automate sales and customer support with AI agents."
+            : "Controle de agentes IA",
       );
     }
   }, [locale]);
 
   useEffect(() => {
     const handleLanguageChanged = (nextLanguage: string) => {
-      if (nextLanguage === "pt-BR" || nextLanguage === "es-ES") {
+      if (nextLanguage === "pt-BR" || nextLanguage === "en-US" || nextLanguage === "es-ES") {
         setLocaleState(nextLanguage);
       }
     };

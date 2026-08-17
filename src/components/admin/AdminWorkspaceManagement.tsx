@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { es, ptBR } from "date-fns/locale";
+import { enUS, es, ptBR } from "date-fns/locale";
 import { Briefcase, Edit2, Ellipsis, Plus, Trash2 } from "lucide-react";
 import { listUsers } from "@/services/user/listUsers";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -76,7 +76,7 @@ export function AdminWorkspaceManagement({
   const { has, role } = usePermissions();
   const { t } = useTranslation();
   const { locale } = useAppLocale();
-  const dateLocale = locale === "es-ES" ? es : ptBR;
+  const dateLocale = locale === "es-ES" ? es : locale === "en-US" ? enUS : ptBR;
   const canManageDistribution =
     has("manage:deal-distribution") ||
     Boolean(role && distributionRoles.has(role));

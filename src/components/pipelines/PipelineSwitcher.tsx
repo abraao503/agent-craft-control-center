@@ -14,6 +14,7 @@ import {
 import { ChevronDown, Pencil, Plus } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { listPipelines } from "@/services/pipeline/listPipelines";
+import { useTranslation } from "react-i18next";
 
 interface PipelineSwitcherProps {
   workspaceId: string;
@@ -34,6 +35,7 @@ export const PipelineSwitcher: React.FC<PipelineSwitcherProps> = ({
   canEdit = false,
   canCreate = false,
 }) => {
+  const { t } = useTranslation();
   const { data: pipelines = [] } = useQuery({
     queryKey: ["listPipelines", workspaceId],
     queryFn: () => listPipelines(workspaceId),
@@ -45,9 +47,7 @@ export const PipelineSwitcher: React.FC<PipelineSwitcherProps> = ({
     [pipelines, currentPipelineId],
   );
 
-  const emptyMessage = canCreate
-    ? "Nenhum funil criado ainda."
-    : "Nenhum negócio atribuído a você.";
+  const emptyMessage = canCreate ? t("deals.noPipeline") : t("deals.noAssignedDeals");
 
   return (
     <div className="inline-flex rounded-md shadow-sm">
@@ -55,13 +55,13 @@ export const PipelineSwitcher: React.FC<PipelineSwitcherProps> = ({
         <DropdownMenuTrigger asChild>
           <Button variant="outline" className="gap-2 rounded-r-none border-r-0">
             <span className="max-w-[220px] truncate">
-              {current?.name || "Selecione um funil"}
+              {current?.name || t("deals.selectPipelineShort")}
             </span>
             <ChevronDown className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-64">
-          <DropdownMenuLabel>Pipeline</DropdownMenuLabel>
+          <DropdownMenuLabel>{t("common.pipeline")}</DropdownMenuLabel>
           <DropdownMenuRadioGroup
             value={currentPipelineId}
             onValueChange={onSelect}
@@ -81,8 +81,8 @@ export const PipelineSwitcher: React.FC<PipelineSwitcherProps> = ({
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
             {canCreate && (
-              <DropdownMenuItem onClick={onCreateNew}>
-                <Plus className="h-4 w-4 mr-2" /> Novo funil
+                <DropdownMenuItem onClick={onCreateNew}>
+                <Plus className="h-4 w-4 mr-2" /> {t("pipelines.create")}
               </DropdownMenuItem>
             )}
           </DropdownMenuGroup>
@@ -94,8 +94,8 @@ export const PipelineSwitcher: React.FC<PipelineSwitcherProps> = ({
           size="icon"
           className="rounded-l-none border-l"
           onClick={onEditCurrent}
-          aria-label="Editar funil"
-          title="Editar funil"
+          aria-label={t("common.edit")}
+          title={t("common.edit")}
           disabled={!currentPipelineId}
         >
           <Pencil className="h-4 w-4" />

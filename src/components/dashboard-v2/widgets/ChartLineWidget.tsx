@@ -10,7 +10,8 @@ import {
   CartesianGrid,
 } from "recharts";
 import { format, parseISO } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { enUS, es, ptBR } from "date-fns/locale";
+import { useAppLocale } from "@/i18n/LocaleProvider";
 
 interface ChartLineWidgetProps {
   title: string;
@@ -18,6 +19,9 @@ interface ChartLineWidgetProps {
 }
 
 export function ChartLineWidget({ title, data }: ChartLineWidgetProps) {
+  const { locale } = useAppLocale();
+  const dateLocale = locale === "en-US" ? enUS : locale === "es-ES" ? es : ptBR;
+  const tooltipDateFormat = locale === "en-US" ? "dd MMM, yyyy" : "dd 'de' MMM, yyyy";
   const chartData = data.labels.map((label, i) => ({
     date: label,
     value: data.datasets[0]?.data[i] ?? 0,
@@ -25,7 +29,7 @@ export function ChartLineWidget({ title, data }: ChartLineWidgetProps) {
 
   const formatXAxis = (dateStr: string) => {
     try {
-      return format(parseISO(dateStr), "dd MMM", { locale: ptBR });
+      return format(parseISO(dateStr), "dd MMM", { locale: dateLocale });
     } catch {
       return dateStr;
     }
@@ -62,8 +66,8 @@ export function ChartLineWidget({ title, data }: ChartLineWidgetProps) {
                 try {
                   return format(
                     parseISO(label as string),
-                    "dd 'de' MMM, yyyy",
-                    { locale: ptBR },
+                    tooltipDateFormat,
+                    { locale: dateLocale },
                   );
                 } catch {
                   return label;

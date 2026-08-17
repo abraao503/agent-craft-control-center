@@ -43,7 +43,7 @@ import {
 } from "@/services/customer-import";
 import { CustomerImport, CustomerImportStatus } from "@/types/customer-import";
 import { format } from "date-fns";
-import { es, ptBR } from "date-fns/locale";
+import { enUS, es, ptBR } from "date-fns/locale";
 import { useTranslation } from "react-i18next";
 import { useAppLocale } from "@/i18n/LocaleProvider";
 
@@ -70,7 +70,7 @@ export default function CustomerImportPage() {
   const { currentWorkspace } = useWorkspaceContext();
   const { t } = useTranslation();
   const { locale } = useAppLocale();
-  const dateLocale = locale === "es-ES" ? es : ptBR;
+  const dateLocale = locale === "es-ES" ? es : locale === "en-US" ? enUS : ptBR;
   const workspaceId = currentWorkspace?.id || "";
 
   const getStatusLabel = (status: CustomerImportStatus) => {

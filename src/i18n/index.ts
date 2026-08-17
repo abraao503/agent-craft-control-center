@@ -1,14 +1,14 @@
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
-import { esES, ptBR, resources } from "./resources";
-import { es, ptBR as dateFnsPtBR } from "date-fns/locale";
+import { enUS, esES, ptBR, resources } from "./resources";
+import { enUS as dateFnsEnUS, es, ptBR as dateFnsPtBR } from "date-fns/locale";
 
-export const SUPPORTED_LOCALES = ["pt-BR", "es-ES"] as const;
+export const SUPPORTED_LOCALES = ["pt-BR", "en-US", "es-ES"] as const;
 export type SupportedLocale = (typeof SUPPORTED_LOCALES)[number];
 export const LOCALE_STORAGE_KEY = "7agentes.locale";
 
 const isSupportedLocale = (value: string | null): value is SupportedLocale =>
-  value === "pt-BR" || value === "es-ES";
+  value === "pt-BR" || value === "en-US" || value === "es-ES";
 
 const getBrowserPreferredLocale = (): SupportedLocale => {
   const browserLocales = navigator.languages?.length
@@ -22,6 +22,9 @@ const getBrowserPreferredLocale = (): SupportedLocale => {
     const normalizedLocale = browserLocale.trim().toLowerCase().replace("_", "-");
     if (normalizedLocale === "es" || normalizedLocale.startsWith("es-")) {
       return "es-ES";
+    }
+    if (normalizedLocale === "en" || normalizedLocale.startsWith("en-")) {
+      return "en-US";
     }
     if (normalizedLocale === "pt" || normalizedLocale.startsWith("pt-")) {
       return "pt-BR";
@@ -52,7 +55,9 @@ for (const key of ["formatDistance", "formatLong", "formatRelative", "localize",
     enumerable: true,
     get: () => i18n.language === "es-ES"
       ? (es as unknown as Record<string, unknown>)[key]
-      : dateFnsOriginals.get(key),
+      : i18n.language === "en-US"
+        ? (dateFnsEnUS as unknown as Record<string, unknown>)[key]
+        : dateFnsOriginals.get(key),
   });
 }
 
@@ -88,6 +93,6 @@ export const changeLocale = async (locale: SupportedLocale) => {
   setDocumentLocale(locale);
 };
 
-export const localeResources = { ptBR, esES };
+export const localeResources = { ptBR, enUS, esES };
 
 export default i18n;

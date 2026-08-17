@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
-import { es, ptBR } from "date-fns/locale";
+import { enUS, es, ptBR } from "date-fns/locale";
 import {
   useQuery,
   useQueries,
@@ -15,6 +15,7 @@ import interactionPlugin from "@fullcalendar/interaction";
 import listPlugin from "@fullcalendar/list";
 import ptBrLocale from "@fullcalendar/core/locales/pt-br";
 import esLocale from "@fullcalendar/core/locales/es";
+import enGbLocale from "@fullcalendar/core/locales/en-gb";
 import { DatesSetArg } from "@fullcalendar/core";
 import { DateClickArg } from "@fullcalendar/interaction";
 import { useWorkspaceManager } from "@/hooks/useWorkspaceManager";
@@ -75,8 +76,9 @@ export default function CalendarPage() {
   const { workspaceId } = useWorkspaceManager();
   const { locale } = useAppLocale();
   const { t } = useTranslation();
-  const dateLocale = locale === "es-ES" ? es : ptBR;
-  const calendarLocale = locale === "es-ES" ? esLocale : ptBrLocale;
+  const dateLocale = locale === "es-ES" ? es : locale === "en-US" ? enUS : ptBR;
+  const calendarLocale =
+    locale === "es-ES" ? esLocale : locale === "en-US" ? enGbLocale : ptBrLocale;
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const calendarRef = useRef<FullCalendar>(null);
@@ -202,7 +204,7 @@ export default function CalendarPage() {
       query.data.items.forEach((event: GoogleCalendarEvent) => {
         allEvents.push({
           id: event.googleEventId || event.id || crypto.randomUUID(),
-          title: event.title || "Evento sem título",
+          title: event.title || t("calendar.untitledEvent"),
           start: event.startDateTime,
           end: event.endDateTime,
           url: event.htmlLink || undefined,
@@ -220,7 +222,7 @@ export default function CalendarPage() {
     });
 
     return allEvents;
-  }, [eventsQueries, integrationsToPoll]);
+  }, [eventsQueries, integrationsToPoll, t]);
 
   // Mutations
   const createMutation = useMutation({
@@ -646,7 +648,7 @@ export default function CalendarPage() {
                 id="attendees"
                 value={formAttendees}
                 onChange={(e) => setFormAttendees(e.target.value)}
-                placeholder="email1@exemplo.com, email2@exemplo.com"
+                placeholder={t("calendar.attendeesPlaceholder")}
               />
             </div>
 

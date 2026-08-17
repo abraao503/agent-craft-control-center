@@ -1,3 +1,5 @@
+import i18n from "@/i18n/index";
+
 /**
  * Available template variables for message templates.
  * `id` is the internal key used in the API as {{customer.<id>}}.
@@ -16,9 +18,18 @@ const DISPLAY_LABELS: Record<string, string> = Object.fromEntries(
   TEMPLATE_VARIABLES.map((v) => [v.id, v.displayLabel]),
 );
 
+const DISPLAY_LABEL_KEYS: Record<string, string> = {
+  firstName: "broadcastCreate.variableFirstName",
+  name: "broadcastCreate.variableFullName",
+  email: "broadcastCreate.variableEmail",
+};
+
 /** Get the friendly display label for a variable id, fallback to id itself */
 export function getVariableDisplayLabel(id: string): string {
-  return DISPLAY_LABELS[id] || id;
+  const translationKey = DISPLAY_LABEL_KEYS[id];
+  return translationKey
+    ? i18n.t(translationKey as never)
+    : DISPLAY_LABELS[id] || id;
 }
 
 /**

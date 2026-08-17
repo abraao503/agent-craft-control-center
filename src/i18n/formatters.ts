@@ -1,8 +1,8 @@
 import { format, formatDistanceToNow } from "date-fns";
-import { es, ptBR } from "date-fns/locale";
+import { enUS, es, ptBR } from "date-fns/locale";
 import { SupportedLocale } from "./index";
 
-export const dateFnsLocales = { "pt-BR": ptBR, "es-ES": es } as const;
+export const dateFnsLocales = { "pt-BR": ptBR, "en-US": enUS, "es-ES": es } as const;
 
 export function getDateFnsLocale(locale: SupportedLocale) {
   return dateFnsLocales[locale];

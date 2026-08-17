@@ -5,6 +5,7 @@ import { parsePhoneNumber } from "react-phone-number-input";
 import flags from "react-phone-number-input/flags";
 import ptBR from "react-phone-number-input/locale/pt-BR";
 import es from "react-phone-number-input/locale/es.json";
+import en from "react-phone-number-input/locale/en.json";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -44,7 +45,7 @@ const PhoneInput: React.ForwardRefExoticComponent<PhoneInputProps> =
           flagComponent={FlagComponent}
           countrySelectComponent={CountrySelect}
           inputComponent={InputComponent}
-          labels={locale === "es-ES" ? es : ptBR}
+          labels={locale === "es-ES" ? es : locale === "en-US" ? en : ptBR}
           international={false}
           smartCaret={false}
           value={value || undefined}
