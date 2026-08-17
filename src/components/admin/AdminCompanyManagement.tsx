@@ -7,6 +7,7 @@ import {
   Building2,
   Edit2,
   Ellipsis,
+  LogIn,
   Loader2,
   Plus,
   Search,
@@ -33,10 +34,12 @@ import { CreateWorkspaceDialog } from "./CreateWorkspaceDialog";
 import { EditWorkspaceDialog } from "./EditWorkspaceDialog";
 import { DeleteWorkspaceDialog } from "./DeleteWorkspaceDialog";
 import { DeleteUserDialog } from "./DeleteUserDialog";
+import { ImpersonateUserDialog } from "./ImpersonateUserDialog";
 import { User } from "@/types/user";
 import { Workspace } from "@/types/workspace";
 import { useTranslation } from "react-i18next";
 import { useAppLocale } from "@/i18n/LocaleProvider";
+import { useAuth } from "@/contexts/auth/hooks";
 
 const roleLabels: Record<string, string> = {
   PLATFORM_ADMIN: "Admin de plataforma",
@@ -70,6 +73,7 @@ export function AdminCompanyManagement({
 }: AdminCompanyManagementProps) {
   const navigate = useNavigate();
   const { has, role } = usePermissions();
+  const { userProfile } = useAuth();
   const { t } = useTranslation();
   const { locale } = useAppLocale();
   const dateLocale = locale === "es-ES" ? es : locale === "en-US" ? enUS : ptBR;
@@ -84,6 +88,8 @@ export function AdminCompanyManagement({
   const [editWorkspace, setEditWorkspace] = useState<Workspace | null>(null);
   const [deleteWorkspace, setDeleteWorkspace] = useState<Workspace | null>(null);
   const [deleteUser, setDeleteUser] = useState<User | null>(null);
+  const [impersonateUser, setImpersonateUser] = useState<User | null>(null);
+  const canImpersonate = has("impersonate:user") && !userProfile?.impersonation;
 
   const companyQuery = useQuery({
     queryKey: ["companyDetails", companyId],
@@ -344,6 +350,14 @@ export function AdminCompanyManagement({
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                          {canImpersonate && (
+                            <DropdownMenuItem
+                              onClick={() => setImpersonateUser(admin)}
+                            >
+                              <LogIn className="mr-2 h-4 w-4" />
+                              Acessar como usuário
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuItem
                             disabled={!canDeleteUser(admin)}
                             className="text-destructive focus:text-destructive"
@@ -408,6 +422,11 @@ export function AdminCompanyManagement({
         onOpenChange={(open) => !open && setDeleteUser(null)}
         user={deleteUser}
         companyId={companyId}
+      />
+      <ImpersonateUserDialog
+        open={Boolean(impersonateUser)}
+        onOpenChange={(open) => !open && setImpersonateUser(null)}
+        user={impersonateUser}
       />
     </div>
   );
