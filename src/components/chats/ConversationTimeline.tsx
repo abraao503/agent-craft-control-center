@@ -18,10 +18,12 @@ import { listChatTimeline } from "@/services/conversation/listChatTimeline";
 import { ChatTimelineEvent } from "@/types/chat-timeline";
 import { Message } from "@/types/message";
 import { MessageSentEvent } from "@/types/websocket";
+import { useTranslation } from "react-i18next";
 
 type Props = { chatId: string; newMessageEvent?: MessageSentEvent | null };
 
 export function ConversationTimeline({ chatId, newMessageEvent }: Props) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const initialScrollChatId = useRef<string | null>(null);
@@ -87,7 +89,9 @@ export function ConversationTimeline({ chatId, newMessageEvent }: Props) {
           disabled={query.isFetchingNextPage}
           onClick={() => query.fetchNextPage()}
         >
-          {query.isFetchingNextPage ? "Carregando..." : "Carregar eventos anteriores"}
+          {query.isFetchingNextPage
+            ? t("common.loading")
+            : t("chats.loadEarlier")}
         </Button>
       )}
       <div className="mt-auto space-y-3">
@@ -195,15 +199,21 @@ function DeliveryStatusIcon({ status }: { status: string }) {
 }
 
 function TimelineDealEvent({ event }: { event: ChatTimelineEvent }) {
-  let description = "Evento do negócio";
+  const { t } = useTranslation();
+  let description: string = t("chats.eventDefault");
   if (event.type === "deal_created") {
-    description = `Negócio criado em ${event.payload.stage?.name ?? "etapa inicial"}`;
+    description = t("chats.dealCreated", {
+      stage: event.payload.stage?.name ?? t("chats.eventInitialStage"),
+    });
   } else if (event.type === "stage_changed") {
-    description = `${event.payload.fromStage?.name ?? "Entrada"} → ${event.payload.toStage?.name ?? "nova etapa"}`;
+    description = t("chats.stageChanged", {
+      from: event.payload.fromStage?.name ?? t("chats.eventEntry"),
+      to: event.payload.toStage?.name ?? t("chats.eventNewStage"),
+    });
   } else if (event.type === "assignment_changed") {
     description = event.payload.assignedUser
-      ? `Responsável alterado para ${event.payload.assignedUser.name}`
-      : "Responsável removido";
+      ? t("chats.assignmentChanged", { name: event.payload.assignedUser.name })
+      : t("chats.assignmentRemoved");
   }
 
   return (

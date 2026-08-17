@@ -21,11 +21,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useTranslation } from "react-i18next";
+import { useAppLocale } from "@/i18n/LocaleProvider";
 
 const CustomerDetailsPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useTranslation();
+  const { locale } = useAppLocale();
 
   const {
     data: customer,
@@ -40,15 +44,15 @@ const CustomerDetailsPage = () => {
   useEffect(() => {
     if (error) {
       toast({
-        title: "Error",
-        description: "Failed to load customer details. Please try again.",
+        title: t("common.error"),
+        description: t("common.unknownError"),
         variant: "destructive",
       });
     }
-  }, [error, toast]);
+  }, [error, t, toast]);
 
   const formatDate = (date: Date) => {
-    return new Intl.DateTimeFormat("pt-BR", {
+    return new Intl.DateTimeFormat(locale, {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
@@ -74,7 +78,7 @@ const CustomerDetailsPage = () => {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <h1 className="text-3xl font-bold tracking-tight">
-            Customer Details
+            {t("customerDetails.title")}
           </h1>
         </div>
 
@@ -92,31 +96,31 @@ const CustomerDetailsPage = () => {
                   {formatPhone(customer.phone)}
                 </CardTitle>
                 <CardDescription>
-                  Created on {formatDate(customer.createdAt)}
+                  {t("customerDetails.createdOn", { date: formatDate(customer.createdAt) })}
                   <br />
-                  Last updated on {formatDate(customer.updatedAt)}
+                  {t("customerDetails.lastUpdatedOn", { date: formatDate(customer.updatedAt) })}
                 </CardDescription>
               </CardHeader>
             </Card>
 
             <Card>
               <CardHeader>
-                <CardTitle>Custom Fields</CardTitle>
+                <CardTitle>{t("customerDetails.customFields")}</CardTitle>
                 <CardDescription>
-                  Additional information about this customer
+                  {t("customerDetails.additionalInformation")}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 {customer.customFields.length === 0 ? (
                   <p className="text-muted-foreground text-center py-6">
-                    No custom fields available for this customer
+                    {t("customerDetails.noCustomFields")}
                   </p>
                 ) : (
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Field Name</TableHead>
-                        <TableHead>Value</TableHead>
+                        <TableHead>{t("customerDetails.fieldName")}</TableHead>
+                        <TableHead>{t("customerDetails.value")}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -136,11 +140,11 @@ const CustomerDetailsPage = () => {
           </div>
         ) : (
           <div className="text-center py-12 border rounded-lg">
-            <h3 className="font-medium text-lg">Customer not found</h3>
+            <h3 className="font-medium text-lg">{t("customerDetails.notFound")}</h3>
             <p className="text-muted-foreground mb-4">
-              The customer you're looking for doesn't exist or has been removed
+              {t("customerDetails.notFoundDescription")}
             </p>
-            <Button onClick={handleBack}>Back to Customers</Button>
+            <Button onClick={handleBack}>{t("customerDetails.back")}</Button>
           </div>
         )}
       </div>

@@ -1,5 +1,5 @@
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { enUS, es, ptBR } from "date-fns/locale";
 import { AlertCircle, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,6 +23,7 @@ import {
   parseErrorMessage,
 } from "@/components/deal-webhooks/dealWebhookDetails";
 import type { DealWebhookExecution } from "@/types/deal-webhook";
+import { useAppLocale } from "@/i18n/LocaleProvider";
 
 interface DealWebhookExecutionDialogProps {
   open: boolean;
@@ -39,6 +40,10 @@ export function DealWebhookExecutionDialog({
   onOpenChange,
   onTechnicalDetailsChange,
 }: DealWebhookExecutionDialogProps) {
+  const { locale } = useAppLocale();
+  const dateLocale = locale === "es-ES" ? es : locale === "en-US" ? enUS : ptBR;
+  const datePattern = locale === "es-ES" ? "dd/MM/yyyy 'a las' HH:mm:ss" : "dd/MM/yyyy 'às' HH:mm:ss";
+
   const parsedError = execution?.errorMessage
     ? parseErrorMessage(execution.errorMessage)
     : null;
@@ -76,8 +81,8 @@ export function DealWebhookExecutionDialog({
             <div className="space-y-2">
               <Label className="text-sm font-medium">Data e Hora</Label>
               <p className="text-sm">
-                {format(execution.createdAt, "dd/MM/yyyy 'às' HH:mm:ss", {
-                  locale: ptBR,
+                {format(execution.createdAt, datePattern, {
+                  locale: dateLocale,
                 })}
               </p>
             </div>

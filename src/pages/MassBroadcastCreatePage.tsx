@@ -52,12 +52,14 @@ import {
   MetaCloudTemplate,
   MetaCloudTemplateBinding,
 } from "@/services/whatsapp/metaCloud";
+import { useTranslation } from "react-i18next";
 
 export default function MassBroadcastCreatePage() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { currentWorkspace } = useWorkspaceContext();
+  const { t } = useTranslation();
   const workspaceId = currentWorkspace?.id || "";
 
   // Form state
@@ -251,15 +253,16 @@ export default function MassBroadcastCreatePage() {
       }),
     onSuccess: (data) => {
       toast({
-        title: "Destinatários encontrados",
-        description: `${data.total} ${data.total === 1 ? "pessoa receberá" : "pessoas receberão"} esta campanha com os filtros selecionados.`,
+        title: t("broadcasts.previewSuccess"),
+        description: data.total === 1
+          ? t("broadcasts.previewOne")
+          : t("broadcasts.previewMany", { count: data.total }),
       });
     },
     onError: () => {
       toast({
-        title: "Erro ao buscar destinatários",
-        description:
-          "Não foi possível calcular quantas pessoas receberão a campanha. Verifique os filtros.",
+        title: t("broadcasts.previewErrorTitle"),
+        description: t("broadcasts.previewError"),
         variant: "destructive",
       });
     },
@@ -270,8 +273,11 @@ export default function MassBroadcastCreatePage() {
     mutationFn: (data: CreateMassBroadcastInput) => createMassBroadcast(data),
     onSuccess: (broadcast) => {
       toast({
-        title: "Campanha criada",
-        description: `A campanha "${broadcast.name}" foi criada com ${broadcast.totalRecipients} destinatário(s).`,
+        title: t("broadcasts.created"),
+        description: t("broadcasts.createdDescription", {
+          name: broadcast.name,
+          count: broadcast.totalRecipients,
+        }),
       });
       queryClient.invalidateQueries({
         queryKey: ["mass-broadcasts", workspaceId],
@@ -284,29 +290,22 @@ export default function MassBroadcastCreatePage() {
       const apiMessage = error?.response?.data?.message || error?.message || "";
 
       const errorMessages: Record<string, string> = {
-        "Pipeline not found":
-          "O funil selecionado não foi encontrado. Verifique se ele ainda existe.",
-        "Pipeline has no WhatsApp integration":
-          "O funil selecionado não possui integração com WhatsApp. Configure uma integração antes de criar a campanha.",
-        "No recipients found for the given criteria":
-          "Nenhum destinatário encontrado com os critérios selecionados. Ajuste os filtros e tente novamente.",
-        "Invalid tags":
-          "Uma ou mais tags selecionadas são inválidas. Verifique as tags e tente novamente.",
-        "Invalid pipeline stages":
-          "Uma ou mais etapas de funil selecionadas são inválidas. Verifique as etapas e tente novamente.",
-        "Messages cannot be empty":
-          "As mensagens não podem estar vazias. Adicione pelo menos uma mensagem com conteúdo.",
-        "Internal error":
-          "Ocorreu um erro interno no servidor. Tente novamente mais tarde.",
+        "Pipeline not found": t("broadcastCreate.pipelineNotFound"),
+        "Pipeline has no WhatsApp integration": t("broadcastCreate.pipelineNoIntegration"),
+        "No recipients found for the given criteria": t("broadcastCreate.noRecipients"),
+        "Invalid tags": t("broadcastCreate.invalidTags"),
+        "Invalid pipeline stages": t("broadcastCreate.invalidStages"),
+        "Messages cannot be empty": t("broadcastCreate.emptyMessages"),
+        "Internal error": t("broadcastCreate.internalError"),
       };
 
       const description =
         errorMessages[apiMessage] ||
         apiMessage ||
-        "Ocorreu um erro ao criar a campanha.";
+        t("broadcastCreate.createError");
 
       toast({
-        title: "Erro ao criar campanha",
+        title: t("broadcasts.createError"),
         description,
         variant: "destructive",
       });
@@ -364,9 +363,8 @@ export default function MassBroadcastCreatePage() {
 
     if (!canSubmit) {
       toast({
-        title: "Preencha todos os campos obrigatórios",
-        description:
-          "Nome, funil, template ou mensagem e critérios de seleção são obrigatórios.",
+        title: t("broadcasts.requiredFields"),
+        description: t("broadcasts.requiredDescription"),
         variant: "destructive",
       });
       return;
@@ -403,7 +401,7 @@ export default function MassBroadcastCreatePage() {
     return (
       <div className="flex items-center justify-center h-full">
         <p className="text-muted-foreground">
-          Selecione um workspace para criar uma campanha
+          {t("broadcastCreate.selectWorkspace")}
         </p>
       </div>
     );
@@ -421,9 +419,9 @@ export default function MassBroadcastCreatePage() {
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div>
-          <h1 className="text-3xl font-bold">Nova Campanha</h1>
+          <h1 className="text-3xl font-bold">{t("broadcastCreate.title")}</h1>
           <p className="text-muted-foreground">
-            Configure e crie uma nova campanha de disparo em massa
+            {t("broadcastCreate.description")}
           </p>
         </div>
       </div>
@@ -432,36 +430,36 @@ export default function MassBroadcastCreatePage() {
         {/* Basic Info */}
         <Card>
           <CardHeader>
-            <CardTitle>Informações Básicas</CardTitle>
+            <CardTitle>{t("broadcastCreate.basicInfo")}</CardTitle>
             <CardDescription>
-              Defina o nome da campanha e a conexão WhatsApp para envio
+              {t("broadcastCreate.basicDescription")}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Nome da Campanha *</Label>
+              <Label htmlFor="name">{t("broadcastCreate.campaignName")}</Label>
               <Input
                 id="name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Ex: Promoção Black Friday 2026"
+                placeholder={t("broadcastCreate.campaignNamePlaceholder")}
                 maxLength={100}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="pipeline">Funil (conexão WhatsApp) *</Label>
+              <Label htmlFor="pipeline">{t("broadcastCreate.pipeline")}</Label>
               <Select
                 value={selectedPipelineId}
                 onValueChange={setSelectedPipelineId}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione o funil" />
+                  <SelectValue placeholder={t("broadcastCreate.pipelinePlaceholder")} />
                 </SelectTrigger>
                 <SelectContent>
                   {isLoadingPipelines ? (
                     <SelectItem value="loading" disabled>
-                      Carregando...
+                      {t("broadcastCreate.loading")}
                     </SelectItem>
                   ) : (
                     pipelines?.map((pipeline) => (
@@ -473,8 +471,7 @@ export default function MassBroadcastCreatePage() {
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
-                O funil define qual conexão WhatsApp será usada para enviar as
-                mensagens
+                {t("broadcastCreate.pipelineHelp")}
               </p>
             </div>
           </CardContent>
@@ -484,23 +481,21 @@ export default function MassBroadcastCreatePage() {
         {/* Mídia */}
         <Card>
           <CardHeader>
-            <CardTitle>Mídia (Opcional)</CardTitle>
+            <CardTitle>{t("broadcastCreate.media")}</CardTitle>
             <CardDescription>
-              Anexe uma imagem, áudio ou documento (PDF, etc.) para enviar junto
-              com as mensagens
+              {t("broadcastCreate.mediaDescription")}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="fileInput">Arquivo</Label>
+              <Label htmlFor="fileInput">{t("broadcastCreate.file")}</Label>
               <Input
                 id="fileInput"
                 type="file"
                 onChange={(e) => setFile(e.target.files?.[0] || null)}
               />
               <p className="text-xs text-muted-foreground">
-                Tamanho máximo permitido: 10 MB. O tipo de arquivo será
-                detectado automaticamente.
+                {t("broadcastCreate.mediaLimit")}
               </p>
             </div>
           </CardContent>
@@ -509,29 +504,28 @@ export default function MassBroadcastCreatePage() {
         {/* Messages */}
         <Card>
           <CardHeader>
-            <CardTitle>Mensagens</CardTitle>
+            <CardTitle>{t("broadcastCreate.messages")}</CardTitle>
             <CardDescription>
-              Adicione variações de mensagem. O sistema sorteia aleatoriamente
-              uma para cada destinatário, ajudando a evitar detecção de spam.
-              Recomendamos pelo menos 3 variações. Use os botões abaixo de cada
-              mensagem para inserir variáveis como{" "}
-              <code className="text-xs bg-muted px-1 py-0.5 rounded">NOME</code>
+              {t("broadcastCreate.messagesDescription")} {t("broadcastCreate.messageVariables")} {" "}
+              <code className="text-xs bg-muted px-1 py-0.5 rounded">
+                {t("broadcastCreate.variableFirstName")}
+              </code>
               ,{" "}
               <code className="text-xs bg-muted px-1 py-0.5 rounded">
-                NOME COMPLETO
+                {t("broadcastCreate.variableFullName")}
               </code>{" "}
-              e{" "}
+              {t("broadcastCreate.messageVariablesAnd")} {" "}
               <code className="text-xs bg-muted px-1 py-0.5 rounded">
-                EMAIL
+                {t("broadcastCreate.variableEmail")}
               </code>{" "}
-              para personalizar cada mensagem.
+              {t("broadcastCreate.messageVariablesSuffix")}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {messages.map((message, index) => (
               <div key={index} className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label>Variação {index + 1}</Label>
+                  <Label>{t("broadcastCreate.variation", { count: index + 1 })}</Label>
                   {messages.length > 1 && (
                     <Button
                       type="button"
@@ -541,14 +535,14 @@ export default function MassBroadcastCreatePage() {
                       onClick={() => removeMessage(index)}
                     >
                       <Trash2 className="h-4 w-4 mr-1" />
-                      Remover
+                      {t("broadcastCreate.remove")}
                     </Button>
                   )}
                 </div>
                 <MessageTemplateEditor
                   value={message}
                   onChange={(val) => updateMessage(index, val)}
-                  placeholder="Digite a mensagem... Use os botões abaixo para inserir variáveis"
+                  placeholder={t("broadcastCreate.messagePlaceholder")}
                 />
               </div>
             ))}
@@ -560,7 +554,7 @@ export default function MassBroadcastCreatePage() {
                 onClick={addMessage}
               >
                 <Plus className="h-4 w-4 mr-1" />
-                Adicionar variação
+                {t("broadcastCreate.addVariation")}
               </Button>
             )}
           </CardContent>
@@ -570,15 +564,15 @@ export default function MassBroadcastCreatePage() {
         {isMetaCampaign && (
           <Card>
             <CardHeader>
-              <CardTitle>Template Meta</CardTitle>
+              <CardTitle>{t("broadcastCreate.metaTemplate")}</CardTitle>
               <CardDescription>
-                Campanhas Meta usam um único template aprovado e parâmetros resolvidos por destinatário.
+                {t("broadcastCreate.metaTemplateDescription")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <Select value={metaTemplateId} onValueChange={setMetaTemplateId}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione um template aprovado" />
+                  <SelectValue placeholder={t("broadcastCreate.metaTemplatePlaceholder")} />
                 </SelectTrigger>
                 <SelectContent>
                   {(metaTemplates ?? []).map((template) => (
@@ -606,12 +600,12 @@ export default function MassBroadcastCreatePage() {
                                 : { source: "owner", field: "name" },
                       }))}
                     >
-                      <SelectTrigger><SelectValue placeholder="Origem" /></SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder={t("broadcastCreate.source")} /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="fixed">Valor fixo</SelectItem>
-                        <SelectItem value="customer">Cliente</SelectItem>
-                        <SelectItem value="deal">Deal contextual</SelectItem>
-                        <SelectItem value="owner">Responsável</SelectItem>
+                        <SelectItem value="fixed">{t("broadcastCreate.fixedValue")}</SelectItem>
+                        <SelectItem value="customer">{t("broadcastCreate.customer")}</SelectItem>
+                        <SelectItem value="deal">{t("broadcastCreate.contextualDeal")}</SelectItem>
+                        <SelectItem value="owner">{t("broadcastCreate.owner")}</SelectItem>
                       </SelectContent>
                     </Select>
                     {metaTemplateBindings[slot]?.source === "fixed" || !metaTemplateBindings[slot] ? (
@@ -622,7 +616,7 @@ export default function MassBroadcastCreatePage() {
                           ...current,
                           [slot]: { source: "fixed", value: event.target.value },
                         }))}
-                        placeholder="Valor do parâmetro"
+                        placeholder={t("broadcastCreate.parameterValue")}
                       />
                     ) : (
                       <Select
@@ -639,20 +633,20 @@ export default function MassBroadcastCreatePage() {
                           };
                         })}
                       >
-                        <SelectTrigger><SelectValue placeholder="Campo" /></SelectTrigger>
+                        <SelectTrigger><SelectValue placeholder={t("broadcastCreate.field")} /></SelectTrigger>
                         <SelectContent>
                           {metaTemplateBindings[slot].source === "customer" && <>
-                            <SelectItem value="customer:name">Nome completo</SelectItem>
-                            <SelectItem value="customer:firstName">Primeiro nome</SelectItem>
-                            <SelectItem value="customer:phone">Telefone</SelectItem>
-                            <SelectItem value="customer:email">E-mail</SelectItem>
+                            <SelectItem value="customer:name">{t("broadcastCreate.fullName")}</SelectItem>
+                            <SelectItem value="customer:firstName">{t("broadcastCreate.firstName")}</SelectItem>
+                            <SelectItem value="customer:phone">{t("broadcastCreate.phone")}</SelectItem>
+                            <SelectItem value="customer:email">{t("broadcastCreate.email")}</SelectItem>
                           </>}
                           {metaTemplateBindings[slot].source === "deal" && <>
-                            <SelectItem value="deal:id">Identificador</SelectItem>
-                            <SelectItem value="deal:pipeline">Pipeline</SelectItem>
-                            <SelectItem value="deal:stage">Etapa</SelectItem>
+                            <SelectItem value="deal:id">{t("broadcastCreate.identifier")}</SelectItem>
+                            <SelectItem value="deal:pipeline">{t("broadcastCreate.pipelineField")}</SelectItem>
+                            <SelectItem value="deal:stage">{t("broadcastCreate.stage")}</SelectItem>
                           </>}
-                          {metaTemplateBindings[slot].source === "owner" && <SelectItem value="owner:name">Responsável</SelectItem>}
+                          {metaTemplateBindings[slot].source === "owner" && <SelectItem value="owner:name">{t("broadcastCreate.owner")}</SelectItem>}
                         </SelectContent>
                       </Select>
                     )}
@@ -666,11 +660,9 @@ export default function MassBroadcastCreatePage() {
         {/* Selection Criteria */}
         <Card>
           <CardHeader>
-            <CardTitle>Critérios de Seleção</CardTitle>
+            <CardTitle>{t("broadcastCreate.criteria")}</CardTitle>
             <CardDescription>
-              Defina quais clientes receberão a mensagem. Pelo menos um critério
-              de inclusão é obrigatório. Os filtros são combinados e depois as
-              exclusões são aplicadas.
+              {t("broadcastCreate.criteriaDescription")}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -679,13 +671,12 @@ export default function MassBroadcastCreatePage() {
                 workspaceId={workspaceId}
                 selectedTagIds={includeTagIds}
                 onSelectionChange={setIncludeTagIds}
-                label="Tags de Inclusão"
-                placeholder="Selecionar tags..."
-                emptyMessage="Nenhuma tag de inclusão selecionada"
+                label={t("broadcastCreate.includeTags")}
+                placeholder={t("broadcastCreate.includePlaceholder")}
+                emptyMessage={t("broadcastCreate.includeEmpty")}
               />
               <p className="text-xs text-muted-foreground mt-1">
-                Clientes cujo chat tenha pelo menos uma dessas tags serão
-                incluídos
+                {t("broadcastCreate.includeHelp")}
               </p>
             </div>
 
@@ -696,13 +687,12 @@ export default function MassBroadcastCreatePage() {
                 workspaceId={workspaceId}
                 selectedTagIds={excludeTagIds}
                 onSelectionChange={setExcludeTagIds}
-                label="Tags de Exclusão"
-                placeholder="Selecionar tags para excluir..."
-                emptyMessage="Nenhuma tag de exclusão selecionada"
+                label={t("broadcastCreate.excludeTags")}
+                placeholder={t("broadcastCreate.excludePlaceholder")}
+                emptyMessage={t("broadcastCreate.excludeEmpty")}
               />
               <p className="text-xs text-muted-foreground mt-1">
-                Clientes cujo chat tenha pelo menos uma dessas tags serão
-                removidos da lista
+                {t("broadcastCreate.excludeHelp")}
               </p>
             </div>
 
@@ -710,9 +700,9 @@ export default function MassBroadcastCreatePage() {
 
             {/* Pipeline Stages */}
             <div className="space-y-2">
-              <Label>Etapas de Funil</Label>
+              <Label>{t("broadcastCreate.stages")}</Label>
               <p className="text-xs text-muted-foreground">
-                Clientes com negócios nas etapas selecionadas serão incluídos
+                {t("broadcastCreate.stagesHelp")}
               </p>
               {allStages.length > 0 ? (
                 <div className="grid gap-2 max-h-60 overflow-y-auto border rounded-md p-3">
@@ -760,12 +750,12 @@ export default function MassBroadcastCreatePage() {
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground">
-                  Nenhuma etapa disponível
+                  {t("broadcastCreate.noStages")}
                 </p>
               )}
               {selectedStageIds.length > 0 && (
                 <p className="text-xs text-muted-foreground">
-                  {selectedStageIds.length} etapa(s) selecionada(s)
+                  {t("broadcastCreate.selectedStages", { count: selectedStageIds.length })}
                 </p>
               )}
             </div>
@@ -776,15 +766,15 @@ export default function MassBroadcastCreatePage() {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <Label>Seleção Direta de Clientes</Label>
+                  <Label>{t("broadcastCreate.directSelection")}</Label>
                   <p className="text-xs text-muted-foreground">
-                    Selecione clientes específicos para receber a mensagem
+                    {t("broadcastCreate.directHelp")}
                   </p>
                 </div>
                 {selectedCustomerIds.length > 0 && (
                   <div className="flex items-center gap-2">
                     <Badge variant="secondary">
-                      {selectedCustomerIds.length} selecionado(s)
+                      {t("broadcastCreate.selectedCount", { count: selectedCustomerIds.length })}
                     </Badge>
                     <Button
                       type="button"
@@ -793,7 +783,7 @@ export default function MassBroadcastCreatePage() {
                       onClick={clearAllCustomers}
                       className="h-7 text-xs text-muted-foreground"
                     >
-                      Limpar todos
+                      {t("broadcastCreate.clearAll")}
                     </Button>
                   </div>
                 )}
@@ -825,7 +815,7 @@ export default function MassBroadcastCreatePage() {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Buscar por nome ou telefone..."
+                  placeholder={t("broadcastCreate.customerSearch")}
                   value={customerSearch}
                   onChange={(e) => setCustomerSearch(e.target.value)}
                   className="pl-9"
@@ -841,8 +831,8 @@ export default function MassBroadcastCreatePage() {
                 ) : !customersData?.items.length ? (
                   <div className="py-6 text-center text-sm text-muted-foreground">
                     {customerSearch
-                      ? "Nenhum cliente encontrado para a busca"
-                      : "Nenhum cliente disponível"}
+                      ? t("broadcastCreate.noSearchResults")
+                      : t("broadcastCreate.noCustomers")}
                   </div>
                 ) : (
                   <div className="divide-y">
@@ -861,12 +851,12 @@ export default function MassBroadcastCreatePage() {
                           />
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium truncate">
-                              {customer.name || "Sem nome"}
+                              {customer.name || t("broadcastCreate.unnamed")}
                             </p>
                             <p className="text-xs text-muted-foreground truncate">
                               {customer.phone
                                 ? formatPhone(customer.phone)
-                                : "Sem telefone"}
+                                : t("broadcastCreate.noPhone")}
                             </p>
                           </div>
                         </label>
@@ -880,8 +870,11 @@ export default function MassBroadcastCreatePage() {
               {customersData && customersData.totalPages > 1 && (
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>
-                    Página {customerPage} de {customersData.totalPages} (
-                    {customersData.total} clientes)
+                    {t("broadcastCreate.pageOf", {
+                      page: customerPage,
+                      totalPages: customersData.totalPages,
+                      total: customersData.total,
+                    })}
                   </span>
                   <div className="flex gap-1">
                     <Button
@@ -892,7 +885,7 @@ export default function MassBroadcastCreatePage() {
                       disabled={customerPage <= 1}
                       onClick={() => setCustomerPage((p) => Math.max(1, p - 1))}
                     >
-                      Anterior
+                      {t("broadcastCreate.previous")}
                     </Button>
                     <Button
                       type="button"
@@ -904,7 +897,7 @@ export default function MassBroadcastCreatePage() {
                       }
                       onClick={() => setCustomerPage((p) => p + 1)}
                     >
-                      Próxima
+                      {t("broadcastCreate.next")}
                     </Button>
                   </div>
                 </div>
@@ -926,11 +919,11 @@ export default function MassBroadcastCreatePage() {
                 ) : (
                   <Eye className="h-4 w-4 mr-2" />
                 )}
-                Ver quantos receberão
+                {t("broadcastCreate.preview")}
               </Button>
               {previewMutation.data && (
                 <span className="text-sm font-medium">
-                  {previewMutation.data.total} destinatário(s) encontrado(s)
+                  {t("broadcastCreate.previewCount", { count: previewMutation.data.total })}
                 </span>
               )}
             </div>
@@ -940,10 +933,9 @@ export default function MassBroadcastCreatePage() {
         {/* Post-send tags */}
         <Card>
           <CardHeader>
-            <CardTitle>Tags Pós-Envio</CardTitle>
+            <CardTitle>{t("broadcastCreate.postTags")}</CardTitle>
             <CardDescription>
-              Tags a aplicar automaticamente ao chat do cliente após envio
-              bem-sucedido. Útil para rastrear quem recebeu a campanha.
+              {t("broadcastCreate.postDescription")}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -952,8 +944,8 @@ export default function MassBroadcastCreatePage() {
               selectedTagIds={applyTagIds}
               onSelectionChange={setApplyTagIds}
               label=""
-              placeholder="Selecionar tags a aplicar..."
-              emptyMessage="Nenhuma tag configurada"
+              placeholder={t("broadcastCreate.postPlaceholder")}
+              emptyMessage={t("broadcastCreate.noTags")}
             />
           </CardContent>
         </Card>
@@ -961,15 +953,15 @@ export default function MassBroadcastCreatePage() {
         {/* Configuration */}
         <Card>
           <CardHeader>
-            <CardTitle>Configurações de Envio</CardTitle>
+            <CardTitle>{t("broadcastCreate.sendConfig")}</CardTitle>
             <CardDescription>
-              Configure o intervalo entre mensagens e a janela de envio
+              {t("broadcastCreate.sendDescription")}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="delay">
-                Intervalo entre mensagens (segundos)
+                {t("broadcastCreate.delay")}
               </Label>
               <Input
                 id="delay"
@@ -980,13 +972,13 @@ export default function MassBroadcastCreatePage() {
                 onChange={(e) => setMessageDelaySeconds(Number(e.target.value))}
               />
               <p className="text-xs text-muted-foreground">
-                Mínimo: 10s • Máximo: 300s (5 min) • Recomendado: 30-60s
+                {t("broadcastCreate.delayHelp")}
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="startTime">Início da janela de envio</Label>
+                <Label htmlFor="startTime">{t("broadcastCreate.windowStart")}</Label>
                 <Input
                   id="startTime"
                   type="datetime-local"
@@ -994,11 +986,11 @@ export default function MassBroadcastCreatePage() {
                   onChange={(e) => setStartTime(e.target.value)}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Opcional. Envios só ocorrem após este horário.
+                  {t("broadcastCreate.optionalAfter")}
                 </p>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="endTime">Fim da janela de envio</Label>
+                <Label htmlFor="endTime">{t("broadcastCreate.windowEnd")}</Label>
                 <Input
                   id="endTime"
                   type="datetime-local"
@@ -1006,7 +998,7 @@ export default function MassBroadcastCreatePage() {
                   onChange={(e) => setEndTime(e.target.value)}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Opcional. Envios param antes deste horário.
+                  {t("broadcastCreate.optionalBefore")}
                 </p>
               </div>
             </div>
@@ -1020,7 +1012,7 @@ export default function MassBroadcastCreatePage() {
             variant="outline"
             onClick={() => navigate("/broadcasts")}
           >
-            Cancelar
+            {t("broadcastCreate.cancel")}
           </Button>
           <Button
             type="submit"
@@ -1029,7 +1021,7 @@ export default function MassBroadcastCreatePage() {
             {createMutation.isPending && (
               <Loader2 className="h-4 w-4 animate-spin mr-2" />
             )}
-            Criar Campanha
+            {t("broadcastCreate.create")}
           </Button>
         </div>
       </form>

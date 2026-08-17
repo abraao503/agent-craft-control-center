@@ -27,6 +27,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { SmartPagination } from "@/components/common/SmartPagination";
 import { listDealWebhooks, deleteDealWebhook } from "@/services/deal-webhook";
 import { DealWebhook } from "@/types/deal-webhook";
+import { useTranslation } from "react-i18next";
 
 const ITEMS_PER_PAGE = 9; // 3x3 grid
 
@@ -35,6 +36,7 @@ export default function DealWebhooksPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { currentWorkspace } = useWorkspaceContext();
+  const { t } = useTranslation();
   const workspaceId = currentWorkspace?.id || "";
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -67,14 +69,14 @@ export default function DealWebhooksPage() {
       setIsDeleteDialogOpen(false);
       setSelectedWebhook(null);
       toast({
-        title: "Webhook excluído",
-        description: "O webhook foi excluído com sucesso.",
+        title: t("webhooks.deleteSuccess"),
+        description: t("webhooks.deleteSuccessDescription"),
       });
     },
     onError: (error) => {
       toast({
-        title: "Erro ao excluir webhook",
-        description: "Ocorreu um erro ao excluir o webhook. Tente novamente.",
+        title: t("webhooks.deleteError"),
+        description: t("webhooks.deleteErrorDescription"),
         variant: "destructive",
       });
       console.error("Error deleting webhook:", error);
@@ -84,8 +86,8 @@ export default function DealWebhooksPage() {
   const handleCopyUrl = (url: string) => {
     navigator.clipboard.writeText(url);
     toast({
-      title: "URL copiada",
-      description: "A URL do webhook foi copiada para a área de transferência.",
+      title: t("webhooks.copyUrl"),
+      description: t("webhooks.copyUrlDescription"),
     });
   };
 
@@ -108,7 +110,7 @@ export default function DealWebhooksPage() {
     return (
       <div className="flex items-center justify-center h-full">
         <p className="text-muted-foreground">
-          Selecione um workspace para visualizar os webhooks
+          {t("webhooks.selectWorkspace")}
         </p>
       </div>
     );
@@ -118,10 +120,9 @@ export default function DealWebhooksPage() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">Webhooks de Deals</h1>
+          <h1 className="text-3xl font-bold">{t("webhooks.title")}</h1>
           <p className="text-muted-foreground mt-1">
-            Gerencie webhooks para criar deals automaticamente via integração
-            externa
+            {t("webhooks.description")}
           </p>
         </div>
         <Button onClick={() => navigate("/webhooks/create")}>
@@ -159,7 +160,7 @@ export default function DealWebhooksPage() {
       ) : error ? (
         <div className="bg-red-50 p-4 rounded-md border border-red-200">
           <p className="text-red-800">
-            Erro ao carregar webhooks. Tente novamente mais tarde.
+            {t("webhooks.loadError")}
           </p>
         </div>
       ) : webhooksData && webhooksData.items.length > 0 ? (
@@ -187,13 +188,13 @@ export default function DealWebhooksPage() {
                           : ""
                       }
                     >
-                      {webhook.status === "ACTIVE" ? "Ativo" : "Inativo"}
+                      {webhook.status === "ACTIVE" ? t("webhooks.active") : t("webhooks.inactive")}
                     </Badge>
                   </div>
                   <CardDescription className="text-sm mt-2">
                     {webhook.automation?.sendWelcomeMessage
-                      ? "Envia mensagem de boas-vindas"
-                      : "Sem automação configurada"}
+                      ? t("webhooks.welcomeMessage")
+                      : t("webhooks.noAutomation")}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="pt-0">
@@ -222,7 +223,7 @@ export default function DealWebhooksPage() {
                         navigate(`/webhooks/${webhook.id}/edit`);
                       }}
                     >
-                      <Edit className="h-4 w-4 mr-1" /> Editar
+                      <Edit className="h-4 w-4 mr-1" /> {t("webhooks.edit")}
                     </Button>
                     <Button
                       variant="outline"
@@ -233,7 +234,7 @@ export default function DealWebhooksPage() {
                         handleDeleteClick(webhook);
                       }}
                     >
-                      <Trash2 className="h-4 w-4 mr-1" /> Excluir
+                      <Trash2 className="h-4 w-4 mr-1" /> {t("webhooks.delete")}
                     </Button>
                   </div>
                 </CardContent>
@@ -249,7 +250,7 @@ export default function DealWebhooksPage() {
               showItemCount
               itemsPerPage={ITEMS_PER_PAGE}
               totalItems={webhooksData.total}
-              itemLabel="webhooks"
+              itemLabel={t("webhooks.webhooks")}
             />
           )}
         </>
@@ -258,14 +259,13 @@ export default function DealWebhooksPage() {
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Webhook className="h-12 w-12 text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold mb-2">
-              Nenhum webhook criado
+              {t("webhooks.emptyTitle")}
             </h3>
             <p className="text-muted-foreground text-center mb-4">
-              Crie um webhook para permitir que sistemas externos criem deals
-              automaticamente.
+              {t("webhooks.emptyDescription")}
             </p>
             <Button onClick={() => navigate("/webhooks/create")}>
-              <Plus className="mr-2 h-4 w-4" /> Criar primeiro webhook
+              <Plus className="mr-2 h-4 w-4" /> {t("webhooks.createFirst")}
             </Button>
           </CardContent>
         </Card>
@@ -278,20 +278,18 @@ export default function DealWebhooksPage() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+            <AlertDialogTitle>{t("webhooks.confirmDelete")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir o webhook "{selectedWebhook?.name}
-              "? Esta ação não pode ser desfeita e o webhook deixará de
-              funcionar imediatamente.
+              {t("webhooks.confirmDeleteDescription", { name: selectedWebhook?.name ?? "" })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirmDelete}
               className="bg-red-600 hover:bg-red-700"
             >
-              Excluir
+              {t("webhooks.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

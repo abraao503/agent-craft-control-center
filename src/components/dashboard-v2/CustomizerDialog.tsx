@@ -29,6 +29,7 @@ import {
   CatalogIndicator,
   WidgetLayout,
 } from "@/types/dashboard-v2";
+import { useTranslation } from "react-i18next";
 
 interface CustomizerDialogProps {
   open: boolean;
@@ -62,6 +63,7 @@ export function CustomizerDialog({
   onSave,
   onReset,
 }: CustomizerDialogProps) {
+  const { t } = useTranslation();
   const [search, setSearch] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => {
     return new Set(currentWidgets.map((w) => w.indicatorId));
@@ -199,7 +201,7 @@ export function CustomizerDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <LayoutDashboard className="h-5 w-5" />
-            Personalizar Dashboard
+            {t("dashboard.customizeDashboard")}
           </DialogTitle>
         </DialogHeader>
 
@@ -207,7 +209,7 @@ export function CustomizerDialog({
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Buscar indicador ou categoria..."
+            placeholder={t("dashboard.searchIndicator")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-10"
@@ -273,13 +275,13 @@ export function CustomizerDialog({
             className="gap-1 text-muted-foreground"
           >
             <RotateCcw className="h-3 w-3" />
-            Restaurar Padrão
+              {t("dashboard.resetWidgets")}
           </Button>
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => onOpenChange(false)}>
-              Cancelar
+              {t("common.cancel")}
             </Button>
-            <Button onClick={handleSave}>Salvar Alterações</Button>
+            <Button onClick={handleSave}>{t("common.saveChanges")}</Button>
           </div>
         </DialogFooter>
       </DialogContent>

@@ -20,6 +20,8 @@ import { CustomerDealApiResponse } from "@/services/deal/getCustomerDeals";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useQueryClient } from "@tanstack/react-query";
+import { useAppLocale } from "@/i18n/LocaleProvider";
+import { useTranslation } from "react-i18next";
 
 interface DealPrimaryCardProps {
   deal: CustomerDealApiResponse;
@@ -33,6 +35,8 @@ const DealPrimaryCardComponent: React.FC<DealPrimaryCardProps> = ({
   customerId,
 }) => {
   const queryClient = useQueryClient();
+  const { locale } = useAppLocale();
+  const { t } = useTranslation();
   const [modalOpen, setModalOpen] = React.useState(false);
 
   const handleModalClose = (open: boolean) => {
@@ -47,7 +51,7 @@ const DealPrimaryCardComponent: React.FC<DealPrimaryCardProps> = ({
     }
   };
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("pt-BR", {
+    return new Intl.NumberFormat(locale, {
       style: "currency",
       currency: "BRL",
     }).format(value);
@@ -69,11 +73,11 @@ const DealPrimaryCardComponent: React.FC<DealPrimaryCardProps> = ({
   const getStatusLabel = (status: string) => {
     switch (status) {
       case "OPEN":
-        return "Em andamento";
+        return t("common.inProgress");
       case "WON":
-        return "Ganho";
+        return t("common.won");
       case "LOST":
-        return "Perdido";
+        return t("common.lost");
       default:
         return status;
     }
@@ -87,11 +91,11 @@ const DealPrimaryCardComponent: React.FC<DealPrimaryCardProps> = ({
             <div className="flex items-center gap-2">
               <CardTitle className="text-base">{deal.title}</CardTitle>
               <Badge variant="outline" className="text-xs">
-                Principal
+                {t("common.primary")}
               </Badge>
             </div>
             <CardDescription className="text-xs">
-              {deal.pipeline?.name || "Pipeline"}
+              {deal.pipeline?.name || t("common.pipeline")}
             </CardDescription>
           </div>
         </CardHeader>
@@ -130,7 +134,7 @@ const DealPrimaryCardComponent: React.FC<DealPrimaryCardProps> = ({
           {/* Assigned To */}
           {deal.assignedUser && (
             <div className="text-xs text-muted-foreground">
-              Responsável: {deal.assignedUser.name}
+              {t("common.responsible", { name: deal.assignedUser.name })}
             </div>
           )}
 
@@ -142,7 +146,7 @@ const DealPrimaryCardComponent: React.FC<DealPrimaryCardProps> = ({
             className="w-full mt-2"
           >
             <ExternalLink className="h-4 w-4 mr-2" />
-            Ver detalhes
+            {t("common.viewDetails")}
           </Button>
         </CardContent>
       </Card>

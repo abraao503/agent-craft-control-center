@@ -11,9 +11,12 @@ import {
   Calendar,
 } from "lucide-react";
 import { useAuth } from "@/contexts/auth/hooks";
+import { useTranslation } from "react-i18next";
+import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
 
 const LandingPage = () => {
   const { user } = useAuth();
+  const { t } = useTranslation();
 
   // Redirect to dashboard if already authenticated
   if (user) {
@@ -37,6 +40,7 @@ const LandingPage = () => {
           </span>
         </div>
         <nav className="flex items-center space-x-2 sm:space-x-4">
+          <LanguageSwitcher compact />
           <Link
             to="/login"
             className={buttonVariants({
@@ -44,7 +48,7 @@ const LandingPage = () => {
               className: "hidden sm:inline-flex rounded-full px-6",
             })}
           >
-            Login
+            {t("landing.login")}
           </Link>
           <Link
             to="/signup"
@@ -53,7 +57,7 @@ const LandingPage = () => {
               className: "rounded-full shadow-lg shadow-primary/20 px-6",
             })}
           >
-            Criar conta
+            {t("landing.createAccount")}
           </Link>
         </nav>
       </header>
@@ -67,20 +71,18 @@ const LandingPage = () => {
 
           <div className="inline-flex items-center rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-sm text-primary mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <span className="flex h-2 w-2 rounded-full bg-primary mr-2 animate-pulse"></span>
-            A nova era do atendimento automatizado
+            {t("landing.automatedSupport")}
           </div>
 
           <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-8 max-w-4xl animate-in fade-in slide-in-from-bottom-6 duration-700 delay-100">
-            Revolucione seu atendimento com <br className="hidden md:block" />
+            {t("landing.heroTitle")} <br className="hidden md:block" />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-600">
-              Inteligência Artificial
+              {t("landing.artificialIntelligence")}
             </span>
           </h1>
 
           <p className="text-xl text-muted-foreground max-w-2xl mb-12 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200">
-            Crie, gerencie e implemente agentes inteligentes sob medida para as
-            necessidades do seu negócio. Automatize processos e escale seu
-            sucesso.
+            {t("landing.heroDescription")}
           </p>
 
           <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 animate-in fade-in slide-in-from-bottom-10 duration-700 delay-300">
@@ -93,7 +95,7 @@ const LandingPage = () => {
                   "rounded-full px-8 h-14 text-base shadow-xl shadow-primary/25",
               })}
             >
-              Começar agora <ChevronRight className="ml-2 h-5 w-5" />
+              {t("landing.startNow")} <ChevronRight className="ml-2 h-5 w-5" />
             </Link>
             <Link
               to="/login"
@@ -104,7 +106,7 @@ const LandingPage = () => {
                   "rounded-full px-8 h-14 text-base bg-background/50 backdrop-blur-sm",
               })}
             >
-              Área do cliente
+              {t("landing.customerArea")}
             </Link>
           </div>
         </section>
@@ -114,10 +116,10 @@ const LandingPage = () => {
           <div className="container mx-auto px-4 max-w-6xl">
             <div className="text-center mb-16">
               <h2 className="text-3xl font-bold tracking-tight mb-4">
-                Tudo que você precisa em um só lugar
+                {t("landing.everythingInOnePlace")}
               </h2>
               <p className="text-muted-foreground">
-                Ferramentas poderosas para alavancar suas operações diárias.
+                {t("landing.powerfulTools")}
               </p>
             </div>
 
@@ -128,11 +130,10 @@ const LandingPage = () => {
                   <Bot size={24} />
                 </div>
                 <h3 className="text-xl font-semibold mb-3">
-                  Automação de Agentes
+                  {t("landing.agentAutomation")}
                 </h3>
                 <p className="text-muted-foreground text-sm leading-relaxed">
-                  Configure IA para responder seus clientes instantaneamente de
-                  forma humanizada e inteligente, 24/7.
+                  {t("landing.agentAutomationDescription")}
                 </p>
               </div>
 
@@ -142,11 +143,10 @@ const LandingPage = () => {
                   <MessageSquare size={24} />
                 </div>
                 <h3 className="text-xl font-semibold mb-3">
-                  Gestão de Conversas
+                  {t("landing.conversationManagement")}
                 </h3>
                 <p className="text-muted-foreground text-sm leading-relaxed">
-                  Acompanhe e audite todas as interações. Assuma o controle da
-                  conversa instantaneamente quando necessário.
+                  {t("landing.conversationManagementDescription")}
                 </p>
               </div>
 
@@ -156,11 +156,10 @@ const LandingPage = () => {
                   <Calendar size={24} />
                 </div>
                 <h3 className="text-xl font-semibold mb-3">
-                  Integrações Nativas
+                  {t("landing.nativeIntegrations")}
                 </h3>
                 <p className="text-muted-foreground text-sm leading-relaxed">
-                  Conecte seu WhatsApp, Google Calendar e diversas outras
-                  ferramentas essenciais com apenas alguns cliques.
+                  {t("landing.nativeIntegrationsDescription")}
                 </p>
               </div>
             </div>
@@ -172,29 +171,22 @@ const LandingPage = () => {
           <div className="container mx-auto px-4 max-w-4xl text-center">
             <Shield className="h-12 w-12 mx-auto text-primary mb-6" />
             <h2 className="text-3xl font-bold tracking-tight mb-6">
-              Uso de Dados Transparente
+              {t("landing.transparentDataUse")}
             </h2>
             <p className="text-muted-foreground text-lg leading-relaxed mb-6">
-              A <strong>7 Agentes</strong> potencializa sua equipe com
-              Inteligência Artificial integrada às suas ferramentas de uso
-              diário. Para agendar reuniões automaticamente, solicitamos
-              conectar seu aplicativo com o <strong>Google Calendar</strong>.
+              {t("landing.dataUseDescription")}
             </p>
             <p className="text-muted-foreground text-lg leading-relaxed mb-8">
-              Apenas acessamos sua conta, sob sua expressa permissão, para{" "}
-              <strong>ler, criar e atualizar eventos</strong> na sua agenda,
-              garantindo que o seu assistente virtual não agende horários
-              duplicados. Nunca compartilhamos ou vendemos suas informações e
-              mantemos tudo seguro seguindo rigorosas regras.
+              {t("landing.dataPermissionDescription")}
             </p>
             <a
-              href="/privacy.html"
+              href="/privacy"
               className={buttonVariants({
                 variant: "outline",
                 className: "rounded-full px-6",
               })}
             >
-              Leia nossa Política de Privacidade Completa
+              {t("landing.readPrivacy")}
             </a>
           </div>
         </section>
@@ -216,16 +208,16 @@ const LandingPage = () => {
 
           <div className="flex space-x-6 text-sm">
             <a
-              href="/privacy.html"
+              href="/privacy"
               className="text-muted-foreground hover:text-primary transition-colors"
             >
-              Política de Privacidade
+              {t("landing.privacy")}
             </a>
             <a
               href="/terms"
               className="text-muted-foreground hover:text-primary transition-colors"
             >
-              Termos de Serviço
+              {t("landing.terms")}
             </a>
           </div>
         </div>

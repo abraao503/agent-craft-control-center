@@ -6,11 +6,20 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { DealListItem } from "@/types/deal";
+import { DealListItem, LeadAttributionSource } from "@/types/deal";
 import { PipelineStageMinimal } from "@/types/pipeline";
 import { cn, isColorDark } from "@/lib/utils";
-import { MessageCircle, Tag as TagIcon, Search, Bot } from "lucide-react";
+import {
+  MessageCircle,
+  Tag as TagIcon,
+  Search,
+  Bot,
+  ExternalLink,
+  AlertCircle,
+  Clock3,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   Popover,
   PopoverContent,
@@ -26,6 +35,11 @@ import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { listTags } from "@/services/tag/listTags";
 import { getDealsByStage } from "@/services/deal/getDealsByStage";
 import { DealCardSkeleton } from "./DealCardSkeleton";
+import {
+  formatAttributionOrigin,
+  formatAttributionSourceLabel,
+  hasAttributionEnrichmentIssue,
+} from "@/utils/deal-attribution";
 
 interface KanbanColumnProps {
   stage: PipelineStageMinimal;
@@ -33,11 +47,16 @@ interface KanbanColumnProps {
   isMoving?: boolean;
   stageMeta?: { color?: string; winProbability?: number };
   workspaceId?: string;
+  pipelineId?: string;
   onDealClick: (deal: DealListItem) => void;
   dragOverStage: string | null;
   onDragEnter: () => void;
   onDragLeave: (e: React.DragEvent) => void;
   assignedUserId?: string;
+  attributionSource?: LeadAttributionSource | "UNATTRIBUTED";
+  campaignId?: string;
+  adId?: string;
+  formId?: string;
 }
 
 const formatCurrency = (value: number | null | undefined, currency = "BRL") => {
@@ -68,6 +87,18 @@ const getInitials = (name: string) => {
 const formatUnreadMessagesTitle = (count: number): string => {
   if (count === 1) return "1 nova mensagem";
   return `${count} novas mensagens`;
+};
+
+const safeExternalUrl = (value?: string | null): string | null => {
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:"
+      ? url.href
+      : null;
+  } catch {
+    return null;
+  }
 };
 
 // Customizar posição do badge: offsetX e offsetY em pixels
@@ -199,13 +230,19 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
   isMoving,
   stageMeta,
   workspaceId,
+  pipelineId,
   onDealClick,
   dragOverStage,
   onDragEnter,
   onDragLeave,
   assignedUserId,
+  attributionSource,
+  campaignId,
+  adId,
+  formId,
 }) => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const [localSearchTerm, setLocalSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
@@ -226,8 +263,13 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
         "dealsByStage",
         stage.id,
         workspaceId,
+        pipelineId,
         debouncedSearchTerm,
         assignedUserId,
+        attributionSource,
+        campaignId,
+        adId,
+        formId,
       ],
       queryFn: ({ pageParam = 1 }) =>
         getDealsByStage({
@@ -237,6 +279,10 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
           page: pageParam,
           search: debouncedSearchTerm || undefined,
           assignedUserId: assignedUserId || undefined,
+          attributionSource,
+          campaignId,
+          adId,
+          formId,
         }),
       getNextPageParam: (lastPage) => {
         return lastPage.page < lastPage.totalPages
@@ -338,7 +384,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                       </span>
                     </TooltipTrigger>
                     <TooltipContent side="top">
-                      <p>Assistente de IA ativo nesta etapa</p>
+                      <p>{t("deals.assistantActive")}</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -346,7 +392,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
             </div>
             <div className="flex items-center gap-1 text-xs text-muted-foreground/80">
               <span>{formatCurrency(totalValue)}</span>
-              <span>• {totalDeals} negócios</span>
+              <span>{t("deals.totalDeals", { count: totalDeals })}</span>
               {totalWeighted != null && (
                 <span className="hidden md:inline">
                   • {formatCurrency(totalWeighted)}
@@ -357,7 +403,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
           <div className="relative mt-2">
             <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
             <Input
-              placeholder="Buscar negócios..."
+              placeholder={t("deals.searchPlaceholder")}
               value={localSearchTerm}
               onChange={(e) => setLocalSearchTerm(e.target.value)}
               className="h-8 pl-8 text-xs"
@@ -420,6 +466,65 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
 
                     <div className="font-medium text-sm truncate text-foreground/90 pr-8">
                       {deal.title}
+                    </div>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <Badge
+                        variant="secondary"
+                        className="text-[10px] font-medium"
+                      >
+                        {formatAttributionSourceLabel(
+                          deal.attribution?.firstTouch?.sourceType,
+                          Boolean(deal.attribution?.firstTouch),
+                        )}
+                      </Badge>
+                      {deal.attribution?.firstTouch && (
+                        <span className="text-[10px] text-muted-foreground truncate">
+                          {formatAttributionOrigin(deal.attribution.firstTouch)}
+                        </span>
+                      )}
+                      {hasAttributionEnrichmentIssue(
+                        deal.attribution?.firstTouch,
+                      ) && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span
+                                className="ml-1 inline-flex shrink-0 text-muted-foreground"
+                                aria-label="Há uma pendência no processamento da origem"
+                              >
+                                {deal.attribution?.firstTouch
+                                  ?.enrichmentStatus === "PROCESSING" ? (
+                                  <Clock3 className="h-3 w-3" />
+                                ) : (
+                                  <AlertCircle className="h-3 w-3" />
+                                )}
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              Processamento da origem pendente ou com problema
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
+                      {safeExternalUrl(
+                        deal.attribution?.firstTouch?.sourceUrl,
+                      ) && (
+                        <a
+                          href={
+                            safeExternalUrl(
+                              deal.attribution?.firstTouch?.sourceUrl,
+                            )!
+                          }
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          data-no-drag="true"
+                          className="ml-auto text-muted-foreground hover:text-foreground"
+                          aria-label="Abrir origem da atribuição"
+                          onClick={(event) => event.stopPropagation()}
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
+                      )}
                     </div>
                     {deal.description && (
                       <div className="text-xs text-muted-foreground line-clamp-2 mt-1">
@@ -525,7 +630,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
 
                 {stageDeals.length === 0 && !isLoading && (
                   <div className="text-sm text-muted-foreground/70 py-8 text-center border rounded-md bg-muted/20">
-                    Arraste negócios para esta etapa
+                    {t("deals.emptyStage")}
                   </div>
                 )}
 

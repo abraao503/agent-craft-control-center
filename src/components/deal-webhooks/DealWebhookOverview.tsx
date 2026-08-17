@@ -1,5 +1,5 @@
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { enUS, es, ptBR } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -10,12 +10,17 @@ import {
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import type { DealWebhook } from "@/types/deal-webhook";
+import { useAppLocale } from "@/i18n/LocaleProvider";
 
 interface DealWebhookOverviewProps {
   webhook: DealWebhook;
 }
 
 export function DealWebhookOverview({ webhook }: DealWebhookOverviewProps) {
+  const { locale } = useAppLocale();
+  const dateLocale = locale === "es-ES" ? es : locale === "en-US" ? enUS : ptBR;
+  const datePattern = locale === "es-ES" ? "dd/MM/yyyy 'a las' HH:mm" : "dd/MM/yyyy 'às' HH:mm";
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <Card>
@@ -46,17 +51,13 @@ export function DealWebhookOverview({ webhook }: DealWebhookOverviewProps) {
             <div>
               <Label className="text-sm text-muted-foreground">Criado em</Label>
               <p className="font-medium">
-                {format(webhook.createdAt, "dd/MM/yyyy 'às' HH:mm", {
-                  locale: ptBR,
-                })}
+                {format(webhook.createdAt, datePattern, { locale: dateLocale })}
               </p>
             </div>
             <div>
               <Label className="text-sm text-muted-foreground">Atualizado em</Label>
               <p className="font-medium">
-                {format(webhook.updatedAt, "dd/MM/yyyy 'às' HH:mm", {
-                  locale: ptBR,
-                })}
+                {format(webhook.updatedAt, datePattern, { locale: dateLocale })}
               </p>
             </div>
           </div>

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { enUS, es, ptBR } from "date-fns/locale";
 import { Building2, Edit2, Ellipsis, Plus } from "lucide-react";
 import { listCompanies } from "@/services/company/listCompanies";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -29,10 +29,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useTranslation } from "react-i18next";
+import { useAppLocale } from "@/i18n/LocaleProvider";
 
 export default function AdminCompaniesPage() {
   const navigate = useNavigate();
   const { has } = usePermissions();
+  const { t } = useTranslation();
+  const { locale } = useAppLocale();
+  const dateLocale = locale === "es-ES" ? es : locale === "en-US" ? enUS : ptBR;
   const queryClient = useQueryClient();
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -151,9 +156,10 @@ export default function AdminCompaniesPage() {
                     </p>
                   </div>
                   <p className="hidden text-sm text-muted-foreground lg:block">
-                    Criada em{" "}
-                    {format(new Date(company.createdAt), "dd/MM/yyyy", {
-                      locale: ptBR,
+                    {t("administration.createdAt", {
+                      date: format(new Date(company.createdAt), "dd/MM/yyyy", {
+                        locale: dateLocale,
+                      }),
                     })}
                   </p>
                   {has("manage:platform") && (

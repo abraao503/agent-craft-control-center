@@ -8,6 +8,46 @@ export interface RelatedMinimal {
   chatUnreadCount?: number;
 }
 
+export type LeadAttributionSource =
+  | "META_AD"
+  | "META_POST"
+  | "META_LEAD_FORM"
+  | "UNKNOWN";
+
+export interface LeadAttributionSummary {
+  id: string;
+  provider: "META_CLOUD" | "META_LEAD_ADS";
+  channel: "WHATSAPP" | "LEAD_ADS";
+  sourceType: LeadAttributionSource;
+  sourceId: string | null;
+  sourceUrl: string | null;
+  sourceApp: string | null;
+  title: string | null;
+  campaignId: string | null;
+  campaignName: string | null;
+  adSetId: string | null;
+  adSetName: string | null;
+  adAccountId?: string | null;
+  adAccountName?: string | null;
+  adId: string | null;
+  adName: string | null;
+  formId: string | null;
+  formName: string | null;
+  pageId?: string | null;
+  pageName?: string | null;
+  thumbnailUrl: string | null;
+  videoUrl: string | null;
+  mediaType: string | null;
+  attributedAt: string;
+  enrichmentStatus: "PENDING" | "PROCESSING" | "ENRICHED" | "FAILED_PERMANENT";
+  enrichmentErrorCode: string | null;
+}
+
+export interface DealAttributionHistory extends LeadAttributionSummary {
+  body: string | null;
+  externalEventId?: string | null;
+}
+
 export interface DealListItem {
   id: string;
   stageId: string;
@@ -21,6 +61,9 @@ export interface DealListItem {
   assignedUser?: RelatedMinimal | null;
   tags?: string[]; // Array of tag IDs associated with the deal
   dueDate?: string | null; // Due date from due_date field type
+  attribution?: {
+    firstTouch: LeadAttributionSummary | null;
+  };
 }
 
 export interface CreateDealInput {
@@ -54,7 +97,6 @@ export interface UpdateDealInput {
   value?: number;
   currency?: string;
   expectedCloseDate?: string;
-  assignedUserId?: string;
   customer?: {
     name?: string;
     email?: string;
@@ -112,6 +154,10 @@ export interface DealDetails {
     color: string;
   };
   tags?: string[]; // Array of tag IDs associated with the deal
+  attribution?: {
+    firstTouch: LeadAttributionSummary | null;
+    lastTouch: LeadAttributionSummary | null;
+  };
 }
 
 export interface GetDealsByStageResponse {
@@ -129,4 +175,8 @@ export interface GetDealsByStageParams {
   page?: number;
   search?: string;
   assignedUserId?: string;
+  attributionSource?: LeadAttributionSource | "UNATTRIBUTED";
+  campaignId?: string;
+  adId?: string;
+  formId?: string;
 }

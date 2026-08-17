@@ -1,26 +1,28 @@
 import { Building2, Users, Zap, Shield } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export function SignupBenefits() {
+  const { t } = useTranslation();
   const benefits = [
     {
       icon: Building2,
-      title: "Sua Empresa na Plataforma",
-      description: "Configure sua empresa e comece a gerenciar vendas",
+      title: t("auth.companyBenefitTitle"),
+      description: t("auth.companyBenefitDescription"),
     },
     {
       icon: Users,
-      title: "Equipe Integrada",
-      description: "Adicione sua equipe e gerencie workspaces",
+      title: t("auth.teamBenefitTitle"),
+      description: t("auth.teamBenefitDescription"),
     },
     {
       icon: Zap,
-      title: "Automação Inteligente",
-      description: "Crie agentes de IA para WhatsApp e vendas",
+      title: t("auth.automationBenefitTitle"),
+      description: t("auth.automationBenefitDescription"),
     },
     {
       icon: Shield,
-      title: "Seguro e Confiável",
-      description: "Dados protegidos e acesso controlado",
+      title: t("auth.secureBenefitTitle"),
+      description: t("auth.secureBenefitDescription"),
     },
   ];
 

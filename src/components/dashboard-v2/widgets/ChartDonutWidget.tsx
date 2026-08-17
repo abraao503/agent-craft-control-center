@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartItemsIndicatorData } from "@/types/dashboard-v2";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { useAppLocale } from "@/i18n/LocaleProvider";
 
 interface ChartDonutWidgetProps {
   title: string;
@@ -21,6 +22,7 @@ export function ChartDonutWidget({
   description,
   data,
 }: ChartDonutWidgetProps) {
+  const { locale } = useAppLocale();
   const total = data.items.reduce((acc, item) => acc + item.value, 0);
 
   const chartData = data.items.map((item) => ({
@@ -70,7 +72,7 @@ export function ChartDonutWidget({
                     borderRadius: "8px",
                     fontSize: "12px",
                   }}
-                  formatter={(val: number) => [val.toLocaleString("pt-BR"), ""]}
+                  formatter={(val: number) => [val.toLocaleString(locale), ""]}
                 />
               </PieChart>
             </ResponsiveContainer>

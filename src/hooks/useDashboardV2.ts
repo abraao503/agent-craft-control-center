@@ -27,6 +27,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { getDefaultLayoutForRole } from "@/hooks/useDashboardV2Defaults";
 import { useMemo, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 
 // ---- Catálogo ----
 export function useDashboardCatalog() {
@@ -54,6 +55,7 @@ export function useDashboardConfig() {
 export function useSaveDashboardConfig(options?: { hideToast?: boolean }) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   return useMutation({
     mutationFn: (body: SaveDashboardConfigRequest) => saveDashboardConfig(body),
@@ -61,16 +63,16 @@ export function useSaveDashboardConfig(options?: { hideToast?: boolean }) {
       queryClient.invalidateQueries({ queryKey: ["dashboard-v2", "config"] });
       if (!options?.hideToast) {
         toast({
-          title: "Dashboard salva",
-          description: "Suas alterações foram salvas com sucesso.",
+          title: t("dashboard.saveSuccessTitle"),
+          description: t("dashboard.saveSuccessDescription"),
         });
       }
     },
     onError: () => {
       if (!options?.hideToast) {
         toast({
-          title: "Erro",
-          description: "Não foi possível salvar a configuração.",
+          title: t("common.error"),
+          description: t("dashboard.saveErrorDescription"),
           variant: "destructive",
         });
       }
@@ -83,20 +85,21 @@ export function useResetDashboardConfig() {
   const queryClient = useQueryClient();
   const { currentWorkspace } = useWorkspaceContext();
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   return useMutation({
     mutationFn: () => deleteDashboardConfig(currentWorkspace?.id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["dashboard-v2", "config"] });
       toast({
-        title: "Dashboard restaurada",
-        description: "Layout padrão restaurado com sucesso.",
+        title: t("dashboard.resetSuccessTitle"),
+        description: t("dashboard.resetSuccessDescription"),
       });
     },
     onError: () => {
       toast({
-        title: "Erro",
-        description: "Não foi possível restaurar o layout.",
+        title: t("common.error"),
+        description: t("dashboard.resetErrorDescription"),
         variant: "destructive",
       });
     },

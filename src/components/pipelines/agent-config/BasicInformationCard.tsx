@@ -20,11 +20,12 @@ import {
 } from "@/components/ui/card";
 import { X, Plus, User, Globe, Clock, Brain, Key, Ban } from "lucide-react";
 import { BRAZILIAN_TIMEZONES } from "@/constants/timezones";
-import { LANGUAGES } from "@/constants/languages";
+import { LANGUAGES, getLanguageLabel } from "@/constants/languages";
 import { listIaModels } from "@/services/iaModel/listIaModel";
 import { IaModel } from "@/types/iaModel";
 import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
+import { useTranslation } from "react-i18next";
 
 interface BasicInformationCardProps {
   formData: AgentFormData;
@@ -35,6 +36,7 @@ export const BasicInformationCard = ({
   formData,
   updateFormData,
 }: BasicInformationCardProps) => {
+  const { t } = useTranslation();
   const [iaModels, setIaModel] = useState<IaModel[]>([]);
   const [newSkipMessage, setNewSkipMessage] = useState<string>("");
   const [initialApiKey] = useState(formData.iaProviderApiKey); // Store initial value
@@ -151,7 +153,7 @@ export const BasicInformationCard = ({
           <div className="space-y-2">
             <Label htmlFor="language" className="flex items-center gap-2">
               <Globe className="h-4 w-4" />
-              Idioma
+              {t("agent.language")}
             </Label>
             <Select
               value={formData.language}
@@ -160,12 +162,12 @@ export const BasicInformationCard = ({
               }
             >
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Selecione o idioma" />
+                <SelectValue placeholder={t("agent.selectLanguage")} />
               </SelectTrigger>
               <SelectContent>
                 {LANGUAGES.map((lang) => (
                   <SelectItem key={lang.code} value={lang.code}>
-                    {lang.name}
+                    {getLanguageLabel(lang.code, t)}
                   </SelectItem>
                 ))}
               </SelectContent>

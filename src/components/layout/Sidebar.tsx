@@ -63,6 +63,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useWorkspaceContext } from "@/contexts/workspace/WorkspaceContext";
 import { AxiosError } from "axios";
 import { useUnsavedChanges } from "@/contexts/unsaved-changes/UnsavedChangesContext";
+import { useTranslation } from "react-i18next";
 
 const useWorkspace = () => {
   const queryClient = useQueryClient();
@@ -171,19 +172,20 @@ const WorkspaceDialog = ({
   onCreateWorkspace,
   isCreating,
 }: WorkspaceDialogProps) => {
+  const { t } = useTranslation();
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Criar novo workspace</DialogTitle>
+          <DialogTitle>{t("legacy.Criar novo workspace")}</DialogTitle>
         </DialogHeader>
         <div className="py-4">
-          <Label htmlFor="workspace-name">Nome do workspace</Label>
+          <Label htmlFor="workspace-name">{t("legacy.Nome do workspace")}</Label>
           <Input
             id="workspace-name"
             value={workspaceName}
             onChange={(e) => onWorkspaceNameChange(e.target.value)}
-            placeholder="Digite o nome do workspace"
+            placeholder={t("legacy.Digite o nome do workspace")}
             className="mt-2"
             autoFocus
           />
@@ -194,13 +196,13 @@ const WorkspaceDialog = ({
             onClick={() => onOpenChange(false)}
             disabled={isCreating}
           >
-            Cancelar
+            {t("common.cancel")}
           </Button>
           <Button
             onClick={onCreateWorkspace}
             disabled={!workspaceName.trim() || isCreating}
           >
-            {isCreating ? "Criando..." : "Criar"}
+            {isCreating ? t("common.creating") : t("common.create")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -222,6 +224,7 @@ const WorkspaceSelector = ({ isCollapsed }: { isCollapsed: boolean }) => {
   const [newWorkspaceName, setNewWorkspaceName] = useState("");
   const { toast } = useToast();
   const { userProfile } = useAuth();
+  const { t } = useTranslation();
 
   const isSalesRep = userProfile?.role === "SALES_REP";
 
@@ -241,8 +244,8 @@ const WorkspaceSelector = ({ isCollapsed }: { isCollapsed: boolean }) => {
 
       // Mostrar toast de sucesso
       toast({
-        title: "Sucesso",
-        description: `Workspace "${newWorkspaceName.trim()}" criado com sucesso!`,
+        title: t("common.success"),
+        description: t("legacy.Workspace \"{{name}}\" criado com sucesso!", { name: newWorkspaceName.trim() }),
         variant: "default",
       });
 
@@ -258,9 +261,9 @@ const WorkspaceSelector = ({ isCollapsed }: { isCollapsed: boolean }) => {
           error?.response?.data?.message === "Workspace name already exists"
         ) {
           toast({
-            title: "Erro",
+            title: t("common.error"),
             description:
-              "Este nome de workspace já existe. Por favor, escolha outro nome.",
+              t("legacy.Este nome de workspace já existe. Por favor, escolha outro nome."),
             variant: "destructive",
           });
         }
@@ -269,8 +272,8 @@ const WorkspaceSelector = ({ isCollapsed }: { isCollapsed: boolean }) => {
       }
 
       toast({
-        title: "Erro",
-        description: "Ocorreu um erro ao criar o workspace. Tente novamente.",
+        title: t("common.error"),
+        description: t("legacy.Ocorreu um erro ao criar o workspace. Tente novamente."),
         variant: "destructive",
       });
     }
@@ -286,7 +289,7 @@ const WorkspaceSelector = ({ isCollapsed }: { isCollapsed: boolean }) => {
             </div>
           </TooltipTrigger>
           <TooltipContent side="right" className="border-border">
-            {selectedWorkspace?.name || "Carregando..."}
+            {selectedWorkspace?.name || t("common.loading")}
           </TooltipContent>
         </Tooltip>
         {!isSalesRep && (
@@ -302,7 +305,7 @@ const WorkspaceSelector = ({ isCollapsed }: { isCollapsed: boolean }) => {
               </Button>
             </TooltipTrigger>
             <TooltipContent side="right" className="border-border">
-              Criar novo workspace
+              {t("legacy.Criar novo workspace")}
             </TooltipContent>
           </Tooltip>
         )}
@@ -322,15 +325,15 @@ const WorkspaceSelector = ({ isCollapsed }: { isCollapsed: boolean }) => {
   return (
     <div className="px-4 py-2">
       <div className="flex justify-between items-center mb-1">
-        <p className="text-sm text-muted-foreground">Workspace</p>
+        <p className="text-sm text-muted-foreground">{t("navigation.workspace")}</p>
       </div>
       {isLoading ? (
         <div className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm flex items-center text-muted-foreground">
-          Carregando...
+          {t("common.loading")}
         </div>
       ) : isSalesRep ? (
         <div className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm flex items-center text-foreground">
-          {selectedWorkspace?.name || "Carregando..."}
+          {selectedWorkspace?.name || t("common.loading")}
         </div>
       ) : (
         <Select
@@ -339,7 +342,7 @@ const WorkspaceSelector = ({ isCollapsed }: { isCollapsed: boolean }) => {
           disabled={isLoading || workspaces.length === 0}
         >
           <SelectTrigger className="w-full">
-            <SelectValue placeholder="Selecione um workspace" />
+          <SelectValue placeholder={t("legacy.Selecione um workspace")} />
           </SelectTrigger>
           <SelectContent>
             {workspaces.map((workspace) => (
@@ -373,6 +376,7 @@ const SidebarMenuContent = () => {
   const isCollapsed = state === "collapsed";
   const { isLoading: isWorkspaceLoading } = useWorkspace();
   const queryClient = useQueryClient();
+  const { t } = useTranslation();
 
   const handleLogout = () => {
     // Limpa todo o cache do React Query antes de deslogar
@@ -398,48 +402,48 @@ const SidebarMenuContent = () => {
   const allMenuItems: MenuItem[] = [
     {
       path: "/dashboard",
-      label: "Dashboard",
+      label: t("navigation.dashboard"),
       icon: <LayoutDashboard className="h-5 w-5" />,
     },
     // { path: "/agents", label: "Agents", icon: <Bot className="h-5 w-5" /> },
     {
       path: "/chats",
-      label: "Conversas",
+      label: t("navigation.conversations"),
       icon: <MessagesSquare className="h-5 w-5" />,
     },
     {
       path: "/deals",
-      label: "Negócios",
+      label: t("navigation.opportunities"),
       icon: <DollarSignIcon className="h-5 w-5" />,
     },
     {
       path: "/calendar",
-      label: "Calendário",
+      label: t("navigation.calendar"),
       icon: <CalendarIcon className="h-5 w-5" />,
     },
     {
       path: "/customers",
-      label: "Clientes",
+      label: t("navigation.customers"),
       icon: <Users className="h-5 w-5" />,
     },
     {
       path: "/webhooks",
-      label: "Webhooks",
+      label: t("navigation.webhooks"),
       icon: <Webhook className="h-5 w-5" />,
     },
     {
       path: "/broadcasts",
-      label: "Disparos",
+      label: t("navigation.broadcasts"),
       icon: <Megaphone className="h-5 w-5" />,
     },
     {
       path: "/integrations",
-      label: "Integrações",
+      label: t("navigation.integrations"),
       icon: <Plug className="h-5 w-5" />,
     },
     {
       path: "/tags",
-      label: "Tags",
+      label: t("navigation.tags"),
       icon: <Tag className="h-5 w-5" />,
     },
     // {
@@ -464,13 +468,13 @@ const SidebarMenuContent = () => {
   if (role === "PLATFORM_ADMIN") {
     allMenuItems.push({
       path: "/admin/companies",
-      label: "Administração",
+      label: t("navigation.administration"),
       icon: <Building2 className="h-5 w-5" />,
     });
   } else if (role === "COMPANY_OWNER" || role === "COMPANY_ADMIN") {
     allMenuItems.push({
       path: "/company/settings",
-      label: "Administração",
+      label: t("navigation.administration"),
       icon: <Building2 className="h-5 w-5" />,
     });
   } else if (
@@ -480,7 +484,7 @@ const SidebarMenuContent = () => {
   ) {
     allMenuItems.push({
       path: "/workspace/settings",
-      label: "Administração",
+      label: t("navigation.administration"),
       icon: <Building2 className="h-5 w-5" />,
     });
   }
@@ -615,11 +619,11 @@ const SidebarMenuContent = () => {
                 onClick={handleLogout}
               >
                 <LogOut className="h-5 w-5" />
-                <span className="sr-only">Sair</span>
+                <span className="sr-only">{t("navigation.logout")}</span>
               </Button>
             </TooltipTrigger>
             <TooltipContent side="right" className="border-border">
-              Sair
+              {t("navigation.logout")}
             </TooltipContent>
           </Tooltip>
         ) : (
@@ -629,7 +633,7 @@ const SidebarMenuContent = () => {
             onClick={handleLogout}
           >
             <LogOut className="mr-2 h-5 w-5" />
-            Sair
+            {t("navigation.logout")}
           </Button>
         )}
       </div>

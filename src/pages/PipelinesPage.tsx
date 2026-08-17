@@ -8,10 +8,12 @@ import { useToast } from "@/hooks/use-toast";
 import { useWorkspaceManager } from "@/hooks/useWorkspaceManager";
 import { listPipelines } from "@/services/pipeline/listPipelines";
 import { CreatePipelineModal } from "@/components/pipelines/CreatePipelineModal";
+import { useTranslation } from "react-i18next";
 
 const PipelinesPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useTranslation();
   const { workspaceId, isChangingWorkspace } = useWorkspaceManager({
     queryKeys: ["listPipelines"],
     autoRefetch: true,
@@ -27,7 +29,7 @@ const PipelinesPage = () => {
   });
 
   if (error) {
-    toast({ title: "Error", description: "Failed to load pipelines.", variant: "destructive" });
+    toast({ title: t("common.error"), description: t("pipelines.loadError"), variant: "destructive" });
   }
 
   const handleCreated = (pipelineId: string) => {
@@ -40,10 +42,10 @@ const PipelinesPage = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Pipelines</h1>
-          <p className="text-muted-foreground">Gerencie funis de vendas e etapas</p>
+          <h1 className="text-3xl font-bold tracking-tight">{t("pipelines.title")}</h1>
+          <p className="text-muted-foreground">{t("pipelines.description")}</p>
         </div>
-        <Button onClick={() => setOpenCreate(true)}>Criar Pipeline</Button>
+        <Button onClick={() => setOpenCreate(true)}>{t("pipelines.create")}</Button>
       </div>
 
       {loading ? (
@@ -62,7 +64,7 @@ const PipelinesPage = () => {
         </div>
       ) : !data || data.length === 0 ? (
         <div className="border rounded-lg py-12 text-center text-muted-foreground">
-          Nenhum pipeline cadastrado ainda. Clique em "Criar Pipeline" para começar.
+          {t("pipelines.empty")}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -73,10 +75,10 @@ const PipelinesPage = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-sm text-muted-foreground">
-                  {p.description || "Sem descrição"}
+                  {p.description || t("pipelines.noDescription")}
                 </div>
                 <div className="text-xs mt-2">
-                  {p.stagesCount} etapas
+                  {t("pipelines.stages", { count: p.stagesCount })}
                 </div>
               </CardContent>
             </Card>

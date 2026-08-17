@@ -11,17 +11,20 @@ import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/auth/hooks";
+import { useTranslation } from "react-i18next";
+import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
 
 const SettingsPage = () => {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [name, setName] = useState(user?.name || "");
   const [email, setEmail] = useState(user?.email || "");
   const { toast } = useToast();
 
   const handleSaveProfile = () => {
     toast({
-      title: "Profile updated",
-      description: "Your profile has been updated successfully.",
+      title: t("settings.profileUpdated"),
+      description: t("settings.profileUpdatedDescription"),
     });
   };
 
@@ -29,23 +32,26 @@ const SettingsPage = () => {
     <div>
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-          <p className="text-muted-foreground">
-            Manage your account and application preferences
+            <div className="flex items-center justify-between gap-4">
+              <h1 className="text-3xl font-bold tracking-tight">{t("settings.title")}</h1>
+              <LanguageSwitcher />
+            </div>
+            <p className="text-muted-foreground">
+            {t("settings.description")}
           </p>
         </div>
 
         <div className="grid gap-6">
           <Card>
             <CardHeader>
-              <CardTitle>Profile Settings</CardTitle>
+              <CardTitle>{t("settings.profile")}</CardTitle>
               <CardDescription>
-                Update your personal information
+                {t("settings.profileDescription")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
+                <Label htmlFor="name">{t("auth.fullName")}</Label>
                 <Input
                   id="name"
                   value={name}
@@ -53,7 +59,7 @@ const SettingsPage = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
+                <Label htmlFor="email">{t("auth.email")}</Label>
                 <Input
                   id="email"
                   type="email"
@@ -61,40 +67,37 @@ const SettingsPage = () => {
                   onChange={(e) => setEmail(e.target.value)}
                 />
               </div>
-              <Button onClick={handleSaveProfile}>Save Changes</Button>
+              <Button onClick={handleSaveProfile}>{t("common.saveChanges")}</Button>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>API Key Management</CardTitle>
+              <CardTitle>{t("settings.apiKeys")}</CardTitle>
               <CardDescription>
-                Manage API keys for third-party services
+                {t("settings.apiKeysDescription")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-muted-foreground">
-                API key management coming soon. You'll be able to store and
-                manage keys for services like OpenAI, Anthropic, Twilio, and
-                Z-API.
+                {t("settings.apiKeysComingSoon")}
               </p>
-              <Button disabled>Add API Key</Button>
+              <Button disabled>{t("settings.addApiKey")}</Button>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>Billing & Usage</CardTitle>
+              <CardTitle>{t("settings.billing")}</CardTitle>
               <CardDescription>
-                Manage your subscription and view usage
+                {t("settings.billingDescription")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-muted-foreground">
-                Billing and usage tracking coming soon. You'll be able to manage
-                your subscription and view detailed usage statistics.
+                {t("settings.billingComingSoon")}
               </p>
-              <Button disabled>View Billing</Button>
+              <Button disabled>{t("settings.viewBilling")}</Button>
             </CardContent>
           </Card>
         </div>

@@ -13,10 +13,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { X, Plus } from "lucide-react";
 import { BRAZILIAN_TIMEZONES } from "@/constants/timezones";
-import { LANGUAGES } from "@/constants/languages";
+import { LANGUAGES, getLanguageLabel } from "@/constants/languages";
 import { listIaModels } from "@/services/iaModel/listIaModel";
 import { IaModel } from "@/types/iaModel";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 
 interface BasicInformationProps {
   formData: AgentFormData;
@@ -27,6 +28,7 @@ const BasicInformation = ({
   formData,
   updateFormData,
 }: BasicInformationProps) => {
+  const { t } = useTranslation();
   const [avatarPreview, setAvatarPreview] = useState<string | undefined>(
     formData.avatarUrl
   );
@@ -134,18 +136,18 @@ const BasicInformation = ({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="language">Idioma</Label>
+        <Label htmlFor="language">{t("agent.language")}</Label>
         <Select
           value={formData.language}
           onValueChange={(value: AgentLanguage) => handleUpdateLanguage(value)}
         >
           <SelectTrigger className="w-full">
-            <SelectValue placeholder="Selecione um idioma" />
+            <SelectValue placeholder={t("agent.selectLanguage")} />
           </SelectTrigger>
           <SelectContent>
             {LANGUAGES.map((lang) => (
               <SelectItem key={lang.code} value={lang.code}>
-                {lang.name}
+                {getLanguageLabel(lang.code, t)}
               </SelectItem>
             ))}
           </SelectContent>

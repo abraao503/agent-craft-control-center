@@ -40,6 +40,7 @@ import { createTag } from "@/services/tag/createTag";
 import { updateTag } from "@/services/tag/updateTag";
 import { deleteTag } from "@/services/tag/deleteTag";
 import { isColorDark } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 type TagManagerProps = {
   workspaceId: string;
@@ -49,6 +50,7 @@ const TAGS_PER_PAGE = 10;
 
 export const TagManager: React.FC<TagManagerProps> = ({ workspaceId }) => {
   const { toast } = useToast();
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingTag, setEditingTag] = useState<Tag | null>(null);
@@ -76,15 +78,15 @@ export const TagManager: React.FC<TagManagerProps> = ({ workspaceId }) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tags", workspaceId] });
       toast({
-        title: "Tag criada",
-        description: "A tag foi criada com sucesso.",
+        title: t("tags.created"),
+        description: t("tags.createdDescription"),
       });
       resetForm();
     },
     onError: () => {
       toast({
-        title: "Erro ao criar tag",
-        description: "Não foi possível criar a tag. Tente novamente.",
+        title: t("tags.createError"),
+        description: t("tags.createErrorDescription"),
         variant: "destructive",
       });
     },
@@ -101,15 +103,15 @@ export const TagManager: React.FC<TagManagerProps> = ({ workspaceId }) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tags", workspaceId] });
       toast({
-        title: "Tag atualizada",
-        description: "A tag foi atualizada com sucesso.",
+        title: t("tags.updated"),
+        description: t("tags.updatedDescription"),
       });
       resetForm();
     },
     onError: () => {
       toast({
-        title: "Erro ao atualizar tag",
-        description: "Não foi possível atualizar a tag. Tente novamente.",
+        title: t("tags.updateError"),
+        description: t("tags.updateErrorDescription"),
         variant: "destructive",
       });
     },
@@ -120,14 +122,14 @@ export const TagManager: React.FC<TagManagerProps> = ({ workspaceId }) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tags", workspaceId] });
       toast({
-        title: "Tag excluída",
-        description: "A tag foi excluída com sucesso.",
+        title: t("tags.deleted"),
+        description: t("tags.deletedDescription"),
       });
     },
     onError: () => {
       toast({
-        title: "Erro ao excluir tag",
-        description: "Não foi possível excluir a tag. Tente novamente.",
+        title: t("tags.deleteError"),
+        description: t("tags.deleteErrorDescription"),
         variant: "destructive",
       });
     },
@@ -162,8 +164,8 @@ export const TagManager: React.FC<TagManagerProps> = ({ workspaceId }) => {
 
     if (!tagName.trim()) {
       toast({
-        title: "Nome obrigatório",
-        description: "O nome da tag é obrigatório.",
+        title: t("tags.nameRequired"),
+        description: t("tags.nameRequiredDescription"),
         variant: "destructive",
       });
       return;
@@ -200,18 +202,18 @@ export const TagManager: React.FC<TagManagerProps> = ({ workspaceId }) => {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-medium">Gerenciamento de Tags</h3>
+        <h3 className="text-lg font-medium">{t("tags.managerTitle")}</h3>
         <Button onClick={() => handleOpenDialog()} size="sm">
-          <Plus className="h-4 w-4 mr-2" /> Nova Tag
+          <Plus className="h-4 w-4 mr-2" /> {t("tags.new")}
         </Button>
       </div>
 
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Nome</TableHead>
-            <TableHead>Cor</TableHead>
-            <TableHead className="w-[100px]">Ações</TableHead>
+            <TableHead>{t("tags.name")}</TableHead>
+            <TableHead>{t("tags.color")}</TableHead>
+            <TableHead className="w-[100px]">{t("tags.actions")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -241,7 +243,7 @@ export const TagManager: React.FC<TagManagerProps> = ({ workspaceId }) => {
                 colSpan={3}
                 className="text-center py-8 text-muted-foreground"
               >
-                Nenhuma tag encontrada. Crie uma nova tag para começar.
+                {t("tags.empty")}
               </TableCell>
             </TableRow>
           ) : (
@@ -298,20 +300,20 @@ export const TagManager: React.FC<TagManagerProps> = ({ workspaceId }) => {
           showItemCount
           itemsPerPage={TAGS_PER_PAGE}
           totalItems={data?.total ?? 0}
-          itemLabel="tags"
+          itemLabel={t("tags.tags")}
         />
       )}
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editingTag ? "Editar Tag" : "Nova Tag"}</DialogTitle>
+            <DialogTitle>{editingTag ? t("tags.edit") : t("tags.new")}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit}>
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-4 items-center gap-4">
                 <label htmlFor="name" className="text-right">
-                  Nome
+                  {t("tags.name")}
                 </label>
                 <Input
                   id="name"
@@ -322,7 +324,7 @@ export const TagManager: React.FC<TagManagerProps> = ({ workspaceId }) => {
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <label htmlFor="color" className="text-right">
-                  Cor
+                  {t("tags.color")}
                 </label>
                 <div className="col-span-3 flex items-center gap-2">
                   <input
@@ -342,7 +344,7 @@ export const TagManager: React.FC<TagManagerProps> = ({ workspaceId }) => {
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={resetForm}>
-                Cancelar
+                {t("tags.cancel")}
               </Button>
               <Button
                 type="submit"
@@ -350,7 +352,7 @@ export const TagManager: React.FC<TagManagerProps> = ({ workspaceId }) => {
                   createTagMutation.isPending || updateTagMutation.isPending
                 }
               >
-                {editingTag ? "Atualizar" : "Criar"}
+                {editingTag ? t("tags.update") : t("tags.create")}
               </Button>
             </DialogFooter>
           </form>
@@ -363,22 +365,20 @@ export const TagManager: React.FC<TagManagerProps> = ({ workspaceId }) => {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+            <AlertDialogTitle>{t("tags.confirmDelete")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta ação não pode ser desfeita. Isso excluirá permanentemente
-              {deletingTag && ` "${deletingTag.name}" `}e a removerá de todos os
-              agentes que a utilizam.
+              {t("tags.deleteDescription", { name: deletingTag?.name ?? "" })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setDeletingTag(null)}>
-              Cancelar
+              {t("tags.cancel")}
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDelete}
               className="bg-red-500 hover:bg-red-600"
             >
-              {deleteTagMutation.isPending ? "Excluindo..." : "Excluir"}
+              {deleteTagMutation.isPending ? t("tags.deleting") : t("tags.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

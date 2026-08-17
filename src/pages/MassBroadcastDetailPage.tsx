@@ -71,18 +71,9 @@ import {
   MassBroadcastRecipientStatus,
 } from "@/types/mass-broadcast";
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
-
-const STATUS_LABELS: Record<MassBroadcastStatus, string> = {
-  DRAFT: "Rascunho",
-  PROCESSING: "Processando",
-  READY: "Pronta",
-  SENDING: "Enviando",
-  PAUSED: "Pausada",
-  COMPLETED: "Concluída",
-  CANCELLED: "Cancelada",
-  FAILED: "Falhou",
-};
+import { enUS, es, ptBR } from "date-fns/locale";
+import { useTranslation } from "react-i18next";
+import { useAppLocale } from "@/i18n/LocaleProvider";
 
 const STATUS_COLORS: Record<MassBroadcastStatus, string> = {
   DRAFT: "bg-gray-100 text-gray-800",
@@ -93,14 +84,6 @@ const STATUS_COLORS: Record<MassBroadcastStatus, string> = {
   COMPLETED: "bg-emerald-100 text-emerald-800",
   CANCELLED: "bg-red-100 text-red-800",
   FAILED: "bg-red-100 text-red-800",
-};
-
-const RECIPIENT_STATUS_LABELS: Record<MassBroadcastRecipientStatus, string> = {
-  PENDING: "Pendente",
-  QUEUED: "Na fila",
-  SENT: "Enviado",
-  FAILED: "Falhou",
-  SKIPPED: "Ignorado",
 };
 
 const RECIPIENT_STATUS_COLORS: Record<MassBroadcastRecipientStatus, string> = {
@@ -118,6 +101,34 @@ export default function MassBroadcastDetailPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { t } = useTranslation();
+  const { locale } = useAppLocale();
+  const dateLocale = locale === "es-ES" ? es : locale === "en-US" ? enUS : ptBR;
+
+  const getStatusLabel = (status: MassBroadcastStatus) => {
+    const labels: Record<MassBroadcastStatus, string> = {
+      DRAFT: t("broadcasts.draft"),
+      PROCESSING: t("broadcasts.processing"),
+      READY: t("broadcasts.ready"),
+      SENDING: t("broadcasts.sending"),
+      PAUSED: t("broadcasts.paused"),
+      COMPLETED: t("broadcasts.completed"),
+      CANCELLED: t("broadcasts.cancelled"),
+      FAILED: t("broadcasts.failed"),
+    };
+    return labels[status];
+  };
+
+  const getRecipientStatusLabel = (status: MassBroadcastRecipientStatus) => {
+    const labels: Record<MassBroadcastRecipientStatus, string> = {
+      PENDING: t("broadcastDetail.pendingStatus"),
+      QUEUED: t("broadcastDetail.queued"),
+      SENT: t("broadcastDetail.sentStatus"),
+      FAILED: t("broadcastDetail.failedStatus"),
+      SKIPPED: t("broadcastDetail.skipped"),
+    };
+    return labels[status];
+  };
 
   const [recipientsPage, setRecipientsPage] = useState(1);
   const [recipientStatusFilter, setRecipientStatusFilter] =
@@ -182,14 +193,14 @@ export default function MassBroadcastDetailPage() {
         queryKey: ["mass-broadcast-recipients", id],
       });
       toast({
-        title: "Campanha iniciada",
-        description: "O envio das mensagens foi iniciado.",
+        title: t("broadcastDetail.startSuccess"),
+        description: t("broadcastDetail.startSuccessDescription"),
       });
     },
     onError: (error: Error) => {
       toast({
-        title: "Erro ao iniciar campanha",
-        description: error?.message || "Não foi possível iniciar a campanha.",
+        title: t("broadcastDetail.startError"),
+        description: error?.message || t("broadcastDetail.startErrorDescription"),
         variant: "destructive",
       });
     },
@@ -203,14 +214,14 @@ export default function MassBroadcastDetailPage() {
         queryKey: ["mass-broadcast-recipients", id],
       });
       toast({
-        title: "Campanha pausada",
-        description: "O envio foi pausado. Pode ser retomado depois.",
+        title: t("broadcastDetail.pauseSuccess"),
+        description: t("broadcastDetail.pauseSuccessDescription"),
       });
     },
     onError: (error: Error) => {
       toast({
-        title: "Erro ao pausar campanha",
-        description: error?.message || "Não foi possível pausar a campanha.",
+        title: t("broadcastDetail.pauseError"),
+        description: error?.message || t("broadcastDetail.pauseErrorDescription"),
         variant: "destructive",
       });
     },
@@ -225,14 +236,14 @@ export default function MassBroadcastDetailPage() {
       });
       setIsCancelDialogOpen(false);
       toast({
-        title: "Campanha cancelada",
-        description: "A campanha foi cancelada permanentemente.",
+        title: t("broadcastDetail.cancelSuccess"),
+        description: t("broadcastDetail.cancelSuccessDescription"),
       });
     },
     onError: (error: Error) => {
       toast({
-        title: "Erro ao cancelar campanha",
-        description: error?.message || "Não foi possível cancelar a campanha.",
+        title: t("broadcastDetail.cancelError"),
+        description: error?.message || t("broadcastDetail.cancelErrorDescription"),
         variant: "destructive",
       });
     },
@@ -246,15 +257,15 @@ export default function MassBroadcastDetailPage() {
         queryKey: ["mass-broadcast-recipients", id],
       });
       toast({
-        title: "Reprocessamento iniciado",
-        description: `${data.retriedCount} destinatário(s) serão reprocessados.`,
+        title: t("broadcastDetail.retrySuccess"),
+        description: t("broadcastDetail.retrySuccessDescription", { count: data.retriedCount }),
       });
     },
     onError: (error: Error) => {
       toast({
-        title: "Erro ao reprocessar",
+        title: t("broadcastDetail.retryError"),
         description:
-          error?.message || "Não foi possível reprocessar os falhados.",
+          error?.message || t("broadcastDetail.retryErrorDescription"),
         variant: "destructive",
       });
     },
@@ -264,15 +275,15 @@ export default function MassBroadcastDetailPage() {
     mutationFn: () => deleteMassBroadcast(id!),
     onSuccess: () => {
       toast({
-        title: "Campanha excluída",
-        description: "A campanha foi excluída com sucesso.",
+        title: t("broadcastDetail.deleteSuccess"),
+        description: t("broadcastDetail.deleteSuccessDescription"),
       });
       navigate("/broadcasts");
     },
     onError: (error: Error) => {
       toast({
-        title: "Erro ao excluir",
-        description: error?.message || "Não foi possível excluir a campanha.",
+        title: t("broadcastDetail.deleteError"),
+        description: error?.message || t("broadcastDetail.deleteErrorDescription"),
         variant: "destructive",
       });
     },
@@ -280,7 +291,7 @@ export default function MassBroadcastDetailPage() {
 
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return "—";
-    return format(new Date(dateStr), "dd/MM/yyyy HH:mm", { locale: ptBR });
+    return format(new Date(dateStr), "dd/MM/yyyy HH:mm", { locale: dateLocale });
   };
 
   const getProgressPercent = () => {
@@ -318,11 +329,11 @@ export default function MassBroadcastDetailPage() {
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-3xl font-bold">Campanha não encontrada</h1>
+          <h1 className="text-3xl font-bold">{t("broadcastDetail.notFound")}</h1>
         </div>
         <div className="bg-red-50 p-4 rounded-md border border-red-200">
           <p className="text-red-800">
-            Não foi possível carregar os detalhes da campanha.
+            {t("broadcastDetail.notFoundDescription")}
           </p>
         </div>
       </div>
@@ -357,11 +368,11 @@ export default function MassBroadcastDetailPage() {
                 variant="secondary"
                 className={STATUS_COLORS[broadcast.status]}
               >
-                {STATUS_LABELS[broadcast.status]}
+                {getStatusLabel(broadcast.status)}
               </Badge>
             </div>
             <p className="text-muted-foreground">
-              Criada em {formatDate(broadcast.createdAt)}
+              {t("broadcastDetail.createdAt", { date: formatDate(broadcast.createdAt) })}
             </p>
           </div>
         </div>
@@ -378,7 +389,9 @@ export default function MassBroadcastDetailPage() {
               ) : (
                 <Play className="h-4 w-4 mr-2" />
               )}
-              {broadcast.status === "PAUSED" ? "Retomar" : "Iniciar"}
+              {broadcast.status === "PAUSED"
+                ? t("broadcastDetail.resume")
+                : t("broadcastDetail.start")}
             </Button>
           )}
           {canPause && (
@@ -392,7 +405,7 @@ export default function MassBroadcastDetailPage() {
               ) : (
                 <Pause className="h-4 w-4 mr-2" />
               )}
-              Pausar
+              {t("broadcastDetail.pause")}
             </Button>
           )}
           {canRetry && (
@@ -406,7 +419,7 @@ export default function MassBroadcastDetailPage() {
               ) : (
                 <RotateCcw className="h-4 w-4 mr-2" />
               )}
-              Retentar Falhas
+              {t("broadcastDetail.retryFailed")}
             </Button>
           )}
           {canCancel && (
@@ -416,7 +429,7 @@ export default function MassBroadcastDetailPage() {
               onClick={() => setIsCancelDialogOpen(true)}
             >
               <XCircle className="h-4 w-4 mr-2" />
-              Cancelar
+              {t("broadcastDetail.cancel")}
             </Button>
           )}
           {canDelete && (
@@ -426,7 +439,7 @@ export default function MassBroadcastDetailPage() {
               onClick={() => setIsDeleteDialogOpen(true)}
             >
               <Trash2 className="h-4 w-4 mr-2" />
-              Excluir
+              {t("broadcastDetail.delete")}
             </Button>
           )}
         </div>
@@ -438,7 +451,7 @@ export default function MassBroadcastDetailPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-2 mb-1">
               <Users className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Total</span>
+              <span className="text-sm text-muted-foreground">{t("broadcastDetail.total")}</span>
             </div>
             <p className="text-2xl font-bold">{broadcast.totalRecipients}</p>
           </CardContent>
@@ -447,7 +460,7 @@ export default function MassBroadcastDetailPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-2 mb-1">
               <CheckCircle2 className="h-4 w-4 text-green-600" />
-              <span className="text-sm text-muted-foreground">Enviados</span>
+              <span className="text-sm text-muted-foreground">{t("broadcastDetail.sent")}</span>
             </div>
             <p className="text-2xl font-bold text-green-600">
               {broadcast.recipientsSummary.sent}
@@ -458,7 +471,7 @@ export default function MassBroadcastDetailPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-2 mb-1">
               <AlertCircle className="h-4 w-4 text-red-600" />
-              <span className="text-sm text-muted-foreground">Falhas</span>
+              <span className="text-sm text-muted-foreground">{t("broadcastDetail.failures")}</span>
             </div>
             <p className="text-2xl font-bold text-red-600">
               {broadcast.recipientsSummary.failed}
@@ -469,7 +482,7 @@ export default function MassBroadcastDetailPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-2 mb-1">
               <Clock className="h-4 w-4 text-blue-600" />
-              <span className="text-sm text-muted-foreground">Pendentes</span>
+              <span className="text-sm text-muted-foreground">{t("broadcastDetail.pending")}</span>
             </div>
             <p className="text-2xl font-bold text-blue-600">
               {broadcast.recipientsSummary.pending +
@@ -486,7 +499,7 @@ export default function MassBroadcastDetailPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex justify-between text-sm text-muted-foreground mb-2">
-              <span>Progresso do envio</span>
+              <span>{t("broadcastDetail.progress")}</span>
               <span>{progress}%</span>
             </div>
             <div className="w-full bg-muted rounded-full h-3">
@@ -502,9 +515,9 @@ export default function MassBroadcastDetailPage() {
       {/* Tabs: Details & Recipients */}
       <Tabs defaultValue="details">
         <TabsList>
-          <TabsTrigger value="details">Detalhes</TabsTrigger>
+          <TabsTrigger value="details">{t("broadcastDetail.details")}</TabsTrigger>
           <TabsTrigger value="recipients">
-            Destinatários ({broadcast.totalRecipients})
+            {t("broadcastDetail.recipients", { count: broadcast.totalRecipients })}
           </TabsTrigger>
         </TabsList>
 
@@ -514,29 +527,29 @@ export default function MassBroadcastDetailPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Megaphone className="h-5 w-5" />
-                Informações da Campanha
+                {t("broadcastDetail.campaignInformation")}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-muted-foreground">Nome</Label>
+                  <Label className="text-muted-foreground">{t("broadcastDetail.name")}</Label>
                   <p className="font-medium">{broadcast.name}</p>
                 </div>
                 <div>
-                  <Label className="text-muted-foreground">Status</Label>
+                  <Label className="text-muted-foreground">{t("broadcastDetail.status")}</Label>
                   <div>
                     <Badge
                       variant="secondary"
                       className={STATUS_COLORS[broadcast.status]}
                     >
-                      {STATUS_LABELS[broadcast.status]}
+                      {getStatusLabel(broadcast.status)}
                     </Badge>
                   </div>
                 </div>
                 <div>
                   <Label className="text-muted-foreground">
-                    Intervalo entre mensagens
+                    {t("broadcastDetail.messageDelay")}
                   </Label>
                   <p className="font-medium">
                     {broadcast.messageDelaySeconds}s
@@ -544,7 +557,7 @@ export default function MassBroadcastDetailPage() {
                 </div>
                 <div>
                   <Label className="text-muted-foreground">
-                    Variações de mensagem
+                    {t("broadcastDetail.messageVariations")}
                   </Label>
                   <p className="font-medium">
                     {broadcast.messageVariations.length}
@@ -555,7 +568,7 @@ export default function MassBroadcastDetailPage() {
               <Separator />
 
               <div>
-                <Label className="text-muted-foreground">Mensagens</Label>
+                <Label className="text-muted-foreground">{t("broadcastDetail.messages")}</Label>
                 <div className="space-y-2 mt-2">
                   {broadcast.messageVariations.map((msg, index) => (
                     <div
@@ -563,7 +576,7 @@ export default function MassBroadcastDetailPage() {
                       className="bg-muted rounded-md p-3 text-sm"
                     >
                       <span className="text-xs text-muted-foreground font-medium">
-                        Variação {index + 1}:
+                        {t("broadcastDetail.variation", { count: index + 1 })}
                       </span>
                       <p className="mt-1 whitespace-pre-wrap">
                         <TemplateTextDisplay text={msg} />
@@ -578,7 +591,7 @@ export default function MassBroadcastDetailPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-muted-foreground">
-                    Janela de envio (início)
+                    {t("broadcastDetail.sendWindowStart")}
                   </Label>
                   <p className="font-medium">
                     {formatDate(broadcast.startTime)}
@@ -586,18 +599,18 @@ export default function MassBroadcastDetailPage() {
                 </div>
                 <div>
                   <Label className="text-muted-foreground">
-                    Janela de envio (fim)
+                    {t("broadcastDetail.sendWindowEnd")}
                   </Label>
                   <p className="font-medium">{formatDate(broadcast.endTime)}</p>
                 </div>
                 <div>
-                  <Label className="text-muted-foreground">Iniciada em</Label>
+                  <Label className="text-muted-foreground">{t("broadcastDetail.startedAt")}</Label>
                   <p className="font-medium">
                     {formatDate(broadcast.startedAt)}
                   </p>
                 </div>
                 <div>
-                  <Label className="text-muted-foreground">Concluída em</Label>
+                  <Label className="text-muted-foreground">{t("broadcastDetail.completedAt")}</Label>
                   <p className="font-medium">
                     {formatDate(broadcast.completedAt)}
                   </p>
@@ -611,7 +624,7 @@ export default function MassBroadcastDetailPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Users className="h-5 w-5" />
-                Resumo de Destinatários
+                {t("broadcastDetail.recipientsSummary")}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -633,9 +646,9 @@ export default function MassBroadcastDetailPage() {
                           ] || ""
                         }
                       >
-                        {RECIPIENT_STATUS_LABELS[
-                          key.toUpperCase() as MassBroadcastRecipientStatus
-                        ] || key}
+                        {getRecipientStatusLabel(
+                          key.toUpperCase() as MassBroadcastRecipientStatus,
+                        ) || key}
                       </Badge>
                       <p className="text-xl font-bold mt-1">{value}</p>
                     </div>
@@ -649,9 +662,9 @@ export default function MassBroadcastDetailPage() {
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle>Destinatários</CardTitle>
+                <CardTitle>{t("broadcastDetail.recipients", { count: broadcast.totalRecipients })}</CardTitle>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">Status:</span>
+                  <span className="text-sm text-muted-foreground">{t("broadcastDetail.statusFilter")}</span>
                   <Select
                     value={recipientStatusFilter}
                     onValueChange={(value) => {
@@ -660,15 +673,15 @@ export default function MassBroadcastDetailPage() {
                     }}
                   >
                     <SelectTrigger className="w-[160px]">
-                      <SelectValue placeholder="Todos" />
+                      <SelectValue placeholder={t("broadcastDetail.all")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="ALL">Todos</SelectItem>
-                      <SelectItem value="PENDING">Pendente</SelectItem>
-                      <SelectItem value="QUEUED">Na fila</SelectItem>
-                      <SelectItem value="SENT">Enviado</SelectItem>
-                      <SelectItem value="FAILED">Falhou</SelectItem>
-                      <SelectItem value="SKIPPED">Ignorado</SelectItem>
+                      <SelectItem value="ALL">{t("broadcastDetail.all")}</SelectItem>
+                      <SelectItem value="PENDING">{t("broadcastDetail.pendingStatus")}</SelectItem>
+                      <SelectItem value="QUEUED">{t("broadcastDetail.queued")}</SelectItem>
+                      <SelectItem value="SENT">{t("broadcastDetail.sentStatus")}</SelectItem>
+                      <SelectItem value="FAILED">{t("broadcastDetail.failedStatus")}</SelectItem>
+                      <SelectItem value="SKIPPED">{t("broadcastDetail.skipped")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -686,12 +699,12 @@ export default function MassBroadcastDetailPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Cliente ID</TableHead>
-                        <TableHead>Telefone</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Mensagem</TableHead>
-                        <TableHead>Enviado em</TableHead>
-                        <TableHead>Erro</TableHead>
+                        <TableHead>{t("broadcastDetail.customerId")}</TableHead>
+                        <TableHead>{t("broadcastDetail.phone")}</TableHead>
+                        <TableHead>{t("broadcastDetail.status")}</TableHead>
+                        <TableHead>{t("broadcastDetail.message")}</TableHead>
+                        <TableHead>{t("broadcastDetail.sentAt")}</TableHead>
+                        <TableHead>{t("broadcastDetail.errorColumn")}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -710,7 +723,7 @@ export default function MassBroadcastDetailPage() {
                                 RECIPIENT_STATUS_COLORS[recipient.status]
                               }
                             >
-                              {RECIPIENT_STATUS_LABELS[recipient.status]}
+                              {getRecipientStatusLabel(recipient.status)}
                             </Badge>
                           </TableCell>
                           <TableCell className="max-w-[200px] truncate text-xs">
@@ -736,7 +749,7 @@ export default function MassBroadcastDetailPage() {
                         showItemCount
                         itemsPerPage={ITEMS_PER_PAGE}
                         totalItems={recipientsData.total}
-                        itemLabel="destinatários"
+                        itemLabel={t("broadcastDetail.itemLabel")}
                       />
                     </div>
                   )}
@@ -745,9 +758,12 @@ export default function MassBroadcastDetailPage() {
                 <div className="text-center py-8">
                   <Users className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
                   <p className="text-muted-foreground">
-                    Nenhum destinatário encontrado
-                    {recipientStatusFilter !== "ALL" &&
-                      " com o filtro selecionado"}
+                    {t("broadcastDetail.emptyRecipients", {
+                      filter:
+                        recipientStatusFilter !== "ALL"
+                          ? t("broadcastDetail.filteredSuffix")
+                          : "",
+                    })}
                   </p>
                 </div>
               )}
@@ -763,15 +779,13 @@ export default function MassBroadcastDetailPage() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Cancelar campanha</AlertDialogTitle>
+            <AlertDialogTitle>{t("broadcastDetail.cancelDialogTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja cancelar a campanha "{broadcast.name}"?
-              Esta ação é permanente e a campanha não poderá ser retomada.
-              Mensagens já enviadas não serão afetadas.
+              {t("broadcastDetail.cancelDialogDescription", { name: broadcast.name })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Voltar</AlertDialogCancel>
+            <AlertDialogCancel>{t("broadcastDetail.back")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => cancelMutation.mutate()}
               className="bg-red-600 hover:bg-red-700"
@@ -779,7 +793,7 @@ export default function MassBroadcastDetailPage() {
               {cancelMutation.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
               ) : null}
-              Cancelar Campanha
+              {t("broadcastDetail.cancelCampaign")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -792,14 +806,13 @@ export default function MassBroadcastDetailPage() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Excluir campanha</AlertDialogTitle>
+            <AlertDialogTitle>{t("broadcastDetail.deleteDialogTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir a campanha "{broadcast.name}"? Esta
-              ação não pode ser desfeita.
+              {t("broadcastDetail.deleteDialogDescription", { name: broadcast.name })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel>{t("broadcastDetail.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => deleteMutation.mutate()}
               className="bg-red-600 hover:bg-red-700"
@@ -807,7 +820,7 @@ export default function MassBroadcastDetailPage() {
               {deleteMutation.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
               ) : null}
-              Excluir
+              {t("broadcastDetail.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

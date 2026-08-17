@@ -35,14 +35,9 @@ import {
 } from "@/services/customer-import";
 import { CustomerImportStatus } from "@/types/customer-import";
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
-
-const STATUS_LABELS: Record<CustomerImportStatus, string> = {
-  PENDING: "Pendente",
-  PROCESSING: "Processando",
-  COMPLETED: "Concluída",
-  FAILED: "Falhou",
-};
+import { enUS, es, ptBR } from "date-fns/locale";
+import { useTranslation } from "react-i18next";
+import { useAppLocale } from "@/i18n/LocaleProvider";
 
 const STATUS_COLORS: Record<CustomerImportStatus, string> = {
   PENDING: "bg-gray-100 text-gray-800",
@@ -55,7 +50,20 @@ export default function CustomerImportDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useTranslation();
+  const { locale } = useAppLocale();
+  const dateLocale = locale === "es-ES" ? es : locale === "en-US" ? enUS : ptBR;
   const [isDownloadingErrors, setIsDownloadingErrors] = useState(false);
+
+  const getStatusLabel = (status: CustomerImportStatus) => {
+    const labels: Record<CustomerImportStatus, string> = {
+      PENDING: t("customerImport.pending"),
+      PROCESSING: t("customerImport.processing"),
+      COMPLETED: t("customerImport.completed"),
+      FAILED: t("customerImport.failed"),
+    };
+    return labels[status];
+  };
 
   const {
     data: importDetail,
@@ -89,13 +97,13 @@ export default function CustomerImportDetailPage() {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
       toast({
-        title: "Download iniciado",
-        description: "A planilha de erros está sendo baixada.",
+        title: t("customerImport.downloadStarted"),
+        description: t("customerImport.downloadStartedDescription"),
       });
     } catch {
       toast({
-        title: "Erro ao baixar planilha de erros",
-        description: "Ocorreu um erro ao baixar a planilha. Tente novamente.",
+        title: t("customerImport.downloadError"),
+        description: t("customerImport.downloadErrorDescription"),
         variant: "destructive",
       });
     } finally {
@@ -105,7 +113,7 @@ export default function CustomerImportDetailPage() {
 
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return "—";
-    return format(new Date(dateStr), "dd/MM/yyyy HH:mm:ss", { locale: ptBR });
+    return format(new Date(dateStr), "dd/MM/yyyy HH:mm:ss", { locale: dateLocale });
   };
 
   const getProgressPercent = () => {
@@ -152,15 +160,15 @@ export default function CustomerImportDetailPage() {
     return (
       <div className="space-y-6">
         <Button variant="ghost" onClick={() => navigate("/customer-imports")}>
-          <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
+          <ArrowLeft className="mr-2 h-4 w-4" /> {t("common.back")}
         </Button>
         <div className="bg-red-50 p-6 rounded-md border border-red-200 text-center">
           <XCircle className="h-12 w-12 text-red-400 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-red-800 mb-2">
-            Importação não encontrada
+            {t("customerImport.notFound")}
           </h3>
           <p className="text-red-600">
-            Não foi possível encontrar os detalhes desta importação.
+            {t("customerImport.notFoundDescription")}
           </p>
         </div>
       </div>
@@ -189,11 +197,11 @@ export default function CustomerImportDetailPage() {
                 variant="secondary"
                 className={STATUS_COLORS[importDetail.status]}
               >
-                {STATUS_LABELS[importDetail.status]}
+                {getStatusLabel(importDetail.status)}
               </Badge>
             </div>
             <p className="text-muted-foreground mt-1 ml-9">
-              Detalhes da importação de clientes
+              {t("customerImport.detailDescription")}
             </p>
           </div>
         </div>
@@ -211,7 +219,7 @@ export default function CustomerImportDetailPage() {
             ) : (
               <Download className="mr-2 h-4 w-4" />
             )}
-            Baixar Planilha de Erros
+            {t("customerImport.downloadErrors")}
           </Button>
         )}
       </div>
@@ -225,11 +233,11 @@ export default function CustomerImportDetailPage() {
             <div>
               <p className="font-medium text-blue-800 dark:text-blue-300">
                 {importDetail.status === "PENDING"
-                  ? "Aguardando processamento..."
-                  : "Importação em andamento..."}
+                  ? t("customerImport.processingWaiting")
+                  : t("customerImport.processingInProgress")}
               </p>
               <p className="text-sm text-blue-600 dark:text-blue-400">
-                Esta página será atualizada automaticamente.
+                {t("customerImport.autoRefresh")}
               </p>
             </div>
           </div>
@@ -243,7 +251,7 @@ export default function CustomerImportDetailPage() {
             <XCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
             <div>
               <p className="font-medium text-red-800 dark:text-red-300">
-                Falha no processamento
+                {t("customerImport.processingFailure")}
               </p>
               <p className="text-sm text-red-600 dark:text-red-400">
                 {importDetail.errorMessage}
@@ -260,7 +268,7 @@ export default function CustomerImportDetailPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-2xl font-bold">{importDetail.totalRows}</p>
-                <p className="text-sm text-muted-foreground">Total de linhas</p>
+                <p className="text-sm text-muted-foreground">{t("customerImport.totalRows")}</p>
               </div>
               <FileSpreadsheet className="h-8 w-8 text-muted-foreground" />
             </div>
@@ -275,7 +283,7 @@ export default function CustomerImportDetailPage() {
                   {importDetail.successCount}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Importados com sucesso
+                  {t("customerImport.importedSuccess")}
                 </p>
               </div>
               <CheckCircle2 className="h-8 w-8 text-emerald-500" />
@@ -290,7 +298,7 @@ export default function CustomerImportDetailPage() {
                 <p className="text-2xl font-bold text-red-600">
                   {importDetail.errorCount}
                 </p>
-                <p className="text-sm text-muted-foreground">Erros</p>
+                <p className="text-sm text-muted-foreground">{t("customerImport.errors")}</p>
               </div>
               <AlertCircle className="h-8 w-8 text-red-500" />
             </div>
@@ -305,7 +313,7 @@ export default function CustomerImportDetailPage() {
                   {importDetail.processedCount}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Total processado
+                  {t("customerImport.totalProcessed")}
                 </p>
               </div>
               <Users className="h-8 w-8 text-muted-foreground" />
@@ -318,14 +326,16 @@ export default function CustomerImportDetailPage() {
       {importDetail.totalRows > 0 && importDetail.status !== "COMPLETED" && (
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">Progresso</CardTitle>
+            <CardTitle className="text-base">{t("customerImport.progress")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
               <div className="flex justify-between text-sm text-muted-foreground">
                 <span>
-                  {importDetail.processedCount} de {importDetail.totalRows}{" "}
-                  processados
+                  {t("customerImport.processed", {
+                    processed: importDetail.processedCount,
+                    total: importDetail.totalRows,
+                  })}
                 </span>
                 <span>{progress}%</span>
               </div>
@@ -337,7 +347,7 @@ export default function CustomerImportDetailPage() {
               </div>
               {importDetail.errorCount > 0 && (
                 <p className="text-xs text-red-600">
-                  {importDetail.errorCount} registro(s) com erro
+                  {t("customerImport.recordsWithErrors", { count: importDetail.errorCount })}
                 </p>
               )}
             </div>
@@ -348,16 +358,16 @@ export default function CustomerImportDetailPage() {
       {/* Detalhes da importação */}
       <Card>
         <CardHeader>
-          <CardTitle>Informações da Importação</CardTitle>
+          <CardTitle>{t("customerImport.information")}</CardTitle>
           <CardDescription>
-            Dados detalhados sobre esta importação
+            {t("customerImport.informationDescription")}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-1">
               <Label className="text-muted-foreground flex items-center gap-2">
-                <Calendar className="h-4 w-4" /> Data do upload
+                <Calendar className="h-4 w-4" /> {t("customerImport.uploadDate")}
               </Label>
               <p className="font-medium">
                 {formatDate(importDetail.createdAt)}
@@ -366,7 +376,7 @@ export default function CustomerImportDetailPage() {
 
             <div className="space-y-1">
               <Label className="text-muted-foreground flex items-center gap-2">
-                <Clock className="h-4 w-4" /> Início do processamento
+                <Clock className="h-4 w-4" /> {t("customerImport.processingStart")}
               </Label>
               <p className="font-medium">
                 {formatDate(importDetail.startedAt)}
@@ -375,7 +385,7 @@ export default function CustomerImportDetailPage() {
 
             <div className="space-y-1">
               <Label className="text-muted-foreground flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4" /> Conclusão
+                <CheckCircle2 className="h-4 w-4" /> {t("customerImport.completion")}
               </Label>
               <p className="font-medium">
                 {formatDate(importDetail.completedAt)}
@@ -384,7 +394,7 @@ export default function CustomerImportDetailPage() {
 
             <div className="space-y-1">
               <Label className="text-muted-foreground flex items-center gap-2">
-                <FileSpreadsheet className="h-4 w-4" /> Arquivo
+                <FileSpreadsheet className="h-4 w-4" /> {t("customerImport.file")}
               </Label>
               <p className="font-medium">{importDetail.fileName}</p>
             </div>
@@ -395,14 +405,14 @@ export default function CustomerImportDetailPage() {
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-1">
               <Label className="text-muted-foreground flex items-center gap-2">
-                <User className="h-4 w-4" /> Criado por
+                <User className="h-4 w-4" /> {t("customerImport.createdBy")}
               </Label>
               <p className="font-medium">{importDetail.createdBy.name}</p>
             </div>
 
             <div className="space-y-1">
               <Label className="text-muted-foreground flex items-center gap-2">
-                <Building2 className="h-4 w-4" /> Workspace
+                <Building2 className="h-4 w-4" /> {t("customerImport.workspace")}
               </Label>
               <p className="font-medium">{importDetail.workspace.name}</p>
             </div>

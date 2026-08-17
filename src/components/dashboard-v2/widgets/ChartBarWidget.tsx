@@ -9,6 +9,7 @@ import {
   ResponsiveContainer,
   Cell,
 } from "recharts";
+import { useTranslation } from "react-i18next";
 
 interface ChartBarWidgetProps {
   title: string;
@@ -30,6 +31,7 @@ export function ChartBarWidget({
   data,
   horizontal = true,
 }: ChartBarWidgetProps) {
+  const { t } = useTranslation();
   const chartData = data.items.map((item) => ({
     name: item.label,
     value: item.value,
@@ -37,14 +39,14 @@ export function ChartBarWidget({
 
   function formatTextValue(value: number) {
     if (value >= 1000) {
-      return `${value / 1000}k Negócios`;
+      return `${value / 1000}k ${t("dashboard.deals")}`;
     }
 
     if (value === 1) {
-      return `${value} Negócio`;
+      return `${value} ${t("dashboard.deal")}`;
     }
 
-    return `${value} Negócios`;
+    return `${value} ${t("dashboard.deals")}`;
   }
 
   // Para barras horizontais (como o funil da mockup)

@@ -1,5 +1,5 @@
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { enUS, es, ptBR } from "date-fns/locale";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { formatPhone } from "@/utils/phone";
 import { Button } from "@/components/ui/button";
@@ -32,6 +32,7 @@ import type {
   DealWebhookExecutionStatus,
 } from "@/types/deal-webhook";
 import type { Pagination } from "@/types/pagination";
+import { useAppLocale } from "@/i18n/LocaleProvider";
 
 interface DealWebhookExecutionsProps {
   data?: Pagination<DealWebhookExecution>;
@@ -54,6 +55,10 @@ export function DealWebhookExecutions({
   onPageChange,
   onOpenDetails,
 }: DealWebhookExecutionsProps) {
+  const { locale } = useAppLocale();
+  const dateLocale = locale === "es-ES" ? es : locale === "en-US" ? enUS : ptBR;
+  const datePattern = locale === "es-ES" ? "dd/MM/yyyy 'a las' HH:mm" : "dd/MM/yyyy 'às' HH:mm";
+
   return (
     <div className="max-w-6xl mx-auto">
       <Card>
@@ -118,8 +123,8 @@ export function DealWebhookExecutions({
                           {formatPhone(execution.payload.customerPhone)}
                         </TableCell>
                         <TableCell>
-                          {format(execution.createdAt, "dd/MM/yyyy 'às' HH:mm", {
-                            locale: ptBR,
+                          {format(execution.createdAt, datePattern, {
+                            locale: dateLocale,
                           })}
                         </TableCell>
                         <TableCell className="text-right">

@@ -19,6 +19,7 @@ import { ConversationsFilters } from "@/types/conversation";
 import { PipelineListItem, PipelineStageMinimal } from "@/types/pipeline";
 import { Tag } from "@/types/tag";
 import { User } from "@/types/user";
+import { useTranslation } from "react-i18next";
 
 type Props = {
   filters: ConversationsFilters;
@@ -39,6 +40,7 @@ export function ChatInboxFilters({
   stages,
   tags,
 }: Props) {
+  const { t } = useTranslation();
   const activeFilterCount = [
     filters.handledBy,
     filters.pipelineId,
@@ -83,12 +85,12 @@ export function ChatInboxFilters({
           }
         >
           <SelectTrigger className="min-w-0 flex-1">
-            <SelectValue placeholder="Responsável" />
+            <SelectValue placeholder={t("chats.assignedPlaceholder")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Todos</SelectItem>
-            <SelectItem value="mine">Meus</SelectItem>
-            <SelectItem value="unassigned">Não atribuídos</SelectItem>
+            <SelectItem value="all">{t("chats.allAssignments")}</SelectItem>
+            <SelectItem value="mine">{t("chats.myAssignments")}</SelectItem>
+            <SelectItem value="unassigned">{t("chats.unassigned")}</SelectItem>
             {users.map((user) => (
               <SelectItem key={user.id} value={user.id}>
                 {user.name}
@@ -105,7 +107,7 @@ export function ChatInboxFilters({
             className={isSalesRep ? "w-full justify-center" : "shrink-0"}
           >
             <SlidersHorizontal className="mr-2 h-4 w-4" />
-            Filtros
+            {t("chats.filters")}
             {activeFilterCount > 0 && (
               <Badge
                 variant="secondary"
@@ -118,7 +120,7 @@ export function ChatInboxFilters({
         </PopoverTrigger>
         <PopoverContent align="end" className="w-[340px] space-y-4">
           <div className="flex items-center justify-between">
-            <p className="font-medium">Filtrar conversas</p>
+            <p className="font-medium">{t("chats.filterTitle")}</p>
             {activeFilterCount > 0 && (
               <Button
                 type="button"
@@ -127,7 +129,7 @@ export function ChatInboxFilters({
                 className="h-8 px-2 text-muted-foreground"
                 onClick={clearSecondaryFilters}
               >
-                Limpar
+                {t("chats.clearFilters")}
               </Button>
             )}
           </div>
@@ -145,12 +147,12 @@ export function ChatInboxFilters({
               }
             >
               <SelectTrigger>
-                <SelectValue placeholder="Atendimento" />
+                <SelectValue placeholder={t("chats.handlingPlaceholder")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">IA e humano</SelectItem>
-                <SelectItem value="assistant">IA</SelectItem>
-                <SelectItem value="human">Humano</SelectItem>
+                <SelectItem value="all">{t("chats.aiAndHuman")}</SelectItem>
+                <SelectItem value="assistant">{t("chats.ai")}</SelectItem>
+                <SelectItem value="human">{t("chats.human")}</SelectItem>
               </SelectContent>
             </Select>
             <Select
@@ -163,8 +165,8 @@ export function ChatInboxFilters({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todas</SelectItem>
-                <SelectItem value="unread">Não lidas</SelectItem>
+                <SelectItem value="all">{t("chats.allConversations")}</SelectItem>
+                <SelectItem value="unread">{t("chats.unread")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -180,10 +182,10 @@ export function ChatInboxFilters({
               }
             >
               <SelectTrigger>
-                <SelectValue placeholder="Pipeline" />
+                <SelectValue placeholder={t("common.pipeline")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todas pipelines</SelectItem>
+                <SelectItem value="all">{t("chats.allPipelines")}</SelectItem>
                 {pipelines.map((pipeline) => (
                   <SelectItem key={pipeline.id} value={pipeline.id}>
                     {pipeline.name}
@@ -199,10 +201,10 @@ export function ChatInboxFilters({
               disabled={!filters.pipelineId}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Etapa" />
+                <SelectValue placeholder={t("broadcastCreate.stage")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todas etapas</SelectItem>
+                <SelectItem value="all">{t("chats.allStages")}</SelectItem>
                 {stages.map((stage) => (
                   <SelectItem key={stage.id} value={stage.id}>
                     {stage.name}
@@ -220,15 +222,15 @@ export function ChatInboxFilters({
             }))}
             selected={filters.tagIds ?? []}
             onChange={(tagIds) => onChange({ tagIds })}
-            placeholder="Tags"
+            placeholder={t("chats.tagsPlaceholder")}
           />
 
           <div className="space-y-2">
-            <p className="text-sm font-medium">Período</p>
+            <p className="text-sm font-medium">{t("chats.dateRange")}</p>
             <div className="grid grid-cols-2 gap-2">
               <Input
                 type="date"
-                aria-label="Data inicial"
+                aria-label={t("chats.startDate")}
                 value={filters.initialDate ? toDateInput(filters.initialDate) : ""}
                 onChange={(event) =>
                   onChange({
@@ -240,7 +242,7 @@ export function ChatInboxFilters({
               />
               <Input
                 type="date"
-                aria-label="Data final"
+                aria-label={t("chats.endDate")}
                 value={filters.finalDate ? toDateInput(filters.finalDate) : ""}
                 onChange={(event) =>
                   onChange({
@@ -263,8 +265,8 @@ export function ChatInboxFilters({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="desc">Mais recentes</SelectItem>
-              <SelectItem value="asc">Mais antigas</SelectItem>
+              <SelectItem value="desc">{t("chats.mostRecent")}</SelectItem>
+              <SelectItem value="asc">{t("chats.oldest")}</SelectItem>
             </SelectContent>
           </Select>
         </PopoverContent>

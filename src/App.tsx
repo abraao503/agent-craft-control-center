@@ -21,6 +21,8 @@ import Signup from "./pages/Signup";
 import { UnsavedChangesProvider } from "./contexts/unsaved-changes/UnsavedChangesContext";
 import SettingsPage from "./pages/SettingsPage";
 import IntegrationsPage from "./pages/IntegrationsPage";
+import MetaIntegrationPage from "./pages/MetaIntegrationPage";
+import GoogleCalendarIntegrationPage from "./pages/GoogleCalendarIntegrationPage";
 import CalendarPage from "./pages/CalendarPage";
 import NotFound from "./pages/NotFound";
 import ContentManagementPage from "./pages/ContentManagementPage";
@@ -66,6 +68,7 @@ import { PageViewTracker } from "./components/PageViewTracker";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { WorkspaceProvider } from "./contexts/workspace/WorkspaceContext";
 import { Loader2 } from "lucide-react";
+import { LegacyTextBridge } from "./components/i18n/LegacyTextBridge";
 
 const queryClient = new QueryClient();
 
@@ -225,6 +228,8 @@ const AppLayout = () => {
 const DashboardPage = () => <Dashboard />;
 const DashboardV2PageView = () => <DashboardV2Page />;
 const IntegrationsViewPage = () => <IntegrationsPage />;
+const MetaIntegrationViewPage = () => <MetaIntegrationPage />;
+const GoogleCalendarIntegrationViewPage = () => <GoogleCalendarIntegrationPage />;
 const CalendarPageView = () => <CalendarPage />;
 const SettingsConfigPage = () => <SettingsPage />;
 const ContentsPage = () => <ContentManagementPage />;
@@ -259,6 +264,7 @@ const NotFoundPage = () => <NotFound />;
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
+    <LegacyTextBridge />
     <ThemeProvider defaultTheme="light" attribute="class">
       <AuthProvider>
         <WorkspaceProvider>
@@ -300,6 +306,14 @@ const App = () => (
                     <Route
                       path="/integrations"
                       element={<IntegrationsViewPage />}
+                    />
+                    <Route
+                      path="/integrations/meta"
+                      element={<MetaIntegrationViewPage />}
+                    />
+                    <Route
+                      path="/integrations/google-calendar"
+                      element={<GoogleCalendarIntegrationViewPage />}
                     />
                     <Route path="/calendar" element={<CalendarPageView />} />
                     <Route path="/settings" element={<SettingsConfigPage />} />

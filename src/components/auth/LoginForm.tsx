@@ -15,6 +15,7 @@ import { useAuth } from "@/contexts/auth/hooks";
 import { AxiosError } from "axios";
 import { translateAuthError } from "@/utils/authErrorTranslations";
 import { Eye, EyeOff } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 const LoginForm = () => {
   const [email, setEmail] = useState("");
@@ -24,6 +25,7 @@ const LoginForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,15 +39,15 @@ const LoginForm = () => {
       console.error("Login error:", error);
 
       // Traduz mensagens de erro do backend
-      let errorMessage = "Ocorreu um erro ao fazer login";
+      let errorMessage: string = t("auth.loginFailed");
 
       if (error instanceof AxiosError && error.response?.data?.message) {
         errorMessage = translateAuthError(
           error.response.data.message,
-          "Email ou senha incorretos",
+          t("auth.loginFailed"),
         );
       } else if (error instanceof Error) {
-        errorMessage = error.message;
+        errorMessage = t("auth.genericError");
       }
 
       setError(errorMessage);
@@ -58,10 +60,10 @@ const LoginForm = () => {
     <Card className="w-full max-w-md">
       <CardHeader>
         <CardTitle className="text-2xl font-bold text-center">
-          Bem-vindo
+          {t("auth.welcome")}
         </CardTitle>
         <CardDescription className="text-center">
-          Entre para gerenciar seus agentes
+          {t("auth.loginDescription")}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -73,7 +75,7 @@ const LoginForm = () => {
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">{t("auth.email")}</Label>
             <Input
               id="email"
               type="email"
@@ -86,12 +88,12 @@ const LoginForm = () => {
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label htmlFor="password">Senha</Label>
+              <Label htmlFor="password">{t("auth.password")}</Label>
               <Link
                 to="/forgot-password"
                 className="text-sm text-primary hover:underline"
               >
-                Esqueceu sua senha?
+                {t("auth.forgotPassword")}
               </Link>
             </div>
             <div className="relative">
@@ -142,22 +144,22 @@ const LoginForm = () => {
                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                   ></path>
                 </svg>
-                Entrando...
+                {t("auth.loggingIn")}
               </span>
             ) : (
-              "Entrar"
+              t("auth.login")
             )}
           </Button>
         </form>
       </CardContent>
       <CardFooter className="flex flex-col space-y-2">
         <div className="text-sm text-center text-muted-foreground">
-          Não tem uma conta?{" "}
+          {t("auth.noAccount")} {" "}
           <Link
             to="/signup"
             className="text-primary hover:underline font-medium"
           >
-            Cadastre sua empresa
+            {t("auth.registerCompany")}
           </Link>
         </div>
       </CardFooter>

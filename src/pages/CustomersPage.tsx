@@ -33,6 +33,8 @@ import {
 } from "@/components/ui/pagination";
 import { useWorkspaceManager } from "@/hooks/useWorkspaceManager";
 import { formatPhone } from "@/utils/phone";
+import { useTranslation } from "react-i18next";
+import { useAppLocale } from "@/i18n/LocaleProvider";
 
 const CustomersPage = () => {
   const [localSearchQuery, setLocalSearchQuery] = useState("");
@@ -45,6 +47,8 @@ const CustomersPage = () => {
   });
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useTranslation();
+  const { locale } = useAppLocale();
 
   const { workspaceId, isChangingWorkspace } = useWorkspaceManager({
     queryKeys: ["listCustomers"],
@@ -78,12 +82,12 @@ const CustomersPage = () => {
   useEffect(() => {
     if (error) {
       toast({
-        title: "Erro",
-        description: "Falha ao carregar clientes. Tente novamente.",
+        title: t("common.error"),
+        description: t("common.unknownError"),
         variant: "destructive",
       });
     }
-  }, [error, toast]);
+  }, [error, t, toast]);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
@@ -115,7 +119,7 @@ const CustomersPage = () => {
   };
 
   const formatDate = (date: Date) => {
-    return new Intl.DateTimeFormat("pt-BR", {
+    return new Intl.DateTimeFormat(locale, {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
@@ -133,9 +137,9 @@ const CustomersPage = () => {
       <div className="container mx-auto py-6 px-6 w-100">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Clientes</h1>
+            <h1 className="text-3xl font-bold tracking-tight">{t("customers.title")}</h1>
             <p className="text-muted-foreground">
-              Gerencie as informações dos seus clientes
+              {t("customers.description")}
             </p>
           </div>
           <div className="flex gap-2">
@@ -145,14 +149,14 @@ const CustomersPage = () => {
               className="flex items-center gap-2"
             >
               <FileUp className="h-4 w-4" />
-              Importar Clientes
+              {t("customers.import")}
             </Button>
             <Button
               onClick={() => navigate("/customers/export-xlsx")}
               className="flex items-center gap-2"
             >
               <Download className="h-4 w-4" />
-              Exportar XLSX
+              {t("customers.export")}
             </Button>
           </div>
         </div>
@@ -161,7 +165,7 @@ const CustomersPage = () => {
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
             className="pl-10"
-            placeholder="Buscar clientes por nome ou telefone..."
+              placeholder={t("customers.searchPlaceholder")}
             value={localSearchQuery}
             onChange={handleSearch}
           />
@@ -180,21 +184,13 @@ const CustomersPage = () => {
           <div className="text-center py-12 border rounded-lg">
             {localSearchQuery ? (
               <>
-                <h3 className="font-medium text-lg">
-                  Nenhum cliente encontrado
-                </h3>
-                <p className="text-muted-foreground">
-                  Nenhum cliente corresponde à sua busca. Tente usar
-                  palavras-chave diferentes.
-                </p>
+                <h3 className="font-medium text-lg">{t("customers.noMatches")}</h3>
+                <p className="text-muted-foreground">{t("customers.noMatchesDescription")}</p>
               </>
             ) : (
               <>
-                <h3 className="font-medium text-lg">Nenhum cliente ainda</h3>
-                <p className="text-muted-foreground mb-4">
-                  Quando os clientes interagirem com seu sistema, eles
-                  aparecerão aqui
-                </p>
+                <h3 className="font-medium text-lg">{t("customers.empty")}</h3>
+                <p className="text-muted-foreground mb-4">{t("customers.emptyDescription")}</p>
                 <Users className="h-12 w-12 mx-auto text-muted-foreground" />
               </>
             )}
@@ -205,14 +201,14 @@ const CustomersPage = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Telefone</TableHead>
+                    <TableHead>{t("customers.name")}</TableHead>
+                    <TableHead>{t("customers.phone")}</TableHead>
                     <TableHead>
                       <div
                         className="flex items-center cursor-pointer"
                         onClick={() => handleSort("createdAt")}
                       >
-                        <span>Criado em</span>
+                        <span>{t("customers.createdAt")}</span>
                         {getSortIcon("createdAt")}
                       </div>
                     </TableHead>
@@ -221,7 +217,7 @@ const CustomersPage = () => {
                         className="flex items-center cursor-pointer"
                         onClick={() => handleSort("updatedAt")}
                       >
-                        <span>Atualizado em</span>
+                        <span>{t("customers.updatedAt")}</span>
                         {getSortIcon("updatedAt")}
                       </div>
                     </TableHead>

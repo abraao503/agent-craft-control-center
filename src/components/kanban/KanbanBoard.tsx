@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { DealListItem } from "@/types/deal";
+import { DealListItem, LeadAttributionSource } from "@/types/deal";
 import { PipelineStageMinimal } from "@/types/pipeline";
 import { DealViewModal } from "@/components/deals/DealViewModal";
 import { KanbanColumn } from "./KanbanColumn";
@@ -13,6 +13,10 @@ interface KanbanBoardProps {
   pipelineId?: string;
   onDealUpdated?: () => void;
   assignedUserId?: string;
+  attributionSource?: LeadAttributionSource | "UNATTRIBUTED";
+  campaignId?: string;
+  adId?: string;
+  formId?: string;
 }
 
 export const KanbanBoard: React.FC<KanbanBoardProps> = ({
@@ -23,6 +27,10 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   workspaceId,
   pipelineId,
   assignedUserId,
+  attributionSource,
+  campaignId,
+  adId,
+  formId,
 }) => {
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
   const [selectedDeal, setSelectedDeal] = useState<DealListItem | null>(null);
@@ -52,11 +60,16 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
               isMoving={isMoving}
               stageMeta={stageMeta?.[stage.id]}
               workspaceId={workspaceId}
+              pipelineId={pipelineId}
               onDealClick={handleDealClick}
               dragOverStage={dragOverStage}
               onDragEnter={() => setDragOverStage(stage.id)}
               onDragLeave={handleDragLeave(stage.id)}
               assignedUserId={assignedUserId}
+              attributionSource={attributionSource}
+              campaignId={campaignId}
+              adId={adId}
+              formId={formId}
             />
           ))}
         </div>

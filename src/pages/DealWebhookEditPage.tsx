@@ -30,6 +30,7 @@ import {
   UpdateDealWebhookInput,
   DealWebhookStatus,
 } from "@/types/deal-webhook";
+import { useTranslation } from "react-i18next";
 
 export default function DealWebhookEditPage() {
   const { id } = useParams<{ id: string }>();
@@ -37,6 +38,7 @@ export default function DealWebhookEditPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { currentWorkspace } = useWorkspaceContext();
+  const { t } = useTranslation();
   const workspaceId = currentWorkspace?.id || "";
 
   const [name, setName] = useState("");
@@ -77,8 +79,8 @@ export default function DealWebhookEditPage() {
     mutationFn: (data: UpdateDealWebhookInput) => updateDealWebhook(id!, data),
     onSuccess: () => {
       toast({
-        title: "Webhook atualizado",
-        description: "O webhook foi atualizado com sucesso!",
+        title: t("webhookForm.updateSuccess"),
+        description: t("webhookForm.updateSuccessDescription"),
       });
       queryClient.invalidateQueries({ queryKey: ["deal-webhook", id] });
       queryClient.invalidateQueries({ queryKey: ["deal-webhooks"] });
@@ -86,9 +88,9 @@ export default function DealWebhookEditPage() {
     },
     onError: (error: Error) => {
       toast({
-        title: "Erro ao atualizar webhook",
+        title: t("webhookForm.updateError"),
         description:
-          error?.message || "Ocorreu um erro ao atualizar o webhook.",
+          error?.message || t("webhookForm.updateErrorDescription"),
         variant: "destructive",
       });
     },
@@ -99,8 +101,8 @@ export default function DealWebhookEditPage() {
 
     if (!name.trim()) {
       toast({
-        title: "Nome obrigatório",
-        description: "Por favor, informe um nome para o webhook.",
+        title: t("webhookForm.nameRequired"),
+        description: t("webhookForm.nameRequiredDescription"),
         variant: "destructive",
       });
       return;
@@ -108,9 +110,8 @@ export default function DealWebhookEditPage() {
 
     if (sendWelcomeMessage && !welcomeMessage.trim()) {
       toast({
-        title: "Mensagem obrigatória",
-        description:
-          "Por favor, informe a mensagem de boas-vindas ou desative a opção.",
+        title: t("webhookForm.messageRequired"),
+        description: t("webhookForm.messageRequiredDescription"),
         variant: "destructive",
       });
       return;
@@ -153,15 +154,15 @@ export default function DealWebhookEditPage() {
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-3xl font-bold tracking-tight">Editar Webhook</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{t("webhookForm.editingTitle")}</h1>
         </div>
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <p className="text-muted-foreground">
-              Webhook não encontrado ou ocorreu um erro ao carregar.
+              {t("legacy.Webhook não encontrado ou ocorreu um erro ao carregar.")}
             </p>
             <Button onClick={() => navigate("/webhooks")} className="mt-4">
-              Voltar para lista
+              {t("webhookForm.backToList")}
             </Button>
           </CardContent>
         </Card>
@@ -181,9 +182,9 @@ export default function DealWebhookEditPage() {
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Editar Webhook</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{t("webhookForm.editingTitle")}</h1>
           <p className="text-muted-foreground">
-            Atualize as configurações do webhook
+            {t("webhookForm.editingDescription")}
           </p>
         </div>
       </div>
@@ -191,40 +192,39 @@ export default function DealWebhookEditPage() {
       <div className="max-w-2xl mx-auto">
         <Card>
           <CardHeader>
-            <CardTitle>Configurações do Webhook</CardTitle>
+            <CardTitle>{t("webhookForm.webhookConfiguration")}</CardTitle>
             <CardDescription>
-              Edite as opções do webhook. A URL e a pipeline não podem ser
-              alteradas.
+              {t("webhookForm.editFormDescription")}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="name">Nome do Webhook *</Label>
+                <Label htmlFor="name">{t("webhookForm.nameLabel")}</Label>
                 <Input
                   id="name"
-                  placeholder="Ex: Integração CRM, Landing Page..."
+                  placeholder={t("webhookForm.namePlaceholder")}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
+                <Label htmlFor="status">{t("webhookForm.statusLabel")}</Label>
                 <Select
                   value={status}
                   onValueChange={(value: DealWebhookStatus) => setStatus(value)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione o status" />
+                    <SelectValue placeholder={t("webhookForm.statusPlaceholder")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="ACTIVE">Ativo</SelectItem>
-                    <SelectItem value="INACTIVE">Inativo</SelectItem>
+                    <SelectItem value="ACTIVE">{t("webhooks.active")}</SelectItem>
+                    <SelectItem value="INACTIVE">{t("webhooks.inactive")}</SelectItem>
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  Webhooks inativos rejeitam requisições
+                  {t("webhookForm.inactiveHelp")}
                 </p>
               </div>
 
@@ -232,18 +232,18 @@ export default function DealWebhookEditPage() {
 
               <div className="space-y-4">
                 <h3 className="text-sm font-medium">
-                  Configuração da Pipeline
+                  {t("webhookForm.pipelineConfiguration")}
                 </h3>
 
                 <div className="space-y-2">
-                  <Label>Pipeline</Label>
+                  <Label>{t("webhookForm.pipelineLabel").replace(" *", "")}</Label>
                   <Input
                     value={webhook.pipeline.name}
                     disabled
                     className="bg-muted"
                   />
                   <p className="text-xs text-muted-foreground">
-                    A pipeline não pode ser alterada após a criação
+                    {t("webhookForm.pipelineLockedHelp")}
                   </p>
                 </div>
 
@@ -254,7 +254,7 @@ export default function DealWebhookEditPage() {
                     onValueChange={(value) => setSelectedStageId(value)}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Primeira etapa da pipeline" />
+                    <SelectValue placeholder={t("webhookForm.firstStageDefault")} />
                     </SelectTrigger>
                     <SelectContent>
                       {stages?.map((stage) => (
@@ -265,14 +265,14 @@ export default function DealWebhookEditPage() {
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-muted-foreground">
-                    Se não informado, será usada a primeira etapa da pipeline
+                    {t("webhookForm.stageUnspecifiedHelp")}
                   </p>
                 </div>
               </div>
 
               <div className="p-4 bg-muted/50 rounded-lg">
                 <Label className="text-sm text-muted-foreground">
-                  URL do Webhook
+                  {t("webhookForm.urlLabel")}
                 </Label>
                 <p className="font-mono text-sm mt-1 break-all">
                   {webhook.webhookUrl}
@@ -285,10 +285,10 @@ export default function DealWebhookEditPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <Label htmlFor="sendWelcomeMessage">
-                      Mensagem de boas-vindas
+                      {t("webhookForm.welcomeMessage")}
                     </Label>
                     <p className="text-sm text-muted-foreground">
-                      Enviar mensagem automática ao criar o deal
+                      {t("webhookForm.welcomeHelp")}
                     </p>
                   </div>
                   <Switch
@@ -300,10 +300,10 @@ export default function DealWebhookEditPage() {
 
                 {sendWelcomeMessage && (
                   <div className="space-y-2">
-                    <Label htmlFor="welcomeMessage">Mensagem *</Label>
+                    <Label htmlFor="welcomeMessage">{t("webhookForm.messageLabel")}</Label>
                     <Textarea
                       id="welcomeMessage"
-                      placeholder="Digite a mensagem de boas-vindas..."
+                      placeholder={t("webhookForm.messagePlaceholder")}
                       value={welcomeMessage}
                       onChange={(e) => setWelcomeMessage(e.target.value)}
                       rows={4}
@@ -314,12 +314,12 @@ export default function DealWebhookEditPage() {
 
               <div className="flex justify-end gap-2 pt-4">
                 <Button type="button" variant="outline" onClick={handleGoBack}>
-                  Cancelar
+                  {t("webhookForm.cancel")}
                 </Button>
                 <Button type="submit" disabled={updateMutation.isPending}>
                   {updateMutation.isPending
-                    ? "Salvando..."
-                    : "Salvar Alterações"}
+                    ? t("webhookForm.updating")
+                    : t("webhookForm.updateButton")}
                 </Button>
               </div>
             </form>

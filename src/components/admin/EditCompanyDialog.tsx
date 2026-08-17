@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { AxiosError } from "axios";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { updateCompany } from "@/services/company/updateCompany";
 import { useToast } from "@/hooks/use-toast";
@@ -59,8 +60,14 @@ export function EditCompanyDialog({
       onOpenChange(false);
     },
     onError: (error: unknown) => {
+      const response = error instanceof AxiosError ? error.response?.data : null;
       const message =
-        (error as any).response?.data?.message || "Erro ao atualizar empresa";
+        response &&
+        typeof response === "object" &&
+        "message" in response &&
+        typeof response.message === "string"
+          ? response.message
+          : "Erro ao atualizar empresa";
       toast({
         title: "Erro",
         description: message,

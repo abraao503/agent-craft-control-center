@@ -9,6 +9,7 @@ import Text from "@tiptap/extension-text";
 import Placeholder from "@tiptap/extension-placeholder";
 import { Button } from "@/components/ui/button";
 import { User, Mail, UserRound } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import {
   TEMPLATE_VARIABLES,
   templateHtmlToApiText,
@@ -75,6 +76,7 @@ export function MessageTemplateEditor({
   onChange,
   placeholder = "Digite a mensagem...",
 }: MessageTemplateEditorProps) {
+  const { t } = useTranslation();
   const editor = useEditor({
     extensions: [
       Document,
@@ -155,7 +157,9 @@ export function MessageTemplateEditor({
     <div className="space-y-2">
       <EditorContent editor={editor} />
       <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-xs text-muted-foreground">Inserir variável:</span>
+        <span className="text-xs text-muted-foreground">
+          {t("broadcastCreate.insertVariable")}
+        </span>
         {TEMPLATE_VARIABLES.map((variable) => {
           const Icon = VARIABLE_ICONS[variable.id] || User;
           return (
@@ -168,7 +172,7 @@ export function MessageTemplateEditor({
               onClick={() => insertVariable(variable)}
             >
               <Icon className="h-3 w-3" />
-              {variable.displayLabel}
+              {getVariableDisplayLabel(variable.id)}
             </Button>
           );
         })}

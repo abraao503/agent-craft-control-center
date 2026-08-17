@@ -14,6 +14,8 @@ import {
 import { Eye, EyeOff } from "lucide-react";
 import { resetPassword } from "@/services/user/resetPassword";
 import { AxiosError } from "axios";
+import { useTranslation } from "react-i18next";
+import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
 
 const ResetPasswordPage = () => {
   const [searchParams] = useSearchParams();
@@ -25,23 +27,24 @@ const ResetPasswordPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const { t } = useTranslation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
     if (!token) {
-      setError("Token inválido. Solicite um novo link de redefinição.");
+      setError(t("auth.invalidResetToken"));
       return;
     }
 
     if (newPassword.length < 6) {
-      setError("A senha deve ter pelo menos 6 caracteres.");
+      setError(t("auth.passwordMinLength"));
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      setError("As senhas não coincidem.");
+      setError(t("auth.passwordsDoNotMatch"));
       return;
     }
 
@@ -57,17 +60,17 @@ const ResetPasswordPage = () => {
         const msg = err.response.data.message as string;
         if (msg === "Invalid token" || msg === "Token expired") {
           setError(
-            "Link inválido ou expirado. Solicite um novo link de redefinição.",
+            t("auth.resetLinkInvalid"),
           );
         } else if (msg === "Token already used") {
           setError(
-            "Este link já foi utilizado. Solicite um novo link de redefinição.",
+            t("auth.resetLinkUsed"),
           );
         } else {
-          setError("Ocorreu um erro. Tente novamente.");
+          setError(t("auth.genericError"));
         }
       } else {
-        setError("Ocorreu um erro. Tente novamente.");
+        setError(t("auth.genericError"));
       }
     } finally {
       setIsSubmitting(false);
@@ -75,14 +78,15 @@ const ResetPasswordPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
+    <div className="min-h-screen flex items-center justify-center bg-background px-4 relative">
+      <LanguageSwitcher className="absolute right-4 top-4" />
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="text-2xl font-bold text-center">
-            Redefinir senha
+            {t("auth.resetTitle")}
           </CardTitle>
           <CardDescription className="text-center">
-            Crie uma nova senha para sua conta
+            {t("auth.resetDescription")}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -93,7 +97,7 @@ const ResetPasswordPage = () => {
               </div>
             )}
             <div className="space-y-2">
-              <Label htmlFor="newPassword">Nova senha</Label>
+              <Label htmlFor="newPassword">{t("auth.newPassword")}</Label>
               <div className="relative">
                 <Input
                   id="newPassword"
@@ -119,7 +123,7 @@ const ResetPasswordPage = () => {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirmar nova senha</Label>
+              <Label htmlFor="confirmPassword">{t("auth.confirmPassword")}</Label>
               <Input
                 id="confirmPassword"
                 type={showPassword ? "text" : "password"}
@@ -130,13 +134,13 @@ const ResetPasswordPage = () => {
               />
             </div>
             <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting ? "Salvando..." : "Redefinir senha"}
+              {isSubmitting ? t("auth.saving") : t("auth.resetPassword")}
             </Button>
           </form>
         </CardContent>
         <CardFooter className="justify-center">
           <Link to="/login" className="text-sm text-primary hover:underline">
-            Voltar ao login
+            {t("auth.backToLogin")}
           </Link>
         </CardFooter>
       </Card>

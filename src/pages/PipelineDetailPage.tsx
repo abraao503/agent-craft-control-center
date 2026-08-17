@@ -5,7 +5,11 @@ import { Button } from "@/components/ui/button";
 import { useWorkspaceManager } from "@/hooks/useWorkspaceManager";
 import { listPipelineStages } from "@/services/pipeline/listPipelineStages";
 import { moveDealStage } from "@/services/deal/moveDealStage";
-import { DealListItem, GetDealsByStageResponse } from "@/types/deal";
+import {
+  DealListItem,
+  GetDealsByStageResponse,
+  LeadAttributionSource,
+} from "@/types/deal";
 import KanbanBoard from "@/components/kanban/KanbanBoard";
 import { KanbanSkeleton } from "@/components/kanban/KanbanSkeleton";
 import { CreateDealModal } from "@/components/deals/CreateDealModal";
@@ -24,6 +28,9 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { useAuth } from "@/contexts/auth/hooks";
 import { MessageSentEvent } from "@/types/websocket";
 import { Inbox } from "lucide-react";
+import { getDealAttributionOptions } from "@/services/deal/getDealAttributionOptions";
+import { MetaAttributionFilters } from "@/components/deals/MetaAttributionFilters";
+import { useTranslation } from "react-i18next";
 
 const PipelineDetailPage = () => {
   const { pipelineId } = useParams();
@@ -32,6 +39,7 @@ const PipelineDetailPage = () => {
   const { toast } = useToast();
   const { has } = usePermissions();
   const { userProfile } = useAuth();
+  const { t } = useTranslation();
 
   const { workspaceId, isChangingWorkspace } = useWorkspaceManager({
     queryKeys: ["listPipelineStages", "listPipelines"],
@@ -46,6 +54,12 @@ const PipelineDetailPage = () => {
   const [selectedUserId, setSelectedUserId] = useState<string | undefined>(
     undefined,
   );
+  const [attributionSource, setAttributionSource] = useState<
+    LeadAttributionSource | "UNATTRIBUTED" | undefined
+  >(undefined);
+  const [campaignId, setCampaignId] = useState<string | undefined>(undefined);
+  const [adId, setAdId] = useState<string | undefined>(undefined);
+  const [formId, setFormId] = useState<string | undefined>(undefined);
   const [activitiesSidebarOpen, setActivitiesSidebarOpen] = useState(false);
 
   // SALES_REP sempre filtra pelos próprios cards
@@ -117,6 +131,37 @@ const PipelineDetailPage = () => {
     queryFn: () => listPipelines(workspaceId!),
     enabled: !!workspaceId,
   });
+
+  const attributionOptionsQuery = useQuery({
+    queryKey: ["dealAttributionOptions", workspaceId, pipelineId],
+    queryFn: () =>
+      getDealAttributionOptions({
+        workspaceId: workspaceId!,
+        pipelineId: pipelineId || undefined,
+      }),
+    enabled: !!workspaceId && !!pipelineId,
+  });
+
+  const attributionOptions = attributionOptionsQuery.data;
+  const hasMetaAttributionData = Boolean(
+    attributionOptions &&
+      (attributionOptions.sources.some((source) => source !== "UNKNOWN") ||
+        attributionOptions.campaigns.length > 0 ||
+        attributionOptions.ads.length > 0 ||
+        (attributionOptions.forms?.length ?? 0) > 0),
+  );
+  const showAttributionFilters =
+    attributionOptionsQuery.isSuccess &&
+    Boolean(attributionOptions) &&
+    (attributionOptions?.metaAttributionActive === true ||
+      hasMetaAttributionData);
+
+  useEffect(() => {
+    setAttributionSource(undefined);
+    setCampaignId(undefined);
+    setAdId(undefined);
+    setFormId(undefined);
+  }, [workspaceId, pipelineId]);
 
   useEffect(() => {
     if (!workspaceId || pipelineId) return;
@@ -281,7 +326,7 @@ const PipelineDetailPage = () => {
         });
       });
 
-      toast({ title: "Sucesso", description: "Negócio movido com sucesso." });
+      toast({ title: t("common.success"), description: t("deals.moveSuccess") });
     } catch (e: unknown) {
       // Rollback optimistic update on error - restore all queries
       previousData.forEach((data, key) => {
@@ -305,21 +350,21 @@ const PipelineDetailPage = () => {
         if (match) {
           const fields = match[1];
           toast({
-            title: "Campos obrigatórios não preenchidos",
-            description: `Preencha os seguintes campos antes de mover o negócio: ${fields}`,
+            title: t("deals.requiredTitle"),
+            description: t("deals.requiredDescription", { fields }),
             variant: "destructive",
           });
         } else {
           toast({
-            title: "Erro de validação",
+            title: t("deals.validationError"),
             description: errorMessage,
             variant: "destructive",
           });
         }
       } else {
         toast({
-          title: "Erro",
-          description: "Falha ao mover negócio.",
+          title: t("common.error"),
+          description: t("deals.moveError"),
           variant: "destructive",
         });
       }
@@ -354,7 +399,7 @@ const PipelineDetailPage = () => {
     if (hasPipelines) {
       return (
         <div className="border rounded-lg py-12 text-center text-muted-foreground">
-          Selecione um funil no topo ou crie um novo.
+          {t("deals.selectPipeline")}
         </div>
       );
     }
@@ -364,15 +409,15 @@ const PipelineDetailPage = () => {
         <div className="space-y-4">
           {isSalesRep ? (
             <p className="text-muted-foreground">
-              Você ainda não possui negócios atribuídos a você.
+              {t("deals.noAssignedDeals")}
             </p>
           ) : (
             <>
               <p className="text-muted-foreground">
-                Você ainda não tem nenhum funil.
+                {t("deals.noPipeline")}
               </p>
               <Button onClick={() => navigate("/deals/pipeline/create")}>
-                Criar funil
+                {t("deals.createPipeline")}
               </Button>
             </>
           )}
@@ -383,7 +428,7 @@ const PipelineDetailPage = () => {
 
   const renderEmptyStagesState = () => (
     <div className="border rounded-lg py-12 text-center text-muted-foreground">
-      Este pipeline não possui etapas. Crie etapas para visualizar o Kanban.
+      {t("deals.noStages")}
     </div>
   );
 
@@ -395,6 +440,10 @@ const PipelineDetailPage = () => {
       workspaceId={workspaceId}
       pipelineId={pipelineId}
       assignedUserId={effectiveAssignedUserId}
+      attributionSource={attributionSource}
+      campaignId={campaignId}
+      adId={adId}
+      formId={formId}
       onDealUpdated={() => {
         stages.forEach((stage) => {
           queryClient.invalidateQueries({
@@ -414,62 +463,94 @@ const PipelineDetailPage = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <h1 className="text-3xl font-bold tracking-tight">Negócios</h1>
-          {canCreateDeal && pipelineId && stages.length > 0 && (
-            <Button onClick={() => setOpenCreateDeal(true)} className="mr-2">
-              Novo Negócio
-            </Button>
-          )}
-          {workspaceId && canListUsers && !isSalesRep && (
-            <UserFilter
-              workspaceId={workspaceId}
-              selectedUserId={selectedUserId}
-              onSelectUser={setSelectedUserId}
-            />
-          )}
+      <div className="space-y-3">
+        <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+          <div className="flex min-w-0 flex-wrap items-center gap-3">
+            <h1 className="text-3xl font-bold tracking-tight">{t("deals.title")}</h1>
+            {canCreateDeal && pipelineId && stages.length > 0 && (
+              <Button onClick={() => setOpenCreateDeal(true)} className="mr-2">
+                {t("deals.new")}
+              </Button>
+            )}
+          </div>
+          <div className="flex flex-wrap items-center gap-2 xl:justify-end">
+            {pipelineId && canViewPipeline && (
+              <Button
+                variant="outline"
+                onClick={() => navigate(`/deals/pipeline/${pipelineId}/queue`)}
+              >
+                <Inbox className="h-4 w-4 mr-2" />
+                {t("deals.messageQueue")}
+              </Button>
+            )}
+            {currentPipelineWhatsappIntegrationId && workspaceId && (
+              <PipelineWhatsAppConnection
+                companyWhatsappIntegrationId={
+                  currentPipelineWhatsappIntegrationId
+                }
+                workspaceId={workspaceId}
+              />
+            )}
+            {workspaceId && (
+              <PipelineSwitcher
+                workspaceId={workspaceId}
+                currentPipelineId={pipelineId}
+                onSelect={handleSelectPipeline}
+                onEditCurrent={() =>
+                  navigate(`/deals/pipeline/${pipelineId}/edit`)
+                }
+                onCreateNew={() => navigate("/deals/pipeline/create")}
+                canEdit={canUpdatePipeline}
+                canCreate={canCreatePipeline}
+              />
+            )}
+            {workspaceId && (
+              <ActivitiesButton
+                workspaceId={workspaceId}
+                onClick={() => setActivitiesSidebarOpen(!activitiesSidebarOpen)}
+                isOpen={activitiesSidebarOpen}
+                socket={socket}
+              />
+            )}
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          {pipelineId && canViewPipeline && (
-            <Button
-              variant="outline"
-              onClick={() => navigate(`/deals/pipeline/${pipelineId}/queue`)}
-            >
-              <Inbox className="h-4 w-4 mr-2" />
-              Fila de Mensagens
-            </Button>
-          )}
-          {currentPipelineWhatsappIntegrationId && workspaceId && (
-            <PipelineWhatsAppConnection
-              companyWhatsappIntegrationId={
-                currentPipelineWhatsappIntegrationId
-              }
-              workspaceId={workspaceId}
-            />
-          )}
-          {workspaceId && (
-            <PipelineSwitcher
-              workspaceId={workspaceId}
-              currentPipelineId={pipelineId}
-              onSelect={handleSelectPipeline}
-              onEditCurrent={() =>
-                navigate(`/deals/pipeline/${pipelineId}/edit`)
-              }
-              onCreateNew={() => navigate("/deals/pipeline/create")}
-              canEdit={canUpdatePipeline}
-              canCreate={canCreatePipeline}
-            />
-          )}
-          {workspaceId && (
-            <ActivitiesButton
-              workspaceId={workspaceId}
-              onClick={() => setActivitiesSidebarOpen(!activitiesSidebarOpen)}
-              isOpen={activitiesSidebarOpen}
-              socket={socket}
-            />
-          )}
-        </div>
+        {(showAttributionFilters ||
+          (workspaceId && canListUsers && !isSalesRep)) && (
+          <div className="flex min-h-10 flex-wrap items-center gap-x-3 gap-y-2">
+            {workspaceId && canListUsers && !isSalesRep && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">
+                  {t("deals.responsible")}
+                </span>
+                <UserFilter
+                  workspaceId={workspaceId}
+                  selectedUserId={selectedUserId}
+                  onSelectUser={setSelectedUserId}
+                />
+              </div>
+            )}
+
+            {showAttributionFilters && attributionOptions && (
+              <>
+                {workspaceId && canListUsers && !isSalesRep && (
+                  <div className="hidden h-6 w-px bg-border sm:block" />
+                )}
+                <MetaAttributionFilters
+                  options={attributionOptions}
+                  hasData={hasMetaAttributionData}
+                  attributionSource={attributionSource}
+                  campaignId={campaignId}
+                  adId={adId}
+                  formId={formId}
+                  onAttributionSourceChange={setAttributionSource}
+                  onCampaignChange={setCampaignId}
+                  onAdChange={setAdId}
+                  onFormChange={setFormId}
+                />
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       {renderMainContent()}

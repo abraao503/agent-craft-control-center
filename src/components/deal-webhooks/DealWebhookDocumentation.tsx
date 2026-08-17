@@ -10,13 +10,15 @@ import {
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import type { DealWebhook } from "@/types/deal-webhook";
+import { useTranslation } from "react-i18next";
+import { useAppLocale } from "@/i18n/LocaleProvider";
 
 interface DealWebhookDocumentationProps {
   webhook: DealWebhook;
   onCopy: (text: string) => void;
 }
 
-const examplePayload = {
+const examplePayloadPt = {
   title: "Nome do negócio",
   description: "Descrição opcional do negócio",
   value: 1000,
@@ -25,12 +27,24 @@ const examplePayload = {
   customerEmail: "joao.silva@exemplo.com",
 };
 
+const examplePayloadEs = {
+  title: "Nombre de la oportunidad",
+  description: "Descripción opcional de la oportunidad",
+  value: 1000,
+  customerName: "Juan Pérez",
+  customerPhone: "+5511999887766",
+  customerEmail: "juan.perez@ejemplo.com",
+};
+
 const headersPayload = { "Content-Type": "application/json" };
 
 export function DealWebhookDocumentation({
   webhook,
   onCopy,
 }: DealWebhookDocumentationProps) {
+  const { t } = useTranslation();
+  const { locale } = useAppLocale();
+  const examplePayload = locale === "es-ES" ? examplePayloadEs : examplePayloadPt;
   const curlExample = `curl -X POST "${webhook.webhookUrl}" \\
   -H "Content-Type: application/json" \\
   -d '${JSON.stringify(examplePayload)}'`;
@@ -99,7 +113,7 @@ export function DealWebhookDocumentation({
 
           <div>
             <Label className="text-sm font-medium mb-2 block">
-              Campos do Body
+              {t("webhookForm.bodyFields")}
             </Label>
             <div className="space-y-2 text-sm">
               <div className="grid grid-cols-3 gap-2 p-2 bg-muted/50 rounded font-medium">
@@ -128,23 +142,11 @@ export function DealWebhookDocumentation({
               Observações Importantes
             </Label>
             <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-              <li>
-                O telefone aceita formato internacional com DDI (ex:
-                +5511999887766, +16505551234). Números sem DDI são assumidos
-                como brasileiros.
-              </li>
-              <li>
-                O campo <InlineCode>title</InlineCode> é obrigatório e será o
-                nome do negócio
-              </li>
-              <li>
-                O campo <InlineCode>customerPhone</InlineCode> é obrigatório
-              </li>
-              <li>Todos os outros campos são opcionais</li>
-              <li>
-                A pipeline e etapa são configuradas no webhook e aplicadas
-                automaticamente
-              </li>
+              <li>{t("webhookForm.phoneNote")}</li>
+              <li>{t("webhookForm.titleNote")}</li>
+              <li>{t("webhookForm.phoneRequiredNote")}</li>
+              <li>{t("webhookForm.otherFieldsOptional")}</li>
+              <li>{t("webhookForm.pipelineNote")}</li>
             </ul>
           </div>
 
@@ -238,10 +240,6 @@ function BodyField({
       </span>
     </div>
   );
-}
-
-function InlineCode({ children }: { children: string }) {
-  return <code className="text-xs bg-muted px-1 py-0.5 rounded">{children}</code>;
 }
 
 function InfoRow({ label, value }: { label: string; value: string }) {

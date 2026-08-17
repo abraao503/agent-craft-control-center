@@ -26,6 +26,7 @@ import { HighlightService } from "@/lib/highlight";
 import { signupCompany } from "@/services/company/signupCompany";
 import { AxiosError } from "axios";
 import { translateAuthError } from "@/utils/authErrorTranslations";
+import { useTranslation } from "react-i18next";
 
 // Esquema de validação para o formulário de cadastro
 const signupSchema = z
@@ -48,6 +49,7 @@ const SignupForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const form = useForm<SignupFormData>({
     resolver: zodResolver(signupSchema),
@@ -84,15 +86,15 @@ const SignupForm = () => {
       console.error("Signup error:", error);
 
       // Traduz mensagens de erro do backend
-      let errorMessage = "Ocorreu um erro ao criar a conta";
+      let errorMessage: string = t("auth.signupFailed");
 
       if (error instanceof AxiosError && error.response?.data?.message) {
         errorMessage = translateAuthError(
           error.response.data.message,
-          "Ocorreu um erro ao criar a conta"
+          t("auth.signupFailed")
         );
       } else if (error instanceof Error) {
-        errorMessage = error.message;
+        errorMessage = t("auth.genericError");
       }
 
       setError(errorMessage);
@@ -113,10 +115,10 @@ const SignupForm = () => {
     <Card className="w-full max-w-md">
       <CardHeader>
         <CardTitle className="text-2xl font-bold text-center">
-          Criar Conta
+          {t("auth.createAccount")}
         </CardTitle>
         <CardDescription className="text-center">
-          Cadastre sua empresa e comece a usar o 7 Agentes
+          {t("auth.signupDescription")}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -142,7 +144,7 @@ const SignupForm = () => {
                 name="companyName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Nome da Empresa</FormLabel>
+                    <FormLabel>{t("auth.companyName")}</FormLabel>
                     <FormControl>
                       <Input placeholder="Minha Empresa Ltda" {...field} />
                     </FormControl>
@@ -156,7 +158,7 @@ const SignupForm = () => {
                 name="ownerName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Seu Nome Completo</FormLabel>
+                    <FormLabel>{t("auth.fullName")}</FormLabel>
                     <FormControl>
                       <Input placeholder="João Silva" {...field} />
                     </FormControl>
@@ -170,7 +172,7 @@ const SignupForm = () => {
                 name="ownerEmail"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel>{t("auth.email")}</FormLabel>
                     <FormControl>
                       <Input
                         type="email"
@@ -188,7 +190,7 @@ const SignupForm = () => {
                 name="ownerPassword"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Senha</FormLabel>
+                    <FormLabel>{t("auth.password")}</FormLabel>
                     <FormControl>
                       <Input
                         type="password"
@@ -206,7 +208,7 @@ const SignupForm = () => {
                 name="confirmPassword"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Confirmar Senha</FormLabel>
+                    <FormLabel>{t("auth.confirmPassword")}</FormLabel>
                     <FormControl>
                       <Input
                         type="password"
@@ -220,16 +222,16 @@ const SignupForm = () => {
               />
 
               <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {isSubmitting ? "Criando Conta..." : "Criar Conta"}
+                {isSubmitting ? t("auth.creatingAccount") : t("auth.createAccount")}
               </Button>
             </form>
           </Form>
         </FormErrorTracker>
 
         <div className="mt-4 text-center text-sm">
-          Já tem uma conta?{" "}
+          {t("auth.alreadyHaveAccount")} {" "}
           <Link to="/login" className="text-primary hover:underline">
-            Faça login
+            {t("auth.loginLink")}
           </Link>
         </div>
       </CardContent>

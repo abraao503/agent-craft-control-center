@@ -23,10 +23,12 @@ import {
 import { Download, ArrowLeft } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 const CustomersExportXlsxPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
   const [keywords, setKeywords] = useState<string[]>([]);
   const [currentKeyword, setCurrentKeyword] = useState("");
@@ -49,9 +51,8 @@ const CustomersExportXlsxPage = () => {
   const handleExport = async () => {
     if (!workspaceId) {
       toast({
-        title: "Erro",
-        description:
-          "Workspace não selecionado. Por favor, selecione um workspace.",
+        title: t("customerExport.error"),
+        description: t("customerExport.workspaceRequired"),
         variant: "destructive",
       });
       return;
@@ -89,14 +90,14 @@ const CustomersExportXlsxPage = () => {
       window.URL.revokeObjectURL(url);
 
       toast({
-        title: "Sucesso",
-        description: "Clientes exportados com sucesso!",
+        title: t("customerExport.success"),
+        description: t("customerExport.successDescription"),
       });
     } catch (error) {
       console.error("Erro ao exportar clientes:", error);
       toast({
-        title: "Erro",
-        description: "Falha ao exportar clientes. Por favor, tente novamente.",
+        title: t("customerExport.error"),
+        description: t("customerExport.exportError"),
         variant: "destructive",
       });
     } finally {
@@ -135,29 +136,29 @@ const CustomersExportXlsxPage = () => {
         </Button>
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
-            Exportar Clientes
+            {t("customerExport.title")}
           </h1>
           <p className="text-muted-foreground">
-            Exporte seus clientes em formato XLSX com filtros personalizados
+            {t("customerExport.description")}
           </p>
         </div>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Filtros de Exportação</CardTitle>
+          <CardTitle>{t("customerExport.filters")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label htmlFor="messageCount">
-                Quantidade Mínima de Mensagens
+                {t("customerExport.minMessages")}
               </Label>
               <Input
                 id="messageCount"
                 type="number"
                 min="0"
-                placeholder="Ex: 5"
+                placeholder={t("customerExport.exampleCount")}
                 value={filters.messageCount || ""}
                 onChange={(e) =>
                   setFilters({
@@ -172,7 +173,7 @@ const CustomersExportXlsxPage = () => {
 
             <div className="space-y-2">
               <Label htmlFor="lastInteractionType">
-                Tipo da Última Interação
+                {t("customerExport.lastInteractionType")}
               </Label>
               <Select
                 value={filters.lastInteractionType || "all"}
@@ -190,13 +191,13 @@ const CustomersExportXlsxPage = () => {
                 }
               >
                 <SelectTrigger id="lastInteractionType">
-                  <SelectValue placeholder="Selecione o tipo" />
+                  <SelectValue placeholder={t("customerExport.selectType")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="customer">Cliente</SelectItem>
-                  <SelectItem value="assistant">Agente</SelectItem>
-                  <SelectItem value="human_assistant">Agente Humano</SelectItem>
+                  <SelectItem value="all">{t("customerExport.all")}</SelectItem>
+                  <SelectItem value="customer">{t("customerExport.customer")}</SelectItem>
+                  <SelectItem value="assistant">{t("customerExport.assistant")}</SelectItem>
+                  <SelectItem value="human_assistant">{t("customerExport.humanAssistant")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -204,7 +205,7 @@ const CustomersExportXlsxPage = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <Label>Data e Hora da Última Interação (Início)</Label>
+              <Label>{t("customerExport.interactionStart")}</Label>
               <div className="flex gap-2">
                 <DateTimePicker
                   date={filters.lastInteractionStartDate}
@@ -214,7 +215,7 @@ const CustomersExportXlsxPage = () => {
                       lastInteractionStartDate: date,
                     })
                   }
-                  placeholder="Selecione a data e hora inicial"
+                  placeholder={t("customerExport.selectStart")}
                 />
                 {filters.lastInteractionStartDate && (
                   <Button
@@ -234,7 +235,7 @@ const CustomersExportXlsxPage = () => {
             </div>
 
             <div className="space-y-2">
-              <Label>Data e Hora da Última Interação (Fim)</Label>
+              <Label>{t("customerExport.interactionEnd")}</Label>
               <div className="flex gap-2">
                 <DateTimePicker
                   date={filters.lastInteractionEndDate}
@@ -244,7 +245,7 @@ const CustomersExportXlsxPage = () => {
                       lastInteractionEndDate: date,
                     })
                   }
-                  placeholder="Selecione a data e hora final"
+                  placeholder={t("customerExport.selectEnd")}
                 />
                 {filters.lastInteractionEndDate && (
                   <Button
@@ -264,7 +265,7 @@ const CustomersExportXlsxPage = () => {
             </div>
 
             <div className="space-y-2">
-              <Label>Data de Criação do Chat</Label>
+              <Label>{t("customerExport.chatCreated")}</Label>
               <div className="flex gap-2">
                 <DatePicker
                   date={filters.chatCreatedAt}
@@ -274,7 +275,7 @@ const CustomersExportXlsxPage = () => {
                       chatCreatedAt: date,
                     })
                   }
-                  placeholder="Selecione a data de criação do chat"
+                  placeholder={t("customerExport.selectChatCreated")}
                 />
                 {filters.chatCreatedAt && (
                   <Button
@@ -295,18 +296,18 @@ const CustomersExportXlsxPage = () => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="keywords">Palavras-chave</Label>
+            <Label htmlFor="keywords">{t("customerExport.keywords")}</Label>
             <div className="flex">
               <Input
                 id="keywords"
-                placeholder="Digite palavras-chave e pressione Enter"
+                placeholder={t("customerExport.keywordsPlaceholder")}
                 value={currentKeyword}
                 onChange={(e) => setCurrentKeyword(e.target.value)}
                 onKeyDown={handleKeyDown}
                 className="flex-1"
               />
               <Button type="button" onClick={handleAddKeyword} className="ml-2">
-                Adicionar
+                {t("customerExport.add")}
               </Button>
             </div>
             {keywords.length > 0 && (
@@ -336,12 +337,12 @@ const CustomersExportXlsxPage = () => {
             {isLoading ? (
               <span className="flex items-center gap-2">
                 <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
-                Exportando...
+                {t("customerExport.exporting")}
               </span>
             ) : (
               <span className="flex items-center gap-2">
                 <Download className="h-4 w-4" />
-                Exportar XLSX
+                {t("customerExport.export")}
               </span>
             )}
           </Button>
