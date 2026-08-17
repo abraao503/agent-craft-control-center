@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { enUS, es, ptBR } from "date-fns/locale";
-import { Briefcase, Edit2, Ellipsis, Plus, Trash2 } from "lucide-react";
+import { Briefcase, Edit2, Ellipsis, LogIn, Plus, Trash2 } from "lucide-react";
 import { listUsers } from "@/services/user/listUsers";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,7 @@ import {
 import { CreateCompanyUserDialog } from "./CreateCompanyUserDialog";
 import { EditWorkspaceUserDialog } from "./EditWorkspaceUserDialog";
 import { DeleteUserDialog } from "./DeleteUserDialog";
+import { ImpersonateUserDialog } from "./ImpersonateUserDialog";
 import { DealDistributionSection } from "./DealDistributionSection";
 import {
   AdminEmpty,
@@ -39,6 +40,7 @@ import {
 import { User } from "@/types/user";
 import { useTranslation } from "react-i18next";
 import { useAppLocale } from "@/i18n/LocaleProvider";
+import { useAuth } from "@/contexts/auth/hooks";
 
 const roleLabels: Record<string, string> = {
   WORKSPACE_OWNER: "Dono do workspace",
@@ -74,6 +76,7 @@ export function AdminWorkspaceManagement({
   breadcrumbItems,
 }: AdminWorkspaceManagementProps) {
   const { has, role } = usePermissions();
+  const { userProfile } = useAuth();
   const { t } = useTranslation();
   const { locale } = useAppLocale();
   const dateLocale = locale === "es-ES" ? es : locale === "en-US" ? enUS : ptBR;
@@ -92,6 +95,8 @@ export function AdminWorkspaceManagement({
   const [createOpen, setCreateOpen] = useState(false);
   const [editUser, setEditUser] = useState<User | null>(null);
   const [deleteUser, setDeleteUser] = useState<User | null>(null);
+  const [impersonateUser, setImpersonateUser] = useState<User | null>(null);
+  const canImpersonate = has("impersonate:user") && !userProfile?.impersonation;
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => setDebouncedSearch(search), 300);
@@ -233,6 +238,14 @@ export function AdminWorkspaceManagement({
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                          {canImpersonate && (
+                            <DropdownMenuItem
+                              onClick={() => setImpersonateUser(user)}
+                            >
+                              <LogIn className="mr-2 h-4 w-4" />
+                              Acessar como usuário
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuItem onClick={() => setEditUser(user)}>
                             <Edit2 className="mr-2 h-4 w-4" />
                             Editar
@@ -298,6 +311,11 @@ export function AdminWorkspaceManagement({
         user={deleteUser}
         workspaceId={workspaceId}
         companyId={companyId}
+      />
+      <ImpersonateUserDialog
+        open={Boolean(impersonateUser)}
+        onOpenChange={(open) => !open && setImpersonateUser(null)}
+        user={impersonateUser}
       />
     </div>
   );

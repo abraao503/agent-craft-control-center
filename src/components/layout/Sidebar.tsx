@@ -97,11 +97,17 @@ const useWorkspace = () => {
 
   useEffect(() => {
     if (workspaces && workspaces.length > 0) {
+      const preferredWorkspace = user?.workspaceId
+        ? workspaces.find((workspace) => workspace.id === user.workspaceId)
+        : undefined;
+
       // Se não há workspace selecionado, seleciona o padrão ou o primeiro
       if (!currentWorkspace) {
         const defaultWorkspace =
-          workspaces.find((w) => w.isDefault) || workspaces[0];
+          preferredWorkspace || workspaces.find((w) => w.isDefault) || workspaces[0];
         setCurrentWorkspace(defaultWorkspace);
+      } else if (preferredWorkspace && currentWorkspace.id !== preferredWorkspace.id) {
+        setCurrentWorkspace(preferredWorkspace);
       } else {
         // Verifica se o workspace atual ainda existe na lista
         const workspaceExists = workspaces.some(
@@ -127,7 +133,7 @@ const useWorkspace = () => {
         }
       }
     }
-  }, [workspaces, currentWorkspace, setCurrentWorkspace]);
+  }, [workspaces, currentWorkspace, setCurrentWorkspace, user?.workspaceId]);
 
   // Atualiza o workspace selecionado
   const selectWorkspace = (workspaceId: string) => {
@@ -332,7 +338,10 @@ const WorkspaceSelector = ({ isCollapsed }: { isCollapsed: boolean }) => {
           {t("common.loading")}
         </div>
       ) : isSalesRep ? (
-        <div className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm flex items-center text-foreground">
+        <div
+          key={selectedWorkspace?.id ?? "loading"}
+          className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm flex items-center text-foreground"
+        >
           {selectedWorkspace?.name || t("common.loading")}
         </div>
       ) : (

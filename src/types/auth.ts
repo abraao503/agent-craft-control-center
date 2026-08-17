@@ -26,6 +26,7 @@ export type Permission =
   | "delete:workspace-user"
   | "list:users"
   | "assign:user-to-workspace"
+  | "impersonate:user"
   | "create:pipeline"
   | "update:pipeline"
   | "delete:pipeline"
@@ -70,4 +71,26 @@ export interface UserProfile {
   metaCloudWhatsappEnabled: boolean;
   workspaceId: string | null;
   permissions: Permission[];
+  impersonation?: {
+    sessionId: string;
+    actorUserId: string;
+    actorName: string;
+    actorEmail: string;
+    expiresAt: string;
+  };
+}
+
+export interface AuthSessionUser {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  companyId: string;
+  workspaceId: string | null;
+  defaultWorkspaceId: string;
+}
+
+export interface AuthSessionResponse {
+  user: AuthSessionUser;
+  token: string;
 }

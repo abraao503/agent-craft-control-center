@@ -61,6 +61,7 @@ import ResetPasswordPage from "./pages/ResetPasswordPage";
 import TagsPage from "./pages/TagsPage";
 import Sidebar from "./components/layout/Sidebar";
 import Header from "./components/layout/Header";
+import { ImpersonationBanner } from "./components/layout/ImpersonationBanner";
 import { SidebarProvider } from "./components/ui/sidebar";
 import { cn } from "./lib/utils";
 import { MainContainerRefContext } from "./contexts/mainContainer";
@@ -203,20 +204,23 @@ const AppLayout = () => {
             isDev && "ring-2 ring-blue-500",
           )}
         >
-          <Header />
           <div className="flex flex-1 overflow-hidden">
             <Sidebar />
-            <main
-              ref={mainContainerRef}
-              className={cn(
-                "flex-1 bg-background overflow-y-auto dark:text-gray-200 transition-opacity",
-                location.pathname !== "/chats" && "p-6",
-                pageTransitioning ? "opacity-95" : "opacity-100",
-                isMobile ? "pl-[60px]" : "",
-              )}
-            >
-              <Outlet />
-            </main>
+            <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+              <ImpersonationBanner />
+              <Header />
+              <main
+                ref={mainContainerRef}
+                className={cn(
+                  "flex-1 overflow-y-auto bg-background dark:text-gray-200 transition-opacity",
+                  location.pathname !== "/chats" && "p-6",
+                  pageTransitioning ? "opacity-95" : "opacity-100",
+                  isMobile ? "pl-[60px]" : "",
+                )}
+              >
+                <Outlet />
+              </main>
+            </div>
           </div>
         </div>
       </MainContainerRefContext.Provider>
