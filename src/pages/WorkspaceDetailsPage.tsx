@@ -15,6 +15,7 @@ export default function WorkspaceDetailsPage() {
       companyId={companyId}
       workspaceId={workspaceId}
       workspaceName={workspace.name}
+      workspaceType={workspace.type}
       companyName={company.data?.name}
       isDefault={workspace.isDefault}
       breadcrumbItems={[

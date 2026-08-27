@@ -58,7 +58,7 @@ import {
   createWorkspace,
   CreateWorkspaceParams,
 } from "@/services/workspace/createWorkspace";
-import { Workspace } from "@/types/workspace";
+import { Workspace, WorkspaceType } from "@/types/workspace";
 import { useToast } from "@/hooks/use-toast";
 import { useWorkspaceContext } from "@/contexts/workspace/WorkspaceContext";
 import { AxiosError } from "axios";
@@ -75,8 +75,9 @@ const useWorkspace = () => {
     isLoading,
     error,
   } = useQuery({
-    queryKey: ["workspaces"],
+    queryKey: ["workspaces", user?.companyId],
     queryFn: listWorkspaces,
+    enabled: Boolean(user?.companyId),
     // Refetch quando a janela recebe foco para garantir dados atualizados
     refetchOnWindowFocus: true,
   });
@@ -165,7 +166,9 @@ interface WorkspaceDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   workspaceName: string;
+  workspaceType: WorkspaceType;
   onWorkspaceNameChange: (name: string) => void;
+  onWorkspaceTypeChange: (type: WorkspaceType) => void;
   onCreateWorkspace: () => void;
   isCreating: boolean;
 }
@@ -174,7 +177,9 @@ const WorkspaceDialog = ({
   isOpen,
   onOpenChange,
   workspaceName,
+  workspaceType,
   onWorkspaceNameChange,
+  onWorkspaceTypeChange,
   onCreateWorkspace,
   isCreating,
 }: WorkspaceDialogProps) => {
@@ -195,6 +200,24 @@ const WorkspaceDialog = ({
             className="mt-2"
             autoFocus
           />
+          <Label htmlFor="workspace-type" className="mt-4 block">
+            Tipo do workspace
+          </Label>
+          <Select
+            value={workspaceType}
+            onValueChange={(value) => onWorkspaceTypeChange(value as WorkspaceType)}
+          >
+            <SelectTrigger id="workspace-type" className="mt-2">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="COMMERCIAL">Comercial</SelectItem>
+              <SelectItem value="OPERATION">Operação</SelectItem>
+            </SelectContent>
+          </Select>
+          <p className="mt-2 text-xs text-muted-foreground">
+            O tipo define os módulos e não pode ser alterado depois.
+          </p>
         </div>
         <DialogFooter>
           <Button
@@ -228,11 +251,14 @@ const WorkspaceSelector = ({ isCollapsed }: { isCollapsed: boolean }) => {
   } = useWorkspace();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newWorkspaceName, setNewWorkspaceName] = useState("");
+  const [newWorkspaceType, setNewWorkspaceType] = useState<WorkspaceType>("COMMERCIAL");
   const { toast } = useToast();
   const { userProfile } = useAuth();
+  const { has } = usePermissions();
   const { t } = useTranslation();
 
   const isSalesRep = userProfile?.role === "SALES_REP";
+  const canCreateWorkspace = has("create:workspace");
 
   const handleCreateWorkspace = async () => {
     if (!newWorkspaceName.trim()) return;
@@ -241,6 +267,7 @@ const WorkspaceSelector = ({ isCollapsed }: { isCollapsed: boolean }) => {
       // Criar o novo workspace e obter o resultado
       const newWorkspace = await addWorkspace({
         name: newWorkspaceName.trim(),
+        type: newWorkspaceType,
       });
 
       // Selecionar o novo workspace
@@ -257,6 +284,7 @@ const WorkspaceSelector = ({ isCollapsed }: { isCollapsed: boolean }) => {
 
       // Limpar o formulário e fechar o diálogo
       setNewWorkspaceName("");
+      setNewWorkspaceType("COMMERCIAL");
       setIsDialogOpen(false);
     } catch (error: unknown) {
       console.error("Erro ao criar workspace:", error);
@@ -298,7 +326,7 @@ const WorkspaceSelector = ({ isCollapsed }: { isCollapsed: boolean }) => {
             {selectedWorkspace?.name || t("common.loading")}
           </TooltipContent>
         </Tooltip>
-        {!isSalesRep && (
+        {canCreateWorkspace && !isSalesRep && (
           <Tooltip delayDuration={0}>
             <TooltipTrigger asChild>
               <Button
@@ -320,7 +348,9 @@ const WorkspaceSelector = ({ isCollapsed }: { isCollapsed: boolean }) => {
           isOpen={isDialogOpen}
           onOpenChange={setIsDialogOpen}
           workspaceName={newWorkspaceName}
+          workspaceType={newWorkspaceType}
           onWorkspaceNameChange={setNewWorkspaceName}
+          onWorkspaceTypeChange={setNewWorkspaceType}
           onCreateWorkspace={handleCreateWorkspace}
           isCreating={isCreating}
         />
@@ -357,6 +387,7 @@ const WorkspaceSelector = ({ isCollapsed }: { isCollapsed: boolean }) => {
             {workspaces.map((workspace) => (
               <SelectItem key={workspace.id} value={workspace.id}>
                 {workspace.name}
+                {workspace.type === "OPERATION" ? " · Operação" : " · Comercial"}
               </SelectItem>
             ))}
           </SelectContent>
@@ -367,7 +398,9 @@ const WorkspaceSelector = ({ isCollapsed }: { isCollapsed: boolean }) => {
         isOpen={isDialogOpen}
         onOpenChange={setIsDialogOpen}
         workspaceName={newWorkspaceName}
+        workspaceType={newWorkspaceType}
         onWorkspaceNameChange={setNewWorkspaceName}
+        onWorkspaceTypeChange={setNewWorkspaceType}
         onCreateWorkspace={handleCreateWorkspace}
         isCreating={isCreating}
       />
@@ -382,6 +415,7 @@ const SidebarMenuContent = () => {
   const { state } = useSidebar();
   const { requestNavigation } = useUnsavedChanges();
   const { has, role } = usePermissions();
+  const { currentWorkspace } = useWorkspaceContext();
   const isCollapsed = state === "collapsed";
   const { isLoading: isWorkspaceLoading } = useWorkspace();
   const queryClient = useQueryClient();
@@ -408,7 +442,15 @@ const SidebarMenuContent = () => {
     requiredPermission?: Permission;
   }
 
-  const allMenuItems: MenuItem[] = [
+  const allMenuItems: MenuItem[] = currentWorkspace?.type === "OPERATION"
+    ? [
+        {
+          path: "/operation",
+          label: "Operação",
+          icon: <Building2 className="h-5 w-5" />,
+        },
+      ]
+    : [
     {
       path: "/dashboard",
       label: t("navigation.dashboard"),
@@ -584,10 +626,12 @@ const SidebarMenuContent = () => {
         )}
       >
         <Link
-          to="/dashboard"
+          to={currentWorkspace?.type === "OPERATION" ? "/operation" : "/dashboard"}
           onClick={(event) => {
             event.preventDefault();
-            requestNavigation(() => navigate("/dashboard"));
+            requestNavigation(() =>
+              navigate(currentWorkspace?.type === "OPERATION" ? "/operation" : "/dashboard"),
+            );
           }}
           className={cn(
             "flex items-center space-x-2",

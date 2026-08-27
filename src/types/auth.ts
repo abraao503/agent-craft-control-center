@@ -13,6 +13,7 @@ export type Permission =
   | "create:company"
   | "delete:company"
   | "view:all-companies"
+  | "view:company"
   | "manage:company"
   | "update:company"
   | "view:company-billing"

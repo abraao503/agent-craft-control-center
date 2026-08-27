@@ -16,6 +16,7 @@ export default function WorkspaceSettingsPage() {
       companyId={user.companyId}
       workspaceId={userProfile.workspaceId}
       workspaceName={workspaceName}
+      workspaceType={currentWorkspace?.type}
       isDefault={currentWorkspace?.isDefault}
       breadcrumbItems={[
         { label: "Administração", to: "/workspace/settings" },

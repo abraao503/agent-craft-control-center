@@ -1,6 +1,13 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Workspace } from "@/types/workspace";
+import { useAuth } from "@/contexts/auth/hooks";
+import { Workspace, WorkspaceType } from "@/types/workspace";
 
 interface WorkspaceContextType {
   currentWorkspace: Workspace | null;
@@ -11,15 +18,42 @@ interface WorkspaceContextType {
 
 const WorkspaceContext = createContext<WorkspaceContextType | undefined>(undefined);
 
+const normalizeStoredWorkspace = (value: string | null): Workspace | null => {
+  if (!value) return null;
+
+  try {
+    const parsed = JSON.parse(value) as Partial<Workspace>;
+    if (
+      typeof parsed.id !== "string" ||
+      typeof parsed.name !== "string" ||
+      typeof parsed.companyId !== "string" ||
+      typeof parsed.isDefault !== "boolean"
+    ) {
+      return null;
+    }
+
+    const type: WorkspaceType =
+      parsed.type === "OPERATION" ? "OPERATION" : "COMMERCIAL";
+
+    return { ...parsed, type } as Workspace;
+  } catch {
+    return null;
+  }
+};
+
 export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [currentWorkspace, setCurrentWorkspaceState] = useState<Workspace | null>(() => {
-    const savedWorkspace = localStorage.getItem("selectedWorkspace");
-    return savedWorkspace ? JSON.parse(savedWorkspace) : null;
+    return normalizeStoredWorkspace(localStorage.getItem("selectedWorkspace"));
   });
   const [workspaceChanged, setWorkspaceChanged] = useState(false);
 
-  const setCurrentWorkspace = (workspace: Workspace | null) => {
+  const setCurrentWorkspace = useCallback((workspace: Workspace | null) => {
+    if (workspace && user && workspace.companyId !== user.companyId) {
+      return;
+    }
+
     // Verifica se houve mudança real de workspace
     const isRealChange = 
       !workspace || 
@@ -49,7 +83,17 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       // Marca que o workspace foi alterado para que os componentes possam reagir
       setWorkspaceChanged(true);
     }
-  };
+  }, [currentWorkspace, queryClient, user]);
+
+  useEffect(() => {
+    if (
+      currentWorkspace &&
+      user &&
+      currentWorkspace.companyId !== user.companyId
+    ) {
+      setCurrentWorkspace(null);
+    }
+  }, [currentWorkspace, setCurrentWorkspace, user]);
 
   const resetWorkspaceChanged = () => {
     setWorkspaceChanged(false);

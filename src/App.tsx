@@ -59,6 +59,7 @@ import TermsOfServicePage from "./pages/TermsOfServicePage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import TagsPage from "./pages/TagsPage";
+import OperationLandingPage from "./pages/OperationLandingPage";
 import Sidebar from "./components/layout/Sidebar";
 import Header from "./components/layout/Header";
 import { ImpersonationBanner } from "./components/layout/ImpersonationBanner";
@@ -70,6 +71,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { WorkspaceProvider } from "./contexts/workspace/WorkspaceContext";
 import { Loader2 } from "lucide-react";
 import { LegacyTextBridge } from "./components/i18n/LegacyTextBridge";
+import { useWorkspaceContext } from "./contexts/workspace/WorkspaceContext";
 
 const queryClient = new QueryClient();
 
@@ -218,7 +220,7 @@ const AppLayout = () => {
                   isMobile ? "pl-[60px]" : "",
                 )}
               >
-                <Outlet />
+                <WorkspaceRouteBoundary />
               </main>
             </div>
           </div>
@@ -266,6 +268,48 @@ const CustomerImportDetailViewPage = () => <CustomerImportDetailPage />;
 const TagsPageView = () => <TagsPage />;
 const NotFoundPage = () => <NotFound />;
 
+const COMMERCIAL_ROUTE_PREFIXES = [
+  "/dashboard",
+  "/agents",
+  "/integrations",
+  "/calendar",
+  "/contents",
+  "/chats",
+  "/customers",
+  "/deals",
+  "/follow-ups",
+  "/webhooks",
+  "/broadcasts",
+  "/customer-imports",
+  "/tags",
+];
+
+function isCommercialRoute(pathname: string): boolean {
+  return COMMERCIAL_ROUTE_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
+}
+
+const WorkspaceRouteBoundary = () => {
+  const { currentWorkspace } = useWorkspaceContext();
+  const location = useLocation();
+
+  if (
+    currentWorkspace?.type === "OPERATION" &&
+    isCommercialRoute(location.pathname)
+  ) {
+    return (
+      <Navigate
+        to="/operation"
+        replace
+        state={{ from: `${location.pathname}${location.search}` }}
+      />
+    );
+  }
+
+  return <Outlet />;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <LegacyTextBridge />
@@ -298,6 +342,7 @@ const App = () => (
 
                   {/* Rotas autenticadas com layout persistente */}
                   <Route element={<AppLayout />}>
+                    <Route path="/operation" element={<OperationLandingPage />} />
                     <Route
                       path="/dashboard"
                       element={<DashboardV2PageView />}

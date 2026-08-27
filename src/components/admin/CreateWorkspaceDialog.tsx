@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
+import { WorkspaceType } from "@/types/workspace";
 
 interface CreateWorkspaceDialogProps {
   open: boolean;
@@ -53,6 +54,7 @@ export function CreateWorkspaceDialog({
   const [formData, setFormData] = useState({
     name: "",
     companyId: propsCompanyId || user?.companyId || "",
+    type: "COMMERCIAL" as WorkspaceType,
   });
 
   const createMutation = useMutation({
@@ -72,6 +74,7 @@ export function CreateWorkspaceDialog({
       setFormData({
         name: "",
         companyId: propsCompanyId || user?.companyId || "",
+        type: "COMMERCIAL",
       });
     },
     onError: (
@@ -120,6 +123,7 @@ export function CreateWorkspaceDialog({
     createMutation.mutate({
       name: formData.name,
       companyId: formData.companyId,
+      type: formData.type,
     });
   };
 
@@ -177,6 +181,28 @@ export function CreateWorkspaceDialog({
                 }
                 disabled={createMutation.isPending}
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="workspace-type">Tipo do Workspace *</Label>
+              <Select
+                value={formData.type}
+                onValueChange={(value: WorkspaceType) =>
+                  setFormData({ ...formData, type: value })
+                }
+                disabled={createMutation.isPending}
+              >
+                <SelectTrigger id="workspace-type">
+                  <SelectValue placeholder="Selecione o tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="COMMERCIAL">Comercial</SelectItem>
+                  <SelectItem value="OPERATION">Operação</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                O tipo define os módulos disponíveis e não poderá ser alterado depois.
+              </p>
             </div>
           </div>
 

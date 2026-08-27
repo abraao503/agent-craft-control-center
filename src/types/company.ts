@@ -1,3 +1,5 @@
+import { WorkspaceType } from "@/types/workspace";
+
 export interface Company {
   id: string;
   name: string;
@@ -46,21 +48,19 @@ export interface CompanyWorkspace {
   id: string;
   name: string;
   isDefault: boolean;
+  type: WorkspaceType;
 }
 
 export interface CompanyDetails {
   id: string;
   name: string | null;
   metaCloudWhatsappEnabled: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
   workspaces: CompanyWorkspace[];
 }
 
-export interface GetCompanyByIdResponse {
-  success: true;
-  data: CompanyDetails;
-}
+export type GetCompanyByIdResponse = CompanyDetails;
 
 export enum UserRole {
   ADMIN = "ADMIN",

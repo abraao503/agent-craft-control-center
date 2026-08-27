@@ -62,6 +62,7 @@ interface AdminWorkspaceManagementProps {
   companyId: string;
   workspaceId: string;
   workspaceName: string;
+  workspaceType?: "COMMERCIAL" | "OPERATION";
   companyName?: string | null;
   isDefault?: boolean;
   breadcrumbItems: AdministrationBreadcrumbItem[];
@@ -71,6 +72,7 @@ export function AdminWorkspaceManagement({
   companyId,
   workspaceId,
   workspaceName,
+  workspaceType = "COMMERCIAL",
   companyName,
   isDefault = false,
   breadcrumbItems,
@@ -81,8 +83,9 @@ export function AdminWorkspaceManagement({
   const { locale } = useAppLocale();
   const dateLocale = locale === "es-ES" ? es : locale === "en-US" ? enUS : ptBR;
   const canManageDistribution =
-    has("manage:deal-distribution") ||
-    Boolean(role && distributionRoles.has(role));
+    workspaceType !== "OPERATION" &&
+    (has("manage:deal-distribution") ||
+      Boolean(role && distributionRoles.has(role)));
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab =
     searchParams.get("tab") === "distribution" &&
@@ -152,7 +155,14 @@ export function AdminWorkspaceManagement({
             ? t("administration.workspaceCompany", { name: companyName })
             : t("administration.workspaceAdministration")
         }
-        action={isDefault ? <Badge variant="secondary">Padrão</Badge> : undefined}
+        action={
+          <div className="flex flex-wrap gap-2">
+            <Badge variant="outline">
+              {workspaceType === "OPERATION" ? "Operação" : "Comercial"}
+            </Badge>
+            {isDefault && <Badge variant="secondary">Padrão</Badge>}
+          </div>
+        }
       />
 
       <Tabs
