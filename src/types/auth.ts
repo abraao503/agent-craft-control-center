@@ -5,6 +5,7 @@ export type UserRole =
   | "WORKSPACE_OWNER"
   | "WORKSPACE_ADMIN"
   | "WORKSPACE_MANAGER"
+  | "WORKSPACE_MEMBER"
   | "SALES_REP";
 
 export type Permission =
@@ -21,6 +22,10 @@ export type Permission =
   | "update:workspace"
   | "delete:workspace"
   | "view:all-workspaces"
+  | "view:operation-setup"
+  | "manage:operation-setup"
+  | "view:operation-memberships"
+  | "manage:operation-memberships"
   | "create:company-user"
   | "delete:company-user"
   | "create:workspace-user"

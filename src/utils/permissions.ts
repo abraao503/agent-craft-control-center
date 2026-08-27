@@ -30,6 +30,7 @@ export function isWorkspaceLevelRole(role: UserRole): boolean {
     "WORKSPACE_OWNER",
     "WORKSPACE_ADMIN",
     "WORKSPACE_MANAGER",
+    "WORKSPACE_MEMBER",
     "SALES_REP",
   ].includes(role);
 }
