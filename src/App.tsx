@@ -307,6 +307,13 @@ const WorkspaceRouteBoundary = () => {
     );
   }
 
+  if (
+    currentWorkspace?.type === "COMMERCIAL" &&
+    location.pathname === "/operation"
+  ) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
   return <Outlet />;
 };
 
