@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useWorkspaceContext } from "@/contexts/workspace/WorkspaceContext";
 import { useOperationalSetup } from "@/hooks/useOperationalSetup";
+import { OperationalAreasCard } from "@/components/operation/OperationalAreasCard";
 import { AlertCircle, CheckCircle2, Loader2, RefreshCw } from "lucide-react";
 
 const MISSING_LABELS = {
@@ -123,6 +124,7 @@ export default function OperationLandingPage() {
               </div>
             </CardContent>
           </Card>
+          <OperationalAreasCard workspaceId={currentWorkspace?.id} />
         </>
       ) : (
         <Alert>

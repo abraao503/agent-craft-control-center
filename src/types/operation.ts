@@ -28,3 +28,45 @@ export interface OperationalSetup {
   version: number;
   updatedAt: string;
 }
+
+export interface ServiceArea {
+  id: string;
+  companyId: string;
+  workspaceId: string;
+  name: string;
+  description: string | null;
+  active: boolean;
+  deletedAt: string | null;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface OperationalAreasPage {
+  items: ServiceArea[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface CreateOperationalAreaParams {
+  workspaceId: string;
+  name: string;
+  description?: string;
+}
+
+export interface UpdateOperationalAreaParams {
+  workspaceId: string;
+  areaId: string;
+  name?: string;
+  description?: string | null;
+  active?: boolean;
+  expectedVersion: number;
+}
+
+export interface DeleteOperationalAreaParams {
+  workspaceId: string;
+  areaId: string;
+  expectedVersion: number;
+}
