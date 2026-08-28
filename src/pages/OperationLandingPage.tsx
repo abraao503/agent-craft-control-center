@@ -25,6 +25,10 @@ export default function OperationLandingPage() {
 
   const setup = setupQuery.data;
   const isStructured = setup?.setupStatus === "STRUCTURED";
+  const hasPendingFallback =
+    setup?.readiness.missing.includes("FALLBACK_ROUTE") ?? false;
+  const hasPendingStructuralItems =
+    setup?.readiness.missing.some((item) => item !== "FALLBACK_ROUTE") ?? false;
 
   return (
     <section className="mx-auto w-full max-w-4xl space-y-6 p-6">
@@ -83,7 +87,11 @@ export default function OperationLandingPage() {
               </CardTitle>
               <CardDescription>
                 {isStructured
-                  ? "A estrutura mínima foi concluída."
+                  ? `A estrutura mínima foi concluída${
+                      setup.setupCompletedAt
+                        ? ` em ${formatDateTime(setup.setupCompletedAt)}`
+                        : "."
+                    }`
                   : "Ainda existem itens estruturais para configurar."}
               </CardDescription>
             </CardHeader>
@@ -105,6 +113,8 @@ export default function OperationLandingPage() {
                 <p className="mt-1 text-sm text-muted-foreground">
                   {setup.readiness.status === "READY_FOR_ACTIVATION"
                     ? "Pronto para a ativação prevista em etapa posterior."
+                    : isStructured && hasPendingFallback && !hasPendingStructuralItems
+                      ? "A estrutura está pronta, mas a ativação permanece bloqueada até a rota de fallback ser entregue em E3."
                     : "Bloqueado até que os itens abaixo sejam concluídos."}
                 </p>
                 {setup.readiness.missing.length > 0 && (
@@ -138,6 +148,13 @@ export default function OperationLandingPage() {
       )}
     </section>
   );
+}
+
+function formatDateTime(value: string) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(new Date(value));
 }
 
 function Metric({ label, value }: { label: string; value: number }) {
