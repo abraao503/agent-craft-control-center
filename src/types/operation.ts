@@ -101,6 +101,34 @@ export interface OperationalAreaMembershipsPage {
   totalPages: number;
 }
 
+export interface QueueMembership {
+  id: string;
+  companyId: string;
+  workspaceId: string;
+  areaId: string;
+  queueId: string;
+  areaMembershipId: string;
+  userId: string;
+  active: boolean;
+  deletedAt: string | null;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+  };
+}
+
+export interface OperationalQueueMembershipsPage {
+  items: QueueMembership[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 export interface CreateOperationalAreaParams {
   workspaceId: string;
   name: string;
@@ -157,6 +185,22 @@ export interface UpsertOperationalAreaMembershipParams {
 export interface DeleteOperationalAreaMembershipParams {
   workspaceId: string;
   areaId: string;
+  userId: string;
+  expectedVersion?: number;
+}
+
+export interface UpsertOperationalQueueMembershipParams {
+  workspaceId: string;
+  areaId: string;
+  queueId: string;
+  userId: string;
+  expectedVersion?: number;
+}
+
+export interface DeleteOperationalQueueMembershipParams {
+  workspaceId: string;
+  areaId: string;
+  queueId: string;
   userId: string;
   expectedVersion?: number;
 }

@@ -60,11 +60,17 @@ export function useOperationalAreaMembershipMutations(
     void queryClient.invalidateQueries({
       queryKey: ["operation-setup", resolvedWorkspaceId],
     });
+    void queryClient.invalidateQueries({
+      queryKey: ["operation-queue-memberships", resolvedWorkspaceId, areaId],
+    });
   };
 
   const upsert = useMutation({
     mutationFn: (
-      params: Omit<UpsertOperationalAreaMembershipParams, "workspaceId" | "areaId">,
+      params: Omit<
+        UpsertOperationalAreaMembershipParams,
+        "workspaceId" | "areaId"
+      >,
     ) => {
       if (!resolvedWorkspaceId || !areaId) {
         throw new Error("Área operacional não selecionada");
@@ -81,7 +87,10 @@ export function useOperationalAreaMembershipMutations(
 
   const remove = useMutation({
     mutationFn: (
-      params: Omit<DeleteOperationalAreaMembershipParams, "workspaceId" | "areaId">,
+      params: Omit<
+        DeleteOperationalAreaMembershipParams,
+        "workspaceId" | "areaId"
+      >,
     ) => {
       if (!resolvedWorkspaceId || !areaId) {
         throw new Error("Área operacional não selecionada");

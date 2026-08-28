@@ -160,6 +160,7 @@ export function OperationalAreasCard({ workspaceId }: { workspaceId?: string }) 
                     workspaceId={workspaceId}
                     areaId={area.id}
                     canManage={canManage}
+                    canManageMemberships={canManageMemberships}
                   />
                 </div>
                 {canManage && (

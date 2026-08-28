@@ -12,6 +12,7 @@ import {
   useOperationalQueueMutations,
   useOperationalQueues,
 } from "@/hooks/useOperationalQueues";
+import { useOperationalAreaMemberships } from "@/hooks/useOperationalAreaMemberships";
 import { useToast } from "@/hooks/use-toast";
 import { ServiceQueue } from "@/types/operation";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -38,6 +39,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { OperationalQueueMemberships } from "@/components/operation/OperationalQueueMemberships";
 
 type QueueForm = {
   name: string;
@@ -48,15 +50,21 @@ type OperationalAreaQueuesProps = {
   workspaceId?: string;
   areaId: string;
   canManage: boolean;
+  canManageMemberships?: boolean;
 };
 
 export function OperationalAreaQueues({
   workspaceId,
   areaId,
   canManage,
+  canManageMemberships = false,
 }: OperationalAreaQueuesProps) {
   const { toast } = useToast();
   const queuesQuery = useOperationalQueues(workspaceId, areaId);
+  const areaMembershipsQuery = useOperationalAreaMemberships(
+    workspaceId,
+    areaId,
+  );
   const mutations = useOperationalQueueMutations(workspaceId, areaId);
   const [editingQueue, setEditingQueue] = useState<ServiceQueue | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -190,6 +198,15 @@ export function OperationalAreaQueues({
                       {queue.description}
                     </p>
                   )}
+                  <OperationalQueueMemberships
+                    workspaceId={workspaceId}
+                    areaId={areaId}
+                    queueId={queue.id}
+                    canManage={canManageMemberships}
+                    areaMemberships={areaMembershipsQuery.data?.items}
+                    areaMembershipsLoading={areaMembershipsQuery.isLoading}
+                    areaMembershipsError={areaMembershipsQuery.isError}
+                  />
                 </div>
                 {canManage && (
                   <div className="flex items-center gap-2">
@@ -365,9 +382,11 @@ function getApiErrorMessage(error: unknown, fallback: string) {
 
   const code = error.response?.data?.message;
   const messages: Record<string, string> = {
-    AREA_NOT_FOUND: "A área não está mais ativa ou não pertence a este workspace.",
+    AREA_NOT_FOUND:
+      "A área não está mais ativa ou não pertence a este workspace.",
     QUEUE_NAME_CONFLICT: "Já existe uma fila ativa com esse nome nesta área.",
-    STALE_VERSION: "A fila foi alterada por outra pessoa. Atualize a lista e tente novamente.",
+    STALE_VERSION:
+      "A fila foi alterada por outra pessoa. Atualize a lista e tente novamente.",
   };
 
   return typeof code === "string" && messages[code] ? messages[code] : fallback;
