@@ -36,7 +36,7 @@ import {
   OperationalZApiCredentials,
   UpdateOperationalChannelBody,
 } from "@/types/operation-channels";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -371,12 +371,17 @@ export function OperationalChannelsManager({
         <CardHeader>
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <Button asChild variant="ghost" size="sm" className="-ml-3 mb-2">
-                <Link to="/operation">
-                  <ArrowLeft className="h-4 w-4" />
-                  Setup estrutural
-                </Link>
-              </Button>
+              <Link
+                to="/operation"
+                className={buttonVariants({
+                  variant: "ghost",
+                  size: "sm",
+                  className: "-ml-3 mb-2",
+                })}
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Setup estrutural
+              </Link>
               <p className="text-sm font-medium uppercase tracking-wide text-primary">
                 Canais de entrada
               </p>

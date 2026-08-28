@@ -7,7 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { useWorkspaceContext } from "@/contexts/workspace/WorkspaceContext";
 import { useOperationalSetup } from "@/hooks/useOperationalSetup";
 import { useOperationalChannels } from "@/hooks/useOperationalChannels";
@@ -200,12 +200,13 @@ function OperationalChannelsEntryCard({
               Conexões, rotas e diagnóstico do workspace operacional.
             </CardDescription>
           </div>
-          <Button asChild variant="outline" size="sm">
-            <Link to="/operation/channels">
-              {canManageChannels ? "Administrar canais" : "Ver canais"}
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </Button>
+          <Link
+            to="/operation/channels"
+            className={buttonVariants({ variant: "outline", size: "sm" })}
+          >
+            {canManageChannels ? "Administrar canais" : "Ver canais"}
+            <ArrowRight className="h-4 w-4" />
+          </Link>
         </div>
       </CardHeader>
       <CardContent>

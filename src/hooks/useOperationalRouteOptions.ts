@@ -34,16 +34,13 @@ export function useOperationalRouteOptions(
     })),
   });
 
-  const assistantsQuery = useQuery({
+  const assistantsQuery = useQuery<Awaited<ReturnType<typeof listAgent>>>({
     queryKey: ["operation-route-assistants", workspaceId],
-    queryFn: () => {
-      if (!workspaceId) {
-        throw new Error("Workspace operacional não selecionado");
-      }
-
-      return listAgent(workspaceId);
-    },
-    enabled: Boolean(workspaceId && enabled),
+    // O endpoint legado de Assistants é deliberadamente comercial. Até E6,
+    // um workspace operacional não tem essa lista disponível; rotas TRIAGE e
+    // QUEUE continuam configuráveis sem uma chamada que sempre retornaria 409.
+    queryFn: async () => ({ agents: [] }),
+    enabled: false,
   });
 
   return {
