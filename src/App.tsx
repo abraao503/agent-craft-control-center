@@ -62,6 +62,7 @@ import TagsPage from "./pages/TagsPage";
 import OperationLandingPage from "./pages/OperationLandingPage";
 import Sidebar from "./components/layout/Sidebar";
 import Header from "./components/layout/Header";
+import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { ImpersonationBanner } from "./components/layout/ImpersonationBanner";
 import { SidebarProvider } from "./components/ui/sidebar";
 import { cn } from "./lib/utils";
@@ -349,7 +350,15 @@ const App = () => (
 
                   {/* Rotas autenticadas com layout persistente */}
                   <Route element={<AppLayout />}>
-                    <Route path="/operation" element={<OperationLandingPage />} />
+                    <Route
+                      path="/operation"
+                      element={
+                        <ProtectedRoute
+                          requiredPermission="view:operation-setup"
+                          component={OperationLandingPage}
+                        />
+                      }
+                    />
                     <Route
                       path="/dashboard"
                       element={<DashboardV2PageView />}

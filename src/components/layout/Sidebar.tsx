@@ -448,6 +448,7 @@ const SidebarMenuContent = () => {
           path: "/operation",
           label: "Operação",
           icon: <Building2 className="h-5 w-5" />,
+          requiredPermission: "view:operation-setup",
         },
       ]
     : [
