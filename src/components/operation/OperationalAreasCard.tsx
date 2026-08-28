@@ -5,6 +5,7 @@ import { useOperationalAreaMutations, useOperationalAreas } from "@/hooks/useOpe
 import { usePermissions } from "@/hooks/usePermissions";
 import { useToast } from "@/hooks/use-toast";
 import { ServiceArea } from "@/types/operation";
+import { OperationalAreaQueues } from "@/components/operation/OperationalAreaQueues";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
@@ -130,7 +131,7 @@ export function OperationalAreasCard({ workspaceId }: { workspaceId?: string }) 
                 key={area.id}
                 className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-4"
               >
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="font-medium">{area.name}</p>
                     <Badge variant="secondary">Ativa</Badge>
@@ -140,6 +141,11 @@ export function OperationalAreasCard({ workspaceId }: { workspaceId?: string }) 
                       {area.description}
                     </p>
                   )}
+                  <OperationalAreaQueues
+                    workspaceId={workspaceId}
+                    areaId={area.id}
+                    canManage={canManage}
+                  />
                 </div>
                 {canManage && (
                   <div className="flex items-center gap-2">
@@ -298,6 +304,12 @@ function OperationalAreaDialog({
 function getApiErrorMessage(error: unknown, fallback: string) {
   if (error instanceof AxiosError) {
     const message = error.response?.data?.message;
+    if (message === "AREA_HAS_ACTIVE_QUEUES") {
+      return "Desative as filas ativas antes de desativar esta área.";
+    }
+    if (message === "STALE_VERSION") {
+      return "A área foi alterada por outra pessoa. Atualize a lista e tente novamente.";
+    }
     if (typeof message === "string") return message;
   }
 
