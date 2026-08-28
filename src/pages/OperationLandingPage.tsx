@@ -1,4 +1,5 @@
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Link } from "react-router-dom";
 import {
   Card,
   CardContent,
@@ -9,8 +10,17 @@ import {
 import { Button } from "@/components/ui/button";
 import { useWorkspaceContext } from "@/contexts/workspace/WorkspaceContext";
 import { useOperationalSetup } from "@/hooks/useOperationalSetup";
+import { useOperationalChannels } from "@/hooks/useOperationalChannels";
+import { usePermissions } from "@/hooks/usePermissions";
 import { OperationalAreasCard } from "@/components/operation/OperationalAreasCard";
-import { AlertCircle, CheckCircle2, Loader2, RefreshCw } from "lucide-react";
+import {
+  AlertCircle,
+  ArrowRight,
+  CheckCircle2,
+  Loader2,
+  RefreshCw,
+  Radio,
+} from "lucide-react";
 
 const MISSING_LABELS = {
   ACTIVE_AREA: "Área ativa",
@@ -21,7 +31,16 @@ const MISSING_LABELS = {
 
 export default function OperationLandingPage() {
   const { currentWorkspace } = useWorkspaceContext();
+  const { has } = usePermissions();
   const setupQuery = useOperationalSetup();
+  const workspaceId =
+    currentWorkspace?.type === "OPERATION" ? currentWorkspace.id : undefined;
+  const canViewChannels = has("view:operation-channels");
+  const channelsQuery = useOperationalChannels(
+    workspaceId,
+    1,
+    canViewChannels,
+  );
 
   const setup = setupQuery.data;
   const isStructured = setup?.setupStatus === "STRUCTURED";
@@ -135,6 +154,12 @@ export default function OperationLandingPage() {
             </CardContent>
           </Card>
           <OperationalAreasCard workspaceId={currentWorkspace?.id} />
+          {canViewChannels ? (
+            <OperationalChannelsEntryCard
+              channelsQuery={channelsQuery}
+              canManageChannels={has("manage:operation-channels")}
+            />
+          ) : null}
         </>
       ) : (
         <Alert>
@@ -147,6 +172,80 @@ export default function OperationLandingPage() {
         </Alert>
       )}
     </section>
+  );
+}
+
+function OperationalChannelsEntryCard({
+  channelsQuery,
+  canManageChannels,
+}: {
+  channelsQuery: ReturnType<typeof useOperationalChannels>;
+  canManageChannels: boolean;
+}) {
+  const channels = channelsQuery.data?.items ?? [];
+  const validRoutes = channels.filter(
+    (channel) => channel.route.configurationStatus === "VALID",
+  ).length;
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <CardTitle className="flex items-center gap-2 text-xl">
+              <Radio className="h-5 w-5 text-primary" />
+              Canais de entrada
+            </CardTitle>
+            <CardDescription>
+              Conexões, rotas e diagnóstico do workspace operacional.
+            </CardDescription>
+          </div>
+          <Button asChild variant="outline" size="sm">
+            <Link to="/operation/channels">
+              {canManageChannels ? "Administrar canais" : "Ver canais"}
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {channelsQuery.isLoading ? (
+          <div className="flex min-h-12 items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Consultando conexões...
+          </div>
+        ) : channelsQuery.isError ? (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Diagnóstico indisponível</AlertTitle>
+            <AlertDescription className="flex flex-wrap items-center gap-3">
+              Abra a seção de canais ou tente novamente.
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => channelsQuery.refetch()}
+                disabled={channelsQuery.isFetching}
+              >
+                <RefreshCw className="h-4 w-4" />
+                Tentar novamente
+              </Button>
+            </AlertDescription>
+          </Alert>
+        ) : (
+          <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
+            <span className="rounded-md border px-3 py-2">
+              {channelsQuery.data?.total ?? 0} conexão(ões)
+            </span>
+            <span className="rounded-md border px-3 py-2">
+              {validRoutes} rota(s) válida(s)
+            </span>
+            <span className="rounded-md border px-3 py-2">
+              Tráfego bloqueado até E4
+            </span>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 

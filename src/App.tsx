@@ -60,6 +60,7 @@ import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import TagsPage from "./pages/TagsPage";
 import OperationLandingPage from "./pages/OperationLandingPage";
+import OperationChannelsPage from "./pages/OperationChannelsPage";
 import Sidebar from "./components/layout/Sidebar";
 import Header from "./components/layout/Header";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
@@ -310,7 +311,8 @@ const WorkspaceRouteBoundary = () => {
 
   if (
     currentWorkspace?.type === "COMMERCIAL" &&
-    location.pathname === "/operation"
+    (location.pathname === "/operation" ||
+      location.pathname.startsWith("/operation/"))
   ) {
     return <Navigate to="/dashboard" replace />;
   }
@@ -356,6 +358,15 @@ const App = () => (
                         <ProtectedRoute
                           requiredPermission="view:operation-setup"
                           component={OperationLandingPage}
+                        />
+                      }
+                    />
+                    <Route
+                      path="/operation/channels"
+                      element={
+                        <ProtectedRoute
+                          requiredPermission="view:operation-channels"
+                          component={OperationChannelsPage}
                         />
                       }
                     />

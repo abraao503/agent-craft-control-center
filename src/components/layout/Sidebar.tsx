@@ -20,6 +20,7 @@ import {
   Megaphone,
   Calendar as CalendarIcon,
   Tag,
+  Radio,
 } from "lucide-react";
 import { useAuth } from "@/contexts/auth/hooks";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -449,6 +450,12 @@ const SidebarMenuContent = () => {
           label: "Operação",
           icon: <Building2 className="h-5 w-5" />,
           requiredPermission: "view:operation-setup",
+        },
+        {
+          path: "/operation/channels",
+          label: "Canais",
+          icon: <Radio className="h-5 w-5" />,
+          requiredPermission: "view:operation-channels",
         },
       ]
     : [
