@@ -29,6 +29,7 @@ interface CreateCompanyUserDialogProps {
   onOpenChange: (open: boolean) => void;
   companyId: string;
   workspaceId?: string; // If provided, we're in workspace context
+  workspaceType?: "COMMERCIAL" | "OPERATION";
   workspaces?: Array<{ id: string; name: string }>;
 }
 
@@ -39,6 +40,7 @@ const ROLE_LABELS: Record<UserRole, string> = {
   [UserRole.WORKSPACE_OWNER]: "Dono do Workspace",
   [UserRole.WORKSPACE_ADMIN]: "Admin do Workspace",
   [UserRole.WORKSPACE_MANAGER]: "Gerente do Workspace",
+  [UserRole.WORKSPACE_MEMBER]: "Membro operacional",
   [UserRole.SALES_REP]: "Vendedor",
 };
 
@@ -50,7 +52,8 @@ const ROLE_HIERARCHY: Record<UserRole, number> = {
   [UserRole.WORKSPACE_OWNER]: 4,
   [UserRole.WORKSPACE_ADMIN]: 5,
   [UserRole.WORKSPACE_MANAGER]: 6,
-  [UserRole.SALES_REP]: 7,
+  [UserRole.WORKSPACE_MEMBER]: 7,
+  [UserRole.SALES_REP]: 8,
 };
 
 const COMPANY_LEVEL_ROLES = [UserRole.COMPANY_OWNER, UserRole.COMPANY_ADMIN];
@@ -59,6 +62,7 @@ const WORKSPACE_LEVEL_ROLES = [
   UserRole.WORKSPACE_OWNER,
   UserRole.WORKSPACE_ADMIN,
   UserRole.WORKSPACE_MANAGER,
+  UserRole.WORKSPACE_MEMBER,
   UserRole.SALES_REP,
 ];
 
@@ -67,6 +71,7 @@ export function CreateCompanyUserDialog({
   onOpenChange,
   companyId,
   workspaceId,
+  workspaceType = "COMMERCIAL",
   workspaces = [],
 }: CreateCompanyUserDialogProps) {
   const { role: currentUserRole } = usePermissions();
@@ -94,7 +99,9 @@ export function CreateCompanyUserDialog({
   const availableRoles = getAvailableRoles();
 
   const defaultRole = isWorkspaceContext
-    ? UserRole.SALES_REP
+    ? workspaceType === "OPERATION"
+      ? UserRole.WORKSPACE_MEMBER
+      : UserRole.SALES_REP
     : UserRole.COMPANY_ADMIN;
 
   const [formData, setFormData] = useState({

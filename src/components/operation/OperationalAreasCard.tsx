@@ -2,10 +2,12 @@ import { useEffect, useState } from "react";
 import { AxiosError } from "axios";
 import { AlertCircle, Loader2, Pencil, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { useOperationalAreaMutations, useOperationalAreas } from "@/hooks/useOperationalAreas";
+import { useOperationalMembershipCandidates } from "@/hooks/useOperationalAreaMemberships";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useToast } from "@/hooks/use-toast";
 import { ServiceArea } from "@/types/operation";
 import { OperationalAreaQueues } from "@/components/operation/OperationalAreaQueues";
+import { OperationalAreaMemberships } from "@/components/operation/OperationalAreaMemberships";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
@@ -27,6 +29,11 @@ export function OperationalAreasCard({ workspaceId }: { workspaceId?: string }) 
   const areasQuery = useOperationalAreas(workspaceId);
   const mutations = useOperationalAreaMutations(workspaceId);
   const canManage = has("manage:operation-setup");
+  const canManageMemberships = has("manage:operation-memberships");
+  const membershipCandidatesQuery = useOperationalMembershipCandidates(
+    workspaceId,
+    canManageMemberships,
+  );
   const [editingArea, setEditingArea] = useState<ServiceArea | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [areaToDelete, setAreaToDelete] = useState<ServiceArea | null>(null);
@@ -141,6 +148,14 @@ export function OperationalAreasCard({ workspaceId }: { workspaceId?: string }) 
                       {area.description}
                     </p>
                   )}
+                  <OperationalAreaMemberships
+                    workspaceId={workspaceId}
+                    areaId={area.id}
+                    canManage={canManageMemberships}
+                    candidateUsers={membershipCandidatesQuery.data?.items}
+                    candidatesLoading={membershipCandidatesQuery.isLoading}
+                    candidatesError={membershipCandidatesQuery.isError}
+                  />
                   <OperationalAreaQueues
                     workspaceId={workspaceId}
                     areaId={area.id}

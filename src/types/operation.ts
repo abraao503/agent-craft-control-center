@@ -10,6 +10,8 @@ export type OperationalSetupMissing =
   | "ACTIVE_MEMBER"
   | "FALLBACK_ROUTE";
 
+export type AreaMembershipRole = "OPERATOR" | "SUPERVISOR";
+
 export interface OperationalSetup {
   workspaceId: string;
   workspaceType: "OPERATION";
@@ -56,6 +58,25 @@ export interface ServiceQueue {
   updatedAt: string;
 }
 
+export interface AreaMembership {
+  id: string;
+  companyId: string;
+  workspaceId: string;
+  areaId: string;
+  userId: string;
+  role: AreaMembershipRole;
+  active: boolean;
+  deletedAt: string | null;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+  };
+}
+
 export interface OperationalAreasPage {
   items: ServiceArea[];
   total: number;
@@ -66,6 +87,14 @@ export interface OperationalAreasPage {
 
 export interface OperationalQueuesPage {
   items: ServiceQueue[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface OperationalAreaMembershipsPage {
+  items: AreaMembership[];
   total: number;
   page: number;
   limit: number;
@@ -115,4 +144,19 @@ export interface DeleteOperationalQueueParams {
   areaId: string;
   queueId: string;
   expectedVersion: number;
+}
+
+export interface UpsertOperationalAreaMembershipParams {
+  workspaceId: string;
+  areaId: string;
+  userId: string;
+  role: AreaMembershipRole;
+  expectedVersion?: number;
+}
+
+export interface DeleteOperationalAreaMembershipParams {
+  workspaceId: string;
+  areaId: string;
+  userId: string;
+  expectedVersion?: number;
 }

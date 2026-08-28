@@ -48,6 +48,7 @@ const roleLabels: Record<string, string> = {
   WORKSPACE_OWNER: "Dono do workspace",
   WORKSPACE_ADMIN: "Admin do workspace",
   WORKSPACE_MANAGER: "Gerente",
+  WORKSPACE_MEMBER: "Membro operacional",
   SALES_REP: "Vendedor",
 };
 
@@ -134,7 +135,8 @@ export function AdminCompanyManagement({
       WORKSPACE_OWNER: 4,
       WORKSPACE_ADMIN: 5,
       WORKSPACE_MANAGER: 6,
-      SALES_REP: 7,
+      WORKSPACE_MEMBER: 7,
+      SALES_REP: 8,
     };
 
     return Boolean(

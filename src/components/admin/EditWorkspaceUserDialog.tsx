@@ -37,6 +37,7 @@ const ROLE_LABELS: Record<UserRole, string> = {
   [UserRole.WORKSPACE_OWNER]: "Dono do Workspace",
   [UserRole.WORKSPACE_ADMIN]: "Admin do Workspace",
   [UserRole.WORKSPACE_MANAGER]: "Gerente do Workspace",
+  [UserRole.WORKSPACE_MEMBER]: "Membro operacional",
   [UserRole.SALES_REP]: "Vendedor",
 };
 
@@ -44,6 +45,7 @@ const WORKSPACE_LEVEL_ROLES = [
   UserRole.WORKSPACE_OWNER,
   UserRole.WORKSPACE_ADMIN,
   UserRole.WORKSPACE_MANAGER,
+  UserRole.WORKSPACE_MEMBER,
   UserRole.SALES_REP,
 ];
 
