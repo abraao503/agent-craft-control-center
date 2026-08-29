@@ -204,3 +204,6 @@ export interface DeleteOperationalQueueMembershipParams {
   userId: string;
   expectedVersion?: number;
 }
+
+export * from "./operation-attendance";
+
