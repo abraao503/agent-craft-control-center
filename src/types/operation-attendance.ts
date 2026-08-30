@@ -259,6 +259,7 @@ export interface AttendancesPage {
   total: number;
   page: number;
   limit: number;
+  totalPages: number;
 }
 
 export interface AttendanceEventsPage {
@@ -266,6 +267,7 @@ export interface AttendanceEventsPage {
   total: number;
   page: number;
   limit: number;
+  totalPages: number;
 }
 
 export interface AttendanceCommandsPage {
@@ -273,6 +275,7 @@ export interface AttendanceCommandsPage {
   total: number;
   page: number;
   limit: number;
+  totalPages: number;
 }
 
 export interface OperationalFollowUpsPage {
@@ -280,6 +283,7 @@ export interface OperationalFollowUpsPage {
   total: number;
   page: number;
   limit: number;
+  totalPages: number;
 }
 
 export interface OperationalFollowUpOccurrencesPage {
@@ -287,6 +291,7 @@ export interface OperationalFollowUpOccurrencesPage {
   total: number;
   page: number;
   limit: number;
+  totalPages: number;
 }
 
 export interface AttendanceCommandResponse {
