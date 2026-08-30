@@ -52,6 +52,15 @@ export interface AttendanceCustomerSnapshot {
   name: string;
 }
 
+export interface AttendanceLastMessageSnapshot {
+  id: string;
+  sender: "CUSTOMER" | "HUMAN" | "ASSISTANT";
+  type: string;
+  preview: string;
+  createdAt: string;
+  deliveryStatus: string | null;
+}
+
 export interface AttendanceDestinationSnapshot {
   areaName: string | null;
   queueName: string | null;
@@ -90,6 +99,51 @@ export interface AttendanceWithDetails extends Attendance {
   customer?: AttendanceCustomerSnapshot;
   destination?: AttendanceDestinationSnapshot;
   assignee?: AttendanceAssigneeSnapshot | null;
+  lastMessage?: AttendanceLastMessageSnapshot | null;
+  unreadCount?: number;
+}
+
+export interface AttendanceSummary {
+  total: number;
+  unreadAttendances: number;
+  byStatus: Record<AttendanceStatus, number>;
+}
+
+export interface AttendanceOptionQueue {
+  id: string;
+  name: string;
+  active: boolean;
+}
+
+export interface AttendanceOptionArea {
+  id: string;
+  name: string;
+  active: boolean;
+  queues: AttendanceOptionQueue[];
+}
+
+export interface AttendanceOptionUser {
+  id: string;
+  name: string;
+  active: boolean;
+}
+
+export interface AttendanceOptionChannel {
+  id: string;
+  displayName: string;
+  active: boolean;
+}
+
+export interface AttendanceOptionCapabilities {
+  canAssign: boolean;
+  canTransferToUser: boolean;
+}
+
+export interface AttendanceOptions {
+  areas: AttendanceOptionArea[];
+  users: AttendanceOptionUser[];
+  channels: AttendanceOptionChannel[];
+  capabilities: AttendanceOptionCapabilities;
 }
 
 export interface AttendanceEvent {
@@ -332,9 +386,24 @@ export interface ListAttendancesFilters {
   customerId?: string;
   updatedFrom?: string;
   updatedTo?: string;
+  search?: string;
+  unreadOnly?: boolean;
 }
 
 export interface ListAttendancesParams extends ListAttendancesFilters {
+  workspaceId: string;
+}
+
+export type AttendanceSummaryFilters = Omit<
+  ListAttendancesFilters,
+  "page" | "limit" | "status"
+>;
+
+export interface ListAttendanceSummaryParams extends AttendanceSummaryFilters {
+  workspaceId: string;
+}
+
+export interface ListAttendanceOptionsParams {
   workspaceId: string;
 }
 

@@ -17,6 +17,7 @@ import {
   AlertCircle,
   ArrowRight,
   CheckCircle2,
+  Inbox,
   Loader2,
   RefreshCw,
   Radio,
@@ -65,6 +66,32 @@ export default function OperationLandingPage() {
           </CardDescription>
         </CardHeader>
       </Card>
+
+      {has("view:operation-attendances") ? (
+        <Card>
+          <CardHeader>
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <CardTitle className="flex items-center gap-2 text-xl">
+                  <Inbox className="h-5 w-5 text-primary" />
+                  Atendimentos
+                </CardTitle>
+                <CardDescription>
+                  Abra a inbox operacional para acompanhar os ciclos dentro do
+                  escopo autorizado.
+                </CardDescription>
+              </div>
+              <Link
+                to="/operation/attendances"
+                className={buttonVariants({ variant: "outline", size: "sm" })}
+              >
+                Abrir atendimentos
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+          </CardHeader>
+        </Card>
+      ) : null}
 
       {setupQuery.isLoading ? (
         <Card>

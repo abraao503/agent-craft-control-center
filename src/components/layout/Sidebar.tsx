@@ -21,6 +21,7 @@ import {
   Calendar as CalendarIcon,
   Tag,
   Radio,
+  Inbox,
 } from "lucide-react";
 import { useAuth } from "@/contexts/auth/hooks";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -430,8 +431,8 @@ const SidebarMenuContent = () => {
   };
 
   const isActive = (path: string) => {
-    if (path === "/dashboard") {
-      return location.pathname === "/dashboard";
+    if (path === "/dashboard" || path === "/operation") {
+      return location.pathname === path;
     }
     return location.pathname.startsWith(path);
   };
@@ -445,6 +446,12 @@ const SidebarMenuContent = () => {
 
   const allMenuItems: MenuItem[] = currentWorkspace?.type === "OPERATION"
     ? [
+        {
+          path: "/operation/attendances",
+          label: "Atendimentos",
+          icon: <Inbox className="h-5 w-5" />,
+          requiredPermission: "view:operation-attendances",
+        },
         {
           path: "/operation",
           label: "Operação",
@@ -556,6 +563,15 @@ const SidebarMenuContent = () => {
     return true;
   });
 
+  const operationHomePath =
+    currentWorkspace?.type === "OPERATION"
+      ? has("view:operation-setup")
+        ? "/operation"
+        : has("view:operation-attendances")
+          ? "/operation/attendances"
+          : "/operation"
+      : "/dashboard";
+
   const renderMenuItem = (item: {
     path: string;
     label: string;
@@ -634,11 +650,11 @@ const SidebarMenuContent = () => {
         )}
       >
         <Link
-          to={currentWorkspace?.type === "OPERATION" ? "/operation" : "/dashboard"}
+          to={operationHomePath}
           onClick={(event) => {
             event.preventDefault();
             requestNavigation(() =>
-              navigate(currentWorkspace?.type === "OPERATION" ? "/operation" : "/dashboard"),
+              navigate(operationHomePath),
             );
           }}
           className={cn(

@@ -61,6 +61,8 @@ import ResetPasswordPage from "./pages/ResetPasswordPage";
 import TagsPage from "./pages/TagsPage";
 import OperationLandingPage from "./pages/OperationLandingPage";
 import OperationChannelsPage from "./pages/OperationChannelsPage";
+import OperationAttendancesPage from "./pages/OperationAttendancesPage";
+import OperationAttendanceDetailPage from "./pages/OperationAttendanceDetailPage";
 import Sidebar from "./components/layout/Sidebar";
 import Header from "./components/layout/Header";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
@@ -74,6 +76,7 @@ import { WorkspaceProvider } from "./contexts/workspace/WorkspaceContext";
 import { Loader2 } from "lucide-react";
 import { LegacyTextBridge } from "./components/i18n/LegacyTextBridge";
 import { useWorkspaceContext } from "./contexts/workspace/WorkspaceContext";
+import { usePermissions } from "./hooks/usePermissions";
 
 const queryClient = new QueryClient();
 
@@ -320,6 +323,24 @@ const WorkspaceRouteBoundary = () => {
   return <Outlet />;
 };
 
+const OperationEntryRoute = () => {
+  const { has } = usePermissions();
+
+  if (
+    !has("view:operation-setup") &&
+    has("view:operation-attendances")
+  ) {
+    return <Navigate to="/operation/attendances" replace />;
+  }
+
+  return (
+    <ProtectedRoute
+      requiredPermission="view:operation-setup"
+      component={OperationLandingPage}
+    />
+  );
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <LegacyTextBridge />
@@ -354,10 +375,23 @@ const App = () => (
                   <Route element={<AppLayout />}>
                     <Route
                       path="/operation"
+                      element={<OperationEntryRoute />}
+                    />
+                    <Route
+                      path="/operation/attendances"
                       element={
                         <ProtectedRoute
-                          requiredPermission="view:operation-setup"
-                          component={OperationLandingPage}
+                          requiredPermission="view:operation-attendances"
+                          component={OperationAttendancesPage}
+                        />
+                      }
+                    />
+                    <Route
+                      path="/operation/attendances/:attendanceId"
+                      element={
+                        <ProtectedRoute
+                          requiredPermission="view:operation-attendances"
+                          component={OperationAttendanceDetailPage}
                         />
                       }
                     />

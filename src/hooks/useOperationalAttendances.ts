@@ -2,10 +2,13 @@ import { useQuery } from "@tanstack/react-query";
 import { getAttendanceDetail } from "@/services/operation/getAttendanceDetail";
 import { listAttendanceCommands } from "@/services/operation/listAttendanceCommands";
 import { listAttendanceEvents } from "@/services/operation/listAttendanceEvents";
+import { listAttendanceOptions } from "@/services/operation/listAttendanceOptions";
+import { listAttendanceSummary } from "@/services/operation/listAttendanceSummary";
 import { listAttendances } from "@/services/operation/listAttendances";
 import { listOperationalFollowUpOccurrences } from "@/services/operation/listOperationalFollowUpOccurrences";
 import { listOperationalFollowUps } from "@/services/operation/listOperationalFollowUps";
 import {
+  AttendanceSummaryFilters,
   ListAttendancesFilters,
   OperationalFollowUpOccurrenceStatus,
   OperationalFollowUpStatus,
@@ -23,6 +26,41 @@ export function useOperationalAttendances(
         throw new Error("Workspace operacional não selecionado");
       }
       return listAttendances({ workspaceId, ...filters });
+    },
+    enabled: Boolean(workspaceId && enabled),
+  });
+}
+
+export function useOperationalAttendanceSummary(
+  workspaceId?: string,
+  filters: AttendanceSummaryFilters = {},
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: ["operation", "attendance-summary", workspaceId, filters],
+    queryFn: () => {
+      if (!workspaceId) {
+        throw new Error("Workspace operacional não selecionado");
+      }
+
+      return listAttendanceSummary({ workspaceId, ...filters });
+    },
+    enabled: Boolean(workspaceId && enabled),
+  });
+}
+
+export function useOperationalAttendanceOptions(
+  workspaceId?: string,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: ["operation", "attendance-options", workspaceId],
+    queryFn: () => {
+      if (!workspaceId) {
+        throw new Error("Workspace operacional não selecionado");
+      }
+
+      return listAttendanceOptions({ workspaceId });
     },
     enabled: Boolean(workspaceId && enabled),
   });

@@ -28,6 +28,8 @@ export type Permission =
   | "manage:operation-memberships"
   | "view:operation-channels"
   | "manage:operation-channels"
+  | "view:operation-attendances"
+  | "operate:operation-attendances"
   | "create:company-user"
   | "delete:company-user"
   | "create:workspace-user"
