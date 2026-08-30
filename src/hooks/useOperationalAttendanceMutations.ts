@@ -11,6 +11,7 @@ import { routeAttendance } from "@/services/operation/routeAttendance";
 import { transferAttendance } from "@/services/operation/transferAttendance";
 import { unassignAttendance } from "@/services/operation/unassignAttendance";
 import { updateOperationalFollowUp } from "@/services/operation/updateOperationalFollowUp";
+import { sendOperationalAttendanceMessage } from "@/services/operation/sendOperationalAttendanceMessage";
 import {
   AssignAttendanceParams,
   CancelOperationalFollowUpParams,
@@ -23,6 +24,7 @@ import {
   TransferAttendanceParams,
   UnassignAttendanceParams,
   UpdateOperationalFollowUpParams,
+  SendOperationalAttendanceMessageParams,
 } from "@/types/operation-attendance";
 import { isStaleVersionError } from "@/utils/operationalAttendanceErrors";
 
@@ -51,6 +53,17 @@ export function useOperationalAttendanceMutations(workspaceId?: string) {
           resolvedWorkspaceId,
           attendanceId,
         ],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: [
+          "operation",
+          "attendance-messages",
+          resolvedWorkspaceId,
+          attendanceId,
+        ],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: ["operation", "attendance-summary", resolvedWorkspaceId],
       });
       void queryClient.invalidateQueries({
         queryKey: [
@@ -340,6 +353,29 @@ export function useOperationalAttendanceMutations(workspaceId?: string) {
     },
   });
 
+  const sendMessage = useMutation({
+    mutationFn: (
+      params: Omit<SendOperationalAttendanceMessageParams, "workspaceId"> & {
+        workspaceId?: string;
+      },
+    ) => {
+      const targetWorkspaceId = params.workspaceId ?? resolvedWorkspaceId;
+      if (!targetWorkspaceId) {
+        throw new Error("Workspace operacional não selecionado");
+      }
+      return sendOperationalAttendanceMessage({
+        ...params,
+        workspaceId: targetWorkspaceId,
+      });
+    },
+    onSuccess: (_data, variables) => {
+      invalidateAttendanceScope(variables.attendanceId);
+    },
+    onError: (error, variables) => {
+      handleMutationError(error, variables.attendanceId);
+    },
+  });
+
   return {
     route,
     claim,
@@ -352,6 +388,7 @@ export function useOperationalAttendanceMutations(workspaceId?: string) {
     createFollowUp,
     updateFollowUp,
     cancelFollowUp,
+    sendMessage,
     invalidateAttendanceScope,
   };
 }

@@ -35,6 +35,7 @@ import {
   AttendanceActionFormValues,
 } from "@/components/operation/AttendanceActionDialog";
 import { AttendanceFollowUpsCard } from "@/components/operation/AttendanceFollowUpsCard";
+import { AttendanceComposer } from "@/components/operation/AttendanceComposer";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -495,6 +496,11 @@ export default function OperationAttendanceDetailPage() {
                   </ScrollArea>
                 </>
               )}
+              <AttendanceComposer
+                workspaceId={workspaceId!}
+                attendance={attendance}
+                canOperate={canOperateAttendances}
+              />
             </CardContent>
           </Card>
         </div>
@@ -633,7 +639,7 @@ export default function OperationAttendanceDetailPage() {
             <CardHeader>
               <CardTitle className="text-base">Capacidade de resposta</CardTitle>
               <CardDescription>
-                O composer de mensagens permanece reservado para a próxima fatia.
+                A disponibilidade abaixo é calculada pelo canal e pelo estado do atendimento.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">

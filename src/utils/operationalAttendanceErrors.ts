@@ -15,6 +15,35 @@ export const OPERATIONAL_ATTENDANCE_ERROR_MESSAGES: Record<string, string> = {
   DESTINATION_WORKSPACE_MISMATCH:
     "A área ou fila de destino não pertence ao workspace atual.",
 
+  // Envio de mensagens
+  NOT_CURRENT_ASSIGNEE:
+    "Somente o responsável atual pode enviar mensagens neste atendimento.",
+  CHANNEL_UNAVAILABLE: "O canal deste atendimento está indisponível.",
+  WINDOW_CLOSED:
+    "A janela de resposta está encerrada. Use um template aprovado para continuar.",
+  TEMPLATE_REQUIRED: "Este atendimento exige o envio de um template aprovado.",
+  TEMPLATE_NOT_FOUND: "O template selecionado não está disponível.",
+  TEMPLATE_NOT_SUPPORTED: "O template selecionado não é compatível com este canal.",
+  TEMPLATE_INVALID: "O template selecionado não está válido para envio.",
+  INVALID_TEMPLATE_BINDINGS:
+    "Revise os valores preenchidos para os parâmetros do template.",
+  REPLY_CONTEXT_STALE:
+    "O contexto da resposta mudou. Atualize o atendimento e tente novamente.",
+  OPT_IN_REQUIRED: "O contato precisa autorizar o recebimento de mensagens.",
+  FILE_REQUIRED: "Selecione um arquivo antes de enviar a mídia.",
+  MEDIA_TOO_LARGE: "O arquivo excede o limite de 50 MB.",
+  MEDIA_TYPE_NOT_ALLOWED: "O tipo do arquivo não é permitido para esta mídia.",
+  MEDIA_NOT_SUPPORTED: "Este canal não aceita o tipo de mídia selecionado.",
+  INVALID_CONTENT: "O conteúdo da mensagem não é válido.",
+  INVALID_PHONE: "O telefone do contato não está apto para receber mensagens.",
+  RATE_LIMITED: "O envio foi temporariamente limitado. Aguarde e tente novamente.",
+  PROVIDER_UNAVAILABLE:
+    "O provedor do canal está indisponível. Tente novamente em instantes.",
+  OPERATIONAL_RUNTIME_NOT_READY:
+    "O runtime operacional ainda não está pronto para envio.",
+  FAILED_TO_SEND_OPERATIONAL_MESSAGE:
+    "Não foi possível enviar a mensagem operacional.",
+
   // Atribuição e Responsabilidade
   RESPONSIBLE_FIELDS_CONFLICT:
     "Não é possível definir usuário e assistente de IA simultaneamente.",

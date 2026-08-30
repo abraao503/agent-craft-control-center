@@ -132,6 +132,24 @@ export interface AttendanceReplyCapabilities {
   latestInboundMessageId: string | null;
 }
 
+export type OperationalTemplateBinding =
+  | { source: "fixed"; value: string }
+  | {
+      source: "customer";
+      field: "name" | "firstName" | "phone" | "email";
+    }
+  | { source: "owner"; field: "name" };
+
+export interface OperationalAttendanceTemplate {
+  id: string;
+  name: string;
+  language: string;
+  status: string;
+  category: string | null;
+  components: unknown;
+  compatible: boolean;
+}
+
 export type AttendanceDetail = Omit<AttendanceWithDetails, "customer"> & {
   customer?: AttendanceCustomerDetail;
   channel?: AttendanceChannelDetail | null;
@@ -478,6 +496,53 @@ export interface ListAttendanceMessagesParams {
   attendanceId: string;
   limit?: number;
   before?: string;
+}
+
+export interface ListOperationalAttendanceTemplatesParams {
+  workspaceId: string;
+  attendanceId: string;
+}
+
+export type SendOperationalAttendanceMessageBody =
+  | {
+      kind: "TEXT";
+      expectedVersion: number;
+      text: string;
+    }
+  | {
+      kind: "MEDIA";
+      expectedVersion: number;
+      mediaType: "image" | "audio" | "document";
+      caption?: string;
+    }
+  | {
+      kind: "TEMPLATE";
+      expectedVersion: number;
+      templateId: string;
+      bindings?: Record<string, OperationalTemplateBinding>;
+    };
+
+export interface SendOperationalAttendanceMessageParams {
+  workspaceId: string;
+  attendanceId: string;
+  body: SendOperationalAttendanceMessageBody;
+  file?: File;
+  idempotencyKey?: string;
+}
+
+export interface SendOperationalAttendanceMessageResponse {
+  message: {
+    id: string;
+    attendanceId: string;
+    sender: "HUMAN";
+    type: string;
+    content: string;
+    dispatchStatus: string | null;
+    deliveryStatus: string | null;
+    createdAt: string;
+  };
+  outboundRequestId: string;
+  duplicate: boolean;
 }
 
 export interface MarkAttendanceReadParams {
