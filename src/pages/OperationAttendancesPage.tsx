@@ -17,6 +17,7 @@ import {
   useOperationalAttendanceOptions,
   useOperationalAttendanceSummary,
 } from "@/hooks/useOperationalAttendances";
+import { useOperationalRealtime } from "@/hooks/useOperationalRealtime";
 import { usePermissions } from "@/hooks/usePermissions";
 import { getOperationalAttendanceErrorMessage } from "@/utils/operationalAttendanceErrors";
 import {
@@ -30,6 +31,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { OperationalRealtimeStatus } from "@/components/operation/OperationalRealtimeStatus";
 import {
   Select,
   SelectContent,
@@ -130,6 +132,10 @@ export default function OperationAttendancesPage() {
     filters,
     canViewAttendances,
   );
+  const realtime = useOperationalRealtime({
+    workspaceId,
+    enabled: canViewAttendances,
+  });
 
   const queueOptions = useMemo(
     () => flattenQueueOptions(optionsQuery.data),
@@ -210,13 +216,19 @@ export default function OperationAttendancesPage() {
             sem sair do workspace atual.
           </p>
         </div>
-        <Link
-          to="/operation"
-          className={buttonVariants({ variant: "outline" })}
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Voltar para operação
-        </Link>
+        <div className="flex flex-col items-end gap-2">
+          <OperationalRealtimeStatus
+            status={realtime.status}
+            joinedWorkspace={realtime.joinedWorkspace}
+          />
+          <Link
+            to="/operation"
+            className={buttonVariants({ variant: "outline" })}
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Voltar para operação
+          </Link>
+        </div>
       </header>
 
       {hasQueryError ? (

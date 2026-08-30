@@ -172,6 +172,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const removeUserData = () => {
+    disconnectSocket();
     setUser(null);
     setUserProfile(null);
     localStorage.removeItem("user");

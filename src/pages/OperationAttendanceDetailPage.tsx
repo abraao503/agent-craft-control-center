@@ -24,6 +24,7 @@ import {
   useOperationalAttendanceEvents,
   useOperationalAttendanceMessages,
 } from "@/hooks/useOperationalAttendances";
+import { useOperationalRealtime } from "@/hooks/useOperationalRealtime";
 import { useOperationalAttendanceMutations } from "@/hooks/useOperationalAttendanceMutations";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useToast } from "@/hooks/use-toast";
@@ -36,6 +37,7 @@ import {
 } from "@/components/operation/AttendanceActionDialog";
 import { AttendanceFollowUpsCard } from "@/components/operation/AttendanceFollowUpsCard";
 import { AttendanceComposer } from "@/components/operation/AttendanceComposer";
+import { OperationalRealtimeStatus } from "@/components/operation/OperationalRealtimeStatus";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -97,6 +99,12 @@ export default function OperationAttendanceDetailPage() {
     attendanceId,
     canViewAttendances,
   );
+  const realtime = useOperationalRealtime({
+    workspaceId,
+    attendanceId,
+    currentAttendanceVersion: detailQuery.data?.version,
+    enabled: canViewAttendances,
+  });
   const messagesQuery = useOperationalAttendanceMessages(
     workspaceId,
     attendanceId,
@@ -374,9 +382,15 @@ export default function OperationAttendanceDetailPage() {
             Ciclo {attendance.cycleNumber} · versão {attendance.version}
           </p>
         </div>
-        <div className="rounded-md border bg-muted/20 px-3 py-2 text-right text-xs text-muted-foreground">
-          <p className="font-medium text-foreground">Última atividade</p>
-          <p className="mt-1">{formatDateTime(attendance.lastActivityAt)}</p>
+        <div className="flex flex-col items-end gap-2">
+          <OperationalRealtimeStatus
+            status={realtime.status}
+            joinedWorkspace={realtime.joinedWorkspace}
+          />
+          <div className="rounded-md border bg-muted/20 px-3 py-2 text-right text-xs text-muted-foreground">
+            <p className="font-medium text-foreground">Última atividade</p>
+            <p className="mt-1">{formatDateTime(attendance.lastActivityAt)}</p>
+          </div>
         </div>
       </header>
 
