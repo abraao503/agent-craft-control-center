@@ -1,24 +1,40 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   AlertCircle,
   ArrowLeft,
+  ArrowRight,
+  ArrowRightLeft,
+  CheckCircle2,
   Clock3,
   Loader2,
   MessageSquare,
+  PauseCircle,
+  PlayCircle,
   RefreshCw,
+  UserMinus,
+  UserPlus,
   UserRound,
 } from "lucide-react";
 import { useWorkspaceContext } from "@/contexts/workspace/WorkspaceContext";
 import {
   useMarkOperationalAttendanceRead,
+  useOperationalAttendanceOptions,
   useOperationalAttendanceDetail,
   useOperationalAttendanceEvents,
   useOperationalAttendanceMessages,
 } from "@/hooks/useOperationalAttendances";
+import { useOperationalAttendanceMutations } from "@/hooks/useOperationalAttendanceMutations";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useToast } from "@/hooks/use-toast";
 import { getOperationalAttendanceErrorMessage } from "@/utils/operationalAttendanceErrors";
 import { AttendanceEvent, AttendanceMessageItem, AttendanceStatus } from "@/types/operation-attendance";
+import {
+  AttendanceAction,
+  AttendanceActionDialog,
+  AttendanceActionFormValues,
+} from "@/components/operation/AttendanceActionDialog";
+import { AttendanceFollowUpsCard } from "@/components/operation/AttendanceFollowUpsCard";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -67,6 +83,14 @@ export default function OperationAttendanceDetailPage() {
   const workspaceId =
     currentWorkspace?.type === "OPERATION" ? currentWorkspace.id : undefined;
   const canViewAttendances = has("view:operation-attendances");
+  const canOperateAttendances = has("operate:operation-attendances");
+  const { toast } = useToast();
+  const optionsQuery = useOperationalAttendanceOptions(
+    workspaceId,
+    canViewAttendances && canOperateAttendances,
+  );
+  const attendanceMutations = useOperationalAttendanceMutations(workspaceId);
+  const [activeAction, setActiveAction] = useState<AttendanceAction | null>(null);
   const detailQuery = useOperationalAttendanceDetail(
     workspaceId,
     attendanceId,
@@ -171,6 +195,151 @@ export default function OperationAttendanceDetailPage() {
     .flatMap((page) => page.items) ?? [];
   const events = eventsQuery.data?.items ?? [];
   const customerName = attendance.customer?.name || "Contato sem nome";
+  const options = optionsQuery.data;
+  const isActionPending =
+    attendanceMutations.route.isPending ||
+    attendanceMutations.claim.isPending ||
+    attendanceMutations.assign.isPending ||
+    attendanceMutations.transfer.isPending ||
+    attendanceMutations.unassign.isPending ||
+    attendanceMutations.pending.isPending ||
+    attendanceMutations.resume.isPending ||
+    attendanceMutations.close.isPending;
+  const canManageAssignments = Boolean(
+    canOperateAttendances && options?.capabilities.canAssign,
+  );
+  const canTransfer = Boolean(canOperateAttendances && options);
+
+  const runQuickAction = async (action: "CLAIM" | "RESUME") => {
+    try {
+      if (action === "CLAIM") {
+        await attendanceMutations.claim.mutateAsync({
+          attendanceId: attendance.id,
+          expectedVersion: attendance.version,
+        });
+      } else {
+        await attendanceMutations.resume.mutateAsync({
+          attendanceId: attendance.id,
+          expectedVersion: attendance.version,
+        });
+      }
+      toast({
+        title: action === "CLAIM" ? "Atendimento assumido" : "Atendimento retomado",
+        description: "O detalhe foi atualizado com a nova versão do ciclo.",
+      });
+    } catch (error) {
+      toast({
+        title: "Não foi possível executar a ação",
+        description: getOperationalAttendanceErrorMessage(
+          error,
+          "Atualize o atendimento e tente novamente.",
+        ),
+        variant: "destructive",
+      });
+    }
+  };
+
+  const submitAction = async (values: AttendanceActionFormValues) => {
+    if (!activeAction) return;
+
+    try {
+      const common = {
+        attendanceId: attendance.id,
+        expectedVersion: attendance.version,
+      };
+
+      if (activeAction === "ROUTE") {
+        if (!values.targetAreaId || !values.targetQueueId) return;
+        await attendanceMutations.route.mutateAsync({
+          ...common,
+          targetAreaId: values.targetAreaId,
+          targetQueueId: values.targetQueueId,
+          reason: values.reason?.trim() || undefined,
+        });
+      }
+      if (activeAction === "ASSIGN") {
+        if (!values.targetUserId) return;
+        await attendanceMutations.assign.mutateAsync({
+          ...common,
+          targetUserId: values.targetUserId,
+          reason: values.reason?.trim() || undefined,
+        });
+      }
+      if (activeAction === "TRANSFER") {
+        if (!values.targetAreaId || !values.targetQueueId) return;
+        await attendanceMutations.transfer.mutateAsync({
+          ...common,
+          targetAreaId: values.targetAreaId,
+          targetQueueId: values.targetQueueId,
+          targetUserId: values.targetUserId || undefined,
+          reason: values.reason?.trim() || undefined,
+        });
+      }
+      if (activeAction === "PENDING") {
+        if (!values.reason?.trim()) return;
+        const followUp =
+          values.includeFollowUp &&
+          values.followUpTitle?.trim() &&
+          values.followUpAt &&
+          values.followUpText?.trim()
+            ? {
+                title: values.followUpTitle.trim(),
+                timezone: getTimeZone(),
+                schedule: {
+                  kind: "ONCE" as const,
+                  firstRunAt: toIsoDateTime(values.followUpAt),
+                },
+                content: {
+                  kind: "TEXT" as const,
+                  text: values.followUpText.trim(),
+                },
+              }
+            : undefined;
+        await attendanceMutations.pending.mutateAsync({
+          ...common,
+          reason: values.reason.trim(),
+          pendingDueAt: values.pendingDueAt
+            ? toIsoDateTime(values.pendingDueAt)
+            : undefined,
+          followUp,
+        });
+      }
+      if (activeAction === "RESUME") {
+        await attendanceMutations.resume.mutateAsync({
+          ...common,
+          reason: values.reason?.trim() || undefined,
+        });
+      }
+      if (activeAction === "UNASSIGN") {
+        await attendanceMutations.unassign.mutateAsync({
+          ...common,
+          reason: values.reason?.trim() || undefined,
+        });
+      }
+      if (activeAction === "CLOSE") {
+        if (!values.closeSummary?.trim()) return;
+        await attendanceMutations.close.mutateAsync({
+          ...common,
+          closeSummary: values.closeSummary.trim(),
+        });
+      }
+
+      toast({
+        title: "Ação concluída",
+        description: "O atendimento, a timeline e os follow-ups foram atualizados.",
+      });
+      setActiveAction(null);
+    } catch (error) {
+      toast({
+        title: "Não foi possível concluir a ação",
+        description: getOperationalAttendanceErrorMessage(
+          error,
+          "O atendimento pode ter sido alterado em outra sessão. Atualize e tente novamente.",
+        ),
+        variant: "destructive",
+      });
+    }
+  };
   const destination = [
     attendance.destination?.areaName,
     attendance.destination?.queueName,
@@ -333,9 +502,138 @@ export default function OperationAttendanceDetailPage() {
         <div className="space-y-6">
           <Card>
             <CardHeader>
+              <CardTitle className="text-base">Ações do atendimento</CardTitle>
+              <CardDescription>
+                Comandos disponíveis para o estado e a permissão atuais.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {!canOperateAttendances ? (
+                <p className="text-sm text-muted-foreground">
+                  Você pode consultar este atendimento, mas não possui permissão para operá-lo.
+                </p>
+              ) : (
+                <>
+                  {optionsQuery.isError ? (
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertTitle>Opções de operação indisponíveis</AlertTitle>
+                      <AlertDescription>
+                        Não foi possível carregar áreas, filas e operadores para os comandos.
+                      </AlertDescription>
+                    </Alert>
+                  ) : null}
+                  <div className="flex flex-wrap gap-2">
+                    {attendance.status === "WAITING_QUEUE" ? (
+                      <Button
+                        size="sm"
+                        onClick={() => void runQuickAction("CLAIM")}
+                        disabled={isActionPending}
+                      >
+                        <CheckCircle2 className="mr-2 h-4 w-4" />
+                        Assumir
+                      </Button>
+                    ) : null}
+                    {attendance.status === "TRIAGE" ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setActiveAction("ROUTE")}
+                        disabled={!options || isActionPending}
+                      >
+                        <ArrowRight className="mr-2 h-4 w-4" />
+                        Encaminhar
+                      </Button>
+                    ) : null}
+                    {canManageAssignments &&
+                    ["WAITING_QUEUE", "IN_PROGRESS", "PENDING"].includes(attendance.status) ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setActiveAction("ASSIGN")}
+                        disabled={isActionPending}
+                      >
+                        <UserPlus className="mr-2 h-4 w-4" />
+                        Atribuir
+                      </Button>
+                    ) : null}
+                    {canTransfer &&
+                    ["WAITING_QUEUE", "IN_PROGRESS", "PENDING"].includes(attendance.status) ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setActiveAction("TRANSFER")}
+                        disabled={isActionPending}
+                      >
+                        <ArrowRightLeft className="mr-2 h-4 w-4" />
+                        Transferir
+                      </Button>
+                    ) : null}
+                    {attendance.status === "IN_PROGRESS" ? (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => setActiveAction("PENDING")}
+                        disabled={isActionPending}
+                      >
+                        <PauseCircle className="mr-2 h-4 w-4" />
+                        Pendenciar
+                      </Button>
+                    ) : null}
+                    {attendance.status === "PENDING" ? (
+                      <Button
+                        size="sm"
+                        onClick={() => void runQuickAction("RESUME")}
+                        disabled={isActionPending}
+                      >
+                        <PlayCircle className="mr-2 h-4 w-4" />
+                        Retomar
+                      </Button>
+                    ) : null}
+                    {attendance.assignee &&
+                    ["IN_PROGRESS", "PENDING"].includes(attendance.status) ? (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setActiveAction("UNASSIGN")}
+                        disabled={isActionPending}
+                      >
+                        <UserMinus className="mr-2 h-4 w-4" />
+                        Desatribuir
+                      </Button>
+                    ) : null}
+                    {["IN_PROGRESS", "PENDING"].includes(attendance.status) ? (
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => setActiveAction("CLOSE")}
+                        disabled={isActionPending}
+                      >
+                        Encerrar
+                      </Button>
+                    ) : null}
+                  </div>
+                  {attendance.status === "CLOSED" ? (
+                    <p className="text-sm text-muted-foreground">Este ciclo já foi encerrado.</p>
+                  ) : null}
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          <AttendanceFollowUpsCard
+            workspaceId={workspaceId!}
+            attendanceId={attendance.id}
+            expectedVersion={attendance.version}
+            status={attendance.status}
+            canManage={canOperateAttendances}
+          />
+
+          <Card>
+            <CardHeader>
               <CardTitle className="text-base">Capacidade de resposta</CardTitle>
               <CardDescription>
-                O composer e os comandos entram nas próximas fatias.
+                O composer de mensagens permanece reservado para a próxima fatia.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
@@ -390,6 +688,16 @@ export default function OperationAttendanceDetailPage() {
           </Card>
         </div>
       </div>
+
+      <AttendanceActionDialog
+        open={Boolean(activeAction)}
+        action={activeAction}
+        attendance={attendance}
+        options={options}
+        isSubmitting={isActionPending}
+        onOpenChange={(open) => !open && setActiveAction(null)}
+        onSubmit={(values) => void submitAction(values)}
+      />
     </section>
   );
 }
@@ -564,4 +872,12 @@ function formatDateTime(value: string) {
     dateStyle: "short",
     timeStyle: "short",
   }).format(date);
+}
+
+function getTimeZone() {
+  return Intl.DateTimeFormat().resolvedOptions().timeZone || "America/Sao_Paulo";
+}
+
+function toIsoDateTime(value: string) {
+  return new Date(value).toISOString();
 }
