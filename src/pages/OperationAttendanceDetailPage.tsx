@@ -1,7 +1,27 @@
+import { useEffect, useRef } from "react";
 import { Link, useParams } from "react-router-dom";
-import { AlertCircle, ArrowLeft, MessageSquare } from "lucide-react";
+import {
+  AlertCircle,
+  ArrowLeft,
+  Clock3,
+  Loader2,
+  MessageSquare,
+  RefreshCw,
+  UserRound,
+} from "lucide-react";
+import { useWorkspaceContext } from "@/contexts/workspace/WorkspaceContext";
+import {
+  useMarkOperationalAttendanceRead,
+  useOperationalAttendanceDetail,
+  useOperationalAttendanceEvents,
+  useOperationalAttendanceMessages,
+} from "@/hooks/useOperationalAttendances";
+import { usePermissions } from "@/hooks/usePermissions";
+import { getOperationalAttendanceErrorMessage } from "@/utils/operationalAttendanceErrors";
+import { AttendanceEvent, AttendanceMessageItem, AttendanceStatus } from "@/types/operation-attendance";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { buttonVariants } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -9,9 +29,75 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
+
+const STATUS_LABELS: Record<AttendanceStatus, string> = {
+  TRIAGE: "Triagem",
+  WAITING_QUEUE: "Aguardando fila",
+  IN_PROGRESS: "Em atendimento",
+  PENDING: "Pendente",
+  CLOSED: "Encerrado",
+};
+
+const REPLY_STATUS_LABELS = {
+  SERVICE_ALLOWED: "Resposta disponível",
+  TEMPLATE_REQUIRED: "Template necessário",
+  CHANNEL_UNAVAILABLE: "Canal indisponível",
+  NOT_ASSIGNEE: "Aguardando responsável",
+  ATTENDANCE_NOT_ACTIVE: "Atendimento não ativo",
+} as const;
+
+const EVENT_LABELS: Record<string, string> = {
+  INBOUND_CREATE: "Atendimento criado",
+  INBOUND_RESUME: "Atendimento retomado",
+  ROUTE: "Encaminhado para destino",
+  CLAIM: "Assumido por operador",
+  ASSIGN: "Responsável atribuído",
+  TRANSFER: "Transferido",
+  UNASSIGN: "Responsável removido",
+  PENDING: "Marcado como pendente",
+  RESUME: "Retomado",
+  CLOSE: "Encerrado",
+};
 
 export default function OperationAttendanceDetailPage() {
   const { attendanceId } = useParams<{ attendanceId: string }>();
+  const { currentWorkspace } = useWorkspaceContext();
+  const { has } = usePermissions();
+  const workspaceId =
+    currentWorkspace?.type === "OPERATION" ? currentWorkspace.id : undefined;
+  const canViewAttendances = has("view:operation-attendances");
+  const detailQuery = useOperationalAttendanceDetail(
+    workspaceId,
+    attendanceId,
+    canViewAttendances,
+  );
+  const messagesQuery = useOperationalAttendanceMessages(
+    workspaceId,
+    attendanceId,
+    { limit: 50 },
+    canViewAttendances,
+  );
+  const eventsQuery = useOperationalAttendanceEvents(
+    workspaceId,
+    attendanceId,
+    { page: 1, limit: 50 },
+    canViewAttendances,
+  );
+  const markReadMutation = useMarkOperationalAttendanceRead(
+    workspaceId,
+    attendanceId,
+  );
+  const markedAttendanceId = useRef<string | null>(null);
+  const markRead = markReadMutation.mutate;
+
+  useEffect(() => {
+    if (!detailQuery.data || !attendanceId) return;
+    if (markedAttendanceId.current === attendanceId) return;
+
+    markedAttendanceId.current = attendanceId;
+    markRead();
+  }, [attendanceId, detailQuery.data, markRead]);
 
   if (!attendanceId) {
     return (
@@ -27,53 +113,455 @@ export default function OperationAttendanceDetailPage() {
     );
   }
 
-  return (
-    <section className="mx-auto flex w-full max-w-5xl flex-col gap-6">
-      <div>
+  if (currentWorkspace?.type !== "OPERATION") {
+    return (
+      <section className="mx-auto w-full max-w-4xl">
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Workspace operacional não selecionado</AlertTitle>
+          <AlertDescription>
+            Selecione um workspace operacional para abrir este atendimento.
+          </AlertDescription>
+        </Alert>
+      </section>
+    );
+  }
+
+  if (detailQuery.isLoading) {
+    return <DetailLoading />;
+  }
+
+  if (detailQuery.isError || !detailQuery.data) {
+    return (
+      <section className="mx-auto flex w-full max-w-4xl flex-col gap-4">
         <Link
           to="/operation/attendances"
-          className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" />
           Voltar para atendimentos
         </Link>
-        <p className="mt-6 text-sm font-medium uppercase tracking-wide text-primary">
-          Operação / atendimento humano
-        </p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight">
-          Detalhe do atendimento
-        </h1>
-      </div>
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Não foi possível abrir o atendimento</AlertTitle>
+          <AlertDescription className="flex flex-wrap items-center gap-3">
+            {getOperationalAttendanceErrorMessage(
+              detailQuery.error,
+              "O atendimento não está disponível no escopo atual.",
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => void detailQuery.refetch()}
+              disabled={detailQuery.isFetching}
+            >
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Tentar novamente
+            </Button>
+          </AlertDescription>
+        </Alert>
+      </section>
+    );
+  }
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <MessageSquare className="h-5 w-5 text-primary" />
-            Atendimento selecionado
-          </CardTitle>
-          <CardDescription>
-            A rota preserva a seleção para a composição do detalhe operacional.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="rounded-md border bg-muted/20 p-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              ID do atendimento
-            </p>
-            <p className="mt-2 break-all font-mono text-sm">{attendanceId}</p>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            O detalhe, a conversa e as ações humanas serão conectados às
-            consultas e comandos operacionais nas próximas fatias de E5.
-          </p>
+  const attendance = detailQuery.data;
+  const messages = messagesQuery.data?.pages
+    .slice()
+    .reverse()
+    .flatMap((page) => page.items) ?? [];
+  const events = eventsQuery.data?.items ?? [];
+  const customerName = attendance.customer?.name || "Contato sem nome";
+  const destination = [
+    attendance.destination?.areaName,
+    attendance.destination?.queueName,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  return (
+    <section className="mx-auto flex w-full max-w-[1600px] flex-col gap-6">
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
           <Link
             to="/operation/attendances"
-            className={buttonVariants({ variant: "outline" })}
+            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
           >
-            Voltar para a inbox
+            <ArrowLeft className="h-4 w-4" />
+            Voltar para atendimentos
           </Link>
-        </CardContent>
-      </Card>
+          <div className="mt-5 flex flex-wrap items-center gap-3">
+            <p className="text-sm font-medium uppercase tracking-wide text-primary">
+              Operação / atendimento humano
+            </p>
+            <Badge variant={getStatusVariant(attendance.status)}>
+              {STATUS_LABELS[attendance.status]}
+            </Badge>
+          </div>
+          <h1 className="mt-2 text-3xl font-semibold tracking-tight">
+            {customerName}
+          </h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Ciclo {attendance.cycleNumber} · versão {attendance.version}
+          </p>
+        </div>
+        <div className="rounded-md border bg-muted/20 px-3 py-2 text-right text-xs text-muted-foreground">
+          <p className="font-medium text-foreground">Última atividade</p>
+          <p className="mt-1">{formatDateTime(attendance.lastActivityAt)}</p>
+        </div>
+      </header>
+
+      {markReadMutation.isError ? (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Não foi possível atualizar a leitura</AlertTitle>
+          <AlertDescription>
+            A conversa continua disponível, mas o contador pode permanecer até a
+            próxima atualização.
+          </AlertDescription>
+        </Alert>
+      ) : null}
+
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
+        <div className="min-w-0 space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <UserRound className="h-5 w-5 text-primary" />
+                Contato e ciclo
+              </CardTitle>
+              <CardDescription>
+                Informações autorizadas para o atendimento selecionado.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-4 text-sm sm:grid-cols-2 xl:grid-cols-4">
+              <DetailField label="Contato" value={customerName} />
+              <DetailField
+                label="Telefone"
+                value={attendance.customer?.phone || "Não informado"}
+              />
+              <DetailField
+                label="E-mail"
+                value={attendance.customer?.email || "Não informado"}
+              />
+              <DetailField
+                label="Destino"
+                value={destination || "Não definido"}
+              />
+              <DetailField
+                label="Responsável"
+                value={attendance.assignee?.name || "Sem responsável"}
+              />
+              <DetailField
+                label="Canal"
+                value={attendance.channel?.displayName || "Não informado"}
+              />
+              <DetailField
+                label="Provedor"
+                value={attendance.channel?.provider || "Não informado"}
+              />
+              <DetailField
+                label="Não lidas"
+                value={String(attendance.unreadCount ?? 0)}
+              />
+            </CardContent>
+          </Card>
+
+          <Card className="min-w-0">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MessageSquare className="h-5 w-5 text-primary" />
+                Conversa
+              </CardTitle>
+              <CardDescription>
+                Mensagens do chat compartilhado, em ordem cronológica.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {messagesQuery.isError ? (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>Não foi possível carregar as mensagens</AlertTitle>
+                  <AlertDescription className="flex flex-wrap items-center gap-3">
+                    {getOperationalAttendanceErrorMessage(
+                      messagesQuery.error,
+                      "Tente atualizar a conversa.",
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => void messagesQuery.refetch()}
+                    >
+                      <RefreshCw className="mr-2 h-4 w-4" />
+                      Atualizar
+                    </Button>
+                  </AlertDescription>
+                </Alert>
+              ) : messagesQuery.isLoading ? (
+                <ConversationLoading />
+              ) : messages.length === 0 ? (
+                <EmptyConversation />
+              ) : (
+                <>
+                  {messagesQuery.hasNextPage ? (
+                    <div className="mb-4 flex justify-center">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => void messagesQuery.fetchNextPage()}
+                        disabled={messagesQuery.isFetchingNextPage}
+                      >
+                        {messagesQuery.isFetchingNextPage ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : null}
+                        Carregar mensagens anteriores
+                      </Button>
+                    </div>
+                  ) : null}
+                  <ScrollArea className="h-[min(62vh,42rem)] pr-3">
+                    <div className="space-y-4">
+                      {messages.map((message) => (
+                        <ConversationMessage key={message.id} message={message} />
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Capacidade de resposta</CardTitle>
+              <CardDescription>
+                O composer e os comandos entram nas próximas fatias.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              <Badge variant={getReplyStatusVariant(attendance.replyCapabilities.status)}>
+                {REPLY_STATUS_LABELS[attendance.replyCapabilities.status]}
+              </Badge>
+              <div className="grid grid-cols-2 gap-2">
+                <Capability label="Texto" enabled={attendance.replyCapabilities.supportsText} />
+                <Capability label="Mídia" enabled={attendance.replyCapabilities.supportsMedia} />
+                <Capability label="Template" enabled={attendance.replyCapabilities.supportsTemplate} />
+                <Capability label="Canal" enabled={Boolean(attendance.channel)} />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Clock3 className="h-4 w-4 text-primary" />
+                Timeline do ciclo
+              </CardTitle>
+              <CardDescription>
+                Eventos do Attendance atual, sem conteúdo interno de provider.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {eventsQuery.isError ? (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>Não foi possível carregar a timeline</AlertTitle>
+                  <AlertDescription>
+                    {getOperationalAttendanceErrorMessage(
+                      eventsQuery.error,
+                      "Tente atualizar o detalhe.",
+                    )}
+                  </AlertDescription>
+                </Alert>
+              ) : eventsQuery.isLoading ? (
+                <TimelineLoading />
+              ) : events.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Ainda não há eventos registrados neste ciclo.
+                </p>
+              ) : (
+                <div className="space-y-5">
+                  {events.map((event) => (
+                    <TimelineEvent key={event.id} event={event} />
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </section>
   );
+}
+
+function DetailField({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-md border bg-muted/20 p-3">
+      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        {label}
+      </p>
+      <p className="mt-1 break-words font-medium">{value}</p>
+    </div>
+  );
+}
+
+function ConversationMessage({ message }: { message: AttendanceMessageItem }) {
+  const isCustomer = message.sender === "CUSTOMER";
+  const senderLabel =
+    message.sender === "CUSTOMER"
+      ? "Cliente"
+      : message.sender === "HUMAN"
+        ? message.sentByUser?.name || "Operador"
+        : "Assistente";
+  const content = message.content?.trim();
+  const hasMedia = message.type.toLowerCase() !== "text";
+
+  return (
+    <article className={`flex ${isCustomer ? "justify-start" : "justify-end"}`}>
+      <div
+        className={`max-w-[min(90%,42rem)] rounded-2xl px-4 py-3 text-sm ${
+          isCustomer
+            ? "rounded-tl-sm bg-muted text-foreground"
+            : "rounded-tr-sm bg-primary text-primary-foreground"
+        }`}
+      >
+        <div className="mb-1 flex flex-wrap items-center gap-2 text-xs opacity-75">
+          <span className="font-semibold">{senderLabel}</span>
+          <span>{formatDateTime(message.createdAt)}</span>
+        </div>
+        {hasMedia ? (
+          <p className="mb-1 font-medium">
+            Mídia: {message.mediaMimetype || message.type}
+          </p>
+        ) : null}
+        {message.templateName ? (
+          <p className="mb-1 font-medium">Template: {message.templateName}</p>
+        ) : null}
+        {content ? <p className="whitespace-pre-wrap break-words">{content}</p> : null}
+        {message.dispatchStatus || message.deliveryStatus ? (
+          <p className="mt-2 text-xs opacity-75">
+            {message.dispatchStatus || "Sem dispatch"}
+            {message.deliveryStatus ? ` · ${message.deliveryStatus}` : ""}
+          </p>
+        ) : null}
+      </div>
+    </article>
+  );
+}
+
+function TimelineEvent({ event }: { event: AttendanceEvent }) {
+  return (
+    <div className="relative border-l pl-4">
+      <span className="absolute -left-1.5 top-1 h-3 w-3 rounded-full bg-primary ring-4 ring-background" />
+      <p className="font-medium">{EVENT_LABELS[event.action] || event.action}</p>
+      <p className="mt-1 text-xs text-muted-foreground">
+        {formatDateTime(event.createdAt)} · versão {event.aggregateVersion}
+      </p>
+      <p className="mt-1 text-xs text-muted-foreground">
+        Ator: {formatActor(event.actorType)}
+      </p>
+      {event.reason ? (
+        <p className="mt-2 whitespace-pre-wrap break-words text-sm text-muted-foreground">
+          {event.reason}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+function Capability({ label, enabled }: { label: string; enabled: boolean }) {
+  return (
+    <div className="flex items-center justify-between rounded-md border px-3 py-2">
+      <span>{label}</span>
+      <span className={enabled ? "text-emerald-600" : "text-muted-foreground"}>
+        {enabled ? "Disponível" : "Indisponível"}
+      </span>
+    </div>
+  );
+}
+
+function DetailLoading() {
+  return (
+    <section className="mx-auto flex w-full max-w-5xl flex-col gap-6">
+      <div className="h-5 w-48 animate-pulse rounded bg-muted" />
+      <div className="h-12 w-2/3 animate-pulse rounded bg-muted" />
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+        <div className="h-96 animate-pulse rounded-lg bg-muted" />
+        <div className="h-72 animate-pulse rounded-lg bg-muted" />
+      </div>
+    </section>
+  );
+}
+
+function ConversationLoading() {
+  return (
+    <div className="space-y-4">
+      {[1, 2, 3].map((item) => (
+        <div
+          key={item}
+          className={`h-16 animate-pulse rounded-2xl bg-muted ${
+            item % 2 ? "w-3/4" : "ml-auto w-2/3"
+          }`}
+        />
+      ))}
+    </div>
+  );
+}
+
+function TimelineLoading() {
+  return (
+    <div className="space-y-5">
+      {[1, 2, 3].map((item) => (
+        <div key={item} className="space-y-2 border-l pl-4">
+          <div className="h-4 w-2/3 animate-pulse rounded bg-muted" />
+          <div className="h-3 w-1/2 animate-pulse rounded bg-muted" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function EmptyConversation() {
+  return (
+    <div className="flex min-h-48 flex-col items-center justify-center gap-2 rounded-lg border border-dashed px-6 text-center">
+      <MessageSquare className="h-8 w-8 text-muted-foreground" />
+      <p className="font-medium">Nenhuma mensagem encontrada</p>
+      <p className="text-sm text-muted-foreground">
+        O histórico deste chat ainda não possui mensagens visíveis.
+      </p>
+    </div>
+  );
+}
+
+function getStatusVariant(
+  status: AttendanceStatus,
+): "default" | "secondary" | "destructive" | "outline" {
+  if (status === "IN_PROGRESS") return "default";
+  if (status === "CLOSED") return "outline";
+  if (status === "PENDING") return "secondary";
+  return "outline";
+}
+
+function getReplyStatusVariant(
+  status: keyof typeof REPLY_STATUS_LABELS,
+): "default" | "secondary" | "destructive" | "outline" {
+  if (status === "SERVICE_ALLOWED") return "default";
+  if (status === "CHANNEL_UNAVAILABLE") return "destructive";
+  return "secondary";
+}
+
+function formatActor(actorType: AttendanceEvent["actorType"]) {
+  if (actorType === "USER") return "operador";
+  if (actorType === "ASSISTANT") return "assistente";
+  if (actorType === "INTEGRATION") return "integração";
+  return "sistema";
+}
+
+function formatDateTime(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Data indisponível";
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(date);
 }

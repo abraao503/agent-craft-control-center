@@ -1,14 +1,22 @@
-import { useQuery } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { getAttendanceDetail } from "@/services/operation/getAttendanceDetail";
+import { listAttendanceMessages } from "@/services/operation/listAttendanceMessages";
 import { listAttendanceCommands } from "@/services/operation/listAttendanceCommands";
 import { listAttendanceEvents } from "@/services/operation/listAttendanceEvents";
 import { listAttendanceOptions } from "@/services/operation/listAttendanceOptions";
 import { listAttendanceSummary } from "@/services/operation/listAttendanceSummary";
 import { listAttendances } from "@/services/operation/listAttendances";
+import { markAttendanceRead } from "@/services/operation/markAttendanceRead";
 import { listOperationalFollowUpOccurrences } from "@/services/operation/listOperationalFollowUpOccurrences";
 import { listOperationalFollowUps } from "@/services/operation/listOperationalFollowUps";
 import {
   AttendanceSummaryFilters,
+  ListAttendanceMessagesParams,
   ListAttendancesFilters,
   OperationalFollowUpOccurrenceStatus,
   OperationalFollowUpStatus,
@@ -28,6 +36,81 @@ export function useOperationalAttendances(
       return listAttendances({ workspaceId, ...filters });
     },
     enabled: Boolean(workspaceId && enabled),
+    placeholderData: (previousData) => previousData,
+  });
+}
+
+export function useOperationalAttendanceMessages(
+  workspaceId?: string,
+  attendanceId?: string,
+  options: Pick<
+    Omit<ListAttendanceMessagesParams, "workspaceId" | "attendanceId">,
+    "limit"
+  > = {},
+  enabled = true,
+) {
+  return useInfiniteQuery({
+    queryKey: [
+      "operation",
+      "attendance-messages",
+      workspaceId,
+      attendanceId,
+      options.limit ?? 50,
+    ],
+    initialPageParam: undefined as string | undefined,
+    queryFn: ({ pageParam }) => {
+      if (!workspaceId) {
+        throw new Error("Workspace operacional não selecionado");
+      }
+      if (!attendanceId) {
+        throw new Error("ID do atendimento não informado");
+      }
+      return listAttendanceMessages({
+        workspaceId,
+        attendanceId,
+        ...options,
+        before: pageParam,
+      });
+    },
+    getNextPageParam: (lastPage) =>
+      lastPage.hasMore ? (lastPage.nextCursor ?? undefined) : undefined,
+    enabled: Boolean(workspaceId && attendanceId && enabled),
+  });
+}
+
+export function useMarkOperationalAttendanceRead(
+  workspaceId?: string,
+  attendanceId?: string,
+) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => {
+      if (!workspaceId) {
+        throw new Error("Workspace operacional não selecionado");
+      }
+      if (!attendanceId) {
+        throw new Error("ID do atendimento não informado");
+      }
+      return markAttendanceRead({ workspaceId, attendanceId });
+    },
+    onSuccess: async () => {
+      if (!workspaceId) return;
+
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: ["operation", "attendances", workspaceId],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["operation", "attendance-summary", workspaceId],
+        }),
+        attendanceId
+          ? queryClient.invalidateQueries({
+              queryKey: ["operation", "attendance", workspaceId, attendanceId],
+            })
+          : Promise.resolve(),
+      ]);
+    },
   });
 }
 

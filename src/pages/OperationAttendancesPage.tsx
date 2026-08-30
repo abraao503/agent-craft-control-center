@@ -1,28 +1,51 @@
+import { type FormEvent, type ReactNode, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { AlertCircle, Inbox, Loader2, RefreshCw } from "lucide-react";
+import {
+  AlertCircle,
+  ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
+  Inbox,
+  Loader2,
+  RefreshCw,
+  Search,
+  SlidersHorizontal,
+} from "lucide-react";
 import { useWorkspaceContext } from "@/contexts/workspace/WorkspaceContext";
 import {
+  useOperationalAttendances,
   useOperationalAttendanceOptions,
   useOperationalAttendanceSummary,
 } from "@/hooks/useOperationalAttendances";
 import { usePermissions } from "@/hooks/usePermissions";
-import { AttendanceStatus } from "@/types/operation-attendance";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { getOperationalAttendanceErrorMessage } from "@/utils/operationalAttendanceErrors";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  AttendanceOptions,
+  AttendanceStatus,
+  ListAttendancesFilters,
+} from "@/types/operation-attendance";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+const PAGE_SIZE = 20;
 
 const STATUS_LABELS: Record<AttendanceStatus, string> = {
   TRIAGE: "Triagem",
   WAITING_QUEUE: "Aguardando fila",
   IN_PROGRESS: "Em atendimento",
-  PENDING: "Pendentes",
-  CLOSED: "Encerrados",
+  PENDING: "Pendente",
+  CLOSED: "Encerrado",
 };
 
 const STATUS_ORDER: AttendanceStatus[] = [
@@ -33,20 +56,84 @@ const STATUS_ORDER: AttendanceStatus[] = [
   "CLOSED",
 ];
 
+const MESSAGE_SENDER_LABELS = {
+  CUSTOMER: "Cliente",
+  HUMAN: "Operador",
+  ASSISTANT: "Assistente",
+} as const;
+
+type FilterDraft = {
+  search: string;
+  status: AttendanceStatus | "ALL";
+  areaId: string;
+  queueId: string;
+  assigneeUserId: string;
+  channelId: string;
+  unreadOnly: boolean;
+};
+
+function createFilterDraft(): FilterDraft {
+  return {
+    search: "",
+    status: "ALL",
+    areaId: "ALL",
+    queueId: "ALL",
+    assigneeUserId: "ALL",
+    channelId: "ALL",
+    unreadOnly: false,
+  };
+}
+
 export default function OperationAttendancesPage() {
   const { currentWorkspace } = useWorkspaceContext();
   const { has } = usePermissions();
   const workspaceId =
     currentWorkspace?.type === "OPERATION" ? currentWorkspace.id : undefined;
   const canViewAttendances = has("view:operation-attendances");
+  const [draft, setDraft] = useState<FilterDraft>(createFilterDraft);
+  const [filters, setFilters] = useState<ListAttendancesFilters>({
+    page: 1,
+    limit: PAGE_SIZE,
+  });
+
+  useEffect(() => {
+    setDraft(createFilterDraft());
+    setFilters({ page: 1, limit: PAGE_SIZE });
+  }, [workspaceId]);
+
+  const summaryFilters = useMemo(
+    () => ({
+      areaId: filters.areaId,
+      queueId: filters.queueId,
+      assigneeUserId: filters.assigneeUserId,
+      assigneeAssistantId: filters.assigneeAssistantId,
+      channelId: filters.channelId,
+      customerId: filters.customerId,
+      updatedFrom: filters.updatedFrom,
+      updatedTo: filters.updatedTo,
+      search: filters.search,
+      unreadOnly: filters.unreadOnly,
+    }),
+    [filters],
+  );
   const summaryQuery = useOperationalAttendanceSummary(
     workspaceId,
-    {},
+    summaryFilters,
     canViewAttendances,
   );
   const optionsQuery = useOperationalAttendanceOptions(
     workspaceId,
     canViewAttendances,
+  );
+  const attendancesQuery = useOperationalAttendances(
+    workspaceId,
+    filters,
+    canViewAttendances,
+  );
+
+  const queueOptions = useMemo(
+    () => flattenQueueOptions(optionsQuery.data),
+    [optionsQuery.data],
   );
 
   if (currentWorkspace?.type !== "OPERATION") {
@@ -63,8 +150,50 @@ export default function OperationAttendancesPage() {
     );
   }
 
-  const summary = summaryQuery.data;
-  const hasQueryError = summaryQuery.isError || optionsQuery.isError;
+  const hasQueryError =
+    attendancesQuery.isError || summaryQuery.isError || optionsQuery.isError;
+  const currentPage = attendancesQuery.data?.page ?? filters.page ?? 1;
+  const totalPages = attendancesQuery.data?.totalPages ?? 0;
+  const hasActiveFilters =
+    Boolean(filters.search) ||
+    Boolean(filters.status) ||
+    Boolean(filters.areaId) ||
+    Boolean(filters.queueId) ||
+    Boolean(filters.assigneeUserId) ||
+    Boolean(filters.channelId) ||
+    filters.unreadOnly === true;
+
+  const applyFilters = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const search = draft.search.trim();
+    const nextFilters: ListAttendancesFilters = {
+      page: 1,
+      limit: PAGE_SIZE,
+    };
+
+    if (search.length >= 2) nextFilters.search = search;
+    if (draft.status !== "ALL") nextFilters.status = draft.status;
+    if (draft.areaId !== "ALL") nextFilters.areaId = draft.areaId;
+    if (draft.queueId !== "ALL") nextFilters.queueId = draft.queueId;
+    if (draft.assigneeUserId !== "ALL") {
+      nextFilters.assigneeUserId = draft.assigneeUserId;
+    }
+    if (draft.channelId !== "ALL") nextFilters.channelId = draft.channelId;
+    if (draft.unreadOnly) nextFilters.unreadOnly = true;
+
+    setFilters(nextFilters);
+  };
+
+  const clearFilters = () => {
+    setDraft(createFilterDraft());
+    setFilters({ page: 1, limit: PAGE_SIZE });
+  };
+
+  const retryQueries = () => {
+    void attendancesQuery.refetch();
+    void summaryQuery.refetch();
+    void optionsQuery.refetch();
+  };
 
   return (
     <section className="mx-auto flex w-full max-w-[1600px] flex-col gap-6">
@@ -77,14 +206,15 @@ export default function OperationAttendancesPage() {
             Atendimentos
           </h1>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-            Acompanhe os ciclos do workspace e opere cada conversa dentro do
-            escopo autorizado.
+            Encontre conversas no escopo autorizado e abra o ciclo operacional
+            sem sair do workspace atual.
           </p>
         </div>
         <Link
           to="/operation"
           className={buttonVariants({ variant: "outline" })}
         >
+          <ArrowLeft className="mr-2 h-4 w-4" />
           Voltar para operação
         </Link>
       </header>
@@ -92,17 +222,21 @@ export default function OperationAttendancesPage() {
       {hasQueryError ? (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Não foi possível carregar o resumo da inbox</AlertTitle>
+          <AlertTitle>Não foi possível carregar a inbox</AlertTitle>
           <AlertDescription className="flex flex-wrap items-center gap-3">
-            Tente novamente para atualizar o escopo operacional.
+            {getOperationalAttendanceErrorMessage(
+              attendancesQuery.error || summaryQuery.error || optionsQuery.error,
+              "Atualize para consultar novamente o escopo operacional.",
+            )}
             <Button
               variant="outline"
               size="sm"
-              onClick={() => {
-                void summaryQuery.refetch();
-                void optionsQuery.refetch();
-              }}
-              disabled={summaryQuery.isFetching || optionsQuery.isFetching}
+              onClick={retryQueries}
+              disabled={
+                attendancesQuery.isFetching ||
+                summaryQuery.isFetching ||
+                optionsQuery.isFetching
+              }
             >
               <RefreshCw className="mr-2 h-4 w-4" />
               Tentar novamente
@@ -114,58 +248,267 @@ export default function OperationAttendancesPage() {
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
         <SummaryMetric
           label="Total visível"
-          value={summary?.total}
+          value={summaryQuery.data?.total}
           loading={summaryQuery.isLoading}
         />
         <SummaryMetric
           label="Com novas mensagens"
-          value={summary?.unreadAttendances}
+          value={summaryQuery.data?.unreadAttendances}
           loading={summaryQuery.isLoading}
         />
         {STATUS_ORDER.map((status) => (
           <SummaryMetric
             key={status}
             label={STATUS_LABELS[status]}
-            value={summary?.byStatus[status]}
+            value={summaryQuery.data?.byStatus[status]}
             loading={summaryQuery.isLoading}
           />
         ))}
       </div>
 
-      <div className="grid min-h-[22rem] gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
-        <Card className="flex min-h-[22rem] flex-col">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Inbox className="h-5 w-5 text-primary" />
-              Inbox operacional
-            </CardTitle>
-            <CardDescription>
-              A lista, os filtros e a seleção de atendimento serão carregados
-              nesta área.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-1 items-center justify-center rounded-b-lg bg-muted/20 p-6 text-center">
-            <div className="max-w-md space-y-2">
-              <p className="font-medium">Casca da inbox disponível</p>
+      <Card>
+        <CardContent className="p-4">
+          <form onSubmit={applyFilters} className="space-y-4">
+            <div className="flex items-center gap-2">
+              <SlidersHorizontal className="h-4 w-4 text-primary" />
+              <h2 className="font-semibold">Filtros da inbox</h2>
+              {hasActiveFilters ? (
+                <Badge variant="secondary">Aplicados</Badge>
+              ) : null}
+            </div>
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              <div className="space-y-2 xl:col-span-2">
+                <label htmlFor="attendance-search" className="text-sm font-medium">
+                  Buscar contato
+                </label>
+                <div className="relative">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    id="attendance-search"
+                    value={draft.search}
+                    onChange={(event) =>
+                      setDraft((current) => ({
+                        ...current,
+                        search: event.target.value,
+                      }))
+                    }
+                    placeholder="Nome ou telefone (mínimo de 2 caracteres)"
+                    className="pl-9"
+                  />
+                </div>
+                {draft.search.trim().length === 1 ? (
+                  <p className="text-xs text-muted-foreground">
+                    Digite pelo menos 2 caracteres para pesquisar.
+                  </p>
+                ) : null}
+              </div>
+
+              <FilterSelect
+                id="attendance-status"
+                label="Estado"
+                value={draft.status}
+                onValueChange={(value) =>
+                  setDraft((current) => ({
+                    ...current,
+                    status: value as FilterDraft["status"],
+                  }))
+                }
+              >
+                <SelectItem value="ALL">Todos os estados</SelectItem>
+                {STATUS_ORDER.map((status) => (
+                  <SelectItem key={status} value={status}>
+                    {STATUS_LABELS[status]}
+                  </SelectItem>
+                ))}
+              </FilterSelect>
+
+              <FilterSelect
+                id="attendance-area"
+                label="Área"
+                value={draft.areaId}
+                onValueChange={(value) =>
+                  setDraft((current) => ({ ...current, areaId: value }))
+                }
+              >
+                <SelectItem value="ALL">Todas as áreas</SelectItem>
+                {(optionsQuery.data?.areas ?? []).map((area) => (
+                  <SelectItem key={area.id} value={area.id}>
+                    {area.name}
+                  </SelectItem>
+                ))}
+              </FilterSelect>
+
+              <FilterSelect
+                id="attendance-queue"
+                label="Fila"
+                value={draft.queueId}
+                onValueChange={(value) =>
+                  setDraft((current) => ({ ...current, queueId: value }))
+                }
+              >
+                <SelectItem value="ALL">Todas as filas</SelectItem>
+                {queueOptions.map((queue) => (
+                  <SelectItem key={queue.id} value={queue.id}>
+                    {queue.name} · {queue.areaName}
+                  </SelectItem>
+                ))}
+              </FilterSelect>
+
+              <FilterSelect
+                id="attendance-assignee"
+                label="Responsável"
+                value={draft.assigneeUserId}
+                onValueChange={(value) =>
+                  setDraft((current) => ({
+                    ...current,
+                    assigneeUserId: value,
+                  }))
+                }
+              >
+                <SelectItem value="ALL">Todos os responsáveis</SelectItem>
+                {(optionsQuery.data?.users ?? []).map((user) => (
+                  <SelectItem key={user.id} value={user.id}>
+                    {user.name}
+                  </SelectItem>
+                ))}
+              </FilterSelect>
+
+              <FilterSelect
+                id="attendance-channel"
+                label="Canal"
+                value={draft.channelId}
+                onValueChange={(value) =>
+                  setDraft((current) => ({ ...current, channelId: value }))
+                }
+              >
+                <SelectItem value="ALL">Todos os canais</SelectItem>
+                {(optionsQuery.data?.channels ?? []).map((channel) => (
+                  <SelectItem key={channel.id} value={channel.id}>
+                    {channel.displayName}
+                  </SelectItem>
+                ))}
+              </FilterSelect>
+            </div>
+
+            <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
+              <label
+                htmlFor="attendance-unread"
+                className="flex items-center gap-2 text-sm"
+              >
+                <Checkbox
+                  id="attendance-unread"
+                  checked={draft.unreadOnly}
+                  onCheckedChange={(checked) =>
+                    setDraft((current) => ({
+                      ...current,
+                      unreadOnly: checked === true,
+                    }))
+                  }
+                />
+                Somente com novas mensagens
+              </label>
+              <div className="flex flex-wrap gap-2">
+                <Button type="button" variant="ghost" onClick={clearFilters}>
+                  Limpar filtros
+                </Button>
+                <Button type="submit" disabled={attendancesQuery.isFetching}>
+                  <Search className="mr-2 h-4 w-4" />
+                  Aplicar filtros
+                </Button>
+              </div>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
+        <Card className="min-w-0">
+          <CardContent className="p-0">
+            <div className="flex items-center justify-between border-b px-4 py-4 sm:px-6">
+              <div>
+                <h2 className="flex items-center gap-2 font-semibold">
+                  <Inbox className="h-5 w-5 text-primary" />
+                  Inbox operacional
+                </h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {attendancesQuery.data?.total ?? 0} atendimento(s) no filtro atual
+                </p>
+              </div>
+              {attendancesQuery.isFetching ? (
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              ) : null}
+            </div>
+
+            <div className="divide-y">
+              {attendancesQuery.isLoading ? (
+                <AttendanceListLoading />
+              ) : attendancesQuery.data?.items.length ? (
+                attendancesQuery.data.items.map((attendance) => (
+                  <AttendanceCard key={attendance.id} attendance={attendance} />
+                ))
+              ) : (
+                <EmptyAttendanceList hasFilters={hasActiveFilters} />
+              )}
+            </div>
+
+            <div className="flex flex-col gap-3 border-t px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
               <p className="text-sm text-muted-foreground">
-                A navegação já está isolada por workspace e permissão. Cards,
-                filtros e conversa entram nas próximas fatias de E5.
+                Página {totalPages ? currentPage : 0} de {totalPages || 0}
               </p>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={currentPage <= 1 || attendancesQuery.isFetching}
+                  onClick={() =>
+                    setFilters((current) => ({
+                      ...current,
+                      page: Math.max(1, currentPage - 1),
+                    }))
+                  }
+                >
+                  <ChevronLeft className="mr-1 h-4 w-4" />
+                  Anterior
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={
+                    !totalPages ||
+                    currentPage >= totalPages ||
+                    attendancesQuery.isFetching
+                  }
+                  onClick={() =>
+                    setFilters((current) => ({
+                      ...current,
+                      page: currentPage + 1,
+                    }))
+                  }
+                >
+                  Próxima
+                  <ChevronRight className="ml-1 h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
 
         <Card className="h-fit">
-          <CardHeader>
-            <CardTitle className="text-base">Escopo carregado</CardTitle>
-            <CardDescription>
-              Catálogos retornados pelo backend para os filtros operacionais.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm">
+          <CardContent className="space-y-3 p-4 text-sm">
+            <div>
+              <h2 className="font-semibold">Escopo carregado</h2>
+              <p className="mt-1 text-muted-foreground">
+                Catálogos retornados para filtros e próximas ações permitidas.
+              </p>
+            </div>
             <ScopeMetric
               label="Áreas visíveis"
               value={optionsQuery.data?.areas.length}
+              loading={optionsQuery.isLoading}
+            />
+            <ScopeMetric
+              label="Filas visíveis"
+              value={queueOptions.length}
               loading={optionsQuery.isLoading}
             />
             <ScopeMetric
@@ -179,13 +522,165 @@ export default function OperationAttendancesPage() {
               loading={optionsQuery.isLoading}
             />
             <p className="border-t pt-3 text-xs text-muted-foreground">
-              Os totais e catálogos seguem o mesmo escopo de tenant e
+              Os totais, cards e catálogos seguem o mesmo escopo de tenant e
               membership aplicado pela API.
             </p>
           </CardContent>
         </Card>
       </div>
     </section>
+  );
+}
+
+function FilterSelect({
+  id,
+  label,
+  value,
+  onValueChange,
+  children,
+}: {
+  id: string;
+  label: string;
+  value: string;
+  onValueChange: (value: string) => void;
+  children: ReactNode;
+}) {
+  return (
+    <div className="space-y-2">
+      <label htmlFor={id} className="text-sm font-medium">
+        {label}
+      </label>
+      <Select value={value} onValueChange={onValueChange}>
+        <SelectTrigger id={id}>
+          <SelectValue placeholder={`Selecione ${label.toLowerCase()}`} />
+        </SelectTrigger>
+        <SelectContent>{children}</SelectContent>
+      </Select>
+    </div>
+  );
+}
+
+function AttendanceCard({
+  attendance,
+}: {
+  attendance: {
+    id: string;
+    status: AttendanceStatus;
+    version: number;
+    lastActivityAt: string;
+    customer?: {
+      name: string;
+      phoneMasked?: string | null;
+    };
+    destination?: {
+      areaName: string | null;
+      queueName: string | null;
+    };
+    assignee?: {
+      type: "USER" | "ASSISTANT";
+      name: string;
+    } | null;
+    lastMessage?: {
+      sender: "CUSTOMER" | "HUMAN" | "ASSISTANT";
+      preview: string;
+      createdAt: string;
+    } | null;
+    unreadCount?: number;
+  };
+}) {
+  const customerName = attendance.customer?.name || "Contato sem nome";
+  const lastMessage = attendance.lastMessage;
+  const destination = [
+    attendance.destination?.areaName,
+    attendance.destination?.queueName,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  return (
+    <Link
+      to={`/operation/attendances/${attendance.id}`}
+      className="block p-4 transition-colors hover:bg-muted/40 focus-visible:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:p-6"
+    >
+      <div className="flex gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 font-semibold text-primary">
+          {customerName.slice(0, 1).toUpperCase()}
+        </div>
+        <div className="min-w-0 flex-1 space-y-3">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="truncate font-semibold">{customerName}</h3>
+                {attendance.unreadCount ? (
+                  <Badge className="bg-primary/10 text-primary hover:bg-primary/10">
+                    {attendance.unreadCount} nova(s)
+                  </Badge>
+                ) : null}
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {attendance.customer?.phoneMasked || "Telefone protegido"}
+              </p>
+            </div>
+            <Badge variant={getStatusVariant(attendance.status)}>
+              {STATUS_LABELS[attendance.status]}
+            </Badge>
+          </div>
+
+          <p className="line-clamp-2 text-sm text-muted-foreground">
+            {lastMessage
+              ? `${MESSAGE_SENDER_LABELS[lastMessage.sender]}: ${lastMessage.preview}`
+              : "Nenhuma mensagem disponível para este ciclo."}
+          </p>
+
+          <div className="flex flex-col gap-2 text-xs text-muted-foreground sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+            <div className="flex flex-wrap gap-x-4 gap-y-1">
+              <span>{destination || "Destino não definido"}</span>
+              <span>
+                {attendance.assignee
+                  ? `${attendance.assignee.type === "USER" ? "Responsável" : "Assistente"}: ${attendance.assignee.name}`
+                  : "Sem responsável"}
+              </span>
+            </div>
+            <span>
+              {formatDateTime(lastMessage?.createdAt || attendance.lastActivityAt)}
+            </span>
+          </div>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+function EmptyAttendanceList({ hasFilters }: { hasFilters: boolean }) {
+  return (
+    <div className="flex min-h-64 flex-col items-center justify-center gap-2 px-6 py-12 text-center">
+      <Inbox className="h-8 w-8 text-muted-foreground" />
+      <p className="font-medium">
+        {hasFilters ? "Nenhum atendimento encontrado" : "Inbox sem atendimentos"}
+      </p>
+      <p className="max-w-md text-sm text-muted-foreground">
+        {hasFilters
+          ? "Tente remover algum filtro ou buscar por outro contato."
+          : "Quando houver atendimentos no seu escopo, eles aparecerão aqui."}
+      </p>
+    </div>
+  );
+}
+
+function AttendanceListLoading() {
+  return (
+    <div className="space-y-0">
+      {[1, 2, 3].map((item) => (
+        <div key={item} className="flex animate-pulse gap-3 p-4 sm:p-6">
+          <div className="h-10 w-10 shrink-0 rounded-full bg-muted" />
+          <div className="flex-1 space-y-3">
+            <div className="h-4 w-1/3 rounded bg-muted" />
+            <div className="h-4 w-4/5 rounded bg-muted" />
+            <div className="h-3 w-1/2 rounded bg-muted" />
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -231,4 +726,31 @@ function ScopeMetric({
       )}
     </div>
   );
+}
+
+function flattenQueueOptions(options?: AttendanceOptions) {
+  return (options?.areas ?? []).flatMap((area) =>
+    area.queues.map((queue) => ({
+      ...queue,
+      areaName: area.name,
+    })),
+  );
+}
+
+function getStatusVariant(
+  status: AttendanceStatus,
+): "default" | "secondary" | "destructive" | "outline" {
+  if (status === "IN_PROGRESS") return "default";
+  if (status === "CLOSED") return "outline";
+  if (status === "PENDING") return "secondary";
+  return "outline";
+}
+
+function formatDateTime(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Data indisponível";
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(date);
 }

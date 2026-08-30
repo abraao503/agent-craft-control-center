@@ -1,14 +1,14 @@
 import { api } from "@/services/api";
 import {
-  AttendanceWithDetails,
+  AttendanceDetail,
   GetAttendanceDetailParams,
 } from "@/types/operation-attendance";
 
 export async function getAttendanceDetail(
   params: GetAttendanceDetailParams,
-): Promise<AttendanceWithDetails> {
+): Promise<AttendanceDetail> {
   const { workspaceId, attendanceId } = params;
-  const { data } = await api.get<AttendanceWithDetails>(
+  const { data } = await api.get<AttendanceDetail>(
     `/operation/workspaces/${workspaceId}/attendances/${attendanceId}`,
   );
 

@@ -50,6 +50,7 @@ export type OperationalFollowUpOccurrenceStatus =
 export interface AttendanceCustomerSnapshot {
   id: string;
   name: string;
+  phoneMasked?: string | null;
 }
 
 export interface AttendanceLastMessageSnapshot {
@@ -101,6 +102,60 @@ export interface AttendanceWithDetails extends Attendance {
   assignee?: AttendanceAssigneeSnapshot | null;
   lastMessage?: AttendanceLastMessageSnapshot | null;
   unreadCount?: number;
+}
+
+export interface AttendanceCustomerDetail {
+  id: string;
+  name: string;
+  phone: string | null;
+  email: string | null;
+}
+
+export interface AttendanceChannelDetail {
+  id: string;
+  displayName: string;
+  provider: string;
+}
+
+export type AttendanceReplyCapabilityStatus =
+  | "SERVICE_ALLOWED"
+  | "TEMPLATE_REQUIRED"
+  | "CHANNEL_UNAVAILABLE"
+  | "NOT_ASSIGNEE"
+  | "ATTENDANCE_NOT_ACTIVE";
+
+export interface AttendanceReplyCapabilities {
+  status: AttendanceReplyCapabilityStatus;
+  supportsText: boolean;
+  supportsMedia: boolean;
+  supportsTemplate: boolean;
+  latestInboundMessageId: string | null;
+}
+
+export type AttendanceDetail = Omit<AttendanceWithDetails, "customer"> & {
+  customer?: AttendanceCustomerDetail;
+  channel?: AttendanceChannelDetail | null;
+  replyCapabilities: AttendanceReplyCapabilities;
+};
+
+export type AttendanceMessageSender = "CUSTOMER" | "HUMAN" | "ASSISTANT";
+
+export interface AttendanceMessageItem {
+  id: string;
+  sender: AttendanceMessageSender;
+  type: string;
+  content: string;
+  mediaMimetype?: string | null;
+  templateName?: string | null;
+  templateId?: string | null;
+  sentByUser?: {
+    id: string;
+    name: string;
+  } | null;
+  dispatchStatus?: string | null;
+  deliveryStatus?: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface AttendanceSummary {
@@ -316,6 +371,12 @@ export interface AttendancesPage {
   totalPages: number;
 }
 
+export interface AttendanceMessagesPage {
+  items: AttendanceMessageItem[];
+  nextCursor: string | null;
+  hasMore: boolean;
+}
+
 export interface AttendanceEventsPage {
   items: AttendanceEvent[];
   total: number;
@@ -408,6 +469,18 @@ export interface ListAttendanceOptionsParams {
 }
 
 export interface GetAttendanceDetailParams {
+  workspaceId: string;
+  attendanceId: string;
+}
+
+export interface ListAttendanceMessagesParams {
+  workspaceId: string;
+  attendanceId: string;
+  limit?: number;
+  before?: string;
+}
+
+export interface MarkAttendanceReadParams {
   workspaceId: string;
   attendanceId: string;
 }
