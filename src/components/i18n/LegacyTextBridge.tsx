@@ -8,19 +8,19 @@ const translatableAttributes = ["placeholder", "title", "aria-label", "aria-desc
 const originalText = new WeakMap<Text, string>();
 const originalAttributes = new WeakMap<Element, Map<string, string>>();
 const reverseLegacy = new Map<string, string>();
+const legacySources = new Set<string>();
 
-for (const [source, translated] of Object.entries(esES.legacy)) {
-  reverseLegacy.set(translated, source);
+function registerLegacyCatalog(catalog: Record<string, string>) {
+  for (const [source, translated] of Object.entries(catalog)) {
+    legacySources.add(source);
+    reverseLegacy.set(translated, source);
+  }
 }
-for (const [source, translated] of Object.entries(legacyTranslations)) {
-  reverseLegacy.set(translated, source);
-}
-for (const [source, translated] of Object.entries(legacyTranslationsExtra)) {
-  reverseLegacy.set(translated, source);
-}
-for (const [source, translated] of Object.entries(enUS.legacy)) {
-  reverseLegacy.set(translated, source);
-}
+
+registerLegacyCatalog(esES.legacy);
+registerLegacyCatalog(legacyTranslations);
+registerLegacyCatalog(legacyTranslationsExtra);
+registerLegacyCatalog(enUS.legacy);
 
 function translate(value: string) {
   const trimmed = value.trim();
@@ -33,6 +33,17 @@ function translate(value: string) {
       : source;
   if (translated === trimmed) return value;
   return value.replace(trimmed, translated);
+}
+
+function resolveLegacySource(value: string, rememberedSource?: string) {
+  const trimmed = value.trim();
+  const catalogSource =
+    reverseLegacy.get(trimmed) ??
+    (legacySources.has(trimmed) ? trimmed : undefined);
+
+  if (catalogSource) return catalogSource;
+  if (rememberedSource && trimmed === rememberedSource) return rememberedSource;
+  return undefined;
 }
 
 function shouldSkip(element: Element | null) {
@@ -48,7 +59,16 @@ function translateTree(root: Node) {
   for (const textNode of texts) {
     if (shouldSkip(textNode.parentElement)) continue;
     const current = textNode.nodeValue ?? "";
-    const source = originalText.get(textNode) ?? reverseLegacy.get(current.trim()) ?? current;
+    const rememberedSource = originalText.get(textNode);
+    const source = resolveLegacySource(current, rememberedSource);
+
+    // React owns dynamic text nodes (counts, timestamps, customer content,
+    // statuses, etc.). The bridge must not remember or rewrite those values.
+    if (!source) {
+      originalText.delete(textNode);
+      continue;
+    }
+
     originalText.set(textNode, source);
     const nextValue = i18n.language === "pt-BR" ? source : translate(source);
     if (current !== nextValue) textNode.nodeValue = nextValue;
@@ -65,9 +85,13 @@ function translateTree(root: Node) {
     for (const attribute of translatableAttributes) {
       const current = element.getAttribute(attribute);
       if (current === null) continue;
-      const source = attributes.get(attribute) ?? reverseLegacy.get(current.trim()) ?? current;
-      attributes.set(attribute, source);
-      const nextValue = i18n.language === "pt-BR" ? source : translate(source);
+      const resolvedSource = resolveLegacySource(current, attributes.get(attribute));
+      if (!resolvedSource) {
+        attributes.delete(attribute);
+        continue;
+      }
+      attributes.set(attribute, resolvedSource);
+      const nextValue = i18n.language === "pt-BR" ? resolvedSource : translate(resolvedSource);
       if (current !== nextValue) element.setAttribute(attribute, nextValue);
     }
   }
