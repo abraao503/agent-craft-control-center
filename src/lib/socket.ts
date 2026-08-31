@@ -26,7 +26,10 @@ export const connectSocket = (token: string) => {
     reconnection: true,
     reconnectionDelay: 1000,
     reconnectionDelayMax: 5000,
-    reconnectionAttempts: 5,
+    // The operational inbox must recover after a maintenance-sized outage.
+    // REST reconciliation runs on connect, so keeping the retry loop alive is
+    // safer than leaving the user in a permanently stale manual-refresh state.
+    reconnectionAttempts: Infinity,
   });
   socketToken = normalizedToken;
 
