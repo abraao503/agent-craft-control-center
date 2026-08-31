@@ -7,6 +7,7 @@ import {
   ArrowRightLeft,
   CheckCircle2,
   Clock3,
+  ChevronDown,
   Loader2,
   MessageSquare,
   PauseCircle,
@@ -49,6 +50,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 const STATUS_LABELS: Record<AttendanceStatus, string> = {
   TRIAGE: "Triagem",
@@ -100,6 +106,7 @@ export default function OperationAttendanceDetailPage({
   );
   const attendanceMutations = useOperationalAttendanceMutations(workspaceId);
   const [activeAction, setActiveAction] = useState<AttendanceAction | null>(null);
+  const [secondaryPanelOpen, setSecondaryPanelOpen] = useState(true);
   const detailQuery = useOperationalAttendanceDetail(
     workspaceId,
     attendanceId,
@@ -413,49 +420,6 @@ export default function OperationAttendanceDetailPage({
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="min-w-0 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <UserRound className="h-5 w-5 text-primary" />
-                Contato e ciclo
-              </CardTitle>
-              <CardDescription>
-                Informações autorizadas para o atendimento selecionado.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-4 text-sm sm:grid-cols-2 xl:grid-cols-4">
-              <DetailField label="Contato" value={customerName} />
-              <DetailField
-                label="Telefone"
-                value={attendance.customer?.phone || "Não informado"}
-              />
-              <DetailField
-                label="E-mail"
-                value={attendance.customer?.email || "Não informado"}
-              />
-              <DetailField
-                label="Destino"
-                value={destination || "Não definido"}
-              />
-              <DetailField
-                label="Responsável"
-                value={attendance.assignee?.name || "Sem responsável"}
-              />
-              <DetailField
-                label="Canal"
-                value={attendance.channel?.displayName || "Não informado"}
-              />
-              <DetailField
-                label="Provedor"
-                value={attendance.channel?.provider || "Não informado"}
-              />
-              <DetailField
-                label="Não lidas"
-                value={String(attendance.unreadCount ?? 0)}
-              />
-            </CardContent>
-          </Card>
-
           <Card className="min-w-0">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -520,20 +484,94 @@ export default function OperationAttendanceDetailPage({
                 workspaceId={workspaceId!}
                 attendance={attendance}
                 canOperate={canOperateAttendances}
+                sticky
               />
             </CardContent>
           </Card>
         </div>
 
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Ações do atendimento</CardTitle>
-              <CardDescription>
-                Comandos disponíveis para o estado e a permissão atuais.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
+        <Collapsible
+          open={secondaryPanelOpen}
+          onOpenChange={setSecondaryPanelOpen}
+          className="min-w-0"
+        >
+          <div className="mb-3 flex items-center justify-between rounded-lg border bg-muted/20 px-3 py-2">
+            <div>
+              <p className="text-sm font-semibold">Painel secundário</p>
+              <p className="text-xs text-muted-foreground">
+                Contexto, ações e histórico do ciclo.
+              </p>
+            </div>
+            <CollapsibleTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label={
+                  secondaryPanelOpen
+                    ? "Recolher painel secundário"
+                    : "Expandir painel secundário"
+                }
+              >
+                <ChevronDown
+                  className={`h-4 w-4 transition-transform ${secondaryPanelOpen ? "rotate-180" : ""}`}
+                />
+              </Button>
+            </CollapsibleTrigger>
+          </div>
+
+          <CollapsibleContent className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <UserRound className="h-5 w-5 text-primary" />
+                  Contato e ciclo
+                </CardTitle>
+                <CardDescription>
+                  Informações autorizadas para o atendimento selecionado.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm">
+                <DetailField label="Contato" value={customerName} />
+                <DetailField
+                  label="Telefone"
+                  value={attendance.customer?.phone || "Não informado"}
+                />
+                <DetailField
+                  label="E-mail"
+                  value={attendance.customer?.email || "Não informado"}
+                />
+                <DetailField
+                  label="Destino"
+                  value={destination || "Não definido"}
+                />
+                <DetailField
+                  label="Responsável"
+                  value={attendance.assignee?.name || "Sem responsável"}
+                />
+                <DetailField
+                  label="Canal"
+                  value={attendance.channel?.displayName || "Não informado"}
+                />
+                <DetailField
+                  label="Provedor"
+                  value={attendance.channel?.provider || "Não informado"}
+                />
+                <DetailField
+                  label="Não lidas"
+                  value={String(attendance.unreadCount ?? 0)}
+                />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Ações do atendimento</CardTitle>
+                <CardDescription>
+                  Comandos disponíveis para o estado e a permissão atuais.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
               {!canOperateAttendances ? (
                 <p className="text-sm text-muted-foreground">
                   Você pode consultar este atendimento, mas não possui permissão para operá-lo.
@@ -644,75 +682,76 @@ export default function OperationAttendanceDetailPage({
                   ) : null}
                 </>
               )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          <AttendanceFollowUpsCard
-            workspaceId={workspaceId!}
-            attendanceId={attendance.id}
-            expectedVersion={attendance.version}
-            status={attendance.status}
-            canManage={canOperateAttendances}
-          />
+            <AttendanceFollowUpsCard
+              workspaceId={workspaceId!}
+              attendanceId={attendance.id}
+              expectedVersion={attendance.version}
+              status={attendance.status}
+              canManage={canOperateAttendances}
+            />
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Capacidade de resposta</CardTitle>
-              <CardDescription>
-                A disponibilidade abaixo é calculada pelo canal e pelo estado do atendimento.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm">
-              <Badge variant={getReplyStatusVariant(attendance.replyCapabilities.status)}>
-                {REPLY_STATUS_LABELS[attendance.replyCapabilities.status]}
-              </Badge>
-              <div className="grid grid-cols-2 gap-2">
-                <Capability label="Texto" enabled={attendance.replyCapabilities.supportsText} />
-                <Capability label="Mídia" enabled={attendance.replyCapabilities.supportsMedia} />
-                <Capability label="Template" enabled={attendance.replyCapabilities.supportsTemplate} />
-                <Capability label="Canal" enabled={Boolean(attendance.channel)} />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Clock3 className="h-4 w-4 text-primary" />
-                Timeline do ciclo
-              </CardTitle>
-              <CardDescription>
-                Eventos do Attendance atual, sem conteúdo interno de provider.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {eventsQuery.isError ? (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>Não foi possível carregar a timeline</AlertTitle>
-                  <AlertDescription>
-                    {getOperationalAttendanceErrorMessage(
-                      eventsQuery.error,
-                      "Tente atualizar o detalhe.",
-                    )}
-                  </AlertDescription>
-                </Alert>
-              ) : eventsQuery.isLoading ? (
-                <TimelineLoading />
-              ) : events.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  Ainda não há eventos registrados neste ciclo.
-                </p>
-              ) : (
-                <div className="space-y-5">
-                  {events.map((event) => (
-                    <TimelineEvent key={event.id} event={event} />
-                  ))}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Capacidade de resposta</CardTitle>
+                <CardDescription>
+                  A disponibilidade abaixo é calculada pelo canal e pelo estado do atendimento.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm">
+                <Badge variant={getReplyStatusVariant(attendance.replyCapabilities.status)}>
+                  {REPLY_STATUS_LABELS[attendance.replyCapabilities.status]}
+                </Badge>
+                <div className="grid grid-cols-2 gap-2">
+                  <Capability label="Texto" enabled={attendance.replyCapabilities.supportsText} />
+                  <Capability label="Mídia" enabled={attendance.replyCapabilities.supportsMedia} />
+                  <Capability label="Template" enabled={attendance.replyCapabilities.supportsTemplate} />
+                  <Capability label="Canal" enabled={Boolean(attendance.channel)} />
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Clock3 className="h-4 w-4 text-primary" />
+                  Timeline do ciclo
+                </CardTitle>
+                <CardDescription>
+                  Eventos do Attendance atual, sem conteúdo interno de provider.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {eventsQuery.isError ? (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Não foi possível carregar a timeline</AlertTitle>
+                    <AlertDescription>
+                      {getOperationalAttendanceErrorMessage(
+                        eventsQuery.error,
+                        "Tente atualizar o detalhe.",
+                      )}
+                    </AlertDescription>
+                  </Alert>
+                ) : eventsQuery.isLoading ? (
+                  <TimelineLoading />
+                ) : events.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    Ainda não há eventos registrados neste ciclo.
+                  </p>
+                ) : (
+                  <div className="space-y-5">
+                    {events.map((event) => (
+                      <TimelineEvent key={event.id} event={event} />
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </CollapsibleContent>
+        </Collapsible>
       </div>
 
       <AttendanceActionDialog

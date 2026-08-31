@@ -38,6 +38,7 @@ interface AttendanceComposerProps {
   workspaceId: string;
   attendance: AttendanceDetail;
   canOperate: boolean;
+  sticky?: boolean;
 }
 
 type TemplateComponent = Record<string, unknown>;
@@ -103,6 +104,7 @@ export function AttendanceComposer({
   workspaceId,
   attendance,
   canOperate,
+  sticky = false,
 }: AttendanceComposerProps) {
   const { toast } = useToast();
   const mutations = useOperationalAttendanceMutations(workspaceId);
@@ -360,7 +362,13 @@ export function AttendanceComposer({
           : "Não há um modo de resposta disponível para este canal.";
 
   return (
-    <div className="mt-6 border-t pt-6">
+    <div
+      className={
+        sticky
+          ? "sticky bottom-0 z-10 -mx-6 border-t bg-background/95 px-6 pb-1 pt-4 backdrop-blur"
+          : "mt-6 border-t pt-6"
+      }
+    >
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h3 className="flex items-center gap-2 text-base font-semibold">
