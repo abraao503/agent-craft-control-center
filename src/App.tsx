@@ -62,8 +62,7 @@ import TagsPage from "./pages/TagsPage";
 import OperationLandingPage from "./pages/OperationLandingPage";
 import OperationChannelsPage from "./pages/OperationChannelsPage";
 import OperationDistributionPage from "./pages/OperationDistributionPage";
-import OperationAttendancesPage from "./pages/OperationAttendancesPage";
-import OperationAttendanceDetailPage from "./pages/OperationAttendanceDetailPage";
+import OperationAttendanceStationPage from "./pages/OperationAttendanceStationPage";
 import Sidebar from "./components/layout/Sidebar";
 import Header from "./components/layout/Header";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
@@ -383,7 +382,7 @@ const App = () => (
                       element={
                         <ProtectedRoute
                           requiredPermission="view:operation-attendances"
-                          component={OperationAttendancesPage}
+                          component={OperationAttendanceStationPage}
                         />
                       }
                     />
@@ -392,7 +391,7 @@ const App = () => (
                       element={
                         <ProtectedRoute
                           requiredPermission="view:operation-attendances"
-                          component={OperationAttendanceDetailPage}
+                          component={OperationAttendanceStationPage}
                         />
                       }
                     />

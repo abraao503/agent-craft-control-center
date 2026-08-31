@@ -79,7 +79,13 @@ const EVENT_LABELS: Record<string, string> = {
   CLOSE: "Encerrado",
 };
 
-export default function OperationAttendanceDetailPage() {
+interface OperationAttendanceDetailPageProps {
+  realtimeEnabled?: boolean;
+}
+
+export default function OperationAttendanceDetailPage({
+  realtimeEnabled = true,
+}: OperationAttendanceDetailPageProps = {}) {
   const { attendanceId } = useParams<{ attendanceId: string }>();
   const { currentWorkspace } = useWorkspaceContext();
   const { has } = usePermissions();
@@ -103,7 +109,7 @@ export default function OperationAttendanceDetailPage() {
     workspaceId,
     attendanceId,
     currentAttendanceVersion: detailQuery.data?.version,
-    enabled: canViewAttendances,
+    enabled: canViewAttendances && realtimeEnabled,
   });
   const messagesQuery = useOperationalAttendanceMessages(
     workspaceId,

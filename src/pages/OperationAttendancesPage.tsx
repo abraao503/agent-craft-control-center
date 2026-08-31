@@ -1,5 +1,5 @@
 import { type FormEvent, type ReactNode, useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import {
   AlertCircle,
   ArrowLeft,
@@ -86,9 +86,18 @@ function createFilterDraft(): FilterDraft {
   };
 }
 
-export default function OperationAttendancesPage() {
+interface OperationAttendancesPageProps {
+  embedded?: boolean;
+  realtimeEnabled?: boolean;
+}
+
+export default function OperationAttendancesPage({
+  embedded = false,
+  realtimeEnabled = true,
+}: OperationAttendancesPageProps = {}) {
   const { currentWorkspace } = useWorkspaceContext();
   const { has } = usePermissions();
+  const { attendanceId } = useParams<{ attendanceId: string }>();
   const workspaceId =
     currentWorkspace?.type === "OPERATION" ? currentWorkspace.id : undefined;
   const canViewAttendances = has("view:operation-attendances");
@@ -134,7 +143,7 @@ export default function OperationAttendancesPage() {
   );
   const realtime = useOperationalRealtime({
     workspaceId,
-    enabled: canViewAttendances,
+    enabled: canViewAttendances && realtimeEnabled,
   });
 
   const queueOptions = useMemo(
@@ -201,35 +210,60 @@ export default function OperationAttendancesPage() {
     void optionsQuery.refetch();
   };
 
+  const selectStatus = (status?: AttendanceStatus) => {
+    const nextStatus = filters.status === status ? undefined : status;
+    setDraft((current) => ({
+      ...current,
+      status: nextStatus ?? "ALL",
+    }));
+    setFilters((current) => {
+      const nextFilters = { ...current, page: 1 };
+      if (nextStatus) {
+        nextFilters.status = nextStatus;
+      } else {
+        delete nextFilters.status;
+      }
+      return nextFilters;
+    });
+  };
+
   return (
-    <section className="mx-auto flex w-full max-w-[1600px] flex-col gap-6">
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="text-sm font-medium uppercase tracking-wide text-primary">
-            Operação / atendimento humano
-          </p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight">
-            Atendimentos
-          </h1>
-          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-            Encontre conversas no escopo autorizado e abra o ciclo operacional
-            sem sair do workspace atual.
-          </p>
-        </div>
-        <div className="flex flex-col items-end gap-2">
-          <OperationalRealtimeStatus
-            status={realtime.status}
-            joinedWorkspace={realtime.joinedWorkspace}
-          />
-          <Link
-            to="/operation"
-            className={buttonVariants({ variant: "outline" })}
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Voltar para operação
-          </Link>
-        </div>
-      </header>
+    <section
+      className={
+        embedded
+          ? "flex w-full min-w-0 flex-col gap-4"
+          : "mx-auto flex w-full max-w-[1600px] flex-col gap-6"
+      }
+    >
+      {!embedded ? (
+        <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="text-sm font-medium uppercase tracking-wide text-primary">
+              Operação / atendimento humano
+            </p>
+            <h1 className="mt-2 text-3xl font-semibold tracking-tight">
+              Atendimentos
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+              Encontre conversas no escopo autorizado e abra o ciclo operacional
+              sem sair do workspace atual.
+            </p>
+          </div>
+          <div className="flex flex-col items-end gap-2">
+            <OperationalRealtimeStatus
+              status={realtime.status}
+              joinedWorkspace={realtime.joinedWorkspace}
+            />
+            <Link
+              to="/operation"
+              className={buttonVariants({ variant: "outline" })}
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Voltar para operação
+            </Link>
+          </div>
+        </header>
+      ) : null}
 
       {hasQueryError ? (
         <Alert variant="destructive">
@@ -257,26 +291,35 @@ export default function OperationAttendancesPage() {
         </Alert>
       ) : null}
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
-        <SummaryMetric
-          label="Total visível"
-          value={summaryQuery.data?.total}
-          loading={summaryQuery.isLoading}
-        />
-        <SummaryMetric
-          label="Com novas mensagens"
-          value={summaryQuery.data?.unreadAttendances}
-          loading={summaryQuery.isLoading}
-        />
-        {STATUS_ORDER.map((status) => (
+      <StatusBuckets
+        activeStatus={filters.status}
+        counts={summaryQuery.data?.byStatus}
+        loading={summaryQuery.isLoading}
+        onSelect={selectStatus}
+      />
+
+      {!embedded ? (
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
           <SummaryMetric
-            key={status}
-            label={STATUS_LABELS[status]}
-            value={summaryQuery.data?.byStatus[status]}
+            label="Total visível"
+            value={summaryQuery.data?.total}
             loading={summaryQuery.isLoading}
           />
-        ))}
-      </div>
+          <SummaryMetric
+            label="Com novas mensagens"
+            value={summaryQuery.data?.unreadAttendances}
+            loading={summaryQuery.isLoading}
+          />
+          {STATUS_ORDER.map((status) => (
+            <SummaryMetric
+              key={status}
+              label={STATUS_LABELS[status]}
+              value={summaryQuery.data?.byStatus[status]}
+              loading={summaryQuery.isLoading}
+            />
+          ))}
+        </div>
+      ) : null}
 
       <Card>
         <CardContent className="p-4">
@@ -315,91 +358,98 @@ export default function OperationAttendancesPage() {
                 ) : null}
               </div>
 
-              <FilterSelect
-                id="attendance-status"
-                label="Estado"
-                value={draft.status}
-                onValueChange={(value) =>
-                  setDraft((current) => ({
-                    ...current,
-                    status: value as FilterDraft["status"],
-                  }))
-                }
-              >
-                <SelectItem value="ALL">Todos os estados</SelectItem>
-                {STATUS_ORDER.map((status) => (
-                  <SelectItem key={status} value={status}>
-                    {STATUS_LABELS[status]}
-                  </SelectItem>
-                ))}
-              </FilterSelect>
+              <details className="rounded-md border bg-muted/20 p-3 md:col-span-2 xl:col-span-4">
+                <summary className="cursor-pointer text-sm font-medium">
+                  Filtros avançados
+                </summary>
+                <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                  <FilterSelect
+                    id="attendance-status"
+                    label="Estado"
+                    value={draft.status}
+                    onValueChange={(value) =>
+                      setDraft((current) => ({
+                        ...current,
+                        status: value as FilterDraft["status"],
+                      }))
+                    }
+                  >
+                    <SelectItem value="ALL">Todos os estados</SelectItem>
+                    {STATUS_ORDER.map((status) => (
+                      <SelectItem key={status} value={status}>
+                        {STATUS_LABELS[status]}
+                      </SelectItem>
+                    ))}
+                  </FilterSelect>
 
-              <FilterSelect
-                id="attendance-area"
-                label="Área"
-                value={draft.areaId}
-                onValueChange={(value) =>
-                  setDraft((current) => ({ ...current, areaId: value }))
-                }
-              >
-                <SelectItem value="ALL">Todas as áreas</SelectItem>
-                {(optionsQuery.data?.areas ?? []).map((area) => (
-                  <SelectItem key={area.id} value={area.id}>
-                    {area.name}
-                  </SelectItem>
-                ))}
-              </FilterSelect>
+                  <FilterSelect
+                    id="attendance-area"
+                    label="Área"
+                    value={draft.areaId}
+                    onValueChange={(value) =>
+                      setDraft((current) => ({ ...current, areaId: value }))
+                    }
+                  >
+                    <SelectItem value="ALL">Todas as áreas</SelectItem>
+                    {(optionsQuery.data?.areas ?? []).map((area) => (
+                      <SelectItem key={area.id} value={area.id}>
+                        {area.name}
+                      </SelectItem>
+                    ))}
+                  </FilterSelect>
 
-              <FilterSelect
-                id="attendance-queue"
-                label="Fila"
-                value={draft.queueId}
-                onValueChange={(value) =>
-                  setDraft((current) => ({ ...current, queueId: value }))
-                }
-              >
-                <SelectItem value="ALL">Todas as filas</SelectItem>
-                {queueOptions.map((queue) => (
-                  <SelectItem key={queue.id} value={queue.id}>
-                    {queue.name} · {queue.areaName}
-                  </SelectItem>
-                ))}
-              </FilterSelect>
+                  <FilterSelect
+                    id="attendance-queue"
+                    label="Fila"
+                    value={draft.queueId}
+                    onValueChange={(value) =>
+                      setDraft((current) => ({ ...current, queueId: value }))
+                    }
+                  >
+                    <SelectItem value="ALL">Todas as filas</SelectItem>
+                    {queueOptions.map((queue) => (
+                      <SelectItem key={queue.id} value={queue.id}>
+                        {queue.name} · {queue.areaName}
+                      </SelectItem>
+                    ))}
+                  </FilterSelect>
 
-              <FilterSelect
-                id="attendance-assignee"
-                label="Responsável"
-                value={draft.assigneeUserId}
-                onValueChange={(value) =>
-                  setDraft((current) => ({
-                    ...current,
-                    assigneeUserId: value,
-                  }))
-                }
-              >
-                <SelectItem value="ALL">Todos os responsáveis</SelectItem>
-                {(optionsQuery.data?.users ?? []).map((user) => (
-                  <SelectItem key={user.id} value={user.id}>
-                    {user.name}
-                  </SelectItem>
-                ))}
-              </FilterSelect>
+                  <FilterSelect
+                    id="attendance-assignee"
+                    label="Responsável"
+                    value={draft.assigneeUserId}
+                    onValueChange={(value) =>
+                      setDraft((current) => ({
+                        ...current,
+                        assigneeUserId: value,
+                      }))
+                    }
+                  >
+                    <SelectItem value="ALL">Todos os responsáveis</SelectItem>
+                    {(optionsQuery.data?.users ?? []).map((user) => (
+                      <SelectItem key={user.id} value={user.id}>
+                        {user.name}
+                      </SelectItem>
+                    ))}
+                  </FilterSelect>
 
-              <FilterSelect
-                id="attendance-channel"
-                label="Canal"
-                value={draft.channelId}
-                onValueChange={(value) =>
-                  setDraft((current) => ({ ...current, channelId: value }))
-                }
-              >
-                <SelectItem value="ALL">Todos os canais</SelectItem>
-                {(optionsQuery.data?.channels ?? []).map((channel) => (
-                  <SelectItem key={channel.id} value={channel.id}>
-                    {channel.displayName}
-                  </SelectItem>
-                ))}
-              </FilterSelect>
+                  <FilterSelect
+                    id="attendance-channel"
+                    label="Canal"
+                    value={draft.channelId}
+                    onValueChange={(value) =>
+                      setDraft((current) => ({ ...current, channelId: value }))
+                    }
+                  >
+                    <SelectItem value="ALL">Todos os canais</SelectItem>
+                    {(optionsQuery.data?.channels ?? []).map((channel) => (
+                      <SelectItem key={channel.id} value={channel.id}>
+                        {channel.displayName}
+                      </SelectItem>
+                    ))}
+                  </FilterSelect>
+                </div>
+              </details>
             </div>
 
             <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
@@ -433,7 +483,13 @@ export default function OperationAttendancesPage() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
+      <div
+        className={
+          embedded
+            ? "grid gap-6"
+            : "grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]"
+        }
+      >
         <Card className="min-w-0">
           <CardContent className="p-0">
             <div className="flex items-center justify-between border-b px-4 py-4 sm:px-6">
@@ -456,7 +512,11 @@ export default function OperationAttendancesPage() {
                 <AttendanceListLoading />
               ) : attendancesQuery.data?.items.length ? (
                 attendancesQuery.data.items.map((attendance) => (
-                  <AttendanceCard key={attendance.id} attendance={attendance} />
+                  <AttendanceCard
+                    key={attendance.id}
+                    attendance={attendance}
+                    selected={attendance.id === attendanceId}
+                  />
                 ))
               ) : (
                 <EmptyAttendanceList hasFilters={hasActiveFilters} />
@@ -505,7 +565,7 @@ export default function OperationAttendancesPage() {
           </CardContent>
         </Card>
 
-        <Card className="h-fit">
+        <Card className={embedded ? "hidden" : "h-fit"}>
           <CardContent className="space-y-3 p-4 text-sm">
             <div>
               <h2 className="font-semibold">Escopo carregado</h2>
@@ -572,8 +632,82 @@ function FilterSelect({
   );
 }
 
+function StatusBuckets({
+  activeStatus,
+  counts,
+  loading,
+  onSelect,
+}: {
+  activeStatus?: AttendanceStatus;
+  counts?: Record<AttendanceStatus, number>;
+  loading: boolean;
+  onSelect: (status?: AttendanceStatus) => void;
+}) {
+  const total = counts
+    ? Object.values(counts).reduce((sum, count) => sum + count, 0)
+    : 0;
+
+  return (
+    <nav
+      aria-label="Filas por estado"
+      className="rounded-lg border bg-card p-2 shadow-sm"
+    >
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="px-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          Filas
+        </span>
+        <Button
+          type="button"
+          size="sm"
+          variant={!activeStatus ? "secondary" : "ghost"}
+          aria-pressed={!activeStatus}
+          onClick={() => onSelect()}
+        >
+          Todas
+          <BucketCount value={total} loading={loading} />
+        </Button>
+        {STATUS_ORDER.filter((status) => status !== "CLOSED").map((status) => (
+          <Button
+            key={status}
+            type="button"
+            size="sm"
+            variant={activeStatus === status ? "secondary" : "ghost"}
+            aria-pressed={activeStatus === status}
+            onClick={() => onSelect(status)}
+          >
+            {STATUS_LABELS[status]}
+            <BucketCount value={counts?.[status]} loading={loading} />
+          </Button>
+        ))}
+        <span className="mx-1 hidden h-5 border-l sm:block" aria-hidden="true" />
+        <Button
+          type="button"
+          size="sm"
+          variant={activeStatus === "CLOSED" ? "secondary" : "ghost"}
+          aria-pressed={activeStatus === "CLOSED"}
+          onClick={() => onSelect("CLOSED")}
+        >
+          Histórico
+          <BucketCount value={counts?.CLOSED} loading={loading} />
+        </Button>
+      </div>
+    </nav>
+  );
+}
+
+function BucketCount({ value, loading }: { value?: number; loading: boolean }) {
+  return loading ? (
+    <Loader2 className="ml-2 h-3.5 w-3.5 animate-spin" aria-label="Carregando" />
+  ) : (
+    <span className="ml-2 rounded-full bg-background px-1.5 py-0.5 text-xs">
+      {value ?? 0}
+    </span>
+  );
+}
+
 function AttendanceCard({
   attendance,
+  selected = false,
 }: {
   attendance: {
     id: string;
@@ -599,6 +733,7 @@ function AttendanceCard({
     } | null;
     unreadCount?: number;
   };
+  selected?: boolean;
 }) {
   const customerName = attendance.customer?.name || "Contato sem nome";
   const lastMessage = attendance.lastMessage;
@@ -612,7 +747,8 @@ function AttendanceCard({
   return (
     <Link
       to={`/operation/attendances/${attendance.id}`}
-      className="block p-4 transition-colors hover:bg-muted/40 focus-visible:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:p-6"
+      aria-current={selected ? "page" : undefined}
+      className={`block p-4 transition-colors hover:bg-muted/40 focus-visible:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:p-6 ${selected ? "bg-primary/5" : ""}`}
     >
       <div className="flex gap-3">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 font-semibold text-primary">
