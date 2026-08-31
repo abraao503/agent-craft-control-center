@@ -165,6 +165,21 @@ export default function OperationAttendancesPage({
     );
   }
 
+  if (realtime.status === "access-denied") {
+    return (
+      <section className="w-full">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Acesso operacional revogado</AlertTitle>
+          <AlertDescription>
+            A sessão perdeu acesso a este workspace. A lista foi removida e será
+            reconciliada quando o acesso for restabelecido.
+          </AlertDescription>
+        </Alert>
+      </section>
+    );
+  }
+
   const hasQueryError =
     attendancesQuery.isError || summaryQuery.isError || optionsQuery.isError;
   const currentPage = attendancesQuery.data?.page ?? filters.page ?? 1;

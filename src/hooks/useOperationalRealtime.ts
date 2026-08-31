@@ -129,6 +129,13 @@ export function useOperationalRealtime({
       });
     };
 
+    const clearWorkspaceCache = () => {
+      queryClient.removeQueries({
+        predicate: (query) =>
+          query.queryKey[0] === "operation" && query.queryKey[2] === workspaceId,
+      });
+    };
+
     const reconcile = () => invalidateWorkspace(targetAttendanceId);
     const handleConnect = () => {
       if (!mounted) return;
@@ -172,6 +179,7 @@ export function useOperationalRealtime({
         message === "Workspace access denied" ||
         message === "Operational membership required"
       ) {
+        clearWorkspaceCache();
         setJoinedWorkspace(false);
         setStatus("access-denied");
       }

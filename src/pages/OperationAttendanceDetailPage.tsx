@@ -173,6 +173,28 @@ export default function OperationAttendanceDetailPage({
     );
   }
 
+  if (realtime.status === "access-denied") {
+    return (
+      <section className="mx-auto flex w-full max-w-4xl flex-col gap-4">
+        <Link
+          to="/operation/attendances"
+          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Voltar para atendimentos
+        </Link>
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Acesso operacional revogado</AlertTitle>
+          <AlertDescription>
+            Este atendimento foi removido da tela porque a sessão perdeu acesso
+            ao workspace operacional.
+          </AlertDescription>
+        </Alert>
+      </section>
+    );
+  }
+
   if (detailQuery.isLoading) {
     return <DetailLoading />;
   }
