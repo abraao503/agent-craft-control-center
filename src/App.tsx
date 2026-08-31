@@ -61,6 +61,7 @@ import ResetPasswordPage from "./pages/ResetPasswordPage";
 import TagsPage from "./pages/TagsPage";
 import OperationLandingPage from "./pages/OperationLandingPage";
 import OperationChannelsPage from "./pages/OperationChannelsPage";
+import OperationDistributionPage from "./pages/OperationDistributionPage";
 import OperationAttendancesPage from "./pages/OperationAttendancesPage";
 import OperationAttendanceDetailPage from "./pages/OperationAttendanceDetailPage";
 import Sidebar from "./components/layout/Sidebar";
@@ -401,6 +402,15 @@ const App = () => (
                         <ProtectedRoute
                           requiredPermission="view:operation-channels"
                           component={OperationChannelsPage}
+                        />
+                      }
+                    />
+                    <Route
+                      path="/operation/distribution"
+                      element={
+                        <ProtectedRoute
+                          requiredPermission="manage:operation-setup"
+                          component={OperationDistributionPage}
                         />
                       }
                     />

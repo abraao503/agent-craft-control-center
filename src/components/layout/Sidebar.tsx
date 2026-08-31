@@ -22,6 +22,7 @@ import {
   Tag,
   Radio,
   Inbox,
+  SlidersHorizontal,
 } from "lucide-react";
 import { useAuth } from "@/contexts/auth/hooks";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -463,6 +464,12 @@ const SidebarMenuContent = () => {
           label: "Canais",
           icon: <Radio className="h-5 w-5" />,
           requiredPermission: "view:operation-channels",
+        },
+        {
+          path: "/operation/distribution",
+          label: "Distribuição",
+          icon: <SlidersHorizontal className="h-5 w-5" />,
+          requiredPermission: "manage:operation-setup",
         },
       ]
     : [

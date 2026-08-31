@@ -21,6 +21,7 @@ import {
   Loader2,
   RefreshCw,
   Radio,
+  SlidersHorizontal,
 } from "lucide-react";
 
 const MISSING_LABELS = {
@@ -86,6 +87,32 @@ export default function OperationLandingPage() {
                 className={buttonVariants({ variant: "outline", size: "sm" })}
               >
                 Abrir atendimentos
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+          </CardHeader>
+        </Card>
+      ) : null}
+
+      {has("manage:operation-setup") ? (
+        <Card>
+          <CardHeader>
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <CardTitle className="flex items-center gap-2 text-xl">
+                  <SlidersHorizontal className="h-5 w-5 text-primary" />
+                  Distribuição uniforme
+                </CardTitle>
+                <CardDescription>
+                  Ative a roleta e configure exceções por canal, área, fila ou
+                  operador.
+                </CardDescription>
+              </div>
+              <Link
+                to="/operation/distribution"
+                className={buttonVariants({ variant: "outline", size: "sm" })}
+              >
+                Administrar distribuição
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
