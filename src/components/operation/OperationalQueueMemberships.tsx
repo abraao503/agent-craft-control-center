@@ -58,6 +58,7 @@ export function OperationalQueueMemberships({
     queueId,
   );
   const [selectedUserId, setSelectedUserId] = useState("");
+  const [isManaging, setIsManaging] = useState(false);
   const [memberToRemove, setMemberToRemove] = useState<QueueMembership | null>(
     null,
   );
@@ -86,6 +87,7 @@ export function OperationalQueueMemberships({
         description: "O operador agora está restrito a esta fila.",
       });
       setSelectedUserId("");
+      setIsManaging(false);
     } catch (error) {
       toast({
         title: "Não foi possível adicionar o operador",
@@ -125,16 +127,39 @@ export function OperationalQueueMemberships({
   };
 
   return (
-    <div className="mt-3 border-t pt-3">
-      <div>
-        <p className="text-xs font-medium">Restrição de operadores</p>
-        <p className="text-xs text-muted-foreground">
-          Sem vínculos, operadores da área podem atuar nesta fila. Com vínculos,
-          somente os operadores listados recebem este escopo.
-        </p>
+    <div className="pt-3">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-medium">
+            {membershipsQuery.data?.items.length
+              ? "Operadores restritos"
+              : "Operadores"}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {membershipsQuery.data?.items.length
+              ? "Somente os operadores listados podem atuar nesta fila."
+              : "Todos os operadores desta área podem atuar nesta fila."}
+          </p>
+        </div>
+        {canManage ? (
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => setIsManaging((open) => !open)}
+            aria-expanded={isManaging}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            {isManaging
+              ? "Fechar"
+              : membershipsQuery.data?.items.length
+                ? "Gerenciar"
+                : "Restringir operadores"}
+          </Button>
+        ) : null}
       </div>
 
-      {canManage && (
+      {canManage && isManaging && (
         <div className="mt-2 rounded-md border bg-muted/20 p-2">
           {areaMembershipsError ? (
             <Alert variant="destructive">
@@ -229,11 +254,11 @@ export function OperationalQueueMemberships({
             </AlertDescription>
           </Alert>
         ) : membershipsQuery.data?.items.length ? (
-          <div className="space-y-1">
+          <div className="divide-y rounded-md border">
             {membershipsQuery.data.items.map((membership) => (
               <div
                 key={membership.id}
-                className="flex flex-wrap items-center justify-between gap-2 rounded-md border bg-background px-2 py-2"
+                className="flex flex-wrap items-center justify-between gap-2 px-3 py-2"
               >
                 <div className="min-w-0">
                   <p className="truncate text-xs font-medium">
@@ -260,8 +285,8 @@ export function OperationalQueueMemberships({
             ))}
           </div>
         ) : (
-          <p className="rounded-md border border-dashed p-2 text-center text-xs text-muted-foreground">
-            Nenhum operador com restrição específica nesta fila.
+          <p className="py-1 text-xs text-muted-foreground">
+            Sem restrições específicas.
           </p>
         )}
       </div>

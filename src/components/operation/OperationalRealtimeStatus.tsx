@@ -1,4 +1,4 @@
-import { Loader2, ShieldAlert, Wifi, WifiOff } from "lucide-react";
+import { Loader2, ShieldAlert, WifiOff } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { OperationalRealtimeStatus as RealtimeStatus } from "@/types/operational-realtime";
 
@@ -14,12 +14,7 @@ export function OperationalRealtimeStatus({
   if (status === "disabled") return null;
 
   if (status === "connected" && joinedWorkspace) {
-    return (
-      <Badge variant="outline" className="gap-1.5 border-emerald-500/40 text-emerald-700">
-        <Wifi className="h-3.5 w-3.5" />
-        Tempo real ativo
-      </Badge>
-    );
+    return null;
   }
 
   if (status === "access-denied") {

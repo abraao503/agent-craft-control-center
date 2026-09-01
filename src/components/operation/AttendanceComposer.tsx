@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { FileText, Loader2, Paperclip, Send, X } from "lucide-react";
+import { CheckCircle2, FileText, Loader2, Paperclip, Send, X } from "lucide-react";
 import { useOperationalAttendanceMutations } from "@/hooks/useOperationalAttendanceMutations";
 import {
   useOperationalAttendanceTemplates,
@@ -38,6 +38,8 @@ interface AttendanceComposerProps {
   workspaceId: string;
   attendance: AttendanceDetail;
   canOperate: boolean;
+  onClaim?: () => void;
+  claimPending?: boolean;
   sticky?: boolean;
   embedded?: boolean;
 }
@@ -105,6 +107,8 @@ export function AttendanceComposer({
   workspaceId,
   attendance,
   canOperate,
+  onClaim,
+  claimPending = false,
   sticky = false,
   embedded = false,
 }: AttendanceComposerProps) {
@@ -355,7 +359,13 @@ export function AttendanceComposer({
 
   const disabledReason = !canOperate
     ? "Você precisa da permissão para operar atendimentos."
-    : attendance.replyCapabilities.status === "NOT_ASSIGNEE"
+    : attendance.status === "WAITING_QUEUE"
+      ? "Você precisa assumir esta conversa para responder."
+      : attendance.status === "TRIAGE"
+        ? "Encaminhe este atendimento para uma fila antes de responder."
+        : attendance.status === "CLOSED"
+          ? "Este atendimento foi encerrado e não aceita novas respostas."
+          : attendance.replyCapabilities.status === "NOT_ASSIGNEE"
       ? "Somente o responsável atual pode responder este atendimento."
       : attendance.replyCapabilities.status === "CHANNEL_UNAVAILABLE"
         ? "O canal do atendimento não está disponível."
@@ -383,7 +393,7 @@ export function AttendanceComposer({
         <div>
           <h3 className="flex items-center gap-2 text-base font-semibold">
             <Send className="h-4 w-4 text-primary" />
-            Responder atendimento
+            Responder
           </h3>
           {!embedded ? (
             <p className="mt-1 text-sm text-muted-foreground">
@@ -392,14 +402,36 @@ export function AttendanceComposer({
           ) : null}
         </div>
         {attendance.replyCapabilities.latestInboundMessageId ? (
-          <Badge variant="outline">Contexto de resposta disponível</Badge>
+          <Badge variant="outline">Conversa atual</Badge>
         ) : null}
       </div>
 
       {!canCompose ? (
-        <Alert>
-          <AlertTitle>Resposta indisponível</AlertTitle>
-          <AlertDescription>{disabledReason}</AlertDescription>
+        <Alert className="bg-muted/20">
+          <AlertTitle>
+            {attendance.status === "WAITING_QUEUE" && onClaim
+              ? "Assuma para responder"
+              : "Resposta indisponível"}
+          </AlertTitle>
+          <AlertDescription className="mt-1 flex flex-wrap items-center justify-between gap-3">
+            <span>{disabledReason}</span>
+            {attendance.status === "WAITING_QUEUE" && onClaim ? (
+              <Button
+                type="button"
+                size="sm"
+                className="gap-1.5"
+                disabled={claimPending}
+                onClick={onClaim}
+              >
+                {claimPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <CheckCircle2 className="h-4 w-4" />
+                )}
+                {claimPending ? "Assumindo..." : "Atender"}
+              </Button>
+            ) : null}
+          </AlertDescription>
         </Alert>
       ) : supportedModes.length === 0 ? (
         <Alert>
@@ -425,9 +457,9 @@ export function AttendanceComposer({
                   onClick={() => setMode(option)}
                 >
                   {option === "TEXT"
-                    ? "Texto"
+                    ? "Mensagem"
                     : option === "MEDIA"
-                      ? "Mídia"
+                      ? "Anexo"
                       : "Template"}
                 </Button>
               ))}
@@ -672,8 +704,7 @@ export function AttendanceComposer({
                     : "text-xs text-muted-foreground"
                 }
               >
-                A versão enviada será validada para evitar sobrescrever uma ação
-                concorrente.
+                A conversa será atualizada automaticamente se houver mudanças.
               </p>
               <Button type="submit" disabled={mutations.sendMessage.isPending}>
                 {mutations.sendMessage.isPending ? (

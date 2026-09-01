@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import {
   AlertCircle,
   ArrowLeft,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Inbox,
@@ -34,6 +35,18 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { OperationalRealtimeStatus } from "@/components/operation/OperationalRealtimeStatus";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -54,6 +67,13 @@ const STATUS_LABELS: Record<AttendanceStatus, string> = {
 const STATUS_ORDER: AttendanceStatus[] = [
   "TRIAGE",
   "WAITING_QUEUE",
+  "IN_PROGRESS",
+  "PENDING",
+  "CLOSED",
+];
+
+const PRIMARY_STATUSES: AttendanceStatus[] = ["TRIAGE", "WAITING_QUEUE"];
+const SECONDARY_STATUSES: AttendanceStatus[] = [
   "IN_PROGRESS",
   "PENDING",
   "CLOSED",
@@ -102,6 +122,7 @@ export default function OperationAttendancesPage({
   const workspaceId =
     currentWorkspace?.type === "OPERATION" ? currentWorkspace.id : undefined;
   const canViewAttendances = has("view:operation-attendances");
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [draft, setDraft] = useState<FilterDraft>(createFilterDraft);
   const [filters, setFilters] = useState<ListAttendancesFilters>({
     page: 1,
@@ -193,6 +214,14 @@ export default function OperationAttendancesPage({
     Boolean(filters.assigneeUserId) ||
     Boolean(filters.channelId) ||
     filters.unreadOnly === true;
+  const advancedFilterCount = [
+    filters.status,
+    filters.areaId,
+    filters.queueId,
+    filters.assigneeUserId,
+    filters.channelId,
+    filters.unreadOnly,
+  ].filter(Boolean).length;
 
   const applyFilters = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -213,11 +242,13 @@ export default function OperationAttendancesPage({
     if (draft.unreadOnly) nextFilters.unreadOnly = true;
 
     setFilters(nextFilters);
+    setFiltersOpen(false);
   };
 
   const clearFilters = () => {
     setDraft(createFilterDraft());
     setFilters({ page: 1, limit: PAGE_SIZE });
+    setFiltersOpen(false);
   };
 
   const retryQueries = () => {
@@ -345,25 +376,17 @@ export default function OperationAttendancesPage({
             : undefined
         }
       >
-        <CardContent className={embedded ? "p-3" : "p-4"}>
-          <form onSubmit={applyFilters} className={embedded ? "space-y-3" : "space-y-4"}>
-            <div className="flex items-center gap-2">
+        <CardContent className={embedded ? "p-2" : "p-4"}>
+          <div className={embedded ? "space-y-2" : "space-y-4"}>
+            {!embedded ? <div className="flex items-center gap-2">
               <SlidersHorizontal className="h-4 w-4 text-primary" />
-              <h2 className="text-sm font-semibold">
-                {embedded ? "Buscar atendimento" : "Filtros da inbox"}
-              </h2>
+              <h2 className="text-sm font-semibold">Filtros da inbox</h2>
               {hasActiveFilters ? (
                 <Badge variant="secondary">Aplicados</Badge>
               ) : null}
-            </div>
-            <div
-              className={
-                embedded
-                  ? "space-y-2"
-                  : "grid gap-4 md:grid-cols-2 xl:grid-cols-4"
-              }
-            >
-              <div className={embedded ? "space-y-2" : "space-y-2 xl:col-span-2"}>
+            </div> : null}
+            <form onSubmit={applyFilters} className="space-y-2">
+              <div>
                 <label
                   htmlFor="attendance-search"
                   className={embedded ? "sr-only" : "text-sm font-medium"}
@@ -386,8 +409,22 @@ export default function OperationAttendancesPage({
                         ? "Nome ou telefone"
                         : "Nome ou telefone (mínimo de 2 caracteres)"
                     }
-                    className={embedded ? "h-9 pl-9" : "pl-9"}
+                    className="h-9 pl-9 pr-10"
                   />
+                  <Button
+                    type="submit"
+                    size="icon"
+                    variant="ghost"
+                    className="absolute right-1 top-1 h-7 w-7"
+                    disabled={attendancesQuery.isFetching}
+                    aria-label="Buscar atendimentos"
+                  >
+                    {attendancesQuery.isFetching ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Search className="h-4 w-4" />
+                    )}
+                  </Button>
                 </div>
                 {draft.search.trim().length === 1 ? (
                   <p className="text-xs text-muted-foreground">
@@ -395,18 +432,43 @@ export default function OperationAttendancesPage({
                   </p>
                 ) : null}
               </div>
+            </form>
 
-              <details
-                className={
-                  embedded
-                    ? "rounded-lg border bg-muted/20 px-3 py-2 md:col-span-2 xl:col-span-4"
-                    : "rounded-md border bg-muted/20 p-3 md:col-span-2 xl:col-span-4"
-                }
-              >
-                <summary className="cursor-pointer text-sm font-medium">
-                  Filtros avançados
-                </summary>
-                <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <div className="flex items-center gap-2">
+              <Popover open={filtersOpen} onOpenChange={setFiltersOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant={advancedFilterCount ? "secondary" : "outline"}
+                    size="sm"
+                    className="h-8 gap-2"
+                    aria-label={
+                      advancedFilterCount
+                        ? `Filtros, ${advancedFilterCount} ativos`
+                        : "Abrir filtros"
+                    }
+                  >
+                    <SlidersHorizontal className="h-3.5 w-3.5" />
+                    Filtros
+                    {advancedFilterCount ? (
+                      <Badge className="h-5 min-w-5 justify-center px-1 text-[10px]">
+                        {advancedFilterCount}
+                      </Badge>
+                    ) : null}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent
+                  align="start"
+                  className="w-[min(24rem,calc(100vw-2rem))] p-0"
+                >
+                  <form onSubmit={applyFilters}>
+                    <div className="border-b px-4 py-3">
+                      <p className="text-sm font-semibold">Filtrar conversas</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        Refine a fila sem perder a conversa atual.
+                      </p>
+                    </div>
+                    <div className="grid gap-3 p-4 sm:grid-cols-2">
                   <FilterSelect
                     id="attendance-status"
                     label="Estado"
@@ -492,64 +554,50 @@ export default function OperationAttendancesPage({
                       </SelectItem>
                     ))}
                   </FilterSelect>
-                </div>
-              </details>
-            </div>
-
-            <div
-              className={
-                embedded
-                  ? "flex items-center justify-between gap-2 border-t pt-3"
-                  : "flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between"
-              }
-            >
-              <label
-                htmlFor="attendance-unread"
-                className={
-                  embedded
-                    ? "flex min-w-0 items-center gap-2 text-xs text-muted-foreground"
-                    : "flex items-center gap-2 text-sm"
-                }
-              >
-                <Checkbox
-                  id="attendance-unread"
-                  checked={draft.unreadOnly}
-                  onCheckedChange={(checked) =>
-                    setDraft((current) => ({
-                      ...current,
-                      unreadOnly: checked === true,
-                    }))
-                  }
-                />
-                Somente com novas mensagens
-              </label>
-              <div className="flex flex-wrap gap-2">
+                    </div>
+                    <div className="flex items-center justify-between gap-3 border-t px-4 py-3">
+                      <label
+                        htmlFor="attendance-unread"
+                        className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground"
+                      >
+                        <Checkbox
+                          id="attendance-unread"
+                          checked={draft.unreadOnly}
+                          onCheckedChange={(checked) =>
+                            setDraft((current) => ({
+                              ...current,
+                              unreadOnly: checked === true,
+                            }))
+                          }
+                        />
+                        Apenas com mensagens novas
+                      </label>
+                      <div className="flex shrink-0 gap-2">
+                        <Button type="button" variant="ghost" size="sm" onClick={clearFilters}>
+                          Limpar
+                        </Button>
+                        <Button type="submit" size="sm" disabled={attendancesQuery.isFetching}>
+                          Aplicar
+                        </Button>
+                      </div>
+                    </div>
+                  </form>
+                </PopoverContent>
+              </Popover>
+              {hasActiveFilters ? (
                 <Button
                   type="button"
                   variant="ghost"
-                  size={embedded ? "icon" : undefined}
+                  size="sm"
+                  className="h-8 gap-1.5 text-muted-foreground"
                   onClick={clearFilters}
-                  aria-label="Limpar filtros"
                 >
-                  <X className="h-4 w-4" />
-                  <span className={embedded ? "sr-only" : undefined}>
-                    Limpar filtros
-                  </span>
+                  <X className="h-3.5 w-3.5" />
+                  Limpar
                 </Button>
-                <Button
-                  type="submit"
-                  size={embedded ? "icon" : undefined}
-                  disabled={attendancesQuery.isFetching}
-                  aria-label="Aplicar filtros"
-                >
-                  <Search className={embedded ? "h-4 w-4" : "mr-2 h-4 w-4"} />
-                  <span className={embedded ? "sr-only" : undefined}>
-                    Aplicar filtros
-                  </span>
-                </Button>
-              </div>
+              ) : null}
             </div>
-          </form>
+          </div>
         </CardContent>
       </Card>
 
@@ -614,51 +662,49 @@ export default function OperationAttendancesPage({
               )}
             </div>
 
-            <div
-              className={
-                embedded
-                  ? "flex shrink-0 items-center justify-between gap-2 border-t px-3 py-3"
-                  : "flex flex-col gap-3 border-t px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6"
-              }
-            >
-              <p className="text-sm text-muted-foreground">
-                Página {totalPages ? currentPage : 0} de {totalPages || 0}
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={currentPage <= 1 || attendancesQuery.isFetching}
-                  onClick={() =>
-                    setFilters((current) => ({
-                      ...current,
-                      page: Math.max(1, currentPage - 1),
-                    }))
-                  }
-                >
-                  <ChevronLeft className="mr-1 h-4 w-4" />
-                  Anterior
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={
-                    !totalPages ||
-                    currentPage >= totalPages ||
-                    attendancesQuery.isFetching
-                  }
-                  onClick={() =>
-                    setFilters((current) => ({
-                      ...current,
-                      page: currentPage + 1,
-                    }))
-                  }
-                >
-                  Próxima
-                  <ChevronRight className="ml-1 h-4 w-4" />
-                </Button>
+            {totalPages > 1 ? (
+              <div
+                className={
+                  embedded
+                    ? "flex shrink-0 items-center justify-between gap-2 border-t px-3 py-3"
+                    : "flex flex-col gap-3 border-t px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6"
+                }
+              >
+                <p className="text-sm text-muted-foreground">
+                  Página {currentPage} de {totalPages}
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={currentPage <= 1 || attendancesQuery.isFetching}
+                    onClick={() =>
+                      setFilters((current) => ({
+                        ...current,
+                        page: Math.max(1, currentPage - 1),
+                      }))
+                    }
+                  >
+                    <ChevronLeft className="mr-1 h-4 w-4" />
+                    Anterior
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={currentPage >= totalPages || attendancesQuery.isFetching}
+                    onClick={() =>
+                      setFilters((current) => ({
+                        ...current,
+                        page: currentPage + 1,
+                      }))
+                    }
+                  >
+                    Próxima
+                    <ChevronRight className="ml-1 h-4 w-4" />
+                  </Button>
+                </div>
               </div>
-            </div>
+            ) : null}
           </CardContent>
         </Card>
 
@@ -745,27 +791,30 @@ function StatusBuckets({
   const total = counts
     ? Object.values(counts).reduce((sum, count) => sum + count, 0)
     : 0;
+  const secondaryStatus = activeStatus && SECONDARY_STATUSES.includes(activeStatus)
+    ? activeStatus
+    : undefined;
 
   return (
     <nav
       aria-label="Filas por estado"
       className={
         embedded
-          ? "shrink-0 border-b bg-card p-2"
+          ? "shrink-0 border-b bg-card px-2 py-2"
           : "rounded-lg border bg-card p-2 shadow-sm"
       }
     >
       <div
         className={
           embedded
-            ? "grid grid-cols-2 gap-1"
+            ? "flex min-w-0 items-center gap-1"
             : "flex flex-wrap items-center gap-2"
         }
       >
         <span
           className={
             embedded
-              ? "col-span-2 px-2 pb-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground"
+              ? "sr-only"
               : "px-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground"
           }
         >
@@ -775,46 +824,71 @@ function StatusBuckets({
           type="button"
           size="sm"
           variant={!activeStatus ? "secondary" : "ghost"}
-          className={embedded ? "h-8 w-full justify-between rounded-lg px-2.5" : undefined}
+          className={embedded ? "h-8 shrink-0 gap-1 rounded-md px-2" : undefined}
           aria-pressed={!activeStatus}
           onClick={() => onSelect()}
         >
           <span>Todas</span>
           <BucketCount value={total} loading={loading} compact={embedded} />
         </Button>
-        {STATUS_ORDER.filter((status) => status !== "CLOSED").map((status) => (
+        {PRIMARY_STATUSES.map((status) => (
           <Button
             key={status}
             type="button"
             size="sm"
             variant={activeStatus === status ? "secondary" : "ghost"}
-            className={embedded ? "h-8 w-full justify-between rounded-lg px-2.5" : undefined}
+            className={embedded ? "h-8 shrink-0 gap-1 rounded-md px-2" : undefined}
             aria-pressed={activeStatus === status}
             onClick={() => onSelect(status)}
           >
-            <span>{STATUS_LABELS[status]}</span>
+            <span>{status === "WAITING_QUEUE" ? "Na fila" : STATUS_LABELS[status]}</span>
             <BucketCount value={counts?.[status]} loading={loading} compact={embedded} />
           </Button>
         ))}
-        <span
-          className={
-            embedded
-              ? "col-span-2 my-1 border-t"
-              : "mx-1 hidden h-5 border-l sm:block"
-          }
-          aria-hidden="true"
-        />
-        <Button
-          type="button"
-          size="sm"
-          variant={activeStatus === "CLOSED" ? "secondary" : "ghost"}
-          className={embedded ? "h-8 w-full justify-between rounded-lg px-2.5" : undefined}
-          aria-pressed={activeStatus === "CLOSED"}
-          onClick={() => onSelect("CLOSED")}
-        >
-          <span>Histórico</span>
-          <BucketCount value={counts?.CLOSED} loading={loading} compact={embedded} />
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              type="button"
+              size="sm"
+              variant={secondaryStatus ? "secondary" : "ghost"}
+              className={embedded ? "h-8 shrink-0 gap-1 rounded-md px-2" : undefined}
+              aria-label={
+                secondaryStatus
+                  ? `Mais estados, atual: ${STATUS_LABELS[secondaryStatus]}`
+                  : "Mais estados"
+              }
+              aria-pressed={Boolean(secondaryStatus)}
+            >
+              <span className="truncate">
+                {secondaryStatus === "IN_PROGRESS"
+                  ? "Em atend."
+                  : secondaryStatus === "CLOSED"
+                    ? "Histórico"
+                    : secondaryStatus
+                      ? STATUS_LABELS[secondaryStatus]
+                      : "Mais"}
+              </span>
+              <ChevronDown className="h-3.5 w-3.5 shrink-0" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-56">
+            <DropdownMenuRadioGroup
+              value={secondaryStatus ?? ""}
+              onValueChange={(value) => onSelect(value as AttendanceStatus)}
+            >
+              {SECONDARY_STATUSES.map((status) => (
+                <DropdownMenuRadioItem
+                  key={status}
+                  value={status}
+                  className="justify-between gap-3"
+                >
+                  <span>{status === "CLOSED" ? "Histórico" : STATUS_LABELS[status]}</span>
+                  <BucketCount value={counts?.[status]} loading={loading} compact />
+                </DropdownMenuRadioItem>
+              ))}
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </nav>
   );
@@ -836,7 +910,7 @@ function BucketCount({
     />
   ) : (
     <span
-      className={`${compact ? "ml-0 min-w-6 text-center" : "ml-2"} rounded-full bg-background px-1.5 py-0.5 text-xs text-foreground`}
+      className={`${compact ? "ml-0 min-w-5 text-center" : "ml-2"} rounded-full bg-background px-1.5 py-0.5 text-xs text-foreground`}
     >
       {value ?? 0}
     </span>
@@ -851,7 +925,6 @@ function AttendanceCard({
   attendance: {
     id: string;
     status: AttendanceStatus;
-    version: number;
     lastActivityAt: string;
     customer?: {
       name: string;
@@ -884,65 +957,74 @@ function AttendanceCard({
     .filter(Boolean)
     .join(" · ");
 
+  const activityAt = lastMessage?.createdAt || attendance.lastActivityAt;
+  const assignee = attendance.assignee?.name || "Sem responsável";
+  const operationalContext = [destination || "Destino não definido", assignee]
+    .filter(Boolean)
+    .join(" · ");
+
   return (
-    <Link
-      to={`/operation/attendances/${attendance.id}`}
-      aria-current={selected ? "page" : undefined}
-      className={`block transition-colors hover:bg-muted/40 focus-visible:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring ${compact ? "p-3" : "p-4 sm:p-6"} ${selected ? "bg-primary/5" : ""}`}
+    <article
+      className={`border-l-2 transition-colors hover:bg-muted/40 ${
+        selected ? "border-l-primary bg-primary/[0.04]" : "border-l-transparent"
+      }`}
     >
-      <div className={compact ? "flex gap-2.5" : "flex gap-3"}>
-        <div
-          className={`flex shrink-0 items-center justify-center rounded-full bg-primary/10 font-semibold text-primary ${compact ? "h-9 w-9 text-sm" : "h-10 w-10"}`}
-        >
-          {customerName.slice(0, 1).toUpperCase()}
-        </div>
-        <div className={`min-w-0 flex-1 ${compact ? "space-y-2" : "space-y-3"}`}>
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
+      <Link
+        to={`/operation/attendances/${attendance.id}`}
+        aria-current={selected ? "page" : undefined}
+        className={`block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring ${compact ? "px-3 py-2.5" : "p-4"}`}
+      >
+        <div className={compact ? "flex gap-2.5" : "flex gap-3"}>
+          <div
+            className={`flex shrink-0 items-center justify-center rounded-full bg-primary/10 font-semibold text-primary ${compact ? "h-8 w-8 text-xs" : "h-9 w-9 text-sm"}`}
+          >
+            {customerName.slice(0, 1).toUpperCase()}
+          </div>
+          <div className={`min-w-0 flex-1 ${compact ? "space-y-1.5" : "space-y-2"}`}>
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-2">
                 <h3 className={`${compact ? "text-sm" : ""} truncate font-semibold`}>
                   {customerName}
                 </h3>
                 {attendance.unreadCount ? (
-                  <Badge className="bg-primary/10 text-primary hover:bg-primary/10">
-                    {attendance.unreadCount} nova(s)
+                  <Badge
+                    className="min-w-5 justify-center bg-primary px-1.5 text-[10px] text-primary-foreground hover:bg-primary"
+                    aria-label={`${attendance.unreadCount} mensagens novas`}
+                  >
+                    {attendance.unreadCount}
                   </Badge>
                 ) : null}
               </div>
-              <p className="mt-1 text-[11px] text-muted-foreground">
-                {attendance.customer?.phoneMasked || "Telefone protegido"}
+              <time
+                dateTime={activityAt}
+                title={formatDateTime(activityAt)}
+                className="shrink-0 text-[11px] text-muted-foreground"
+              >
+                {formatListTimestamp(activityAt)}
+              </time>
+            </div>
+
+            <p className={`${compact ? "text-xs" : "text-sm"} truncate text-muted-foreground`}>
+              {lastMessage
+                ? <><span className="font-medium text-foreground">{MESSAGE_SENDER_LABELS[lastMessage.sender]}:</span>{" "}{lastMessage.preview}</>
+                : "Nenhuma mensagem disponível."}
+            </p>
+
+            <div className="flex items-center justify-between gap-2">
+              <p className="min-w-0 truncate text-[11px] text-muted-foreground">
+                {operationalContext}
               </p>
+              <Badge
+                variant={getStatusVariant(attendance.status)}
+                className={`${getStatusClassName(attendance.status)} h-5 shrink-0 px-1.5 text-[10px]`}
+              >
+                {STATUS_LABELS[attendance.status]}
+              </Badge>
             </div>
-            <Badge
-              variant={getStatusVariant(attendance.status)}
-              className={getStatusClassName(attendance.status)}
-            >
-              {STATUS_LABELS[attendance.status]}
-            </Badge>
-          </div>
-
-          <p className={`${compact ? "text-xs" : "text-sm"} line-clamp-2 text-muted-foreground`}>
-            {lastMessage
-              ? `${MESSAGE_SENDER_LABELS[lastMessage.sender]}: ${lastMessage.preview}`
-              : "Nenhuma mensagem disponível para este ciclo."}
-          </p>
-
-          <div className="flex flex-col gap-1 text-[11px] text-muted-foreground sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-            <div className="flex flex-wrap gap-x-4 gap-y-1">
-              <span>{destination || "Destino não definido"}</span>
-              <span>
-                {attendance.assignee
-                  ? `${attendance.assignee.type === "USER" ? "Responsável" : "Assistente"}: ${attendance.assignee.name}`
-                  : "Sem responsável"}
-              </span>
-            </div>
-            <span>
-              {formatDateTime(lastMessage?.createdAt || attendance.lastActivityAt)}
-            </span>
           </div>
         </div>
-      </div>
-    </Link>
+      </Link>
+    </article>
   );
 }
 
@@ -1063,5 +1145,33 @@ function formatDateTime(value: string) {
   return new Intl.DateTimeFormat("pt-BR", {
     dateStyle: "short",
     timeStyle: "short",
+  }).format(date);
+}
+
+function formatListTimestamp(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const dayDifference = Math.round(
+    (startOfToday.getTime() - startOfDate.getTime()) / 86_400_000,
+  );
+
+  if (dayDifference === 0) {
+    const elapsedMinutes = Math.max(
+      0,
+      Math.floor((now.getTime() - date.getTime()) / 60_000),
+    );
+    if (elapsedMinutes < 1) return "agora";
+    if (elapsedMinutes < 60) return `${elapsedMinutes} min`;
+    return `${Math.floor(elapsedMinutes / 60)} h`;
+  }
+  if (dayDifference === 1) return "Ontem";
+
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "short",
   }).format(date);
 }

@@ -57,6 +57,7 @@ export function OperationalAreaMemberships({
   const [selectedUserId, setSelectedUserId] = useState("");
   const [selectedRole, setSelectedRole] =
     useState<AreaMembershipRole>("OPERATOR");
+  const [isAddOpen, setIsAddOpen] = useState(false);
   const [memberToRemove, setMemberToRemove] =
     useState<AreaMembership | null>(null);
 
@@ -84,6 +85,7 @@ export function OperationalAreaMemberships({
         description: "O usuário agora pertence a esta área operacional.",
       });
       setSelectedUserId("");
+      setIsAddOpen(false);
     } catch (error) {
       toast({
         title: "Não foi possível adicionar o membro",
@@ -151,7 +153,7 @@ export function OperationalAreaMemberships({
   };
 
   return (
-    <div className="mt-4 border-t pt-4">
+    <div className="pt-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-sm font-medium">Membros da área</p>
@@ -159,9 +161,21 @@ export function OperationalAreaMemberships({
             Defina quem atua nesta área e qual é o papel operacional.
           </p>
         </div>
+        {canManage ? (
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => setIsAddOpen((open) => !open)}
+            aria-expanded={isAddOpen}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            {isAddOpen ? "Fechar" : "Adicionar membro"}
+          </Button>
+        ) : null}
       </div>
 
-      {canManage && (
+      {canManage && isAddOpen && (
         <div className="mt-3 rounded-md border bg-muted/20 p-3">
           {candidatesError ? (
             <Alert variant="destructive">
@@ -266,11 +280,11 @@ export function OperationalAreaMemberships({
             </AlertDescription>
           </Alert>
         ) : membershipsQuery.data?.items.length ? (
-          <div className="space-y-2">
+          <div className="divide-y rounded-md border">
             {membershipsQuery.data.items.map((membership) => (
               <div
                 key={membership.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-md border bg-background p-3"
+                className="flex flex-wrap items-center justify-between gap-3 px-3 py-2.5"
               >
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium">
@@ -323,12 +337,9 @@ export function OperationalAreaMemberships({
             ))}
           </div>
         ) : (
-          <div className="rounded-md border border-dashed p-4 text-center">
-            <p className="text-sm font-medium">Nenhum membro ativo</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Adicione um usuário elegível para liberar a atuação nesta área.
-            </p>
-          </div>
+          <p className="py-2 text-sm text-muted-foreground">
+            Nenhum membro ativo nesta área.
+          </p>
         )}
       </div>
 

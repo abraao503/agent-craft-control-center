@@ -46,6 +46,7 @@ export default function OperationLandingPage() {
 
   const setup = setupQuery.data;
   const isStructured = setup?.setupStatus === "STRUCTURED";
+  const isReady = setup?.readiness.status === "READY_FOR_ACTIVATION";
   const hasPendingFallback =
     setup?.readiness.missing.includes("FALLBACK_ROUTE") ?? false;
   const hasPendingStructuralItems =
@@ -53,80 +54,40 @@ export default function OperationLandingPage() {
 
   return (
     <section className="mx-auto w-full max-w-[1500px] space-y-6">
-      <Card className="overflow-hidden border-0 bg-slate-950 text-white shadow-lg dark:bg-slate-900">
-        <CardHeader className="relative p-6 sm:p-8">
-          <div className="pointer-events-none absolute -right-16 -top-24 h-64 w-64 rounded-full bg-primary/30 blur-3xl" />
-          <p className="relative text-xs font-semibold uppercase tracking-[0.18em] text-sky-300">
-            Workspace de operação
+      <header className="flex flex-col gap-5 border-b pb-6 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
+            Visão geral da operação
           </p>
-          <CardTitle className="relative mt-3 text-3xl text-white sm:text-4xl">
+          <h1 className="mt-2 text-3xl font-semibold tracking-tight">
             {currentWorkspace?.name || "Operação"}
-          </CardTitle>
-          <CardDescription className="relative mt-2 max-w-2xl text-slate-300">
-            Acompanhe a estrutura operacional deste workspace e retome a
-            configuração quando novas seções estiverem disponíveis.
-          </CardDescription>
-        </CardHeader>
-      </Card>
-
-      <div className="grid gap-4 lg:grid-cols-2">
-      {has("view:operation-attendances") ? (
-        <Card className="border-slate-200/80 shadow-sm transition-shadow hover:shadow-md dark:border-slate-800">
-          <CardHeader>
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div>
-                <CardTitle className="flex items-center gap-3 text-xl">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-100 text-sky-700 dark:bg-sky-950/50 dark:text-sky-300">
-                    <Inbox className="h-5 w-5" />
-                  </span>
-                  <span>Atendimentos</span>
-                </CardTitle>
-                <CardDescription className="mt-3">
-                  Abra a inbox operacional para acompanhar os ciclos dentro do
-                  escopo autorizado.
-                </CardDescription>
-              </div>
-              <Link
-                to="/operation/attendances"
-                className={buttonVariants({ variant: "outline", size: "sm" })}
-              >
-                Abrir atendimentos
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            </div>
-          </CardHeader>
-        </Card>
-      ) : null}
-
-      {has("manage:operation-setup") ? (
-        <Card className="border-slate-200/80 shadow-sm transition-shadow hover:shadow-md dark:border-slate-800">
-          <CardHeader>
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div>
-                <CardTitle className="flex items-center gap-3 text-xl">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100 text-violet-700 dark:bg-violet-950/50 dark:text-violet-300">
-                    <SlidersHorizontal className="h-5 w-5" />
-                  </span>
-                  <span>Distribuição uniforme</span>
-                </CardTitle>
-                <CardDescription className="mt-3">
-                  Ative a roleta e configure exceções por canal, área, fila ou
-                  operador.
-                </CardDescription>
-              </div>
-              <Link
-                to="/operation/distribution"
-                className={buttonVariants({ variant: "outline", size: "sm" })}
-              >
-                Administrar distribuição
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            </div>
-          </CardHeader>
-        </Card>
-      ) : null}
-
-      </div>
+          </h1>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+            Acesse a fila de atendimentos e mantenha áreas, canais e distribuição
+            prontos para a equipe.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {has("manage:operation-setup") ? (
+            <Link
+              to="/operation/distribution"
+              className={buttonVariants({ variant: "outline", size: "lg" })}
+            >
+              <SlidersHorizontal className="mr-2 h-4 w-4" />
+              Distribuição
+            </Link>
+          ) : null}
+          {has("view:operation-attendances") ? (
+            <Link
+              to="/operation/attendances"
+              className={buttonVariants({ size: "lg" })}
+            >
+              <Inbox className="mr-2 h-4 w-4" />
+              Abrir atendimentos
+            </Link>
+          ) : null}
+        </div>
+      </header>
 
       {setupQuery.isLoading ? (
         <Card>
@@ -157,27 +118,36 @@ export default function OperationLandingPage() {
       ) : setup ? (
         <>
           <Card className="overflow-hidden shadow-sm">
-            <CardHeader className="border-b bg-card/80">
-              <CardTitle className="flex items-center gap-2 text-xl">
-                {isStructured ? (
+            <CardHeader className="border-b bg-card/80 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2 text-xl">
+                {isReady ? (
                   <CheckCircle2 className="h-5 w-5 text-green-600" />
                 ) : (
                   <AlertCircle className="h-5 w-5 text-amber-600" />
                 )}
-                Setup estrutural
-              </CardTitle>
-              <CardDescription>
-                {isStructured
-                  ? `A estrutura mínima foi concluída${
+                Estrutura da operação
+                </CardTitle>
+                <CardDescription className="mt-1">
+                  {isStructured
+                    ? `Configuração estrutural concluída${
                       setup.setupCompletedAt
                         ? ` em ${formatDateTime(setup.setupCompletedAt)}`
                         : "."
                     }`
-                  : "Ainda existem itens estruturais para configurar."}
-              </CardDescription>
+                    : "Ainda existem itens estruturais para configurar."}
+                </CardDescription>
+              </div>
+              <div className={`mt-3 inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium sm:mt-0 ${
+                isReady
+                  ? "bg-green-50 text-green-700 dark:bg-green-950/40 dark:text-green-300"
+                  : "bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300"
+              }`}>
+                {isReady ? "Estrutura pronta" : "Configuração pendente"}
+              </div>
             </CardHeader>
-            <CardContent className="space-y-5 p-5 sm:p-6">
-              <div className="grid gap-3 sm:grid-cols-3">
+            <CardContent className="space-y-4 p-5 sm:p-6">
+              <div className="grid divide-y rounded-lg border sm:grid-cols-3 sm:divide-x sm:divide-y-0">
                 <Metric label="Áreas ativas" value={setup.counts.activeAreas} />
                 <Metric
                   label="Filas ativas"
@@ -189,30 +159,22 @@ export default function OperationLandingPage() {
                 />
               </div>
 
-              <div className="rounded-lg border bg-muted/30 p-4">
-                <p className="text-sm font-medium">Prontidão</p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {setup.readiness.status === "READY_FOR_ACTIVATION"
-                    ? "Pronto para a ativação prevista em etapa posterior."
-                    : isStructured && hasPendingFallback && !hasPendingStructuralItems
-                      ? "A estrutura está pronta, mas a ativação permanece bloqueada até a rota de fallback ser entregue em E3."
-                    : "Bloqueado até que os itens abaixo sejam concluídos."}
-                </p>
-                {setup.readiness.missing.length > 0 && (
+              {!isReady ? (
+                <div className="rounded-lg bg-amber-50/70 p-4 dark:bg-amber-950/20">
+                  <p className="text-sm font-medium text-amber-900 dark:text-amber-200">
+                    {isStructured && hasPendingFallback && !hasPendingStructuralItems
+                      ? "Configure a rota de fallback para concluir a ativação."
+                      : "Conclua os itens abaixo para liberar a operação."}
+                  </p>
+                  {setup.readiness.missing.length > 0 ? (
                   <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
                     {setup.readiness.missing.map((item) => (
                       <li key={item}>• {MISSING_LABELS[item]}</li>
                     ))}
                   </ul>
-                )}
-                {setup.readiness.deferredTo.length > 0 && (
-                  <p className="mt-3 text-xs text-muted-foreground">
-                    Dependências posteriores: {setup.readiness.deferredTo.join(
-                      ", "
-                    )}.
-                  </p>
-                )}
-              </div>
+                  ) : null}
+                </div>
+              ) : null}
             </CardContent>
           </Card>
           <OperationalAreasCard workspaceId={currentWorkspace?.id} />
@@ -297,13 +259,10 @@ function OperationalChannelsEntryCard({
         ) : (
           <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
             <span className="rounded-md border px-3 py-2">
-              {channelsQuery.data?.total ?? 0} conexão(ões)
+              {pluralizeCount(channelsQuery.data?.total ?? 0, "canal conectado", "canais conectados")}
             </span>
             <span className="rounded-md border px-3 py-2">
-              {validRoutes} rota(s) válida(s)
-            </span>
-            <span className="rounded-md border px-3 py-2">
-              Tráfego bloqueado até E4
+              {pluralizeCount(validRoutes, "rota pronta", "rotas prontas")}
             </span>
           </div>
         )}
@@ -321,9 +280,13 @@ function formatDateTime(value: string) {
 
 function Metric({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-lg border p-4">
+    <div className="flex items-baseline justify-between gap-4 px-4 py-3 sm:block">
       <p className="text-sm text-muted-foreground">{label}</p>
-      <p className="mt-1 text-2xl font-semibold">{value}</p>
+      <p className="text-xl font-semibold sm:mt-1">{value}</p>
     </div>
   );
+}
+
+function pluralizeCount(count: number, singular: string, plural: string) {
+  return `${count} ${count === 1 ? singular : plural}`;
 }

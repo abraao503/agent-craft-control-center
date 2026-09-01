@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { AxiosError } from "axios";
-import { AlertCircle, Loader2, Pencil, Plus, RefreshCw, Trash2 } from "lucide-react";
+import { AlertCircle, Loader2, MoreHorizontal, Pencil, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { useOperationalAreaMutations, useOperationalAreas } from "@/hooks/useOperationalAreas";
 import { useOperationalMembershipCandidates } from "@/hooks/useOperationalAreaMemberships";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -9,11 +9,13 @@ import { ServiceArea } from "@/types/operation";
 import { OperationalAreaQueues } from "@/components/operation/OperationalAreaQueues";
 import { OperationalAreaMemberships } from "@/components/operation/OperationalAreaMemberships";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -132,22 +134,67 @@ export function OperationalAreasCard({ workspaceId }: { workspaceId?: string }) 
             </AlertDescription>
           </Alert>
         ) : areasQuery.data?.items.length ? (
-          <div className="space-y-3">
+          <Accordion type="single" collapsible className="overflow-hidden rounded-lg border">
             {areasQuery.data.items.map((area) => (
-              <div
+              <AccordionItem
                 key={area.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-4"
+                value={area.id}
+                className="px-4 last:border-b-0"
               >
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="font-medium">{area.name}</p>
-                    <Badge variant="secondary">Ativa</Badge>
+                <div className="flex items-center gap-2">
+                  <div className="min-w-0 flex-1">
+                    <AccordionTrigger className="w-full min-w-0 py-4 text-left hover:no-underline">
+                      <span className="min-w-0 pr-3">
+                        <span className="flex flex-wrap items-center gap-2">
+                          <span className="font-medium">{area.name}</span>
+                          <Badge variant="secondary">Ativa</Badge>
+                        </span>
+                        {area.description ? (
+                          <span className="mt-1 line-clamp-1 block text-sm font-normal text-muted-foreground">
+                            {area.description}
+                          </span>
+                        ) : null}
+                      </span>
+                    </AccordionTrigger>
                   </div>
-                  {area.description && (
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      {area.description}
-                    </p>
-                  )}
+                  {canManage ? (
+                    <div className="flex shrink-0 items-center gap-1">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          setEditingArea(area);
+                          setIsDialogOpen(true);
+                        }}
+                      >
+                        <Pencil className="mr-2 h-4 w-4" />
+                        <span className="hidden sm:inline">Editar</span>
+                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-9 w-9"
+                            aria-label={`Mais ações para ${area.name}`}
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onSelect={() => setAreaToDelete(area)}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Desativar área
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  ) : null}
+                </div>
+                <AccordionContent className="border-t py-1">
                   <OperationalAreaMemberships
                     workspaceId={workspaceId}
                     areaId={area.id}
@@ -162,34 +209,10 @@ export function OperationalAreasCard({ workspaceId }: { workspaceId?: string }) 
                     canManage={canManage}
                     canManageMemberships={canManageMemberships}
                   />
-                </div>
-                {canManage && (
-                  <div className="flex items-center gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setEditingArea(area);
-                        setIsDialogOpen(true);
-                      }}
-                    >
-                      <Pencil className="mr-2 h-4 w-4" />
-                      Editar
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="text-destructive hover:text-destructive"
-                      onClick={() => setAreaToDelete(area)}
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Desativar
-                    </Button>
-                  </div>
-                )}
-              </div>
+                </AccordionContent>
+              </AccordionItem>
             ))}
-          </div>
+          </Accordion>
         ) : (
           <div className="rounded-lg border border-dashed p-6 text-center">
             <p className="font-medium">Nenhuma área ativa</p>

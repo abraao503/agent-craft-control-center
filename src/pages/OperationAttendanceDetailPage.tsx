@@ -7,9 +7,11 @@ import {
   ArrowRightLeft,
   CheckCircle2,
   Clock3,
-  ChevronDown,
   Loader2,
   MessageSquare,
+  MoreHorizontal,
+  PanelRightClose,
+  PanelRightOpen,
   PauseCircle,
   PlayCircle,
   RefreshCw,
@@ -30,7 +32,12 @@ import { useOperationalAttendanceMutations } from "@/hooks/useOperationalAttenda
 import { usePermissions } from "@/hooks/usePermissions";
 import { useToast } from "@/hooks/use-toast";
 import { getOperationalAttendanceErrorMessage } from "@/utils/operationalAttendanceErrors";
-import { AttendanceEvent, AttendanceMessageItem, AttendanceStatus } from "@/types/operation-attendance";
+import {
+  AttendanceEvent,
+  AttendanceMessageItem,
+  AttendanceReplyCapabilities,
+  AttendanceStatus,
+} from "@/types/operation-attendance";
 import {
   AttendanceAction,
   AttendanceActionDialog,
@@ -55,6 +62,13 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const STATUS_LABELS: Record<AttendanceStatus, string> = {
   TRIAGE: "Triagem",
@@ -411,7 +425,7 @@ export default function OperationAttendanceDetailPage({
       }
     >
       {embedded ? (
-        <header className="flex shrink-0 items-center justify-between gap-3 border-b bg-card px-4 py-3 lg:px-5">
+        <header className="flex shrink-0 flex-col gap-2 border-b bg-card px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between lg:px-5">
           <div className="flex min-w-0 items-center gap-3">
             <Link
               to="/operation/attendances"
@@ -439,20 +453,27 @@ export default function OperationAttendanceDetailPage({
                 {attendance.customer?.phone || "Telefone não informado"}
                 {destination ? ` · ${destination}` : ""}
               </p>
+              <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                {getNextStepGuidance(attendance.status, Boolean(attendance.assignee))}
+              </p>
             </div>
           </div>
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex shrink-0 flex-wrap items-center gap-2 pl-12 sm:pl-0">
             <OperationalRealtimeStatus
               status={realtime.status}
               joinedWorkspace={realtime.joinedWorkspace}
             />
-            <Link
-              to="/operation/attendances"
-              className="hidden h-9 items-center gap-2 rounded-md border px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground lg:inline-flex"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Voltar
-            </Link>
+            <AttendanceActionControls
+              status={attendance.status}
+              hasAssignee={Boolean(attendance.assignee)}
+              canOperate={canOperateAttendances}
+              canManageAssignments={canManageAssignments}
+              canTransfer={canTransfer}
+              optionsAvailable={Boolean(options)}
+              pending={isActionPending}
+              onQuickAction={(action) => void runQuickAction(action)}
+              onAction={setActiveAction}
+            />
           </div>
         </header>
       ) : (
@@ -480,7 +501,7 @@ export default function OperationAttendanceDetailPage({
               {customerName}
             </h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              Ciclo {attendance.cycleNumber} · versão {attendance.version}
+              Ciclo {attendance.cycleNumber} · {destination || "Destino não definido"}
             </p>
           </div>
           <div className="flex flex-col items-end gap-2">
@@ -510,11 +531,19 @@ export default function OperationAttendanceDetailPage({
       <div
         className={
           embedded
-            ? "grid min-h-0 flex-1 grid-cols-1 xl:grid-cols-[minmax(0,1fr)_19rem]"
+            ? secondaryPanelOpen
+              ? "min-h-0 flex-1 overflow-y-auto xl:grid xl:overflow-hidden xl:grid-cols-[minmax(0,1fr)_19rem]"
+              : "min-h-0 flex-1 overflow-y-auto xl:grid xl:overflow-hidden xl:grid-cols-[minmax(0,1fr)_3.25rem]"
             : "grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]"
         }
       >
-        <div className={embedded ? "min-h-0 min-w-0" : "min-w-0 space-y-6"}>
+        <div
+          className={
+            embedded
+              ? "min-h-[42rem] min-w-0 xl:min-h-0"
+              : "min-w-0 space-y-6"
+          }
+        >
           <Card
             className={
               embedded
@@ -522,21 +551,19 @@ export default function OperationAttendanceDetailPage({
                 : "min-w-0"
             }
           >
-            <CardHeader
-              className={
-                embedded ? "shrink-0 border-b p-4" : undefined
-              }
-            >
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <MessageSquare className="h-5 w-5 text-primary" />
-                Conversa
-              </CardTitle>
-              <CardDescription className={embedded ? "text-xs" : undefined}>
-                {embedded
-                  ? `Ciclo ${attendance.cycleNumber} · versão ${attendance.version}`
-                  : "Mensagens do chat compartilhado, em ordem cronológica."}
-              </CardDescription>
-            </CardHeader>
+            {embedded ? (
+              <h2 className="sr-only">Conversa</h2>
+            ) : (
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <MessageSquare className="h-5 w-5 text-primary" />
+                  Conversa
+                </CardTitle>
+                <CardDescription>
+                  Mensagens do chat compartilhado, em ordem cronológica.
+                </CardDescription>
+              </CardHeader>
+            )}
             <CardContent
               className={
                 embedded
@@ -604,6 +631,12 @@ export default function OperationAttendanceDetailPage({
                 workspaceId={workspaceId!}
                 attendance={attendance}
                 canOperate={canOperateAttendances}
+                onClaim={
+                  attendance.status === "WAITING_QUEUE" && canOperateAttendances
+                    ? () => void runQuickAction("CLAIM")
+                    : undefined
+                }
+                claimPending={attendanceMutations.claim.isPending}
                 sticky
                 embedded={embedded}
               />
@@ -616,23 +649,25 @@ export default function OperationAttendanceDetailPage({
           onOpenChange={setSecondaryPanelOpen}
           className={
             embedded
-              ? "flex min-h-0 min-w-0 flex-col border-l bg-card"
+              ? "min-w-0 border-t bg-card xl:flex xl:min-h-0 xl:flex-col xl:border-l xl:border-t-0"
               : "min-w-0"
           }
         >
           <div
             className={
               embedded
-                ? "flex shrink-0 items-center justify-between border-b px-3 py-3"
+                ? secondaryPanelOpen
+                  ? "flex shrink-0 items-center justify-between border-b px-3 py-3"
+                  : "flex shrink-0 items-center justify-center border-b p-2"
                 : "mb-3 flex items-center justify-between rounded-lg border bg-muted/20 px-3 py-2"
             }
           >
-            <div>
-              <p className="text-sm font-semibold">Painel secundário</p>
+            {secondaryPanelOpen ? <div>
+              <p className="text-sm font-semibold">Detalhes</p>
               <p className="text-xs text-muted-foreground">
-                Contexto, ações e histórico do ciclo.
+                Atendimento, contato e histórico.
               </p>
-            </div>
+            </div> : null}
             <CollapsibleTrigger asChild>
               <Button
                 type="button"
@@ -640,13 +675,15 @@ export default function OperationAttendanceDetailPage({
                 size="icon"
                 aria-label={
                   secondaryPanelOpen
-                    ? "Recolher painel secundário"
-                    : "Expandir painel secundário"
+                    ? "Ocultar detalhes"
+                    : "Mostrar detalhes"
                 }
               >
-                <ChevronDown
-                  className={`h-4 w-4 transition-transform ${secondaryPanelOpen ? "rotate-180" : ""}`}
-                />
+                {secondaryPanelOpen ? (
+                  <PanelRightClose className="h-4 w-4" />
+                ) : (
+                  <PanelRightOpen className="h-4 w-4" />
+                )}
               </Button>
             </CollapsibleTrigger>
           </div>
@@ -654,30 +691,19 @@ export default function OperationAttendanceDetailPage({
           <CollapsibleContent
             className={
               embedded
-                ? "min-h-0 flex-1 space-y-4 overflow-y-auto p-3"
+                ? "space-y-4 p-3 xl:min-h-0 xl:flex-1 xl:overflow-y-auto"
                 : "space-y-6"
             }
           >
-            <Card>
-              <CardHeader>
+            <Card className="shadow-none">
+              <CardHeader className="p-3 pb-2">
                 <CardTitle className="flex items-center gap-2 text-base">
                   <UserRound className="h-5 w-5 text-primary" />
-                  Contato e ciclo
+                  Atendimento
                 </CardTitle>
-                <CardDescription>
-                  Informações autorizadas para o atendimento selecionado.
-                </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3 text-sm">
-                <DetailField label="Contato" value={customerName} />
-                <DetailField
-                  label="Telefone"
-                  value={attendance.customer?.phone || "Não informado"}
-                />
-                <DetailField
-                  label="E-mail"
-                  value={attendance.customer?.email || "Não informado"}
-                />
+              <CardContent className="px-3 pb-3 text-sm">
+                <div className="divide-y">
                 <DetailField
                   label="Destino"
                   value={destination || "Não definido"}
@@ -690,137 +716,56 @@ export default function OperationAttendanceDetailPage({
                   label="Canal"
                   value={attendance.channel?.displayName || "Não informado"}
                 />
-                <DetailField
-                  label="Provedor"
-                  value={attendance.channel?.provider || "Não informado"}
-                />
-                <DetailField
-                  label="Não lidas"
-                  value={String(attendance.unreadCount ?? 0)}
-                />
+                </div>
+                <p className="mt-3 border-t pt-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                  Contato
+                </p>
+                <div className="divide-y">
+                  <DetailField label="Nome" value={customerName} />
+                  <DetailField
+                    label="Telefone"
+                    value={attendance.customer?.phone || "Não informado"}
+                  />
+                  <DetailField
+                    label="E-mail"
+                    value={attendance.customer?.email || "Não informado"}
+                  />
+                </div>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Ações do atendimento</CardTitle>
-                <CardDescription>
-                  Comandos disponíveis para o estado e a permissão atuais.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-              {!canOperateAttendances ? (
-                <p className="text-sm text-muted-foreground">
-                  Você pode consultar este atendimento, mas não possui permissão para operá-lo.
-                </p>
-              ) : (
-                <>
+            {!embedded ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Ações do atendimento</CardTitle>
+                  <CardDescription>
+                    Comandos disponíveis para o estado e a permissão atuais.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
                   {optionsQuery.isError ? (
                     <Alert variant="destructive">
                       <AlertCircle className="h-4 w-4" />
                       <AlertTitle>Opções de operação indisponíveis</AlertTitle>
                       <AlertDescription>
-                        Não foi possível carregar áreas, filas e operadores para os comandos.
+                        Não foi possível carregar as opções dos comandos.
                       </AlertDescription>
                     </Alert>
                   ) : null}
-                  <div className="flex flex-wrap gap-2">
-                    {attendance.status === "WAITING_QUEUE" ? (
-                      <Button
-                        size="sm"
-                        onClick={() => void runQuickAction("CLAIM")}
-                        disabled={isActionPending}
-                      >
-                        <CheckCircle2 className="mr-2 h-4 w-4" />
-                        Assumir
-                      </Button>
-                    ) : null}
-                    {attendance.status === "TRIAGE" ? (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setActiveAction("ROUTE")}
-                        disabled={!options || isActionPending}
-                      >
-                        <ArrowRight className="mr-2 h-4 w-4" />
-                        Encaminhar
-                      </Button>
-                    ) : null}
-                    {canManageAssignments &&
-                    ["WAITING_QUEUE", "IN_PROGRESS", "PENDING"].includes(attendance.status) ? (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setActiveAction("ASSIGN")}
-                        disabled={isActionPending}
-                      >
-                        <UserPlus className="mr-2 h-4 w-4" />
-                        Atribuir
-                      </Button>
-                    ) : null}
-                    {canTransfer &&
-                    ["WAITING_QUEUE", "IN_PROGRESS", "PENDING"].includes(attendance.status) ? (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setActiveAction("TRANSFER")}
-                        disabled={isActionPending}
-                      >
-                        <ArrowRightLeft className="mr-2 h-4 w-4" />
-                        Transferir
-                      </Button>
-                    ) : null}
-                    {attendance.status === "IN_PROGRESS" ? (
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => setActiveAction("PENDING")}
-                        disabled={isActionPending}
-                      >
-                        <PauseCircle className="mr-2 h-4 w-4" />
-                        Pendenciar
-                      </Button>
-                    ) : null}
-                    {attendance.status === "PENDING" ? (
-                      <Button
-                        size="sm"
-                        onClick={() => void runQuickAction("RESUME")}
-                        disabled={isActionPending}
-                      >
-                        <PlayCircle className="mr-2 h-4 w-4" />
-                        Retomar
-                      </Button>
-                    ) : null}
-                    {attendance.assignee &&
-                    ["IN_PROGRESS", "PENDING"].includes(attendance.status) ? (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => setActiveAction("UNASSIGN")}
-                        disabled={isActionPending}
-                      >
-                        <UserMinus className="mr-2 h-4 w-4" />
-                        Desatribuir
-                      </Button>
-                    ) : null}
-                    {["IN_PROGRESS", "PENDING"].includes(attendance.status) ? (
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => setActiveAction("CLOSE")}
-                        disabled={isActionPending}
-                      >
-                        Encerrar
-                      </Button>
-                    ) : null}
-                  </div>
-                  {attendance.status === "CLOSED" ? (
-                    <p className="text-sm text-muted-foreground">Este ciclo já foi encerrado.</p>
-                  ) : null}
-                </>
-              )}
-              </CardContent>
-            </Card>
+                  <AttendanceActionControls
+                    status={attendance.status}
+                    hasAssignee={Boolean(attendance.assignee)}
+                    canOperate={canOperateAttendances}
+                    canManageAssignments={canManageAssignments}
+                    canTransfer={canTransfer}
+                    optionsAvailable={Boolean(options)}
+                    pending={isActionPending}
+                    onQuickAction={(action) => void runQuickAction(action)}
+                    onAction={setActiveAction}
+                  />
+                </CardContent>
+              </Card>
+            ) : null}
 
             <AttendanceFollowUpsCard
               workspaceId={workspaceId!}
@@ -830,23 +775,17 @@ export default function OperationAttendanceDetailPage({
               canManage={canOperateAttendances}
             />
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Capacidade de resposta</CardTitle>
-                <CardDescription>
-                  A disponibilidade abaixo é calculada pelo canal e pelo estado do atendimento.
-                </CardDescription>
+            <Card className="shadow-none">
+              <CardHeader className="p-3 pb-2">
+                <CardTitle className="text-base">Canal e resposta</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3 text-sm">
+              <CardContent className="space-y-2 px-3 pb-3 text-sm">
                 <Badge variant={getReplyStatusVariant(attendance.replyCapabilities.status)}>
                   {REPLY_STATUS_LABELS[attendance.replyCapabilities.status]}
                 </Badge>
-                <div className="grid grid-cols-2 gap-2">
-                  <Capability label="Texto" enabled={attendance.replyCapabilities.supportsText} />
-                  <Capability label="Mídia" enabled={attendance.replyCapabilities.supportsMedia} />
-                  <Capability label="Template" enabled={attendance.replyCapabilities.supportsTemplate} />
-                  <Capability label="Canal" enabled={Boolean(attendance.channel)} />
-                </div>
+                <p className="text-xs leading-5 text-muted-foreground">
+                  {formatReplyModes(attendance.replyCapabilities)}
+                </p>
               </CardContent>
             </Card>
 
@@ -857,7 +796,7 @@ export default function OperationAttendanceDetailPage({
                   Timeline do ciclo
                 </CardTitle>
                 <CardDescription>
-                  Eventos do Attendance atual, sem conteúdo interno de provider.
+                  Alterações importantes registradas neste ciclo.
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -904,13 +843,141 @@ export default function OperationAttendanceDetailPage({
   );
 }
 
+function AttendanceActionControls({
+  status,
+  hasAssignee,
+  canOperate,
+  canManageAssignments,
+  canTransfer,
+  optionsAvailable,
+  pending,
+  onQuickAction,
+  onAction,
+}: {
+  status: AttendanceStatus;
+  hasAssignee: boolean;
+  canOperate: boolean;
+  canManageAssignments: boolean;
+  canTransfer: boolean;
+  optionsAvailable: boolean;
+  pending: boolean;
+  onQuickAction: (action: "CLAIM" | "RESUME") => void;
+  onAction: (action: AttendanceAction) => void;
+}) {
+  if (!canOperate) {
+    return (
+      <p className="shrink-0 text-xs text-muted-foreground">
+        Visualização somente
+      </p>
+    );
+  }
+
+  const canAssign =
+    canManageAssignments &&
+    ["WAITING_QUEUE", "IN_PROGRESS", "PENDING"].includes(status);
+  const canUnassign =
+    hasAssignee && ["IN_PROGRESS", "PENDING"].includes(status);
+  const canClose = ["IN_PROGRESS", "PENDING"].includes(status);
+  const hasManagementActions = canAssign || canUnassign;
+  const hasMoreActions = canAssign || canUnassign || canClose;
+
+  return (
+    <div className="flex shrink-0 flex-wrap items-center gap-1.5" role="toolbar" aria-label="Ações do atendimento">
+      {status === "WAITING_QUEUE" ? (
+        <Button size="sm" className="h-8" onClick={() => onQuickAction("CLAIM")} disabled={pending}>
+          <CheckCircle2 className="mr-1.5 h-4 w-4" />
+          Atender
+        </Button>
+      ) : null}
+      {status === "TRIAGE" ? (
+        <Button size="sm" className="h-8" onClick={() => onAction("ROUTE")} disabled={!optionsAvailable || pending}>
+          <ArrowRight className="mr-1.5 h-4 w-4" />
+          Encaminhar
+        </Button>
+      ) : null}
+      {status === "PENDING" ? (
+        <Button size="sm" className="h-8" onClick={() => onQuickAction("RESUME")} disabled={pending}>
+          <PlayCircle className="mr-1.5 h-4 w-4" />
+          Retomar
+        </Button>
+      ) : null}
+      {canTransfer && ["WAITING_QUEUE", "IN_PROGRESS", "PENDING"].includes(status) ? (
+        <Button size="sm" variant="outline" className="h-8" onClick={() => onAction("TRANSFER")} disabled={pending}>
+          <ArrowRightLeft className="mr-1.5 h-4 w-4" />
+          Transferir
+        </Button>
+      ) : null}
+      {status === "IN_PROGRESS" ? (
+        <Button size="sm" variant="outline" className="h-8" onClick={() => onAction("PENDING")} disabled={pending}>
+          <PauseCircle className="mr-1.5 h-4 w-4" />
+          Aguardar
+        </Button>
+      ) : null}
+      {hasMoreActions ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-8 px-2 sm:px-3"
+                disabled={pending}
+                aria-label="Mais ações"
+              >
+                <MoreHorizontal className="h-4 w-4 sm:mr-1.5" />
+                <span className="hidden sm:inline">Mais ações</span>
+              </Button>
+            </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-52">
+            {canAssign ? (
+              <DropdownMenuItem onSelect={() => onAction("ASSIGN")}>
+                <UserPlus className="mr-2 h-4 w-4" />
+                Atribuir responsável
+              </DropdownMenuItem>
+            ) : null}
+            {canUnassign ? (
+              <DropdownMenuItem onSelect={() => onAction("UNASSIGN")}>
+                <UserMinus className="mr-2 h-4 w-4" />
+                Remover responsável
+              </DropdownMenuItem>
+            ) : null}
+            {canClose && hasManagementActions ? <DropdownMenuSeparator /> : null}
+            {canClose ? (
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                onSelect={() => onAction("CLOSE")}
+              >
+                Encerrar atendimento
+              </DropdownMenuItem>
+            ) : null}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ) : null}
+      {status === "CLOSED" ? (
+        <Badge variant="outline">Ciclo encerrado</Badge>
+      ) : null}
+    </div>
+  );
+}
+
+function getNextStepGuidance(status: AttendanceStatus, hasAssignee: boolean) {
+  if (status === "TRIAGE") return "Defina a área e a fila para encaminhar o atendimento.";
+  if (status === "WAITING_QUEUE") return "Assuma a conversa ou transfira para outro destino.";
+  if (status === "IN_PROGRESS") {
+    return hasAssignee
+      ? "Responda o cliente ou escolha como o atendimento deve avançar."
+      : "Defina um responsável antes de responder o cliente.";
+  }
+  if (status === "PENDING") return "Retome quando houver uma nova ação ou resposta do cliente.";
+  return "Consulte a conversa e o histórico deste ciclo encerrado.";
+}
+
 function DetailField({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-md border bg-muted/20 p-3">
-      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+    <div className="grid gap-0.5 py-2.5 first:pt-1 last:pb-0">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
         {label}
       </p>
-      <p className="mt-1 break-words font-medium">{value}</p>
+      <p className="break-words text-sm font-medium">{value}</p>
     </div>
   );
 }
@@ -950,8 +1017,10 @@ function ConversationMessage({ message }: { message: AttendanceMessageItem }) {
         {content ? <p className="whitespace-pre-wrap break-words">{content}</p> : null}
         {message.dispatchStatus || message.deliveryStatus ? (
           <p className="mt-2 text-xs opacity-75">
-            {message.dispatchStatus || "Sem dispatch"}
-            {message.deliveryStatus ? ` · ${message.deliveryStatus}` : ""}
+            {formatMessageStatus(message.dispatchStatus)}
+            {message.deliveryStatus
+              ? ` · ${formatMessageStatus(message.deliveryStatus)}`
+              : ""}
           </p>
         ) : null}
       </div>
@@ -965,27 +1034,13 @@ function TimelineEvent({ event }: { event: AttendanceEvent }) {
       <span className="absolute -left-1.5 top-1 h-3 w-3 rounded-full bg-primary ring-4 ring-background" />
       <p className="font-medium">{EVENT_LABELS[event.action] || event.action}</p>
       <p className="mt-1 text-xs text-muted-foreground">
-        {formatDateTime(event.createdAt)} · versão {event.aggregateVersion}
-      </p>
-      <p className="mt-1 text-xs text-muted-foreground">
-        Ator: {formatActor(event.actorType)}
+        {formatDateTime(event.createdAt)} · {formatActor(event.actorType)}
       </p>
       {event.reason ? (
         <p className="mt-2 whitespace-pre-wrap break-words text-sm text-muted-foreground">
           {event.reason}
         </p>
       ) : null}
-    </div>
-  );
-}
-
-function Capability({ label, enabled }: { label: string; enabled: boolean }) {
-  return (
-    <div className="flex items-center justify-between rounded-md border px-3 py-2">
-      <span>{label}</span>
-      <span className={enabled ? "text-emerald-600" : "text-muted-foreground"}>
-        {enabled ? "Disponível" : "Indisponível"}
-      </span>
     </div>
   );
 }
@@ -1087,6 +1142,37 @@ function formatActor(actorType: AttendanceEvent["actorType"]) {
   if (actorType === "ASSISTANT") return "assistente";
   if (actorType === "INTEGRATION") return "integração";
   return "sistema";
+}
+
+function formatMessageStatus(status?: string | null) {
+  if (!status) return "Status não informado";
+
+  const labels: Record<string, string> = {
+    ACCEPTED: "Aceita",
+    DELIVERED: "Entregue",
+    FAILED: "Falhou",
+    PENDING: "Pendente",
+    PROCESSING: "Processando",
+    QUEUED: "Na fila",
+    READ: "Lida",
+    SENT: "Enviada",
+  };
+
+  return labels[status.toUpperCase()] || status.toLowerCase().replace(/_/g, " ");
+}
+
+function formatReplyModes(capabilities: AttendanceReplyCapabilities) {
+  const modes = [
+    capabilities.supportsText ? "mensagens" : null,
+    capabilities.supportsMedia ? "anexos" : null,
+    capabilities.supportsTemplate ? "templates" : null,
+  ].filter(Boolean);
+
+  if (modes.length === 0) return "Nenhum formato de resposta está disponível neste momento.";
+  if (modes.length === 1) return `Disponível para ${modes[0]}.`;
+
+  const lastMode = modes[modes.length - 1];
+  return `Disponível para ${modes.slice(0, -1).join(", ")} e ${lastMode}.`;
 }
 
 function formatDateTime(value: string) {

@@ -1,4 +1,4 @@
-import { ArrowRight, Inbox, Menu, MessageSquare, Settings2 } from "lucide-react";
+import { Inbox, Menu, MessageSquare, Settings2 } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import OperationAttendanceDetailPage from "./OperationAttendanceDetailPage";
 import OperationAttendancesPage from "./OperationAttendancesPage";
@@ -28,12 +28,10 @@ export default function OperationAttendanceStationPage() {
               <Menu className="h-5 w-5" />
             </Button>
           )}
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-            <Inbox className="h-5 w-5" />
-          </div>
+          <Inbox className="h-5 w-5 shrink-0 text-primary" />
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-foreground">
-              Central de atendimentos
+              Atendimentos
             </p>
             <p className="truncate text-xs text-muted-foreground">
               {currentWorkspace?.name || "Workspace operacional"}
@@ -41,22 +39,17 @@ export default function OperationAttendanceStationPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className="hidden items-center gap-2 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 sm:flex">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-            Operação online
-          </span>
           <Link
             to="/operation"
             className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "gap-2")}
           >
             <Settings2 className="h-4 w-4" />
-            <span className="hidden md:inline">Configurar</span>
-            <ArrowRight className="hidden h-3.5 w-3.5 md:inline" />
+            <span className="hidden md:inline">Configurações</span>
           </Link>
         </div>
       </header>
 
-      <div className="grid min-h-0 flex-1 lg:grid-cols-[minmax(20rem,24rem)_minmax(0,1fr)]">
+      <div className="grid min-h-0 flex-1 lg:grid-cols-[minmax(22rem,27rem)_minmax(0,1fr)]">
         <div className={cn(
           "min-h-0 min-w-0 overflow-hidden bg-card",
           attendanceId ? "hidden lg:block" : "block",
@@ -85,16 +78,24 @@ export default function OperationAttendanceStationPage() {
 function EmptyStationDetail() {
   return (
     <Card className="h-full min-h-[32rem] rounded-none border-0 shadow-none">
-      <CardContent className="flex h-full min-h-[32rem] flex-col items-center justify-center gap-4 bg-[radial-gradient(circle_at_center,hsl(var(--primary)/0.08),transparent_42%)] p-8 text-center">
-        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-sm">
-          <MessageSquare className="h-7 w-7" />
-        </div>
-        <div>
-          <h2 className="text-lg font-semibold">Tudo pronto para atender</h2>
-          <p className="mt-2 max-w-sm text-sm leading-6 text-muted-foreground">
-            Selecione uma conversa na fila para abrir mensagens, ações e o contexto
-            completo do atendimento.
+      <CardContent className="flex h-full min-h-[32rem] items-center justify-center bg-muted/10 p-8">
+        <div className="max-w-md rounded-lg border bg-card p-6 shadow-sm">
+          <MessageSquare className="h-6 w-6 text-primary" />
+          <h2 className="mt-4 text-lg font-semibold">Escolha um atendimento</h2>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">
+            Use os estados da fila para encontrar o próximo contato. Ao abrir uma
+            conversa, as ações disponíveis aparecem junto ao cabeçalho.
           </p>
+          <ol className="mt-5 space-y-3 text-sm">
+            <li className="flex gap-3">
+              <span className="font-semibold text-primary">1</span>
+              <span>Priorize mensagens novas e atendimentos sem responsável.</span>
+            </li>
+            <li className="flex gap-3">
+              <span className="font-semibold text-primary">2</span>
+              <span>Abra a conversa para consultar o histórico e responder.</span>
+            </li>
+          </ol>
         </div>
       </CardContent>
     </Card>

@@ -3,6 +3,7 @@ import { AxiosError } from "axios";
 import {
   AlertCircle,
   Loader2,
+  MoreHorizontal,
   Pencil,
   Plus,
   RefreshCw,
@@ -16,6 +17,12 @@ import { useOperationalAreaMemberships } from "@/hooks/useOperationalAreaMembers
 import { useToast } from "@/hooks/use-toast";
 import { ServiceQueue } from "@/types/operation";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,6 +46,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { OperationalQueueMemberships } from "@/components/operation/OperationalQueueMemberships";
 
 type QueueForm = {
@@ -182,22 +195,67 @@ export function OperationalAreaQueues({
             </AlertDescription>
           </Alert>
         ) : queuesQuery.data?.items.length ? (
-          <div className="space-y-2">
+          <Accordion type="single" collapsible className="overflow-hidden rounded-md border">
             {queuesQuery.data.items.map((queue) => (
-              <div
+              <AccordionItem
                 key={queue.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-md border bg-background p-3"
+                value={queue.id}
+                className="px-3 last:border-b-0"
               >
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-sm font-medium">{queue.name}</p>
-                    <Badge variant="secondary">Ativa</Badge>
+                <div className="flex items-center gap-1">
+                  <div className="min-w-0 flex-1">
+                    <AccordionTrigger className="w-full min-w-0 py-3 text-left hover:no-underline">
+                      <span className="min-w-0 pr-2">
+                        <span className="flex flex-wrap items-center gap-2">
+                          <span className="text-sm font-medium">{queue.name}</span>
+                          <Badge variant="secondary">Ativa</Badge>
+                        </span>
+                        {queue.description ? (
+                          <span className="mt-1 line-clamp-1 block text-xs font-normal text-muted-foreground">
+                            {queue.description}
+                          </span>
+                        ) : null}
+                      </span>
+                    </AccordionTrigger>
                   </div>
-                  {queue.description && (
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {queue.description}
-                    </p>
-                  )}
+                  {canManage ? (
+                    <div className="flex shrink-0 items-center gap-1">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          setEditingQueue(queue);
+                          setIsDialogOpen(true);
+                        }}
+                      >
+                        <Pencil className="mr-2 h-4 w-4" />
+                        <span className="hidden sm:inline">Editar</span>
+                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-9 w-9"
+                            aria-label={`Mais ações para ${queue.name}`}
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onSelect={() => setQueueToDelete(queue)}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Desativar fila
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  ) : null}
+                </div>
+                <AccordionContent className="border-t">
                   <OperationalQueueMemberships
                     workspaceId={workspaceId}
                     areaId={areaId}
@@ -207,34 +265,10 @@ export function OperationalAreaQueues({
                     areaMembershipsLoading={areaMembershipsQuery.isLoading}
                     areaMembershipsError={areaMembershipsQuery.isError}
                   />
-                </div>
-                {canManage && (
-                  <div className="flex items-center gap-2">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => {
-                        setEditingQueue(queue);
-                        setIsDialogOpen(true);
-                      }}
-                    >
-                      <Pencil className="mr-2 h-4 w-4" />
-                      Editar
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="text-destructive hover:text-destructive"
-                      onClick={() => setQueueToDelete(queue)}
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Desativar
-                    </Button>
-                  </div>
-                )}
-              </div>
+                </AccordionContent>
+              </AccordionItem>
             ))}
-          </div>
+          </Accordion>
         ) : (
           <div className="rounded-md border border-dashed p-4 text-center">
             <p className="text-sm font-medium">Nenhuma fila ativa</p>
