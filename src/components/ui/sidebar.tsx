@@ -67,7 +67,7 @@ const SidebarProvider = React.forwardRef<
     ref
   ) => {
     const isMobile = useIsMobile();
-    const [openMobile, setOpenMobile] = React.useState(true);
+    const [openMobile, setOpenMobile] = React.useState(defaultOpen);
 
     // This is the internal state of the sidebar.
     // We use openProp and setOpenProp for control from outside the component.
@@ -202,7 +202,7 @@ const Sidebar = React.forwardRef<
           ref={ref}
           className={cn(
             "fixed inset-y-0 left-0 z-30 flex h-svh flex-col transition-transform duration-200 shadow-xl border-r",
-            state === "collapsed" ? "translate-x-[-80%]" : "translate-x-0",
+            state === "collapsed" ? "translate-x-[-100%]" : "translate-x-0",
             className
           )}
           style={

@@ -10,6 +10,7 @@ import {
   RefreshCw,
   Search,
   SlidersHorizontal,
+  X,
 } from "lucide-react";
 import { useWorkspaceContext } from "@/contexts/workspace/WorkspaceContext";
 import {
@@ -246,7 +247,7 @@ export default function OperationAttendancesPage({
     <section
       className={
         embedded
-          ? "flex w-full min-w-0 flex-col gap-4"
+          ? "flex h-full min-h-0 w-full min-w-0 flex-col gap-0 bg-card"
           : "mx-auto flex w-full max-w-[1600px] flex-col gap-6"
       }
     >
@@ -311,6 +312,7 @@ export default function OperationAttendancesPage({
         counts={summaryQuery.data?.byStatus}
         loading={summaryQuery.isLoading}
         onSelect={selectStatus}
+        embedded={embedded}
       />
 
       {!embedded ? (
@@ -336,19 +338,36 @@ export default function OperationAttendancesPage({
         </div>
       ) : null}
 
-      <Card>
-        <CardContent className="p-4">
-          <form onSubmit={applyFilters} className="space-y-4">
+      <Card
+        className={
+          embedded
+            ? "shrink-0 rounded-none border-x-0 border-t-0 shadow-none"
+            : undefined
+        }
+      >
+        <CardContent className={embedded ? "p-3" : "p-4"}>
+          <form onSubmit={applyFilters} className={embedded ? "space-y-3" : "space-y-4"}>
             <div className="flex items-center gap-2">
               <SlidersHorizontal className="h-4 w-4 text-primary" />
-              <h2 className="font-semibold">Filtros da inbox</h2>
+              <h2 className="text-sm font-semibold">
+                {embedded ? "Buscar atendimento" : "Filtros da inbox"}
+              </h2>
               {hasActiveFilters ? (
                 <Badge variant="secondary">Aplicados</Badge>
               ) : null}
             </div>
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <div className="space-y-2 xl:col-span-2">
-                <label htmlFor="attendance-search" className="text-sm font-medium">
+            <div
+              className={
+                embedded
+                  ? "space-y-2"
+                  : "grid gap-4 md:grid-cols-2 xl:grid-cols-4"
+              }
+            >
+              <div className={embedded ? "space-y-2" : "space-y-2 xl:col-span-2"}>
+                <label
+                  htmlFor="attendance-search"
+                  className={embedded ? "sr-only" : "text-sm font-medium"}
+                >
                   Buscar contato
                 </label>
                 <div className="relative">
@@ -362,8 +381,12 @@ export default function OperationAttendancesPage({
                         search: event.target.value,
                       }))
                     }
-                    placeholder="Nome ou telefone (mínimo de 2 caracteres)"
-                    className="pl-9"
+                    placeholder={
+                      embedded
+                        ? "Nome ou telefone"
+                        : "Nome ou telefone (mínimo de 2 caracteres)"
+                    }
+                    className={embedded ? "h-9 pl-9" : "pl-9"}
                   />
                 </div>
                 {draft.search.trim().length === 1 ? (
@@ -373,7 +396,13 @@ export default function OperationAttendancesPage({
                 ) : null}
               </div>
 
-              <details className="rounded-md border bg-muted/20 p-3 md:col-span-2 xl:col-span-4">
+              <details
+                className={
+                  embedded
+                    ? "rounded-lg border bg-muted/20 px-3 py-2 md:col-span-2 xl:col-span-4"
+                    : "rounded-md border bg-muted/20 p-3 md:col-span-2 xl:col-span-4"
+                }
+              >
                 <summary className="cursor-pointer text-sm font-medium">
                   Filtros avançados
                 </summary>
@@ -467,10 +496,20 @@ export default function OperationAttendancesPage({
               </details>
             </div>
 
-            <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
+            <div
+              className={
+                embedded
+                  ? "flex items-center justify-between gap-2 border-t pt-3"
+                  : "flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between"
+              }
+            >
               <label
                 htmlFor="attendance-unread"
-                className="flex items-center gap-2 text-sm"
+                className={
+                  embedded
+                    ? "flex min-w-0 items-center gap-2 text-xs text-muted-foreground"
+                    : "flex items-center gap-2 text-sm"
+                }
               >
                 <Checkbox
                   id="attendance-unread"
@@ -485,12 +524,28 @@ export default function OperationAttendancesPage({
                 Somente com novas mensagens
               </label>
               <div className="flex flex-wrap gap-2">
-                <Button type="button" variant="ghost" onClick={clearFilters}>
-                  Limpar filtros
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size={embedded ? "icon" : undefined}
+                  onClick={clearFilters}
+                  aria-label="Limpar filtros"
+                >
+                  <X className="h-4 w-4" />
+                  <span className={embedded ? "sr-only" : undefined}>
+                    Limpar filtros
+                  </span>
                 </Button>
-                <Button type="submit" disabled={attendancesQuery.isFetching}>
-                  <Search className="mr-2 h-4 w-4" />
-                  Aplicar filtros
+                <Button
+                  type="submit"
+                  size={embedded ? "icon" : undefined}
+                  disabled={attendancesQuery.isFetching}
+                  aria-label="Aplicar filtros"
+                >
+                  <Search className={embedded ? "h-4 w-4" : "mr-2 h-4 w-4"} />
+                  <span className={embedded ? "sr-only" : undefined}>
+                    Aplicar filtros
+                  </span>
                 </Button>
               </div>
             </div>
@@ -501,19 +556,33 @@ export default function OperationAttendancesPage({
       <div
         className={
           embedded
-            ? "grid gap-6"
+            ? "flex min-h-0 flex-1 flex-col gap-0"
             : "grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]"
         }
       >
-        <Card className="min-w-0">
-          <CardContent className="p-0">
-            <div className="flex items-center justify-between border-b px-4 py-4 sm:px-6">
+        <Card
+          className={
+            embedded
+              ? "flex min-h-0 min-w-0 flex-1 flex-col rounded-none border-x-0 border-b-0 shadow-none"
+              : "min-w-0"
+          }
+        >
+          <CardContent
+            className={embedded ? "flex min-h-0 flex-1 flex-col p-0" : "p-0"}
+          >
+            <div
+              className={
+                embedded
+                  ? "flex shrink-0 items-center justify-between border-b px-3 py-3"
+                  : "flex items-center justify-between border-b px-4 py-4 sm:px-6"
+              }
+            >
               <div>
-                <h2 className="flex items-center gap-2 font-semibold">
+                <h2 className="flex items-center gap-2 text-sm font-semibold">
                   <Inbox className="h-5 w-5 text-primary" />
-                  Inbox operacional
+                  {embedded ? "Conversas" : "Inbox operacional"}
                 </h2>
-                <p className="mt-1 text-sm text-muted-foreground">
+                <p className="mt-1 text-xs text-muted-foreground">
                   {attendancesQuery.data?.total ?? 0} atendimento(s) no filtro atual
                 </p>
               </div>
@@ -522,7 +591,13 @@ export default function OperationAttendancesPage({
               ) : null}
             </div>
 
-            <div className="divide-y">
+            <div
+              className={
+                embedded
+                  ? "min-h-0 flex-1 overflow-y-auto divide-y"
+                  : "divide-y"
+              }
+            >
               {attendancesQuery.isLoading ? (
                 <AttendanceListLoading />
               ) : attendancesQuery.data?.items.length ? (
@@ -531,6 +606,7 @@ export default function OperationAttendancesPage({
                     key={attendance.id}
                     attendance={attendance}
                     selected={attendance.id === attendanceId}
+                    compact={embedded}
                   />
                 ))
               ) : (
@@ -538,7 +614,13 @@ export default function OperationAttendancesPage({
               )}
             </div>
 
-            <div className="flex flex-col gap-3 border-t px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+            <div
+              className={
+                embedded
+                  ? "flex shrink-0 items-center justify-between gap-2 border-t px-3 py-3"
+                  : "flex flex-col gap-3 border-t px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6"
+              }
+            >
               <p className="text-sm text-muted-foreground">
                 Página {totalPages ? currentPage : 0} de {totalPages || 0}
               </p>
@@ -652,11 +734,13 @@ function StatusBuckets({
   counts,
   loading,
   onSelect,
+  embedded = false,
 }: {
   activeStatus?: AttendanceStatus;
   counts?: Record<AttendanceStatus, number>;
   loading: boolean;
   onSelect: (status?: AttendanceStatus) => void;
+  embedded?: boolean;
 }) {
   const total = counts
     ? Object.values(counts).reduce((sum, count) => sum + count, 0)
@@ -665,21 +749,38 @@ function StatusBuckets({
   return (
     <nav
       aria-label="Filas por estado"
-      className="rounded-lg border bg-card p-2 shadow-sm"
+      className={
+        embedded
+          ? "shrink-0 border-b bg-card p-2"
+          : "rounded-lg border bg-card p-2 shadow-sm"
+      }
     >
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="px-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+      <div
+        className={
+          embedded
+            ? "grid grid-cols-2 gap-1"
+            : "flex flex-wrap items-center gap-2"
+        }
+      >
+        <span
+          className={
+            embedded
+              ? "col-span-2 px-2 pb-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground"
+              : "px-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+          }
+        >
           Filas
         </span>
         <Button
           type="button"
           size="sm"
           variant={!activeStatus ? "secondary" : "ghost"}
+          className={embedded ? "h-8 w-full justify-between rounded-lg px-2.5" : undefined}
           aria-pressed={!activeStatus}
           onClick={() => onSelect()}
         >
-          Todas
-          <BucketCount value={total} loading={loading} />
+          <span>Todas</span>
+          <BucketCount value={total} loading={loading} compact={embedded} />
         </Button>
         {STATUS_ORDER.filter((status) => status !== "CLOSED").map((status) => (
           <Button
@@ -687,34 +788,56 @@ function StatusBuckets({
             type="button"
             size="sm"
             variant={activeStatus === status ? "secondary" : "ghost"}
+            className={embedded ? "h-8 w-full justify-between rounded-lg px-2.5" : undefined}
             aria-pressed={activeStatus === status}
             onClick={() => onSelect(status)}
           >
-            {STATUS_LABELS[status]}
-            <BucketCount value={counts?.[status]} loading={loading} />
+            <span>{STATUS_LABELS[status]}</span>
+            <BucketCount value={counts?.[status]} loading={loading} compact={embedded} />
           </Button>
         ))}
-        <span className="mx-1 hidden h-5 border-l sm:block" aria-hidden="true" />
+        <span
+          className={
+            embedded
+              ? "col-span-2 my-1 border-t"
+              : "mx-1 hidden h-5 border-l sm:block"
+          }
+          aria-hidden="true"
+        />
         <Button
           type="button"
           size="sm"
           variant={activeStatus === "CLOSED" ? "secondary" : "ghost"}
+          className={embedded ? "h-8 w-full justify-between rounded-lg px-2.5" : undefined}
           aria-pressed={activeStatus === "CLOSED"}
           onClick={() => onSelect("CLOSED")}
         >
-          Histórico
-          <BucketCount value={counts?.CLOSED} loading={loading} />
+          <span>Histórico</span>
+          <BucketCount value={counts?.CLOSED} loading={loading} compact={embedded} />
         </Button>
       </div>
     </nav>
   );
 }
 
-function BucketCount({ value, loading }: { value?: number; loading: boolean }) {
+function BucketCount({
+  value,
+  loading,
+  compact = false,
+}: {
+  value?: number;
+  loading: boolean;
+  compact?: boolean;
+}) {
   return loading ? (
-    <Loader2 className="ml-2 h-3.5 w-3.5 animate-spin" aria-label="Carregando" />
+    <Loader2
+      className={`${compact ? "ml-0" : "ml-2"} h-3.5 w-3.5 animate-spin`}
+      aria-label="Carregando"
+    />
   ) : (
-    <span className="ml-2 rounded-full bg-background px-1.5 py-0.5 text-xs">
+    <span
+      className={`${compact ? "ml-0 min-w-6 text-center" : "ml-2"} rounded-full bg-background px-1.5 py-0.5 text-xs text-foreground`}
+    >
       {value ?? 0}
     </span>
   );
@@ -723,6 +846,7 @@ function BucketCount({ value, loading }: { value?: number; loading: boolean }) {
 function AttendanceCard({
   attendance,
   selected = false,
+  compact = false,
 }: {
   attendance: {
     id: string;
@@ -749,6 +873,7 @@ function AttendanceCard({
     unreadCount?: number;
   };
   selected?: boolean;
+  compact?: boolean;
 }) {
   const customerName = attendance.customer?.name || "Contato sem nome";
   const lastMessage = attendance.lastMessage;
@@ -763,39 +888,46 @@ function AttendanceCard({
     <Link
       to={`/operation/attendances/${attendance.id}`}
       aria-current={selected ? "page" : undefined}
-      className={`block p-4 transition-colors hover:bg-muted/40 focus-visible:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:p-6 ${selected ? "bg-primary/5" : ""}`}
+      className={`block transition-colors hover:bg-muted/40 focus-visible:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring ${compact ? "p-3" : "p-4 sm:p-6"} ${selected ? "bg-primary/5" : ""}`}
     >
-      <div className="flex gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 font-semibold text-primary">
+      <div className={compact ? "flex gap-2.5" : "flex gap-3"}>
+        <div
+          className={`flex shrink-0 items-center justify-center rounded-full bg-primary/10 font-semibold text-primary ${compact ? "h-9 w-9 text-sm" : "h-10 w-10"}`}
+        >
           {customerName.slice(0, 1).toUpperCase()}
         </div>
-        <div className="min-w-0 flex-1 space-y-3">
+        <div className={`min-w-0 flex-1 ${compact ? "space-y-2" : "space-y-3"}`}>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <h3 className="truncate font-semibold">{customerName}</h3>
+                <h3 className={`${compact ? "text-sm" : ""} truncate font-semibold`}>
+                  {customerName}
+                </h3>
                 {attendance.unreadCount ? (
                   <Badge className="bg-primary/10 text-primary hover:bg-primary/10">
                     {attendance.unreadCount} nova(s)
                   </Badge>
                 ) : null}
               </div>
-              <p className="mt-1 text-xs text-muted-foreground">
+              <p className="mt-1 text-[11px] text-muted-foreground">
                 {attendance.customer?.phoneMasked || "Telefone protegido"}
               </p>
             </div>
-            <Badge variant={getStatusVariant(attendance.status)}>
+            <Badge
+              variant={getStatusVariant(attendance.status)}
+              className={getStatusClassName(attendance.status)}
+            >
               {STATUS_LABELS[attendance.status]}
             </Badge>
           </div>
 
-          <p className="line-clamp-2 text-sm text-muted-foreground">
+          <p className={`${compact ? "text-xs" : "text-sm"} line-clamp-2 text-muted-foreground`}>
             {lastMessage
               ? `${MESSAGE_SENDER_LABELS[lastMessage.sender]}: ${lastMessage.preview}`
               : "Nenhuma mensagem disponível para este ciclo."}
           </p>
 
-          <div className="flex flex-col gap-2 text-xs text-muted-foreground sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-1 text-[11px] text-muted-foreground sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
             <div className="flex flex-wrap gap-x-4 gap-y-1">
               <span>{destination || "Destino não definido"}</span>
               <span>
@@ -907,6 +1039,22 @@ function getStatusVariant(
   if (status === "CLOSED") return "outline";
   if (status === "PENDING") return "secondary";
   return "outline";
+}
+
+function getStatusClassName(status: AttendanceStatus) {
+  if (status === "TRIAGE") {
+    return "border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-50";
+  }
+  if (status === "WAITING_QUEUE") {
+    return "border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-50";
+  }
+  if (status === "IN_PROGRESS") {
+    return "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-50";
+  }
+  if (status === "PENDING") {
+    return "border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-50";
+  }
+  return "border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-50";
 }
 
 function formatDateTime(value: string) {

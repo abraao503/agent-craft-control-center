@@ -101,6 +101,9 @@ const AppLayout = () => {
   const { user, isLoading } = useAuth();
   const isMobile = useIsMobile();
   const location = useLocation();
+  const isOperationStation =
+    location.pathname === "/operation/attendances" ||
+    location.pathname.startsWith("/operation/attendances/");
   const initialState = getInitialSidebarState();
   const [pageTransitioning, setPageTransitioning] = useState(false);
   const mainContainerRef = useRef<HTMLDivElement>(null);
@@ -202,7 +205,7 @@ const AppLayout = () => {
   }
 
   return (
-    <SidebarProvider defaultOpen={initialState}>
+    <SidebarProvider defaultOpen={isOperationStation ? false : initialState}>
       <MainContainerRefContext.Provider value={mainContainerRef}>
         <PageViewTracker />
         <div
@@ -220,9 +223,10 @@ const AppLayout = () => {
                 ref={mainContainerRef}
                 className={cn(
                   "flex-1 overflow-y-auto bg-background dark:text-gray-200 transition-opacity",
-                  location.pathname !== "/chats" && "p-6",
+                  location.pathname !== "/chats" && !isOperationStation && "p-6",
+                  isOperationStation && "overflow-hidden p-0",
                   pageTransitioning ? "opacity-95" : "opacity-100",
-                  isMobile ? "pl-[60px]" : "",
+                  isMobile && !isOperationStation ? "pl-[60px]" : "",
                 )}
               >
                 <WorkspaceRouteBoundary />

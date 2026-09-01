@@ -52,32 +52,36 @@ export default function OperationLandingPage() {
     setup?.readiness.missing.some((item) => item !== "FALLBACK_ROUTE") ?? false;
 
   return (
-    <section className="mx-auto w-full max-w-4xl space-y-6 p-6">
-      <Card>
-        <CardHeader>
-          <p className="text-sm font-medium uppercase tracking-wide text-primary">
+    <section className="mx-auto w-full max-w-[1500px] space-y-6">
+      <Card className="overflow-hidden border-0 bg-slate-950 text-white shadow-lg dark:bg-slate-900">
+        <CardHeader className="relative p-6 sm:p-8">
+          <div className="pointer-events-none absolute -right-16 -top-24 h-64 w-64 rounded-full bg-primary/30 blur-3xl" />
+          <p className="relative text-xs font-semibold uppercase tracking-[0.18em] text-sky-300">
             Workspace de operação
           </p>
-          <CardTitle className="mt-3 text-3xl">
+          <CardTitle className="relative mt-3 text-3xl text-white sm:text-4xl">
             {currentWorkspace?.name || "Operação"}
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="relative mt-2 max-w-2xl text-slate-300">
             Acompanhe a estrutura operacional deste workspace e retome a
             configuração quando novas seções estiverem disponíveis.
           </CardDescription>
         </CardHeader>
       </Card>
 
+      <div className="grid gap-4 lg:grid-cols-2">
       {has("view:operation-attendances") ? (
-        <Card>
+        <Card className="border-slate-200/80 shadow-sm transition-shadow hover:shadow-md dark:border-slate-800">
           <CardHeader>
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
-                <CardTitle className="flex items-center gap-2 text-xl">
-                  <Inbox className="h-5 w-5 text-primary" />
-                  Atendimentos
+                <CardTitle className="flex items-center gap-3 text-xl">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-100 text-sky-700 dark:bg-sky-950/50 dark:text-sky-300">
+                    <Inbox className="h-5 w-5" />
+                  </span>
+                  <span>Atendimentos</span>
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="mt-3">
                   Abra a inbox operacional para acompanhar os ciclos dentro do
                   escopo autorizado.
                 </CardDescription>
@@ -95,15 +99,17 @@ export default function OperationLandingPage() {
       ) : null}
 
       {has("manage:operation-setup") ? (
-        <Card>
+        <Card className="border-slate-200/80 shadow-sm transition-shadow hover:shadow-md dark:border-slate-800">
           <CardHeader>
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
-                <CardTitle className="flex items-center gap-2 text-xl">
-                  <SlidersHorizontal className="h-5 w-5 text-primary" />
-                  Distribuição uniforme
+                <CardTitle className="flex items-center gap-3 text-xl">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100 text-violet-700 dark:bg-violet-950/50 dark:text-violet-300">
+                    <SlidersHorizontal className="h-5 w-5" />
+                  </span>
+                  <span>Distribuição uniforme</span>
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="mt-3">
                   Ative a roleta e configure exceções por canal, área, fila ou
                   operador.
                 </CardDescription>
@@ -119,6 +125,8 @@ export default function OperationLandingPage() {
           </CardHeader>
         </Card>
       ) : null}
+
+      </div>
 
       {setupQuery.isLoading ? (
         <Card>
@@ -148,8 +156,8 @@ export default function OperationLandingPage() {
         </Alert>
       ) : setup ? (
         <>
-          <Card>
-            <CardHeader>
+          <Card className="overflow-hidden shadow-sm">
+            <CardHeader className="border-b bg-card/80">
               <CardTitle className="flex items-center gap-2 text-xl">
                 {isStructured ? (
                   <CheckCircle2 className="h-5 w-5 text-green-600" />
@@ -168,7 +176,7 @@ export default function OperationLandingPage() {
                   : "Ainda existem itens estruturais para configurar."}
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-5">
+            <CardContent className="space-y-5 p-5 sm:p-6">
               <div className="grid gap-3 sm:grid-cols-3">
                 <Metric label="Áreas ativas" value={setup.counts.activeAreas} />
                 <Metric

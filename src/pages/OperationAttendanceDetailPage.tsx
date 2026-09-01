@@ -87,10 +87,12 @@ const EVENT_LABELS: Record<string, string> = {
 
 interface OperationAttendanceDetailPageProps {
   realtimeEnabled?: boolean;
+  embedded?: boolean;
 }
 
 export default function OperationAttendanceDetailPage({
   realtimeEnabled = true,
+  embedded = false,
 }: OperationAttendanceDetailPageProps = {}) {
   const { attendanceId } = useParams<{ attendanceId: string }>();
   const { currentWorkspace } = useWorkspaceContext();
@@ -135,6 +137,7 @@ export default function OperationAttendanceDetailPage({
     attendanceId,
   );
   const markedAttendanceId = useRef<string | null>(null);
+  const messagesViewportRef = useRef<HTMLDivElement>(null);
   const markRead = markReadMutation.mutate;
 
   useEffect(() => {
@@ -144,6 +147,14 @@ export default function OperationAttendanceDetailPage({
     markedAttendanceId.current = attendanceId;
     markRead();
   }, [attendanceId, detailQuery.data, markRead]);
+
+  useEffect(() => {
+    if (!embedded || !messagesQuery.data) return;
+    const viewport = messagesViewportRef.current;
+    if (!viewport) return;
+
+    viewport.scrollTop = viewport.scrollHeight;
+  }, [embedded, messagesQuery.data, messagesQuery.dataUpdatedAt]);
 
   if (!attendanceId) {
     return (
@@ -196,7 +207,7 @@ export default function OperationAttendanceDetailPage({
   }
 
   if (detailQuery.isLoading) {
-    return <DetailLoading />;
+    return <DetailLoading embedded={embedded} />;
   }
 
   if (detailQuery.isError || !detailQuery.data) {
@@ -392,42 +403,98 @@ export default function OperationAttendanceDetailPage({
     .join(" · ");
 
   return (
-    <section className="mx-auto flex w-full max-w-[1600px] flex-col gap-6">
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <Link
-            to="/operation/attendances"
-            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Voltar para atendimentos
-          </Link>
-          <div className="mt-5 flex flex-wrap items-center gap-3">
-            <p className="text-sm font-medium uppercase tracking-wide text-primary">
-              Operação / atendimento humano
+    <section
+      className={
+        embedded
+          ? "flex h-full min-h-0 w-full min-w-0 flex-col bg-background"
+          : "mx-auto flex w-full max-w-[1600px] flex-col gap-6"
+      }
+    >
+      {embedded ? (
+        <header className="flex shrink-0 items-center justify-between gap-3 border-b bg-card px-4 py-3 lg:px-5">
+          <div className="flex min-w-0 items-center gap-3">
+            <Link
+              to="/operation/attendances"
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground lg:hidden"
+              aria-label="Voltar para atendimentos"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 font-semibold text-primary">
+              {customerName.slice(0, 1).toUpperCase()}
+            </div>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="truncate text-sm font-semibold text-foreground sm:text-base">
+                  {customerName}
+                </h1>
+                <Badge
+                  variant={getStatusVariant(attendance.status)}
+                  className={getStatusClassName(attendance.status)}
+                >
+                  {STATUS_LABELS[attendance.status]}
+                </Badge>
+              </div>
+              <p className="truncate text-xs text-muted-foreground">
+                {attendance.customer?.phone || "Telefone não informado"}
+                {destination ? ` · ${destination}` : ""}
+              </p>
+            </div>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <OperationalRealtimeStatus
+              status={realtime.status}
+              joinedWorkspace={realtime.joinedWorkspace}
+            />
+            <Link
+              to="/operation/attendances"
+              className="hidden h-9 items-center gap-2 rounded-md border px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground lg:inline-flex"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Voltar
+            </Link>
+          </div>
+        </header>
+      ) : (
+        <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <Link
+              to="/operation/attendances"
+              className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Voltar para atendimentos
+            </Link>
+            <div className="mt-5 flex flex-wrap items-center gap-3">
+              <p className="text-sm font-medium uppercase tracking-wide text-primary">
+                Operação / atendimento humano
+              </p>
+              <Badge
+                variant={getStatusVariant(attendance.status)}
+                className={getStatusClassName(attendance.status)}
+              >
+                {STATUS_LABELS[attendance.status]}
+              </Badge>
+            </div>
+            <h1 className="mt-2 text-3xl font-semibold tracking-tight">
+              {customerName}
+            </h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Ciclo {attendance.cycleNumber} · versão {attendance.version}
             </p>
-            <Badge variant={getStatusVariant(attendance.status)}>
-              {STATUS_LABELS[attendance.status]}
-            </Badge>
           </div>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight">
-            {customerName}
-          </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Ciclo {attendance.cycleNumber} · versão {attendance.version}
-          </p>
-        </div>
-        <div className="flex flex-col items-end gap-2">
-          <OperationalRealtimeStatus
-            status={realtime.status}
-            joinedWorkspace={realtime.joinedWorkspace}
-          />
-          <div className="rounded-md border bg-muted/20 px-3 py-2 text-right text-xs text-muted-foreground">
-            <p className="font-medium text-foreground">Última atividade</p>
-            <p className="mt-1">{formatDateTime(attendance.lastActivityAt)}</p>
+          <div className="flex flex-col items-end gap-2">
+            <OperationalRealtimeStatus
+              status={realtime.status}
+              joinedWorkspace={realtime.joinedWorkspace}
+            />
+            <div className="rounded-md border bg-muted/20 px-3 py-2 text-right text-xs text-muted-foreground">
+              <p className="font-medium text-foreground">Última atividade</p>
+              <p className="mt-1">{formatDateTime(attendance.lastActivityAt)}</p>
+            </div>
           </div>
-        </div>
-      </header>
+        </header>
+      )}
 
       {markReadMutation.isError ? (
         <Alert variant="destructive">
@@ -440,19 +507,43 @@ export default function OperationAttendanceDetailPage({
         </Alert>
       ) : null}
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
-        <div className="min-w-0 space-y-6">
-          <Card className="min-w-0">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+      <div
+        className={
+          embedded
+            ? "grid min-h-0 flex-1 grid-cols-1 xl:grid-cols-[minmax(0,1fr)_19rem]"
+            : "grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]"
+        }
+      >
+        <div className={embedded ? "min-h-0 min-w-0" : "min-w-0 space-y-6"}>
+          <Card
+            className={
+              embedded
+                ? "flex h-full min-h-0 min-w-0 flex-col rounded-none border-0 shadow-none"
+                : "min-w-0"
+            }
+          >
+            <CardHeader
+              className={
+                embedded ? "shrink-0 border-b p-4" : undefined
+              }
+            >
+              <CardTitle className="flex items-center gap-2 text-lg">
                 <MessageSquare className="h-5 w-5 text-primary" />
                 Conversa
               </CardTitle>
-              <CardDescription>
-                Mensagens do chat compartilhado, em ordem cronológica.
+              <CardDescription className={embedded ? "text-xs" : undefined}>
+                {embedded
+                  ? `Ciclo ${attendance.cycleNumber} · versão ${attendance.version}`
+                  : "Mensagens do chat compartilhado, em ordem cronológica."}
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent
+              className={
+                embedded
+                  ? "flex min-h-0 flex-1 flex-col p-0"
+                  : undefined
+              }
+            >
               {messagesQuery.isError ? (
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
@@ -493,8 +584,15 @@ export default function OperationAttendanceDetailPage({
                       </Button>
                     </div>
                   ) : null}
-                  <ScrollArea className="h-[min(62vh,42rem)] pr-3">
-                    <div className="space-y-4">
+                  <ScrollArea
+                    ref={messagesViewportRef}
+                    className={
+                      embedded
+                        ? "min-h-0 flex-1 bg-slate-50/70 px-4 py-4 dark:bg-slate-950/30"
+                        : "h-[min(62vh,42rem)] pr-3"
+                    }
+                  >
+                    <div className="space-y-3">
                       {messages.map((message) => (
                         <ConversationMessage key={message.id} message={message} />
                       ))}
@@ -507,6 +605,7 @@ export default function OperationAttendanceDetailPage({
                 attendance={attendance}
                 canOperate={canOperateAttendances}
                 sticky
+                embedded={embedded}
               />
             </CardContent>
           </Card>
@@ -515,9 +614,19 @@ export default function OperationAttendanceDetailPage({
         <Collapsible
           open={secondaryPanelOpen}
           onOpenChange={setSecondaryPanelOpen}
-          className="min-w-0"
+          className={
+            embedded
+              ? "flex min-h-0 min-w-0 flex-col border-l bg-card"
+              : "min-w-0"
+          }
         >
-          <div className="mb-3 flex items-center justify-between rounded-lg border bg-muted/20 px-3 py-2">
+          <div
+            className={
+              embedded
+                ? "flex shrink-0 items-center justify-between border-b px-3 py-3"
+                : "mb-3 flex items-center justify-between rounded-lg border bg-muted/20 px-3 py-2"
+            }
+          >
             <div>
               <p className="text-sm font-semibold">Painel secundário</p>
               <p className="text-xs text-muted-foreground">
@@ -542,7 +651,13 @@ export default function OperationAttendanceDetailPage({
             </CollapsibleTrigger>
           </div>
 
-          <CollapsibleContent className="space-y-6">
+          <CollapsibleContent
+            className={
+              embedded
+                ? "min-h-0 flex-1 space-y-4 overflow-y-auto p-3"
+                : "space-y-6"
+            }
+          >
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base">
@@ -816,8 +931,8 @@ function ConversationMessage({ message }: { message: AttendanceMessageItem }) {
       <div
         className={`max-w-[min(90%,42rem)] rounded-2xl px-4 py-3 text-sm ${
           isCustomer
-            ? "rounded-tl-sm bg-muted text-foreground"
-            : "rounded-tr-sm bg-primary text-primary-foreground"
+            ? "rounded-tl-sm bg-muted text-foreground shadow-sm"
+            : "rounded-tr-sm bg-primary text-primary-foreground shadow-sm"
         }`}
       >
         <div className="mb-1 flex flex-wrap items-center gap-2 text-xs opacity-75">
@@ -875,9 +990,15 @@ function Capability({ label, enabled }: { label: string; enabled: boolean }) {
   );
 }
 
-function DetailLoading() {
+function DetailLoading({ embedded = false }: { embedded?: boolean }) {
   return (
-    <section className="mx-auto flex w-full max-w-5xl flex-col gap-6">
+    <section
+      className={
+        embedded
+          ? "flex h-full min-h-0 w-full flex-col gap-4 p-5"
+          : "mx-auto flex w-full max-w-5xl flex-col gap-6"
+      }
+    >
       <div className="h-5 w-48 animate-pulse rounded bg-muted" />
       <div className="h-12 w-2/3 animate-pulse rounded bg-muted" />
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
@@ -935,6 +1056,22 @@ function getStatusVariant(
   if (status === "CLOSED") return "outline";
   if (status === "PENDING") return "secondary";
   return "outline";
+}
+
+function getStatusClassName(status: AttendanceStatus) {
+  if (status === "TRIAGE") {
+    return "border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-50";
+  }
+  if (status === "WAITING_QUEUE") {
+    return "border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-50";
+  }
+  if (status === "IN_PROGRESS") {
+    return "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-50";
+  }
+  if (status === "PENDING") {
+    return "border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-50";
+  }
+  return "border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-50";
 }
 
 function getReplyStatusVariant(

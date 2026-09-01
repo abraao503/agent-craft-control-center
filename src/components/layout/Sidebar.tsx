@@ -749,13 +749,18 @@ const Sidebar = () => {
   const { user } = useAuth();
   const [mounted, setMounted] = useState(false);
   const location = useLocation();
-  const { state, setOpen } = useSidebar();
+  const { state, setOpen, isMobile, setOpenMobile } = useSidebar();
   const isCollapsed = state === "collapsed";
+  const isOperationStation =
+    location.pathname === "/operation/attendances" ||
+    location.pathname.startsWith("/operation/attendances/");
 
   // Efeito simplificado para manter o estado da sidebar durante navegação
   useEffect(() => {
     // O efeito aqui é mínimo apenas para garantir que o estado seja preservado
-    if (isCollapsed) {
+    if (isMobile && isOperationStation) {
+      setOpenMobile(false);
+    } else if (!isMobile && isCollapsed) {
       // Aplicar o estado colapsado sem setTimeout para evitar o flash
       setOpen(false);
     }
@@ -763,7 +768,7 @@ const Sidebar = () => {
     if (!mounted) {
       setMounted(true);
     }
-  }, [location.pathname, isCollapsed, setOpen, mounted]);
+  }, [location.pathname, isCollapsed, isMobile, isOperationStation, setOpen, setOpenMobile, mounted]);
 
   if (!user) {
     return null;

@@ -39,6 +39,7 @@ interface AttendanceComposerProps {
   attendance: AttendanceDetail;
   canOperate: boolean;
   sticky?: boolean;
+  embedded?: boolean;
 }
 
 type TemplateComponent = Record<string, unknown>;
@@ -105,6 +106,7 @@ export function AttendanceComposer({
   attendance,
   canOperate,
   sticky = false,
+  embedded = false,
 }: AttendanceComposerProps) {
   const { toast } = useToast();
   const mutations = useOperationalAttendanceMutations(workspaceId);
@@ -365,19 +367,29 @@ export function AttendanceComposer({
     <div
       className={
         sticky
-          ? "sticky bottom-0 z-10 -mx-6 border-t bg-background/95 px-6 pb-1 pt-4 backdrop-blur"
+          ? embedded
+            ? "sticky bottom-0 z-10 shrink-0 border-t bg-background/95 px-4 pb-3 pt-3 backdrop-blur"
+            : "sticky bottom-0 z-10 -mx-6 border-t bg-background/95 px-6 pb-1 pt-4 backdrop-blur"
           : "mt-6 border-t pt-6"
       }
     >
-      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+      <div
+        className={
+          embedded
+            ? "mb-2 flex flex-wrap items-center justify-between gap-2"
+            : "mb-4 flex flex-wrap items-start justify-between gap-3"
+        }
+      >
         <div>
           <h3 className="flex items-center gap-2 text-base font-semibold">
             <Send className="h-4 w-4 text-primary" />
             Responder atendimento
           </h3>
-          <p className="mt-1 text-sm text-muted-foreground">
-            O envio usa a capacidade e a versão atuais deste ciclo.
-          </p>
+          {!embedded ? (
+            <p className="mt-1 text-sm text-muted-foreground">
+              O envio usa a capacidade e a versão atuais deste ciclo.
+            </p>
+          ) : null}
         </div>
         {attendance.replyCapabilities.latestInboundMessageId ? (
           <Badge variant="outline">Contexto de resposta disponível</Badge>
@@ -398,7 +410,10 @@ export function AttendanceComposer({
         </Alert>
       ) : (
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(submit)} className="space-y-4">
+          <form
+            onSubmit={form.handleSubmit(submit)}
+            className={embedded ? "space-y-2" : "space-y-4"}
+          >
             <div className="flex flex-wrap gap-2">
               {(["TEXT", "MEDIA", "TEMPLATE"] as ComposerMode[]).map((option) => (
                 <Button
@@ -424,14 +439,17 @@ export function AttendanceComposer({
                 name="text"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Mensagem</FormLabel>
+                    <FormLabel className={embedded ? "sr-only" : undefined}>
+                      Mensagem
+                    </FormLabel>
                     <FormControl>
                       <Textarea
                         {...field}
                         value={field.value ?? ""}
                         placeholder="Digite a resposta para o contato..."
                         disabled={mutations.sendMessage.isPending}
-                        rows={4}
+                        rows={embedded ? 2 : 4}
+                        className={embedded ? "min-h-[44px] resize-none" : undefined}
                       />
                     </FormControl>
                     <FormMessage />
@@ -647,8 +665,15 @@ export function AttendanceComposer({
             ) : null}
 
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <p className="text-xs text-muted-foreground">
-                A versão enviada será validada para evitar sobrescrever uma ação concorrente.
+              <p
+                className={
+                  embedded
+                    ? "hidden text-xs text-muted-foreground md:block"
+                    : "text-xs text-muted-foreground"
+                }
+              >
+                A versão enviada será validada para evitar sobrescrever uma ação
+                concorrente.
               </p>
               <Button type="submit" disabled={mutations.sendMessage.isPending}>
                 {mutations.sendMessage.isPending ? (
