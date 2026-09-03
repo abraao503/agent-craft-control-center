@@ -33,6 +33,10 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { useToast } from "@/hooks/use-toast";
 import { getOperationalAttendanceErrorMessage } from "@/utils/operationalAttendanceErrors";
 import {
+  getSafeObservabilityEntries,
+  sanitizeObservabilityText,
+} from "@/services/observability/sanitizeObservability";
+import {
   AttendanceEvent,
   AttendanceMessageItem,
   AttendanceReplyCapabilities,
@@ -796,8 +800,15 @@ export default function OperationAttendanceDetailPage({
                   Timeline do ciclo
                 </CardTitle>
                 <CardDescription>
-                  Alterações importantes registradas neste ciclo.
+                  Eventos de estado deste ciclo, sem corpos de mensagem ou dados
+                  internos do provider.
                 </CardDescription>
+                <div className="flex flex-wrap gap-2 pt-2">
+                  <Badge variant="outline">Versão atual: {attendance.version}</Badge>
+                  <Badge variant="outline">
+                    {events.length} {events.length === 1 ? "evento visível" : "eventos visíveis"}
+                  </Badge>
+                </div>
               </CardHeader>
               <CardContent>
                 {eventsQuery.isError ? (
@@ -1029,17 +1040,32 @@ function ConversationMessage({ message }: { message: AttendanceMessageItem }) {
 }
 
 function TimelineEvent({ event }: { event: AttendanceEvent }) {
+  const metadataEntries = getSafeObservabilityEntries(event.metadata);
+  const reason = sanitizeObservabilityText(event.reason, 500);
+
   return (
     <div className="relative border-l pl-4">
       <span className="absolute -left-1.5 top-1 h-3 w-3 rounded-full bg-primary ring-4 ring-background" />
       <p className="font-medium">{EVENT_LABELS[event.action] || event.action}</p>
       <p className="mt-1 text-xs text-muted-foreground">
-        {formatDateTime(event.createdAt)} · {formatActor(event.actorType)}
+        {formatDateTime(event.createdAt)} · {formatActor(event.actorType)} · Versão {event.aggregateVersion}
       </p>
-      {event.reason ? (
+      {reason ? (
         <p className="mt-2 whitespace-pre-wrap break-words text-sm text-muted-foreground">
-          {event.reason}
+          {reason}
         </p>
+      ) : null}
+      {metadataEntries.length > 0 ? (
+        <dl className="mt-2 grid gap-1 rounded-md bg-muted/40 px-2.5 py-2 text-xs">
+          {metadataEntries.map(({ key, value }) => (
+            <div key={key} className="grid grid-cols-[auto_minmax(0,1fr)] gap-2">
+              <dt className="font-medium text-muted-foreground">
+                {formatMetadataKey(key)}
+              </dt>
+              <dd className="break-words text-right text-foreground">{value}</dd>
+            </div>
+          ))}
+        </dl>
       ) : null}
     </div>
   );
@@ -1142,6 +1168,13 @@ function formatActor(actorType: AttendanceEvent["actorType"]) {
   if (actorType === "ASSISTANT") return "assistente";
   if (actorType === "INTEGRATION") return "integração";
   return "sistema";
+}
+
+function formatMetadataKey(key: string) {
+  return key
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/[_-]+/g, " ")
+    .replace(/^./, (character) => character.toUpperCase());
 }
 
 function formatMessageStatus(status?: string | null) {

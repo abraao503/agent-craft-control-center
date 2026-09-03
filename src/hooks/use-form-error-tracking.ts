@@ -1,6 +1,12 @@
 import { useEffect } from "react";
 import { FieldValues, UseFormReturn } from "react-hook-form";
 import { HighlightService } from "@/lib/highlight";
+import {
+  sanitizeHighlightStringMetadata,
+  sanitizeObservabilityText,
+  sanitizeObservabilityUrl,
+  serializeObservabilityValue,
+} from "@/services/observability/sanitizeObservability";
 
 /**
  * Hook to track form validation errors with Highlight
@@ -23,29 +29,30 @@ export function useFormErrorTracking<T extends FieldValues>(
       
       // Only track when there are errors
       if (Object.keys(errors).length > 0) {
-        // Create context data with page/route information
-        const pageContext = {
-          url: window.location.href,
-          path: window.location.pathname,
-          ...contextInfo
-        };
+        const pageContext = sanitizeHighlightStringMetadata({
+          url: sanitizeObservabilityUrl(window.location.href),
+          path: sanitizeObservabilityText(window.location.pathname),
+          ...contextInfo,
+        });
 
-        // Remove sensitive data if needed
-        const safeData = { ...data };
-        if ('password' in safeData) safeData.password = "[REDACTED]";
-        if ('confirmPassword' in safeData) safeData.confirmPassword = "[REDACTED]";
+        const formDataStr = serializeObservabilityValue(data, 1000);
+        const safeErrors = Object.fromEntries(
+          Object.entries(errors).map(([field, fieldError]) => [
+            sanitizeObservabilityText(field) || "field",
+            {
+              message:
+                sanitizeObservabilityText(fieldError?.message) || "Invalid",
+            },
+          ]),
+        );
         
-        // Add form data context (limited to prevent large payloads)
-        const formDataStr = JSON.stringify(safeData).substring(0, 1000);
-        
-        // Report to Highlight using the specialized method
         HighlightService.reportFormError(
           formId,
           formName,
-          errors as Record<string, { message?: string }>,
+          safeErrors,
           {
             ...pageContext,
-            formData: formDataStr
+            formData: formDataStr,
           }
         );
       }

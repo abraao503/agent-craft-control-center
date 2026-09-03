@@ -1,5 +1,11 @@
 import { HighlightService } from "@/lib/highlight";
 import { AxiosError } from "axios";
+import {
+  getSafeObservabilityCode,
+  sanitizeHighlightStringMetadata,
+  sanitizeObservabilityText,
+  sanitizeObservabilityUrl,
+} from "@/services/observability/sanitizeObservability";
 
 /**
  * Tracks API errors in Highlight
@@ -10,35 +16,24 @@ export function trackApiError(
   error: AxiosError,
   context: string = "api_request"
 ) {
-  // Create a custom error with better context
-  const customError = new Error(`API Error: ${error.message} (${context})`);
+  const safeContext = sanitizeObservabilityText(context);
+  const safeMessage = sanitizeObservabilityText(error.message) || "Request failed";
+  const customError = new Error(`API Error: ${safeMessage} (${safeContext})`);
 
-  // Include relevant request information
-  const metadata: Record<string, string> = {
-    context,
+  const responseCode = getSafeObservabilityCode(error.response?.data);
+  const metadata = sanitizeHighlightStringMetadata({
+    context: safeContext,
     method: error.config?.method?.toUpperCase() || "UNKNOWN",
-    url: error.config?.url || "UNKNOWN",
+    url: sanitizeObservabilityUrl(error.config?.url),
     status: String(error.response?.status || "NETWORK_ERROR"),
-  };
+    responseCode,
+  });
 
-  // Include response data if available
-  if (error.response?.data) {
-    try {
-      metadata.responseData = JSON.stringify(error.response.data).substring(
-        0,
-        1000
-      );
-    } catch (e) {
-      metadata.responseData = "Error stringifying response data";
-    }
-  }
-
-  // Track the error in Highlight
   HighlightService.reportError(
     customError,
-    `API Error in ${context}`,
+    `API Error in ${safeContext}`,
     metadata
   );
 
-  return customError; // Return the error for further handling
+  return customError;
 }
