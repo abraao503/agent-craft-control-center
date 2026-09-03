@@ -1,5 +1,5 @@
 import { useQueries, useQuery } from "@tanstack/react-query";
-import { listAgent } from "@/services/agent/listAgent";
+import { listOperationalAssistantOptions } from "@/services/operation/listOperationalAssistantOptions";
 import { listOperationalAreas } from "@/services/operation/listOperationalAreas";
 import { listOperationalQueues } from "@/services/operation/listOperationalQueues";
 
@@ -34,19 +34,22 @@ export function useOperationalRouteOptions(
     })),
   });
 
-  const assistantsQuery = useQuery<Awaited<ReturnType<typeof listAgent>>>({
+  const assistantsQuery = useQuery({
     queryKey: ["operation-route-assistants", workspaceId],
-    // O endpoint legado de Assistants é deliberadamente comercial. Até E6,
-    // um workspace operacional não tem essa lista disponível; rotas TRIAGE e
-    // QUEUE continuam configuráveis sem uma chamada que sempre retornaria 409.
-    queryFn: async () => ({ agents: [] }),
-    enabled: false,
+    queryFn: () => {
+      if (!workspaceId) {
+        throw new Error("Workspace operacional não selecionado");
+      }
+
+      return listOperationalAssistantOptions(workspaceId);
+    },
+    enabled: Boolean(workspaceId && enabled),
   });
 
   return {
     areas,
     queues: queueQueries.flatMap((query) => query.data?.items ?? []),
-    assistants: assistantsQuery.data?.agents ?? [],
+    assistants: assistantsQuery.data?.items ?? [],
     isLoading:
       enabled &&
       (areasQuery.isLoading ||

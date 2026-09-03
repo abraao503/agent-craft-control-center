@@ -62,6 +62,7 @@ import TagsPage from "./pages/TagsPage";
 import OperationLandingPage from "./pages/OperationLandingPage";
 import OperationChannelsPage from "./pages/OperationChannelsPage";
 import OperationDistributionPage from "./pages/OperationDistributionPage";
+import OperationAssistantsPage from "./pages/OperationAssistantsPage";
 import OperationAttendanceStationPage from "./pages/OperationAttendanceStationPage";
 import Sidebar from "./components/layout/Sidebar";
 import Header from "./components/layout/Header";
@@ -405,6 +406,15 @@ const App = () => (
                         <ProtectedRoute
                           requiredPermission="view:operation-channels"
                           component={OperationChannelsPage}
+                        />
+                      }
+                    />
+                    <Route
+                      path="/operation/assistants"
+                      element={
+                        <ProtectedRoute
+                          requiredPermission="view:assistant"
+                          component={OperationAssistantsPage}
                         />
                       }
                     />

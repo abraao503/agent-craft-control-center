@@ -466,6 +466,12 @@ const SidebarMenuContent = () => {
           requiredPermission: "view:operation-channels",
         },
         {
+          path: "/operation/assistants",
+          label: "Assistants",
+          icon: <Bot className="h-5 w-5" />,
+          requiredPermission: "view:assistant",
+        },
+        {
           path: "/operation/distribution",
           label: "Distribuição",
           icon: <SlidersHorizontal className="h-5 w-5" />,

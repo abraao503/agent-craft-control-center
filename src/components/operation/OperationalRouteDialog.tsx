@@ -3,12 +3,12 @@ import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AlertCircle, Loader2 } from "lucide-react";
-import { Agent } from "@/types/agent";
 import {
   OperationalChannel,
   OperationalChannelEntryMode,
   OperationalChannelRoute,
 } from "@/types/operation-channels";
+import { OperationalAssistantOption } from "@/types/operation-assistant";
 import { ServiceArea, ServiceQueue } from "@/types/operation";
 import {
   OPERATIONAL_CHANNEL_ENTRY_MODE_LABELS,
@@ -96,7 +96,7 @@ type OperationalRouteDialogProps = {
   channels: OperationalChannel[];
   areas: ServiceArea[];
   queues: ServiceQueue[];
-  assistants: Agent[];
+  assistants: OperationalAssistantOption[];
   optionsLoading: boolean;
   optionsError: boolean;
   isPending: boolean;

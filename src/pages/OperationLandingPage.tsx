@@ -16,6 +16,7 @@ import { OperationalAreasCard } from "@/components/operation/OperationalAreasCar
 import {
   AlertCircle,
   ArrowRight,
+  Bot,
   CheckCircle2,
   Inbox,
   Loader2,
@@ -84,6 +85,15 @@ export default function OperationLandingPage() {
             >
               <Inbox className="mr-2 h-4 w-4" />
               Abrir atendimentos
+            </Link>
+          ) : null}
+          {has("view:assistant") ? (
+            <Link
+              to="/operation/assistants"
+              className={buttonVariants({ variant: "outline", size: "lg" })}
+            >
+              <Bot className="mr-2 h-4 w-4" />
+              Assistants
             </Link>
           ) : null}
         </div>
