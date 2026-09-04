@@ -1,15 +1,28 @@
 import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { connectSocket } from "@/lib/socket";
+import { replaceAttendanceInKanban } from "@/utils/operationalKanbanCache";
 import {
   OPERATIONAL_PUBLIC_EVENTS,
   OperationalPublicEvent,
   OperationalPublicEventName,
   OperationalRealtimeStatus,
 } from "@/types/operational-realtime";
+import type { AttendanceKanbanPage, AttendanceWithDetails } from "@/types/operation-attendance";
 
 const EVENT_NAMES = Object.values(OPERATIONAL_PUBLIC_EVENTS) as OperationalPublicEventName[];
 const MAX_REMEMBERED_EVENTS = 500;
+
+function isAttendanceWithDetails(value: unknown): boolean {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "id" in value &&
+    typeof (value as Record<string, unknown>).id === "string" &&
+    "status" in value &&
+    typeof (value as Record<string, unknown>).status === "string"
+  );
+}
 
 interface UseOperationalRealtimeOptions {
   workspaceId?: string;
@@ -93,6 +106,44 @@ export function useOperationalRealtime({
     const socket = connectSocket(token);
     let mounted = true;
     const targetAttendanceId = attendanceId;
+
+    const patchKanbanCache = (eventAttendanceId: string): boolean => {
+      const cached = queryClient.getQueryData<unknown>([
+        "operation",
+        "attendance",
+        workspaceId,
+        eventAttendanceId,
+      ]);
+      if (!cached || !isAttendanceWithDetails(cached)) {
+        return false;
+      }
+
+      const kanbanQueries = queryClient.getQueriesData<{
+        columns: { items: { id: string }[] }[];
+      }>({
+        queryKey: ["operation", "attendance-kanban", workspaceId],
+      });
+
+      let patched = false;
+      for (const [queryKey, data] of kanbanQueries) {
+        if (!data) continue;
+        const hasItem = data.columns.some((column) =>
+          column.items.some((item) => item.id === eventAttendanceId),
+        );
+        if (!hasItem) continue;
+
+        queryClient.setQueryData(queryKey, (old: unknown) => {
+          if (!old || typeof old !== "object") return old;
+          return replaceAttendanceInKanban(
+            old as AttendanceKanbanPage,
+            cached as AttendanceWithDetails,
+          );
+        });
+        patched = true;
+      }
+
+      return patched;
+    };
 
     const invalidateWorkspace = (eventAttendanceId?: string) => {
       void queryClient.invalidateQueries({
@@ -218,7 +269,35 @@ export function useOperationalRealtime({
       if (isKnownStaleEvent) return;
 
       setLastEventAt(rawEvent.occurredAt);
-      invalidateWorkspace(rawEvent.attendanceId);
+
+      const patched = patchKanbanCache(rawEvent.attendanceId);
+      if (!patched) {
+        invalidateWorkspace(rawEvent.attendanceId);
+      } else if (isCurrentAttendance) {
+        void queryClient.invalidateQueries({
+          queryKey: ["operation", "attendance", workspaceId, rawEvent.attendanceId],
+        });
+        void queryClient.invalidateQueries({
+          queryKey: ["operation", "attendance-messages", workspaceId, rawEvent.attendanceId],
+        });
+        void queryClient.invalidateQueries({
+          queryKey: ["operation", "attendance-events", workspaceId, rawEvent.attendanceId],
+        });
+        void queryClient.invalidateQueries({
+          queryKey: ["operation", "attendance-commands", workspaceId, rawEvent.attendanceId],
+        });
+        void queryClient.invalidateQueries({
+          queryKey: ["operation", "attendance-follow-ups", workspaceId, rawEvent.attendanceId],
+        });
+        void queryClient.invalidateQueries({
+          queryKey: [
+            "operation",
+            "attendance-follow-up-occurrences",
+            workspaceId,
+            rawEvent.attendanceId,
+          ],
+        });
+      }
     };
 
     socket.on("connect", handleConnect);

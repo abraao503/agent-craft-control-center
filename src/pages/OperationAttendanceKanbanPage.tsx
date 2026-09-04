@@ -6,9 +6,27 @@ import {
   ChevronRight,
   Loader2,
   RefreshCw,
+  Search,
+  SlidersHorizontal,
+  X,
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   AttendanceAction,
   AttendanceActionDialog,
@@ -31,8 +49,13 @@ import {
   AttendanceOptions,
   AttendanceStatus,
   AttendanceWithDetails,
+  ListAttendanceKanbanFilters,
 } from "@/types/operation-attendance";
 import { getOperationalAttendanceErrorMessage } from "@/utils/operationalAttendanceErrors";
+import {
+  moveAttendanceInKanban,
+  replaceAttendanceInKanban,
+} from "@/utils/operationalKanbanCache";
 import {
   getOperationalKanbanMove,
   OperationalKanbanMoveAction,
@@ -54,6 +77,26 @@ interface ActiveAction {
   action: DialogAction;
 }
 
+interface KanbanFilterDraft {
+  search: string;
+  areaId: string;
+  queueId: string;
+  assigneeUserId: string;
+  channelId: string;
+  unreadOnly: boolean;
+}
+
+function createFilterDraft(): KanbanFilterDraft {
+  return {
+    search: "",
+    areaId: "ALL",
+    queueId: "ALL",
+    assigneeUserId: "ALL",
+    channelId: "ALL",
+    unreadOnly: false,
+  };
+}
+
 export default function OperationAttendanceKanbanPage() {
   const { currentWorkspace } = useWorkspaceContext();
   const { has } = usePermissions();
@@ -64,6 +107,9 @@ export default function OperationAttendanceKanbanPage() {
   const [movingAttendanceId, setMovingAttendanceId] = useState<string | null>(
     null,
   );
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [draft, setDraft] = useState<KanbanFilterDraft>(createFilterDraft);
+  const [filters, setFilters] = useState<KanbanFilterDraft>(createFilterDraft);
   const workspaceId =
     currentWorkspace?.type === "OPERATION" ? currentWorkspace.id : undefined;
   const canViewAttendances = has("view:operation-attendances");
@@ -73,16 +119,33 @@ export default function OperationAttendanceKanbanPage() {
   useEffect(() => {
     setPage(1);
     setActiveAction(null);
+    setDraft(createFilterDraft());
+    setFilters(createFilterDraft());
   }, [workspaceId]);
 
-  const kanbanFilters = useMemo(
-    () => ({
+  const kanbanFilters = useMemo<ListAttendanceKanbanFilters>(() => {
+    const result: ListAttendanceKanbanFilters = {
       page,
       limit: PAGE_SIZE,
       closedLimit: CLOSED_PAGE_SIZE,
-    }),
-    [page],
-  );
+    };
+    const f = filters;
+    if (f.search.trim().length >= 2) result.search = f.search.trim();
+    if (f.areaId !== "ALL") result.areaId = f.areaId;
+    if (f.queueId !== "ALL") result.queueId = f.queueId;
+    if (f.assigneeUserId !== "ALL") result.assigneeUserId = f.assigneeUserId;
+    if (f.channelId !== "ALL") result.channelId = f.channelId;
+    if (f.unreadOnly) result.unreadOnly = true;
+    return result;
+  }, [page, filters]);
+
+  const hasActiveFilters =
+    filters.search.trim().length >= 2 ||
+    filters.areaId !== "ALL" ||
+    filters.queueId !== "ALL" ||
+    filters.assigneeUserId !== "ALL" ||
+    filters.channelId !== "ALL" ||
+    filters.unreadOnly;
   const kanbanQuery = useOperationalAttendanceKanban(
     workspaceId,
     kanbanFilters,
@@ -395,6 +458,149 @@ export default function OperationAttendanceKanbanPage() {
         </div>
       </div>
 
+      <div className="flex shrink-0 flex-wrap items-center gap-2 border-b bg-card px-4 py-2 lg:px-5">
+        <div className="relative flex-1">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Buscar contato (mín. 2 caracteres)"
+            value={draft.search}
+            onChange={(e) =>
+              setDraft((d) => ({ ...d, search: e.target.value }))
+            }
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                setFilters({ ...draft });
+                setPage(1);
+              }
+            }}
+            className="h-8 pl-9 text-sm"
+          />
+        </div>
+        <Popover open={filtersOpen} onOpenChange={setFiltersOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              type="button"
+              variant={hasActiveFilters ? "secondary" : "outline"}
+              size="sm"
+              className="h-8 gap-2"
+            >
+              <SlidersHorizontal className="h-3.5 w-3.5" />
+              Filtros
+              {hasActiveFilters ? (
+                <Badge className="h-5 min-w-5 justify-center px-1 text-[10px]">
+                  {[
+                    filters.search.trim().length >= 2,
+                    filters.areaId !== "ALL",
+                    filters.queueId !== "ALL",
+                    filters.assigneeUserId !== "ALL",
+                    filters.channelId !== "ALL",
+                    filters.unreadOnly,
+                  ].filter(Boolean).length}
+                </Badge>
+              ) : null}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-80 p-0" align="end">
+            <div className="border-b px-3 py-2">
+              <p className="text-sm font-semibold">Filtrar quadro</p>
+            </div>
+            <div className="grid gap-2 p-3">
+              <FilterSelect
+                label="Área"
+                value={draft.areaId}
+                onChange={(v) => setDraft((d) => ({ ...d, areaId: v }))}
+              >
+                <SelectItem value="ALL">Todas as áreas</SelectItem>
+                {(options?.areas ?? []).map((a) => (
+                  <SelectItem key={a.id} value={a.id}>
+                    {a.name}
+                  </SelectItem>
+                ))}
+              </FilterSelect>
+              <FilterSelect
+                label="Fila"
+                value={draft.queueId}
+                onChange={(v) => setDraft((d) => ({ ...d, queueId: v }))}
+              >
+                <SelectItem value="ALL">Todas as filas</SelectItem>
+                {flattenQueueOptions(options).map((q) => (
+                  <SelectItem key={q.id} value={q.id}>
+                    {q.name}
+                  </SelectItem>
+                ))}
+              </FilterSelect>
+              <FilterSelect
+                label="Responsável"
+                value={draft.assigneeUserId}
+                onChange={(v) =>
+                  setDraft((d) => ({ ...d, assigneeUserId: v }))
+                }
+              >
+                <SelectItem value="ALL">Todos</SelectItem>
+                {(options?.users ?? []).map((u) => (
+                  <SelectItem key={u.id} value={u.id}>
+                    {u.name}
+                  </SelectItem>
+                ))}
+              </FilterSelect>
+              <FilterSelect
+                label="Canal"
+                value={draft.channelId}
+                onChange={(v) => setDraft((d) => ({ ...d, channelId: v }))}
+              >
+                <SelectItem value="ALL">Todos os canais</SelectItem>
+                {(options?.channels ?? []).map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.displayName}
+                  </SelectItem>
+                ))}
+              </FilterSelect>
+              <label className="flex items-center gap-2 py-1 text-sm">
+                <Checkbox
+                  checked={draft.unreadOnly}
+                  onCheckedChange={(checked) =>
+                    setDraft((d) => ({
+                      ...d,
+                      unreadOnly: checked === true,
+                    }))
+                  }
+                />
+                Somente não lidos
+              </label>
+              <div className="flex items-center gap-2 pt-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  className="h-8 flex-1"
+                  onClick={() => {
+                    setFilters({ ...draft });
+                    setPage(1);
+                    setFiltersOpen(false);
+                  }}
+                >
+                  Aplicar
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-8 flex-1"
+                  onClick={() => {
+                    const cleared = createFilterDraft();
+                    setDraft(cleared);
+                    setFilters(cleared);
+                    setPage(1);
+                    setFiltersOpen(false);
+                  }}
+                >
+                  Limpar
+                </Button>
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
+      </div>
+
       {hasQueryError ? (
         <Alert variant="destructive" className="m-4 shrink-0">
           <AlertCircle className="h-4 w-4" />
@@ -664,89 +870,6 @@ function getOptimisticUpdates(
   }
 }
 
-function moveAttendanceInKanban(
-  data: AttendanceKanbanPage,
-  attendance: AttendanceWithDetails,
-  targetStatus: AttendanceStatus,
-  updates: Partial<AttendanceWithDetails>,
-): AttendanceKanbanPage {
-  const sourceColumn = data.columns.find((column) =>
-    column.items.some((item) => item.id === attendance.id),
-  );
-  if (!sourceColumn) return data;
-
-  const nextAttendance: AttendanceWithDetails = {
-    ...attendance,
-    ...updates,
-    status: targetStatus,
-  };
-  if (sourceColumn.status === targetStatus) {
-    return replaceAttendanceInKanban(data, nextAttendance);
-  }
-
-  return {
-    ...data,
-    columns: data.columns.map((column) => {
-      if (column.status === sourceColumn.status) {
-        return updateColumnTotals({
-          ...column,
-          items: column.items.filter((item) => item.id !== attendance.id),
-        }, -1);
-      }
-      if (column.status === targetStatus) {
-        return updateColumnTotals(
-          {
-            ...column,
-            items: [nextAttendance, ...column.items.filter((item) => item.id !== attendance.id)],
-          },
-          1,
-        );
-      }
-      return column;
-    }),
-  };
-}
-
-function replaceAttendanceInKanban(
-  data: AttendanceKanbanPage,
-  attendance: AttendanceWithDetails,
-): AttendanceKanbanPage {
-  const currentColumn = data.columns.find((column) =>
-    column.items.some((item) => item.id === attendance.id),
-  );
-  if (!currentColumn) return data;
-  if (currentColumn.status === attendance.status) {
-    return {
-      ...data,
-      columns: data.columns.map((column) =>
-        column.status === currentColumn.status
-          ? {
-              ...column,
-              items: column.items.map((item) =>
-                item.id === attendance.id ? attendance : item,
-              ),
-            }
-          : column,
-      ),
-    };
-  }
-
-  return moveAttendanceInKanban(data, currentColumn.items.find((item) => item.id === attendance.id)!, attendance.status, attendance);
-}
-
-function updateColumnTotals(
-  column: AttendanceKanbanPage["columns"][number],
-  delta: number,
-) {
-  const total = Math.max(0, column.total + delta);
-  return {
-    ...column,
-    total,
-    totalPages:
-      total > 0 && column.limit > 0 ? Math.ceil(total / column.limit) : 0,
-  };
-}
-
 function requiredValue(value: string | undefined, message: string) {
   const normalized = value?.trim();
   if (!normalized) throw new Error(message);
@@ -768,4 +891,38 @@ function toIsoDateTime(value: string) {
     throw new Error("Informe uma data válida.");
   }
   return date.toISOString();
+}
+
+function FilterSelect({
+  label,
+  value,
+  onChange,
+  children,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-1">
+      <label className="text-xs font-medium text-muted-foreground">{label}</label>
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger className="h-8 text-xs">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>{children}</SelectContent>
+      </Select>
+    </div>
+  );
+}
+
+function flattenQueueOptions(options: AttendanceOptions | undefined) {
+  if (!options) return [];
+  return options.areas.flatMap((area) =>
+    (area.queues ?? []).map((queue) => ({
+      id: queue.id,
+      name: `${area.name} · ${queue.name}`,
+    })),
+  );
 }
