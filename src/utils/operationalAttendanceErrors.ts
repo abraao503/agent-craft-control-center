@@ -90,12 +90,34 @@ export function extractOperationalErrorCode(error: unknown): string | null {
     const data = error.response?.data;
     if (typeof data === "string") return data;
     if (typeof data === "object" && data !== null) {
-      if (typeof (data as { error?: unknown }).error === "string") {
-        return (data as { error: string }).error;
+      const errorValue = (data as { error?: unknown }).error;
+      const messageValue = (data as { message?: unknown }).message;
+      const errorCode = typeof errorValue === "string" ? errorValue : null;
+      const messageCode =
+        typeof messageValue === "string" ? messageValue : null;
+
+      // Nest serializes structured conflicts as { message: CODE, error: "Conflict" }.
+      // Prefer a known domain code over the generic HTTP exception label.
+      if (
+        messageCode &&
+        Object.prototype.hasOwnProperty.call(
+          OPERATIONAL_ATTENDANCE_ERROR_MESSAGES,
+          messageCode,
+        )
+      ) {
+        return messageCode;
       }
-      if (typeof (data as { message?: unknown }).message === "string") {
-        return (data as { message: string }).message;
+      if (
+        errorCode &&
+        Object.prototype.hasOwnProperty.call(
+          OPERATIONAL_ATTENDANCE_ERROR_MESSAGES,
+          errorCode,
+        )
+      ) {
+        return errorCode;
       }
+
+      return messageCode ?? errorCode;
     }
   } else if (error instanceof Error) {
     return error.message;

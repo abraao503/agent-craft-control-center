@@ -79,8 +79,12 @@ api.interceptors.response.use(
       const status = error.response.status;
       const errorMessage =
         getSafeObservabilityCode(error.response.data) || `HTTP_${status}`;
+      const isExpectedOperationalConflict =
+        status === 409 && error.config?.url?.includes("/operation/");
 
-      console.error(`Erro da API (${status}):`, errorMessage);
+      if (!isExpectedOperationalConflict) {
+        console.error(`Erro da API (${status}):`, errorMessage);
+      }
 
       // Only logout for 401 Unauthorized errors on protected routes
       // Do NOT logout for login/register endpoints or 500 errors

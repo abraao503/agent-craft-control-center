@@ -3,6 +3,8 @@ import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
+import { useOperationalAreaMemberships } from "@/hooks/useOperationalAreaMemberships";
+import { useOperationalQueueMemberships } from "@/hooks/useOperationalQueueMemberships";
 import {
   Dialog,
   DialogContent,
@@ -71,7 +73,7 @@ interface AttendanceActionDialogProps {
   action: AttendanceAction | null;
   attendance: Pick<
     AttendanceDetail,
-    "id" | "targetAreaId" | "targetQueueId"
+    "id" | "workspaceId" | "targetAreaId" | "targetQueueId"
   >;
   options?: AttendanceOptions;
   isSubmitting: boolean;
@@ -103,12 +105,14 @@ const ACTION_COPY: Record<
   },
   ASSIGN: {
     title: "Atribuir atendimento",
-    description: "A atribuição direta coloca o atendimento em andamento.",
+    description:
+      "A atribuição direta coloca o atendimento em andamento. A elegibilidade da área e fila é validada ao confirmar.",
     submit: "Atribuir",
   },
   TRANSFER: {
     title: "Transferir atendimento",
-    description: "O ciclo e a conversa permanecem os mesmos após a transferência.",
+    description:
+      "O ciclo e a conversa permanecem os mesmos após a transferência. A elegibilidade da área e fila é validada ao confirmar.",
     submit: "Transferir",
   },
   PENDING: {
@@ -147,14 +151,101 @@ export function AttendanceActionDialog({
     defaultValues: DEFAULT_VALUES,
   });
   const selectedAreaId = form.watch("targetAreaId");
+  const selectedQueueId = form.watch("targetQueueId");
   const includeFollowUp = form.watch("includeFollowUp");
   const selectedArea = options?.areas.find((area) => area.id === selectedAreaId);
   const copy = action ? ACTION_COPY[action] : ACTION_COPY.PENDING;
+
+  const userEligibilityAreaId =
+    action === "ASSIGN"
+      ? attendance.targetAreaId ?? undefined
+      : action === "TRANSFER"
+        ? selectedAreaId || undefined
+        : undefined;
+  const userEligibilityQueueId =
+    action === "ASSIGN"
+      ? attendance.targetQueueId ?? undefined
+      : action === "TRANSFER"
+        ? selectedQueueId || undefined
+        : undefined;
+  const requiresUserEligibility = action === "ASSIGN" || action === "TRANSFER";
+  const hasUserDestination = Boolean(
+    userEligibilityAreaId && userEligibilityQueueId,
+  );
+  const areaMembershipsQuery = useOperationalAreaMemberships(
+    attendance.workspaceId,
+    userEligibilityAreaId,
+  );
+  const queueMembershipsQuery = useOperationalQueueMemberships(
+    attendance.workspaceId,
+    userEligibilityAreaId,
+    userEligibilityQueueId,
+  );
+  const userEligibilityLoading =
+    requiresUserEligibility &&
+    hasUserDestination &&
+    (areaMembershipsQuery.isLoading || queueMembershipsQuery.isLoading);
+  const userEligibilityError =
+    requiresUserEligibility &&
+    hasUserDestination &&
+    (areaMembershipsQuery.isError || queueMembershipsQuery.isError);
 
   const availableQueues = useMemo(
     () => selectedArea?.queues.filter((queue) => queue.active) ?? [],
     [selectedArea],
   );
+
+  const eligibleUserIds = useMemo(() => {
+    if (!requiresUserEligibility || !hasUserDestination) return null;
+    if (userEligibilityLoading || userEligibilityError) return new Set<string>();
+
+    const areaUserIds = new Set(
+      areaMembershipsQuery.data?.items
+        .filter((membership) => membership.active && !membership.deletedAt)
+        .map((membership) => membership.userId),
+    );
+    const queueUserIds = new Set(
+      queueMembershipsQuery.data?.items
+        .filter((membership) => membership.active && !membership.deletedAt)
+        .map((membership) => membership.userId),
+    );
+
+    return new Set(
+      [...areaUserIds].filter((userId) => queueUserIds.has(userId)),
+    );
+  }, [
+    areaMembershipsQuery.data?.items,
+    hasUserDestination,
+    queueMembershipsQuery.data?.items,
+    requiresUserEligibility,
+    userEligibilityError,
+    userEligibilityLoading,
+  ]);
+
+  const availableUsers = useMemo(() => {
+    if (!options || !requiresUserEligibility || !hasUserDestination) return [];
+    if (userEligibilityLoading || userEligibilityError || !eligibleUserIds) {
+      return [];
+    }
+
+    return options.users.filter(
+      (user) => user.active && eligibleUserIds.has(user.id),
+    );
+  }, [
+    eligibleUserIds,
+    hasUserDestination,
+    options,
+    requiresUserEligibility,
+    userEligibilityError,
+    userEligibilityLoading,
+  ]);
+
+  const userSelectDisabled =
+    isSubmitting ||
+    !options ||
+    !hasUserDestination ||
+    userEligibilityLoading ||
+    userEligibilityError;
 
   useEffect(() => {
     if (open) {
@@ -241,6 +332,7 @@ export function AttendanceActionDialog({
                         onValueChange={(value) => {
                           field.onChange(value);
                           form.setValue("targetQueueId", "");
+                          form.setValue("targetUserId", "");
                         }}
                         disabled={isSubmitting || !options}
                       >
@@ -271,7 +363,10 @@ export function AttendanceActionDialog({
                       <FormLabel>Fila de destino</FormLabel>
                       <Select
                         value={field.value || undefined}
-                        onValueChange={field.onChange}
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          form.setValue("targetUserId", "");
+                        }}
                         disabled={isSubmitting || !selectedArea}
                       >
                         <FormControl>
@@ -304,7 +399,7 @@ export function AttendanceActionDialog({
                     <Select
                       value={field.value || undefined}
                       onValueChange={field.onChange}
-                      disabled={isSubmitting || !options}
+                      disabled={userSelectDisabled}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -312,15 +407,30 @@ export function AttendanceActionDialog({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {options?.users
-                          .filter((user) => user.active)
-                          .map((user) => (
+                        {userEligibilityLoading ? (
+                          <SelectItem value="__eligibility_loading__" disabled>
+                            Validando responsáveis elegíveis...
+                          </SelectItem>
+                        ) : userEligibilityError ? (
+                          <SelectItem value="__eligibility_error__" disabled>
+                            Não foi possível validar os responsáveis.
+                          </SelectItem>
+                        ) : availableUsers.length ? (
+                          availableUsers.map((user) => (
                             <SelectItem key={user.id} value={user.id}>
                               {user.name}
                             </SelectItem>
-                          ))}
+                          ))
+                        ) : (
+                          <SelectItem value="__no_eligible_users__" disabled>
+                            Nenhum responsável elegível para este destino.
+                          </SelectItem>
+                        )}
                       </SelectContent>
                     </Select>
+                    <FormDescription>
+                      O responsável precisa ser membro ativo da área ou fila de destino.
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -337,7 +447,7 @@ export function AttendanceActionDialog({
                     <Select
                       value={field.value || undefined}
                       onValueChange={(value) => field.onChange(value === "QUEUE_ONLY" ? "" : value)}
-                      disabled={isSubmitting || !options}
+                      disabled={userSelectDisabled}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -346,15 +456,30 @@ export function AttendanceActionDialog({
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="QUEUE_ONLY">Deixar na fila</SelectItem>
-                        {options.users
-                          .filter((user) => user.active)
-                          .map((user) => (
+                        {userEligibilityLoading ? (
+                          <SelectItem value="__eligibility_loading__" disabled>
+                            Validando responsáveis elegíveis...
+                          </SelectItem>
+                        ) : userEligibilityError ? (
+                          <SelectItem value="__eligibility_error__" disabled>
+                            Não foi possível validar os responsáveis.
+                          </SelectItem>
+                        ) : availableUsers.length ? (
+                          availableUsers.map((user) => (
                             <SelectItem key={user.id} value={user.id}>
                               {user.name}
                             </SelectItem>
-                          ))}
+                          ))
+                        ) : (
+                          <SelectItem value="__no_eligible_users__" disabled>
+                            Nenhum responsável elegível para este destino.
+                          </SelectItem>
+                        )}
                       </SelectContent>
                     </Select>
+                    <FormDescription>
+                      O responsável precisa ser membro ativo da área ou fila selecionada.
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
