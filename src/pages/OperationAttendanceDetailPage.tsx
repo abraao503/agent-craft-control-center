@@ -6,7 +6,6 @@ import {
   ArrowRight,
   ArrowRightLeft,
   CheckCircle2,
-  Clock3,
   Loader2,
   MessageSquare,
   MoreHorizontal,
@@ -24,8 +23,7 @@ import {
   useMarkOperationalAttendanceRead,
   useOperationalAttendanceOptions,
   useOperationalAttendanceDetail,
-  useOperationalAttendanceEvents,
-  useOperationalAttendanceMessages,
+  useOperationalAttendanceTimeline,
 } from "@/hooks/useOperationalAttendances";
 import { useOperationalRealtime } from "@/hooks/useOperationalRealtime";
 import { useOperationalAttendanceMutations } from "@/hooks/useOperationalAttendanceMutations";
@@ -139,16 +137,10 @@ export default function OperationAttendanceDetailPage({
     currentAttendanceVersion: detailQuery.data?.version,
     enabled: canViewAttendances && realtimeEnabled,
   });
-  const messagesQuery = useOperationalAttendanceMessages(
+  const timelineQuery = useOperationalAttendanceTimeline(
     workspaceId,
     attendanceId,
     { limit: 50 },
-    canViewAttendances,
-  );
-  const eventsQuery = useOperationalAttendanceEvents(
-    workspaceId,
-    attendanceId,
-    { page: 1, limit: 50 },
     canViewAttendances,
   );
   const markReadMutation = useMarkOperationalAttendanceRead(
@@ -157,6 +149,11 @@ export default function OperationAttendanceDetailPage({
   );
   const markedAttendanceId = useRef<string | null>(null);
   const messagesViewportRef = useRef<HTMLDivElement>(null);
+  const timelineScrollSnapshotRef = useRef<{
+    height: number;
+    top: number;
+  } | null>(null);
+  const timelinePageCountRef = useRef(0);
   const markRead = markReadMutation.mutate;
 
   useEffect(() => {
@@ -168,12 +165,23 @@ export default function OperationAttendanceDetailPage({
   }, [attendanceId, detailQuery.data, markRead]);
 
   useEffect(() => {
-    if (!embedded || !messagesQuery.data) return;
+    if (!embedded || !timelineQuery.data) return;
     const viewport = messagesViewportRef.current;
     if (!viewport) return;
 
-    viewport.scrollTop = viewport.scrollHeight;
-  }, [embedded, messagesQuery.data, messagesQuery.dataUpdatedAt]);
+    const previousPosition = timelineScrollSnapshotRef.current;
+    const pageCount = timelineQuery.data.pages.length;
+
+    if (previousPosition && pageCount > timelinePageCountRef.current) {
+      viewport.scrollTop =
+        viewport.scrollHeight - previousPosition.height + previousPosition.top;
+      timelineScrollSnapshotRef.current = null;
+    } else {
+      viewport.scrollTop = viewport.scrollHeight;
+    }
+
+    timelinePageCountRef.current = pageCount;
+  }, [embedded, timelineQuery.data, timelineQuery.dataUpdatedAt]);
 
   if (!attendanceId) {
     return (
@@ -263,11 +271,10 @@ export default function OperationAttendanceDetailPage({
   }
 
   const attendance = detailQuery.data;
-  const messages = messagesQuery.data?.pages
+  const timelineItems = timelineQuery.data?.pages
     .slice()
     .reverse()
     .flatMap((page) => page.items) ?? [];
-  const events = eventsQuery.data?.items ?? [];
   const customerName = attendance.customer?.name || "Contato sem nome";
   const options = optionsQuery.data;
   const isActionPending =
@@ -568,7 +575,7 @@ export default function OperationAttendanceDetailPage({
                   Conversa
                 </CardTitle>
                 <CardDescription>
-                  Mensagens do chat compartilhado, em ordem cronológica.
+                  Mensagens e alterações do ciclo, em ordem cronológica.
                 </CardDescription>
               </CardHeader>
             )}
@@ -579,43 +586,54 @@ export default function OperationAttendanceDetailPage({
                   : undefined
               }
             >
-              {messagesQuery.isError ? (
+              {timelineQuery.isError ? (
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>Não foi possível carregar as mensagens</AlertTitle>
+                  <AlertTitle>
+                    Não foi possível carregar a conversa
+                  </AlertTitle>
                   <AlertDescription className="flex flex-wrap items-center gap-3">
                     {getOperationalAttendanceErrorMessage(
-                      messagesQuery.error,
+                      timelineQuery.error,
                       "Tente atualizar a conversa.",
                     )}
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => void messagesQuery.refetch()}
+                      onClick={() => void timelineQuery.refetch()}
                     >
                       <RefreshCw className="mr-2 h-4 w-4" />
                       Atualizar
                     </Button>
                   </AlertDescription>
                 </Alert>
-              ) : messagesQuery.isLoading ? (
+              ) : timelineQuery.isLoading ? (
                 <ConversationLoading />
-              ) : messages.length === 0 ? (
+              ) : timelineItems.length === 0 ? (
                 <EmptyConversation />
               ) : (
                 <>
-                  {messagesQuery.hasNextPage ? (
+                  {timelineQuery.hasNextPage ? (
                     <div className="mb-4 flex justify-center">
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => void messagesQuery.fetchNextPage()}
-                        disabled={messagesQuery.isFetchingNextPage}
+                        onClick={() => {
+                          const viewport = messagesViewportRef.current;
+                          if (viewport) {
+                            timelineScrollSnapshotRef.current = {
+                              height: viewport.scrollHeight,
+                              top: viewport.scrollTop,
+                            };
+                          }
+                          void timelineQuery.fetchNextPage();
+                        }}
+                        disabled={timelineQuery.isFetchingNextPage}
                       >
-                        {messagesQuery.isFetchingNextPage ? (
+                        {timelineQuery.isFetchingNextPage ? (
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         ) : null}
-                        Carregar mensagens anteriores
+                        Carregar itens anteriores
                       </Button>
                     </div>
                   ) : null}
@@ -628,9 +646,19 @@ export default function OperationAttendanceDetailPage({
                     }
                   >
                     <div className="space-y-3">
-                      {messages.map((message) => (
-                        <ConversationMessage key={message.id} message={message} />
-                      ))}
+                      {timelineItems.map((item) =>
+                        item.kind === "message" ? (
+                          <ConversationMessage
+                            key={`message:${item.id}`}
+                            message={item}
+                          />
+                        ) : (
+                          <TimelineEvent
+                            key={`event:${item.id}`}
+                            event={item}
+                          />
+                        ),
+                      )}
                     </div>
                   </ScrollArea>
                 </>
@@ -797,50 +825,6 @@ export default function OperationAttendanceDetailPage({
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <Clock3 className="h-4 w-4 text-primary" />
-                  Timeline do ciclo
-                </CardTitle>
-                <CardDescription>
-                  Eventos de estado deste ciclo, sem corpos de mensagem ou dados
-                  internos do provider.
-                </CardDescription>
-                <div className="flex flex-wrap gap-2 pt-2">
-                  <Badge variant="outline">Versão atual: {attendance.version}</Badge>
-                  <Badge variant="outline">
-                    {events.length} {events.length === 1 ? "evento visível" : "eventos visíveis"}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {eventsQuery.isError ? (
-                  <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertTitle>Não foi possível carregar a timeline</AlertTitle>
-                    <AlertDescription>
-                      {getOperationalAttendanceErrorMessage(
-                        eventsQuery.error,
-                        "Tente atualizar o detalhe.",
-                      )}
-                    </AlertDescription>
-                  </Alert>
-                ) : eventsQuery.isLoading ? (
-                  <TimelineLoading />
-                ) : events.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    Ainda não há eventos registrados neste ciclo.
-                  </p>
-                ) : (
-                  <div className="space-y-5">
-                    {events.map((event) => (
-                      <TimelineEvent key={event.id} event={event} />
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
           </CollapsibleContent>
         </Collapsible>
       </div>
@@ -1048,11 +1032,13 @@ function TimelineEvent({ event }: { event: AttendanceEvent }) {
   const reason = sanitizeObservabilityText(event.reason, 500);
 
   return (
-    <div className="relative border-l pl-4">
-      <span className="absolute -left-1.5 top-1 h-3 w-3 rounded-full bg-primary ring-4 ring-background" />
-      <p className="font-medium">{EVENT_LABELS[event.action] || event.action}</p>
-      <p className="mt-1 text-xs text-muted-foreground">
-        {formatDateTime(event.createdAt)} · {formatActor(event.actorType)} · Versão {event.aggregateVersion}
+    <article className="mx-auto max-w-xl rounded-lg border border-dashed bg-muted/20 px-3 py-2.5 text-center text-xs">
+      <p className="font-medium text-foreground">
+        {EVENT_LABELS[event.action] || event.action}
+      </p>
+      <p className="mt-1 text-muted-foreground">
+        {formatDateTime(event.createdAt)} · {formatActor(event.actorType)} ·
+        Versão {event.aggregateVersion}
       </p>
       {reason ? (
         <p className="mt-2 whitespace-pre-wrap break-words text-sm text-muted-foreground">
@@ -1060,7 +1046,7 @@ function TimelineEvent({ event }: { event: AttendanceEvent }) {
         </p>
       ) : null}
       {metadataEntries.length > 0 ? (
-        <dl className="mt-2 grid gap-1 rounded-md bg-muted/40 px-2.5 py-2 text-xs">
+        <dl className="mt-2 grid gap-1 rounded-md bg-muted/40 px-2.5 py-2 text-left text-xs">
           {metadataEntries.map(({ key, value }) => (
             <div key={key} className="grid grid-cols-[auto_minmax(0,1fr)] gap-2">
               <dt className="font-medium text-muted-foreground">
@@ -1071,7 +1057,7 @@ function TimelineEvent({ event }: { event: AttendanceEvent }) {
           ))}
         </dl>
       ) : null}
-    </div>
+    </article>
   );
 }
 
@@ -1109,26 +1095,13 @@ function ConversationLoading() {
   );
 }
 
-function TimelineLoading() {
-  return (
-    <div className="space-y-5">
-      {[1, 2, 3].map((item) => (
-        <div key={item} className="space-y-2 border-l pl-4">
-          <div className="h-4 w-2/3 animate-pulse rounded bg-muted" />
-          <div className="h-3 w-1/2 animate-pulse rounded bg-muted" />
-        </div>
-      ))}
-    </div>
-  );
-}
-
 function EmptyConversation() {
   return (
     <div className="flex min-h-48 flex-col items-center justify-center gap-2 rounded-lg border border-dashed px-6 text-center">
       <MessageSquare className="h-8 w-8 text-muted-foreground" />
-      <p className="font-medium">Nenhuma mensagem encontrada</p>
+      <p className="font-medium">Nenhum item encontrado</p>
       <p className="text-sm text-muted-foreground">
-        O histórico deste chat ainda não possui mensagens visíveis.
+        O histórico deste chat ainda não possui mensagens ou eventos visíveis.
       </p>
     </div>
   );

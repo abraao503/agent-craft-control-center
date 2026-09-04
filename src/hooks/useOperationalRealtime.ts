@@ -172,6 +172,9 @@ export function useOperationalRealtime({
         queryKey: ["operation", "attendance-events", workspaceId, eventAttendanceId],
       });
       void queryClient.invalidateQueries({
+        queryKey: ["operation", "attendance-timeline", workspaceId, eventAttendanceId],
+      });
+      void queryClient.invalidateQueries({
         queryKey: ["operation", "attendance-commands", workspaceId, eventAttendanceId],
       });
       void queryClient.invalidateQueries({
@@ -286,6 +289,9 @@ export function useOperationalRealtime({
         });
         void queryClient.invalidateQueries({
           queryKey: ["operation", "attendance-events", workspaceId, rawEvent.attendanceId],
+        });
+        void queryClient.invalidateQueries({
+          queryKey: ["operation", "attendance-timeline", workspaceId, rawEvent.attendanceId],
         });
         void queryClient.invalidateQueries({
           queryKey: ["operation", "attendance-commands", workspaceId, rawEvent.attendanceId],

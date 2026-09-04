@@ -7,6 +7,7 @@ import {
 import { getAttendanceDetail } from "@/services/operation/getAttendanceDetail";
 import { getOperationalKanban } from "@/services/operation/getOperationalKanban";
 import { listAttendanceMessages } from "@/services/operation/listAttendanceMessages";
+import { listAttendanceTimeline } from "@/services/operation/listAttendanceTimeline";
 import { listAttendanceCommands } from "@/services/operation/listAttendanceCommands";
 import { listAttendanceEvents } from "@/services/operation/listAttendanceEvents";
 import { listAttendanceOptions } from "@/services/operation/listAttendanceOptions";
@@ -19,6 +20,7 @@ import { listOperationalAttendanceTemplates } from "@/services/operation/listOpe
 import {
   AttendanceSummaryFilters,
   ListAttendanceMessagesParams,
+  ListAttendanceTimelineParams,
   ListAttendanceKanbanFilters,
   ListAttendancesFilters,
   OperationalFollowUpOccurrenceStatus,
@@ -88,6 +90,44 @@ export function useOperationalAttendanceMessages(
         throw new Error("ID do atendimento não informado");
       }
       return listAttendanceMessages({
+        workspaceId,
+        attendanceId,
+        ...options,
+        before: pageParam,
+      });
+    },
+    getNextPageParam: (lastPage) =>
+      lastPage.hasMore ? (lastPage.nextCursor ?? undefined) : undefined,
+    enabled: Boolean(workspaceId && attendanceId && enabled),
+  });
+}
+
+export function useOperationalAttendanceTimeline(
+  workspaceId?: string,
+  attendanceId?: string,
+  options: Pick<
+    Omit<ListAttendanceTimelineParams, "workspaceId" | "attendanceId">,
+    "limit"
+  > = {},
+  enabled = true,
+) {
+  return useInfiniteQuery({
+    queryKey: [
+      "operation",
+      "attendance-timeline",
+      workspaceId,
+      attendanceId,
+      options.limit ?? 50,
+    ],
+    initialPageParam: undefined as string | undefined,
+    queryFn: ({ pageParam }) => {
+      if (!workspaceId) {
+        throw new Error("Workspace operacional não selecionado");
+      }
+      if (!attendanceId) {
+        throw new Error("ID do atendimento não informado");
+      }
+      return listAttendanceTimeline({
         workspaceId,
         attendanceId,
         ...options,

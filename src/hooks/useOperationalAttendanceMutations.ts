@@ -77,6 +77,14 @@ export function useOperationalAttendanceMutations(workspaceId?: string) {
       void queryClient.invalidateQueries({
         queryKey: [
           "operation",
+          "attendance-timeline",
+          resolvedWorkspaceId,
+          attendanceId,
+        ],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: [
+          "operation",
           "attendance-commands",
           resolvedWorkspaceId,
           attendanceId,

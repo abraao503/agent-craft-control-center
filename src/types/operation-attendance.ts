@@ -246,6 +246,24 @@ export interface AttendanceEvent {
   createdAt: string;
 }
 
+export type AttendanceTimelineMessageItem = AttendanceMessageItem & {
+  kind: "message";
+};
+
+export type AttendanceTimelineEventItem = AttendanceEvent & {
+  kind: "event";
+};
+
+export type AttendanceTimelineItem =
+  | AttendanceTimelineMessageItem
+  | AttendanceTimelineEventItem;
+
+export interface AttendanceTimelinePage {
+  items: AttendanceTimelineItem[];
+  nextCursor: string | null;
+  hasMore: boolean;
+}
+
 export interface SanitizedAttendanceCommand {
   id: string;
   attendanceId: string;
@@ -518,6 +536,13 @@ export interface GetAttendanceDetailParams {
 }
 
 export interface ListAttendanceMessagesParams {
+  workspaceId: string;
+  attendanceId: string;
+  limit?: number;
+  before?: string;
+}
+
+export interface ListAttendanceTimelineParams {
   workspaceId: string;
   attendanceId: string;
   limit?: number;
