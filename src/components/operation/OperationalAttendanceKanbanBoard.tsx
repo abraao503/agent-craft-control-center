@@ -408,15 +408,6 @@ function OperationalAttendanceKanbanCard({
               </div>
 
               <div className="flex items-center justify-between gap-2">
-                <Badge
-                  variant="outline"
-                  className={cn(
-                    "h-5 px-1.5 text-[10px]",
-                    STATUS_CLASS_NAMES[attendance.status],
-                  )}
-                >
-                  {STATUS_LABELS[attendance.status]}
-                </Badge>
                 <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
                   <Clock3 className="h-3.5 w-3.5" />
                   {formatElapsed(activityAt, attendance.status)}
