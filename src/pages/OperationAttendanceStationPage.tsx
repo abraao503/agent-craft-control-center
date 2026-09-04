@@ -1,7 +1,15 @@
-import { Inbox, Menu, MessageSquare, Settings2 } from "lucide-react";
-import { Link, useParams } from "react-router-dom";
+import {
+  Inbox,
+  LayoutGrid,
+  List,
+  Menu,
+  MessageSquare,
+  Settings2,
+} from "lucide-react";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import OperationAttendanceDetailPage from "./OperationAttendanceDetailPage";
 import OperationAttendancesPage from "./OperationAttendancesPage";
+import OperationAttendanceKanbanPage from "./OperationAttendanceKanbanPage";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { useWorkspaceContext } from "@/contexts/workspace/WorkspaceContext";
@@ -10,8 +18,10 @@ import { useSidebar } from "@/components/ui/sidebar";
 
 export default function OperationAttendanceStationPage() {
   const { attendanceId } = useParams<{ attendanceId?: string }>();
+  const [searchParams] = useSearchParams();
   const { currentWorkspace } = useWorkspaceContext();
   const { isMobile, setOpenMobile } = useSidebar();
+  const isKanbanView = !attendanceId && searchParams.get("view") === "kanban";
 
   return (
     <section className="flex h-full min-h-0 w-full flex-col overflow-hidden bg-slate-50/70 dark:bg-background">
@@ -39,6 +49,38 @@ export default function OperationAttendanceStationPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 rounded-md border bg-muted/30 p-1">
+            <Link
+              to="/operation/attendances"
+              aria-label="Abrir inbox de atendimentos"
+              aria-current={!isKanbanView ? "page" : undefined}
+              className={cn(
+                buttonVariants({
+                  variant: !isKanbanView ? "secondary" : "ghost",
+                  size: "sm",
+                }),
+                "h-8 gap-2 px-2.5",
+              )}
+            >
+              <List className="h-4 w-4" />
+              <span className="hidden md:inline">Inbox</span>
+            </Link>
+            <Link
+              to="/operation/attendances?view=kanban"
+              aria-label="Abrir Kanban de atendimentos"
+              aria-current={isKanbanView ? "page" : undefined}
+              className={cn(
+                buttonVariants({
+                  variant: isKanbanView ? "secondary" : "ghost",
+                  size: "sm",
+                }),
+                "h-8 gap-2 px-2.5",
+              )}
+            >
+              <LayoutGrid className="h-4 w-4" />
+              <span className="hidden md:inline">Kanban</span>
+            </Link>
+          </div>
           <Link
             to="/operation"
             className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "gap-2")}
@@ -49,28 +91,36 @@ export default function OperationAttendanceStationPage() {
         </div>
       </header>
 
-      <div className="grid min-h-0 flex-1 lg:grid-cols-[minmax(22rem,27rem)_minmax(0,1fr)]">
-        <div className={cn(
-          "min-h-0 min-w-0 overflow-hidden bg-card",
-          attendanceId ? "hidden lg:block" : "block",
-        )}>
-          <OperationAttendancesPage
-            embedded
-            realtimeEnabled={!attendanceId}
-          />
-        </div>
+      {isKanbanView ? (
+        <OperationAttendanceKanbanPage />
+      ) : (
+        <div className="grid min-h-0 flex-1 lg:grid-cols-[minmax(22rem,27rem)_minmax(0,1fr)]">
+          <div
+            className={cn(
+              "min-h-0 min-w-0 overflow-hidden bg-card",
+              attendanceId ? "hidden lg:block" : "block",
+            )}
+          >
+            <OperationAttendancesPage
+              embedded
+              realtimeEnabled={!attendanceId}
+            />
+          </div>
 
-        <div className={cn(
-          "min-h-0 min-w-0 overflow-hidden bg-background",
-          attendanceId ? "block" : "hidden lg:block",
-        )}>
-          {attendanceId ? (
-            <OperationAttendanceDetailPage realtimeEnabled embedded />
-          ) : (
-            <EmptyStationDetail />
-          )}
+          <div
+            className={cn(
+              "min-h-0 min-w-0 overflow-hidden bg-background",
+              attendanceId ? "block" : "hidden lg:block",
+            )}
+          >
+            {attendanceId ? (
+              <OperationAttendanceDetailPage realtimeEnabled embedded />
+            ) : (
+              <EmptyStationDetail />
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </section>
   );
 }

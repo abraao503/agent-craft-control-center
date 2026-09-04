@@ -5,6 +5,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { getAttendanceDetail } from "@/services/operation/getAttendanceDetail";
+import { getOperationalKanban } from "@/services/operation/getOperationalKanban";
 import { listAttendanceMessages } from "@/services/operation/listAttendanceMessages";
 import { listAttendanceCommands } from "@/services/operation/listAttendanceCommands";
 import { listAttendanceEvents } from "@/services/operation/listAttendanceEvents";
@@ -18,6 +19,7 @@ import { listOperationalAttendanceTemplates } from "@/services/operation/listOpe
 import {
   AttendanceSummaryFilters,
   ListAttendanceMessagesParams,
+  ListAttendanceKanbanFilters,
   ListAttendancesFilters,
   OperationalFollowUpOccurrenceStatus,
   OperationalFollowUpStatus,
@@ -35,6 +37,25 @@ export function useOperationalAttendances(
         throw new Error("Workspace operacional não selecionado");
       }
       return listAttendances({ workspaceId, ...filters });
+    },
+    enabled: Boolean(workspaceId && enabled),
+    placeholderData: (previousData) => previousData,
+  });
+}
+
+export function useOperationalAttendanceKanban(
+  workspaceId?: string,
+  filters: ListAttendanceKanbanFilters = {},
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: ["operation", "attendance-kanban", workspaceId, filters],
+    queryFn: () => {
+      if (!workspaceId) {
+        throw new Error("Workspace operacional não selecionado");
+      }
+
+      return getOperationalKanban({ workspaceId, ...filters });
     },
     enabled: Boolean(workspaceId && enabled),
     placeholderData: (previousData) => previousData,
@@ -101,6 +122,9 @@ export function useMarkOperationalAttendanceRead(
       await Promise.all([
         queryClient.invalidateQueries({
           queryKey: ["operation", "attendances", workspaceId],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["operation", "attendance-kanban", workspaceId],
         }),
         queryClient.invalidateQueries({
           queryKey: ["operation", "attendance-summary", workspaceId],

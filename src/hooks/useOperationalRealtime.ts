@@ -99,6 +99,9 @@ export function useOperationalRealtime({
         queryKey: ["operation", "attendances", workspaceId],
       });
       void queryClient.invalidateQueries({
+        queryKey: ["operation", "attendance-kanban", workspaceId],
+      });
+      void queryClient.invalidateQueries({
         queryKey: ["operation", "attendance-summary", workspaceId],
       });
 

@@ -389,6 +389,22 @@ export interface AttendancesPage {
   totalPages: number;
 }
 
+export interface AttendanceKanbanColumn {
+  status: AttendanceStatus;
+  items: AttendanceWithDetails[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface AttendanceKanbanPage {
+  columns: AttendanceKanbanColumn[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
 export interface AttendanceMessagesPage {
   items: AttendanceMessageItem[];
   nextCursor: string | null;
@@ -470,6 +486,16 @@ export interface ListAttendancesFilters {
 }
 
 export interface ListAttendancesParams extends ListAttendancesFilters {
+  workspaceId: string;
+}
+
+export interface ListAttendanceKanbanFilters
+  extends Omit<ListAttendancesFilters, "status"> {
+  closedLimit?: number;
+}
+
+export interface ListAttendanceKanbanParams
+  extends ListAttendanceKanbanFilters {
   workspaceId: string;
 }
 
