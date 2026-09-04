@@ -11,9 +11,12 @@ export interface AddUserToCompanyRequest {
 }
 
 export interface AddUserToCompanyResponse {
-  success: boolean;
-  userId?: string;
-  message?: string;
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  companyId: string;
+  workspaceId: string | null;
 }
 
 export async function addUserToCompany(

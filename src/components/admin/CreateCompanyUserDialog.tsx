@@ -66,6 +66,52 @@ const WORKSPACE_LEVEL_ROLES = [
   UserRole.SALES_REP,
 ];
 
+const USER_CREATION_ERROR_MESSAGES: Record<string, string> = {
+  "User already exists":
+    "Este email já está cadastrado. Informe outro email ou use o usuário existente.",
+  "Company owner already exists": "Já existe um dono para esta empresa.",
+  "Workspace owner already exists": "Já existe um dono para este workspace.",
+  "Workspace not found": "O workspace informado não foi encontrado.",
+  "Workspace does not belong to company":
+    "O workspace não pertence à empresa atual.",
+  "Invalid role for context":
+    "A função escolhida não é válida para este workspace.",
+  Unauthorized: "Você não tem permissão para criar este usuário.",
+  Forbidden: "Você não tem permissão para criar este usuário.",
+};
+
+const DEFAULT_USER_CREATION_ERROR =
+  "Não foi possível criar o usuário. Verifique os dados e tente novamente.";
+
+function getUserCreationErrorMessage(error: unknown): string {
+  if (typeof error !== "object" || error === null || !("response" in error)) {
+    return DEFAULT_USER_CREATION_ERROR;
+  }
+
+  const response = error.response;
+  if (typeof response !== "object" || response === null || !("data" in response)) {
+    return DEFAULT_USER_CREATION_ERROR;
+  }
+
+  const data = response.data;
+  if (typeof data !== "object" || data === null || !("message" in data)) {
+    return DEFAULT_USER_CREATION_ERROR;
+  }
+
+  const rawMessage = data.message;
+  const messages = Array.isArray(rawMessage)
+    ? rawMessage.filter((message): message is string => typeof message === "string")
+    : typeof rawMessage === "string"
+      ? [rawMessage]
+      : [];
+
+  if (messages.length === 0) return DEFAULT_USER_CREATION_ERROR;
+
+  return messages
+    .map((message) => USER_CREATION_ERROR_MESSAGES[message] || message)
+    .join(" ");
+}
+
 export function CreateCompanyUserDialog({
   open,
   onOpenChange,
@@ -136,24 +182,24 @@ export function CreateCompanyUserDialog({
 
   const mutation = useMutation({
     mutationFn: addUserToCompany,
-    onSuccess: () => {
+    onSuccess: async () => {
       toast({
         title: "Sucesso",
         description: "Usuário criado com sucesso!",
       });
 
       // Invalidate queries based on context
-      if (isWorkspaceContext) {
-        queryClient.invalidateQueries({
-          queryKey: ["workspaceUsers", workspaceId],
+      if (isWorkspaceContext && workspaceId) {
+        await queryClient.invalidateQueries({
+          queryKey: ["workspaceUsers", companyId, workspaceId],
         });
       } else {
-        queryClient.invalidateQueries({
+        await queryClient.invalidateQueries({
           queryKey: ["companyAdmins", companyId],
         });
       }
 
-      queryClient.invalidateQueries({
+      await queryClient.invalidateQueries({
         queryKey: ["companyDetails", companyId],
       });
 
@@ -161,12 +207,9 @@ export function CreateCompanyUserDialog({
       onOpenChange(false);
     },
     onError: (error: unknown) => {
-      const message =
-        (error as { response?: { data?: { message?: string } } }).response?.data
-          ?.message || "Erro ao criar usuário";
       toast({
         title: "Erro",
-        description: message,
+        description: getUserCreationErrorMessage(error),
         variant: "destructive",
       });
     },
@@ -187,11 +230,32 @@ export function CreateCompanyUserDialog({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    const name = formData.name.trim();
+    const email = formData.email.trim();
+
     // Validations
-    if (!formData.name || !formData.email || !formData.password) {
+    if (!name || !email || !formData.password) {
       toast({
         title: "Erro",
         description: "Todos os campos são obrigatórios",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (name.length < 3) {
+      toast({
+        title: "Erro",
+        description: "O nome deve ter no mínimo 3 caracteres.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!/^\S+@\S+\.\S+$/.test(email)) {
+      toast({
+        title: "Erro",
+        description: "Informe um email válido.",
         variant: "destructive",
       });
       return;
@@ -201,6 +265,15 @@ export function CreateCompanyUserDialog({
       toast({
         title: "Erro",
         description: "Senha deve ter no mínimo 8 caracteres",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (formData.password.length > 16) {
+      toast({
+        title: "Erro",
+        description: "Senha deve ter no máximo 16 caracteres.",
         variant: "destructive",
       });
       return;
@@ -238,8 +311,8 @@ export function CreateCompanyUserDialog({
 
     // Prepare payload
     const payload = {
-      name: formData.name,
-      email: formData.email,
+      name,
+      email,
       password: formData.password,
       role: formData.role,
       ...(isWorkspaceContext && workspaceId && { workspaceId }),
