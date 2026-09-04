@@ -13,14 +13,19 @@ import type { AttendanceKanbanPage, AttendanceWithDetails } from "@/types/operat
 const EVENT_NAMES = Object.values(OPERATIONAL_PUBLIC_EVENTS) as OperationalPublicEventName[];
 const MAX_REMEMBERED_EVENTS = 500;
 
-function isAttendanceWithDetails(value: unknown): boolean {
+function isAttendanceWithDetails(
+  value: unknown,
+): value is AttendanceWithDetails {
   return (
     typeof value === "object" &&
     value !== null &&
     "id" in value &&
     typeof (value as Record<string, unknown>).id === "string" &&
     "status" in value &&
-    typeof (value as Record<string, unknown>).status === "string"
+    typeof (value as Record<string, unknown>).status === "string" &&
+    "version" in value &&
+    typeof (value as Record<string, unknown>).version === "number" &&
+    Number.isInteger((value as Record<string, unknown>).version)
   );
 }
 
@@ -107,37 +112,36 @@ export function useOperationalRealtime({
     let mounted = true;
     const targetAttendanceId = attendanceId;
 
-    const patchKanbanCache = (eventAttendanceId: string): boolean => {
+    const patchKanbanCache = (event: OperationalPublicEvent): boolean => {
+      if (event.aggregateVersion === null) return false;
+
       const cached = queryClient.getQueryData<unknown>([
         "operation",
         "attendance",
         workspaceId,
-        eventAttendanceId,
+        event.attendanceId,
       ]);
       if (!cached || !isAttendanceWithDetails(cached)) {
         return false;
       }
 
-      const kanbanQueries = queryClient.getQueriesData<{
-        columns: { items: { id: string }[] }[];
-      }>({
+      if (cached.version < event.aggregateVersion) return false;
+
+      const kanbanQueries = queryClient.getQueriesData<AttendanceKanbanPage>({
         queryKey: ["operation", "attendance-kanban", workspaceId],
       });
 
       let patched = false;
       for (const [queryKey, data] of kanbanQueries) {
         if (!data) continue;
-        const hasItem = data.columns.some((column) =>
-          column.items.some((item) => item.id === eventAttendanceId),
-        );
-        if (!hasItem) continue;
+        const item = data.columns
+          .flatMap((column) => column.items)
+          .find((candidate) => candidate.id === event.attendanceId);
+        if (!item || item.version > cached.version) continue;
 
-        queryClient.setQueryData(queryKey, (old: unknown) => {
-          if (!old || typeof old !== "object") return old;
-          return replaceAttendanceInKanban(
-            old as AttendanceKanbanPage,
-            cached as AttendanceWithDetails,
-          );
+        queryClient.setQueryData(queryKey, (old: AttendanceKanbanPage | undefined) => {
+          if (!old) return old;
+          return replaceAttendanceInKanban(old, cached);
         });
         patched = true;
       }
@@ -270,7 +274,7 @@ export function useOperationalRealtime({
 
       setLastEventAt(rawEvent.occurredAt);
 
-      const patched = patchKanbanCache(rawEvent.attendanceId);
+      const patched = patchKanbanCache(rawEvent);
       if (!patched) {
         invalidateWorkspace(rawEvent.attendanceId);
       } else if (isCurrentAttendance) {
