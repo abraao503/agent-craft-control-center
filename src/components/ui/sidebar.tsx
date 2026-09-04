@@ -202,7 +202,9 @@ const Sidebar = React.forwardRef<
           ref={ref}
           className={cn(
             "fixed inset-y-0 left-0 z-30 flex h-svh flex-col transition-transform duration-200 shadow-xl border-r",
-            state === "collapsed" ? "translate-x-[-100%]" : "translate-x-0",
+            state === "collapsed"
+              ? "invisible pointer-events-none translate-x-[-100%]"
+              : "visible pointer-events-auto translate-x-0",
             className
           )}
           style={

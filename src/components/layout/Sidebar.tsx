@@ -733,7 +733,9 @@ const SidebarMenuContent = () => {
 
 const ToggleButton = () => {
   const { toggleSidebar, state } = useSidebar();
+  const { t } = useTranslation();
   const isCollapsed = state === "collapsed";
+  const label = t("navigation.toggleSidebar");
 
   return (
     <Button
@@ -741,6 +743,8 @@ const ToggleButton = () => {
       size="icon"
       className="absolute right-[-12px] top-4 h-6 w-6 rounded-full border bg-background shadow-sm z-10"
       onClick={toggleSidebar}
+      aria-label={label}
+      title={label}
     >
       {isCollapsed ? (
         <ChevronRight className="h-3 w-3" />
@@ -755,26 +759,21 @@ const Sidebar = () => {
   const { user } = useAuth();
   const [mounted, setMounted] = useState(false);
   const location = useLocation();
-  const { state, setOpen, isMobile, setOpenMobile } = useSidebar();
-  const isCollapsed = state === "collapsed";
+  const { isMobile, setOpenMobile } = useSidebar();
   const isOperationStation =
     location.pathname === "/operation/attendances" ||
     location.pathname.startsWith("/operation/attendances/");
 
-  // Efeito simplificado para manter o estado da sidebar durante navegação
+  // Fechar a navegação ao entrar na estação; não reagir ao toggle do usuário.
   useEffect(() => {
-    // O efeito aqui é mínimo apenas para garantir que o estado seja preservado
     if (isMobile && isOperationStation) {
       setOpenMobile(false);
-    } else if (!isMobile && isCollapsed) {
-      // Aplicar o estado colapsado sem setTimeout para evitar o flash
-      setOpen(false);
     }
 
     if (!mounted) {
       setMounted(true);
     }
-  }, [location.pathname, isCollapsed, isMobile, isOperationStation, setOpen, setOpenMobile, mounted]);
+  }, [location.pathname, isMobile, isOperationStation, setOpenMobile, mounted]);
 
   if (!user) {
     return null;
