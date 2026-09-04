@@ -78,6 +78,7 @@ const USER_CREATION_ERROR_MESSAGES: Record<string, string> = {
     "A função escolhida não é válida para este workspace.",
   Unauthorized: "Você não tem permissão para criar este usuário.",
   Forbidden: "Você não tem permissão para criar este usuário.",
+  "Forbidden resource": "Você não tem permissão para criar este usuário.",
 };
 
 const DEFAULT_USER_CREATION_ERROR =
