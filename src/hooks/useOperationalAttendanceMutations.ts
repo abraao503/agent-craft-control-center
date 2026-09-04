@@ -41,6 +41,9 @@ export function useOperationalAttendanceMutations(workspaceId?: string) {
     void queryClient.invalidateQueries({
       queryKey: ["operation", "attendances", resolvedWorkspaceId],
     });
+    void queryClient.invalidateQueries({
+      queryKey: ["operation", "attendance-kanban", resolvedWorkspaceId],
+    });
 
     if (attendanceId) {
       void queryClient.invalidateQueries({
@@ -93,6 +96,12 @@ export function useOperationalAttendanceMutations(workspaceId?: string) {
   };
 
   const handleMutationError = (error: unknown, attendanceId?: string) => {
+    if (resolvedWorkspaceId) {
+      void queryClient.invalidateQueries({
+        queryKey: ["operation", "attendance-kanban", resolvedWorkspaceId],
+      });
+    }
+
     if (isStaleVersionError(error) && resolvedWorkspaceId && attendanceId) {
       void queryClient.invalidateQueries({
         queryKey: ["operation", "attendance", resolvedWorkspaceId, attendanceId],

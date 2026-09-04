@@ -1,19 +1,50 @@
+import { useState } from "react";
+import {
+  DndContext,
+  DragEndEvent,
+  DragStartEvent,
+  KeyboardSensor,
+  PointerSensor,
+  defaultKeyboardCoordinateGetter,
+  useDraggable,
+  useDroppable,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import { CSS } from "@dnd-kit/utilities";
 import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
+  ArrowRight,
+  ArrowRightLeft,
   Bot,
   CalendarClock,
+  CheckCircle2,
   Clock3,
+  GripVertical,
   Inbox,
   MapPin,
   MessageCircle,
+  MoreHorizontal,
+  PauseCircle,
+  PlayCircle,
   Radio,
+  UserMinus,
+  UserPlus,
   UserRound,
+  XCircle,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { LucideIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -24,6 +55,10 @@ import {
   AttendanceStatus,
   AttendanceWithDetails,
 } from "@/types/operation-attendance";
+import {
+  getOperationalKanbanActionMenu,
+  OperationalKanbanMoveAction,
+} from "./operationalAttendanceKanbanMoves";
 
 const STATUS_ORDER: AttendanceStatus[] = [
   "TRIAGE",
@@ -49,23 +84,76 @@ const STATUS_CLASS_NAMES: Record<AttendanceStatus, string> = {
   CLOSED: "border-slate-200 bg-slate-50 text-slate-600",
 };
 
+const COLUMN_DROPZONE_IDS: Record<AttendanceStatus, string> = {
+  TRIAGE: "operation-kanban-column-triage",
+  WAITING_QUEUE: "operation-kanban-column-waiting-queue",
+  IN_PROGRESS: "operation-kanban-column-in-progress",
+  PENDING: "operation-kanban-column-pending",
+  CLOSED: "operation-kanban-column-closed",
+};
+
 const MESSAGE_SENDER_LABELS = {
   CUSTOMER: "Cliente",
   HUMAN: "Operador",
   ASSISTANT: "Assistente",
 } as const;
 
+const ACTION_LABELS: Record<OperationalKanbanMoveAction, string> = {
+  ROUTE: "Encaminhar",
+  CLAIM: "Atender",
+  ASSIGN: "Atribuir responsável",
+  TRANSFER: "Transferir",
+  PENDING: "Marcar como pendente",
+  RESUME: "Retomar",
+  UNASSIGN: "Remover responsável",
+  CLOSE: "Encerrar atendimento",
+};
+
+const ACTION_ICONS: Record<OperationalKanbanMoveAction, LucideIcon> = {
+  ROUTE: ArrowRight,
+  CLAIM: CheckCircle2,
+  ASSIGN: UserPlus,
+  TRANSFER: ArrowRightLeft,
+  PENDING: PauseCircle,
+  RESUME: PlayCircle,
+  UNASSIGN: UserMinus,
+  CLOSE: XCircle,
+};
+
 interface OperationalAttendanceKanbanBoardProps {
   data?: AttendanceKanbanPage;
   channelNames?: Map<string, string>;
+  canOperate?: boolean;
   isLoading?: boolean;
+  movingAttendanceId?: string | null;
+  onMoveAttendance?: (
+    attendance: AttendanceWithDetails,
+    targetStatus: AttendanceStatus,
+  ) => void;
+  onAction?: (
+    attendance: AttendanceWithDetails,
+    action: OperationalKanbanMoveAction,
+  ) => void;
 }
 
 export function OperationalAttendanceKanbanBoard({
   data,
   channelNames = new Map(),
+  canOperate = false,
   isLoading = false,
+  movingAttendanceId = null,
+  onMoveAttendance,
+  onAction,
 }: OperationalAttendanceKanbanBoardProps) {
+  const [activeAttendance, setActiveAttendance] =
+    useState<AttendanceWithDetails | null>(null);
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: defaultKeyboardCoordinateGetter,
+    }),
+  );
+
   if (isLoading && !data) {
     return <KanbanBoardSkeleton />;
   }
@@ -84,30 +172,92 @@ export function OperationalAttendanceKanbanBoard({
     );
   });
 
+  const handleDragStart = ({ active }: DragStartEvent) => {
+    const attendance = active.data.current?.attendance;
+    setActiveAttendance(isAttendanceWithDetails(attendance) ? attendance : null);
+  };
+
+  const handleDragEnd = ({ active, over }: DragEndEvent) => {
+    setActiveAttendance(null);
+    if (!canOperate || !over || !onMoveAttendance) return;
+
+    const attendance = active.data.current?.attendance;
+    const targetStatus = over.data.current?.status;
+    if (
+      !isAttendanceWithDetails(attendance) ||
+      !isAttendanceStatus(targetStatus)
+    ) {
+      return;
+    }
+
+    onMoveAttendance(attendance, targetStatus);
+  };
+
   return (
-    <div className="min-h-0 h-full overflow-x-auto p-3 sm:p-4 lg:p-5">
-      <div className="flex h-full min-w-max items-stretch gap-4">
-        {columns.map((column) => (
-          <OperationalAttendanceKanbanColumn
-            key={column.status}
-            column={column}
-            channelNames={channelNames}
-          />
-        ))}
+    <DndContext
+      sensors={sensors}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      onDragCancel={() => setActiveAttendance(null)}
+    >
+      <div
+        className="min-h-0 h-full overflow-x-auto p-3 sm:p-4 lg:p-5"
+        role="region"
+        aria-label="Quadro Kanban operacional"
+      >
+        <div className="flex h-full min-w-max items-stretch gap-4">
+          {columns.map((column) => (
+            <OperationalAttendanceKanbanColumn
+              key={column.status}
+              column={column}
+              channelNames={channelNames}
+              canOperate={canOperate}
+              movingAttendanceId={movingAttendanceId}
+              onAction={onAction}
+            />
+          ))}
+        </div>
+        {activeAttendance ? (
+          <p className="sr-only" aria-live="assertive">
+            Movendo atendimento de {activeAttendance.customer?.name || "contato"}.
+            Use as setas para escolher uma coluna e pressione Espaço para soltar.
+          </p>
+        ) : null}
       </div>
-    </div>
+    </DndContext>
   );
 }
 
 function OperationalAttendanceKanbanColumn({
   column,
   channelNames,
+  canOperate,
+  movingAttendanceId,
+  onAction,
 }: {
   column: AttendanceKanbanColumn;
   channelNames: Map<string, string>;
+  canOperate: boolean;
+  movingAttendanceId: string | null;
+  onAction?: (
+    attendance: AttendanceWithDetails,
+    action: OperationalKanbanMoveAction,
+  ) => void;
 }) {
+  const { isOver, setNodeRef } = useDroppable({
+    id: COLUMN_DROPZONE_IDS[column.status],
+    data: { status: column.status },
+    disabled: !canOperate,
+  });
+
   return (
-    <Card className="flex h-full min-h-[30rem] w-[min(22rem,calc(100vw-2rem))] flex-col overflow-hidden border-border/80 bg-background/80 shadow-sm sm:w-[22rem]">
+    <Card
+      ref={setNodeRef}
+      className={cn(
+        "flex h-full min-h-[30rem] w-[min(22rem,calc(100vw-2rem))] flex-col overflow-hidden border-border/80 bg-background/80 shadow-sm transition-shadow sm:w-[22rem]",
+        isOver && "ring-2 ring-primary/60 ring-offset-2",
+      )}
+    >
       <CardHeader className="shrink-0 border-b bg-card/90 p-3">
         <div className="flex items-center justify-between gap-3">
           <CardTitle className="flex min-w-0 items-center gap-2 text-sm">
@@ -140,6 +290,9 @@ function OperationalAttendanceKanbanColumn({
                   key={attendance.id}
                   attendance={attendance}
                   channelNames={channelNames}
+                  canOperate={canOperate}
+                  isMoving={movingAttendanceId !== null}
+                  onAction={onAction}
                 />
               ))}
             </div>
@@ -161,10 +314,31 @@ function OperationalAttendanceKanbanColumn({
 function OperationalAttendanceKanbanCard({
   attendance,
   channelNames,
+  canOperate,
+  isMoving,
+  onAction,
 }: {
   attendance: AttendanceWithDetails;
   channelNames: Map<string, string>;
+  canOperate: boolean;
+  isMoving: boolean;
+  onAction?: (
+    attendance: AttendanceWithDetails,
+    action: OperationalKanbanMoveAction,
+  ) => void;
 }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    isDragging,
+  } = useDraggable({
+    id: attendance.id,
+    data: { attendance },
+    disabled: !canOperate || isMoving,
+  });
+  const actionMenu = getOperationalKanbanActionMenu(attendance.status);
   const customerName = attendance.customer?.name || "Contato sem nome";
   const destination = [
     attendance.destination?.areaName,
@@ -189,90 +363,153 @@ function OperationalAttendanceKanbanCard({
     Boolean(attendance.pendingReason || attendance.pendingDueAt);
 
   return (
-    <Link
-      to={`/operation/attendances/${attendance.id}`}
-      className="group block rounded-lg border bg-card p-3 shadow-sm transition-colors hover:border-primary/40 hover:bg-primary/[0.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-      aria-label={`Abrir atendimento de ${customerName}`}
+    <article
+      ref={setNodeRef}
+      style={{
+        transform: transform ? CSS.Translate.toString(transform) : undefined,
+        zIndex: isDragging ? 20 : undefined,
+      }}
+      className={cn(
+        "rounded-lg border bg-card p-3 shadow-sm transition-colors hover:border-primary/40 hover:bg-primary/[0.03]",
+        isDragging && "opacity-40",
+        isMoving && !isDragging && "opacity-70",
+      )}
     >
-      <div className="flex items-start gap-3">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
-          {customerName.slice(0, 1).toUpperCase()}
-        </div>
-        <div className="min-w-0 flex-1 space-y-2">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <h3 className="truncate text-sm font-semibold text-foreground">
-                {customerName}
-              </h3>
-              {attendance.customer?.phoneMasked ? (
-                <p className="truncate text-[11px] text-muted-foreground">
-                  {attendance.customer.phoneMasked}
+      <div className="flex items-start gap-2">
+        <Link
+          to={`/operation/attendances/${attendance.id}`}
+          className="min-w-0 flex-1 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          aria-label={`Abrir atendimento de ${customerName}`}
+        >
+          <div className="flex items-start gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+              {customerName.slice(0, 1).toUpperCase()}
+            </div>
+            <div className="min-w-0 flex-1 space-y-2">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <h3 className="truncate text-sm font-semibold text-foreground">
+                    {customerName}
+                  </h3>
+                  {attendance.customer?.phoneMasked ? (
+                    <p className="truncate text-[11px] text-muted-foreground">
+                      {attendance.customer.phoneMasked}
+                    </p>
+                  ) : null}
+                </div>
+                {attendance.unreadCount ? (
+                  <Badge
+                    className="shrink-0 bg-primary px-1.5 text-[10px] text-primary-foreground hover:bg-primary"
+                    aria-label={`${attendance.unreadCount} mensagens novas`}
+                  >
+                    {attendance.unreadCount}
+                  </Badge>
+                ) : null}
+              </div>
+
+              <div className="flex items-center justify-between gap-2">
+                <Badge
+                  variant="outline"
+                  className={cn(
+                    "h-5 px-1.5 text-[10px]",
+                    STATUS_CLASS_NAMES[attendance.status],
+                  )}
+                >
+                  {STATUS_LABELS[attendance.status]}
+                </Badge>
+                <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+                  <Clock3 className="h-3.5 w-3.5" />
+                  {formatElapsed(activityAt, attendance.status)}
+                </span>
+              </div>
+
+              {attendance.lastMessage ? (
+                <p className="flex items-start gap-1.5 text-xs leading-5 text-muted-foreground">
+                  <MessageCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  <span className="line-clamp-2">
+                    <span className="font-medium text-foreground">
+                      {MESSAGE_SENDER_LABELS[attendance.lastMessage.sender]}:
+                    </span>{" "}
+                    {attendance.lastMessage.preview}
+                  </span>
                 </p>
               ) : null}
+
+              <div className="space-y-1.5 border-t pt-2 text-[11px] text-muted-foreground">
+                <MetadataRow
+                  icon={MapPin}
+                  label="Destino"
+                  value={destination || "Não definido"}
+                />
+                <MetadataRow
+                  icon={AssigneeIcon}
+                  label="Responsável"
+                  value={assigneeLabel}
+                />
+                {channelName ? (
+                  <MetadataRow icon={Radio} label="Canal" value={channelName} />
+                ) : null}
+                {pending ? (
+                  <MetadataRow
+                    icon={CalendarClock}
+                    label="Pendência"
+                    value={formatPending(attendance)}
+                  />
+                ) : null}
+              </div>
             </div>
-            {attendance.unreadCount ? (
-              <Badge
-                className="shrink-0 bg-primary px-1.5 text-[10px] text-primary-foreground hover:bg-primary"
-                aria-label={`${attendance.unreadCount} mensagens novas`}
-              >
-                {attendance.unreadCount}
-              </Badge>
-            ) : null}
           </div>
+        </Link>
 
-          <div className="flex items-center justify-between gap-2">
-            <Badge
-              variant="outline"
-              className={cn(
-                "h-5 px-1.5 text-[10px]",
-                STATUS_CLASS_NAMES[attendance.status],
-              )}
+        {canOperate ? (
+          <div className="flex shrink-0 items-center gap-0.5">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 cursor-grab touch-none text-muted-foreground hover:text-foreground active:cursor-grabbing"
+              {...attributes}
+              {...listeners}
+              disabled={isMoving}
+              aria-label={`Arrastar atendimento de ${customerName}`}
+              title="Arrastar atendimento"
             >
-              {STATUS_LABELS[attendance.status]}
-            </Badge>
-            <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
-              <Clock3 className="h-3.5 w-3.5" />
-              {formatElapsed(activityAt, attendance.status)}
-            </span>
-          </div>
-
-          {attendance.lastMessage ? (
-            <p className="flex items-start gap-1.5 text-xs leading-5 text-muted-foreground">
-              <MessageCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-              <span className="line-clamp-2">
-                <span className="font-medium text-foreground">
-                  {MESSAGE_SENDER_LABELS[attendance.lastMessage.sender]}:
-                </span>{" "}
-                {attendance.lastMessage.preview}
-              </span>
-            </p>
-          ) : null}
-
-          <div className="space-y-1.5 border-t pt-2 text-[11px] text-muted-foreground">
-            <MetadataRow
-              icon={MapPin}
-              label="Destino"
-              value={destination || "Não definido"}
-            />
-            <MetadataRow
-              icon={AssigneeIcon}
-              label="Responsável"
-              value={assigneeLabel}
-            />
-            {channelName ? (
-              <MetadataRow icon={Radio} label="Canal" value={channelName} />
-            ) : null}
-            {pending ? (
-              <MetadataRow
-                icon={CalendarClock}
-                label="Pendência"
-                value={formatPending(attendance)}
-              />
+              <GripVertical className="h-4 w-4" />
+            </Button>
+            {actionMenu.length > 0 && onAction ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                    disabled={isMoving}
+                    aria-label={`Ações de ${customerName}`}
+                  >
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  {actionMenu.map((action) => {
+                    const ActionIcon = ACTION_ICONS[action];
+                    return (
+                      <DropdownMenuItem
+                        key={action}
+                        onSelect={() => onAction(attendance, action)}
+                      >
+                        <ActionIcon className="mr-2 h-4 w-4" />
+                        {ACTION_LABELS[action]}
+                      </DropdownMenuItem>
+                    );
+                  })}
+                </DropdownMenuContent>
+              </DropdownMenu>
             ) : null}
           </div>
-        </div>
+        ) : null}
       </div>
-    </Link>
+    </article>
   );
 }
 
@@ -323,6 +560,23 @@ function formatDateTime(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "data indisponível";
   return format(date, "dd/MM HH:mm", { locale: ptBR });
+}
+
+function isAttendanceStatus(value: unknown): value is AttendanceStatus {
+  return typeof value === "string" && STATUS_ORDER.includes(value as AttendanceStatus);
+}
+
+function isAttendanceWithDetails(
+  value: unknown,
+): value is AttendanceWithDetails {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "id" in value &&
+    typeof value.id === "string" &&
+    "status" in value &&
+    isAttendanceStatus(value.status)
+  );
 }
 
 const columnStatusDotClassNames: Record<AttendanceStatus, string> = {

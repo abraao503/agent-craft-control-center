@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   AlertCircle,
   ChevronLeft,
@@ -8,30 +9,70 @@ import {
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import {
+  AttendanceAction,
+  AttendanceActionDialog,
+  AttendanceActionFormValues,
+} from "@/components/operation/AttendanceActionDialog";
+import { OperationalAttendanceKanbanBoard } from "@/components/operation/OperationalAttendanceKanbanBoard";
+import { OperationalRealtimeStatus } from "@/components/operation/OperationalRealtimeStatus";
 import { useWorkspaceContext } from "@/contexts/workspace/WorkspaceContext";
+import { useOperationalAttendanceMutations } from "@/hooks/useOperationalAttendanceMutations";
 import {
   useOperationalAttendanceKanban,
   useOperationalAttendanceOptions,
 } from "@/hooks/useOperationalAttendances";
 import { useOperationalRealtime } from "@/hooks/useOperationalRealtime";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useToast } from "@/hooks/use-toast";
+import {
+  AttendanceCommandResponse,
+  AttendanceKanbanPage,
+  AttendanceOptions,
+  AttendanceStatus,
+  AttendanceWithDetails,
+} from "@/types/operation-attendance";
 import { getOperationalAttendanceErrorMessage } from "@/utils/operationalAttendanceErrors";
-import { OperationalRealtimeStatus } from "@/components/operation/OperationalRealtimeStatus";
-import { OperationalAttendanceKanbanBoard } from "@/components/operation/OperationalAttendanceKanbanBoard";
+import {
+  getOperationalKanbanMove,
+  OperationalKanbanMoveAction,
+} from "@/components/operation/operationalAttendanceKanbanMoves";
 
 const PAGE_SIZE = 10;
 const CLOSED_PAGE_SIZE = 5;
+const DIALOG_ACTIONS = [
+  "ROUTE",
+  "ASSIGN",
+  "TRANSFER",
+  "PENDING",
+  "CLOSE",
+] as const;
+type DialogAction = (typeof DIALOG_ACTIONS)[number];
+
+interface ActiveAction {
+  attendance: AttendanceWithDetails;
+  action: DialogAction;
+}
 
 export default function OperationAttendanceKanbanPage() {
   const { currentWorkspace } = useWorkspaceContext();
   const { has } = usePermissions();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
+  const [activeAction, setActiveAction] = useState<ActiveAction | null>(null);
+  const [movingAttendanceId, setMovingAttendanceId] = useState<string | null>(
+    null,
+  );
   const workspaceId =
     currentWorkspace?.type === "OPERATION" ? currentWorkspace.id : undefined;
   const canViewAttendances = has("view:operation-attendances");
+  const canOperateAttendances =
+    canViewAttendances && has("operate:operation-attendances");
 
   useEffect(() => {
     setPage(1);
+    setActiveAction(null);
   }, [workspaceId]);
 
   const kanbanFilters = useMemo(
@@ -51,25 +92,187 @@ export default function OperationAttendanceKanbanPage() {
     workspaceId,
     canViewAttendances,
   );
+  const attendanceMutations = useOperationalAttendanceMutations(workspaceId);
   const realtime = useOperationalRealtime({
     workspaceId,
     enabled: canViewAttendances,
   });
-
+  const options = optionsQuery.data;
   const channelNames = useMemo(
     () =>
       new Map(
-        (optionsQuery.data?.channels ?? []).map((channel) => [
+        (options?.channels ?? []).map((channel) => [
           channel.id,
           channel.displayName,
         ]),
       ),
-    [optionsQuery.data?.channels],
+    [options?.channels],
   );
   const maxPages = Math.max(
     1,
     ...(kanbanQuery.data?.columns ?? []).map((column) => column.totalPages),
   );
+  const kanbanQueryKey = useMemo(
+    () =>
+      [
+        "operation",
+        "attendance-kanban",
+        workspaceId,
+        kanbanFilters,
+      ] as const,
+    [kanbanFilters, workspaceId],
+  );
+  const isMutationPending =
+    attendanceMutations.route.isPending ||
+    attendanceMutations.claim.isPending ||
+    attendanceMutations.assign.isPending ||
+    attendanceMutations.transfer.isPending ||
+    attendanceMutations.unassign.isPending ||
+    attendanceMutations.pending.isPending ||
+    attendanceMutations.resume.isPending ||
+    attendanceMutations.close.isPending;
+
+  const retryQueries = () => {
+    void kanbanQuery.refetch();
+    void optionsQuery.refetch();
+  };
+
+  const showOptionsError = () => {
+    toast({
+      title: "Opções operacionais indisponíveis",
+      description:
+        "Não foi possível carregar áreas, filas e responsáveis para executar esta ação.",
+      variant: "destructive",
+    });
+  };
+
+  const openAction = (
+    attendance: AttendanceWithDetails,
+    action: OperationalKanbanMoveAction,
+  ) => {
+    if (requiresAttendanceOptions(action) && !options) {
+      showOptionsError();
+      return;
+    }
+
+    if (isDialogAction(action)) {
+      setActiveAction({ attendance, action });
+      return;
+    }
+
+    void runAttendanceAction(
+      attendance,
+      action,
+      getActionTargetStatus(action),
+    );
+  };
+
+  const handleMoveAttendance = (
+    attendance: AttendanceWithDetails,
+    targetStatus: AttendanceStatus,
+  ) => {
+    if (movingAttendanceId) return;
+
+    const move = getOperationalKanbanMove(attendance.status, targetStatus);
+    if (move.kind === "NOOP") return;
+
+    if (move.kind === "INVALID") {
+      toast({
+        title: "Movimentação indisponível",
+        description: move.reason,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (move.requiresDialog) {
+      openAction(attendance, move.action);
+      return;
+    }
+
+    void runAttendanceAction(attendance, move.action, move.targetStatus);
+  };
+
+  const runAttendanceAction = async (
+    attendance: AttendanceWithDetails,
+    action: OperationalKanbanMoveAction,
+    targetStatus: AttendanceStatus,
+    values?: AttendanceActionFormValues,
+  ): Promise<boolean> => {
+    if (!workspaceId) return false;
+
+    const snapshot = queryClient.getQueryData<AttendanceKanbanPage>(
+      kanbanQueryKey,
+    );
+    setMovingAttendanceId(attendance.id);
+    try {
+      if (snapshot) {
+        const optimisticData = moveAttendanceInKanban(
+          snapshot,
+          attendance,
+          targetStatus,
+          getOptimisticUpdates(attendance, action, values, options),
+        );
+        queryClient.setQueryData(kanbanQueryKey, optimisticData);
+      }
+
+      const response = await dispatchAttendanceCommand(
+        attendance,
+        action,
+        values,
+      );
+      if (response.attendance) {
+        queryClient.setQueryData<AttendanceKanbanPage | undefined>(
+          kanbanQueryKey,
+          (current) =>
+            current
+              ? replaceAttendanceInKanban(current, response.attendance)
+              : current,
+        );
+      }
+      await queryClient.invalidateQueries({
+        queryKey: ["operation", "attendance-kanban", workspaceId],
+      });
+      toast({
+        title: response.duplicate ? "Ação já registrada" : "Ação concluída",
+        description: response.duplicate
+          ? "O comando idempotente já havia sido processado; o quadro foi reconciliado."
+          : "O quadro foi atualizado com a nova versão do atendimento.",
+      });
+      return true;
+    } catch (error) {
+      if (snapshot) {
+        queryClient.setQueryData(kanbanQueryKey, snapshot);
+      }
+      await queryClient.invalidateQueries({
+        queryKey: ["operation", "attendance-kanban", workspaceId],
+      });
+      toast({
+        title: "Movimentação revertida",
+        description: getOperationalAttendanceErrorMessage(
+          error,
+          "O atendimento não pôde ser atualizado. O quadro foi restaurado; atualize e tente novamente.",
+        ),
+        variant: "destructive",
+      });
+      return false;
+    } finally {
+      setMovingAttendanceId(null);
+    }
+  };
+
+  const submitAction = async (values: AttendanceActionFormValues) => {
+    if (!activeAction) return;
+
+    const targetStatus = getActionTargetStatus(activeAction.action, values);
+    const succeeded = await runAttendanceAction(
+      activeAction.attendance,
+      activeAction.action,
+      targetStatus,
+      values,
+    );
+    if (succeeded) setActiveAction(null);
+  };
 
   if (currentWorkspace?.type !== "OPERATION") {
     return (
@@ -79,6 +282,21 @@ export default function OperationAttendanceKanbanPage() {
           <AlertTitle>Seção disponível apenas em workspaces operacionais</AlertTitle>
           <AlertDescription>
             Selecione um workspace operacional para abrir o quadro.
+          </AlertDescription>
+        </Alert>
+      </section>
+    );
+  }
+
+  if (!canViewAttendances) {
+    return (
+      <section className="m-4 w-auto">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Visualização operacional não autorizada</AlertTitle>
+          <AlertDescription>
+            Sua sessão não possui permissão para consultar os atendimentos deste
+            workspace.
           </AlertDescription>
         </Alert>
       </section>
@@ -100,10 +318,6 @@ export default function OperationAttendanceKanbanPage() {
     );
   }
 
-  const retryQueries = () => {
-    void kanbanQuery.refetch();
-    void optionsQuery.refetch();
-  };
   const hasQueryError = kanbanQuery.isError || optionsQuery.isError;
 
   return (
@@ -114,10 +328,17 @@ export default function OperationAttendanceKanbanPage() {
             Operação / quadro
           </p>
           <div className="mt-1 flex flex-wrap items-center gap-3">
-            <h1 className="text-lg font-semibold tracking-tight">Kanban de atendimentos</h1>
+            <h1 className="text-lg font-semibold tracking-tight">
+              Kanban de atendimentos
+            </h1>
             <span className="text-xs text-muted-foreground">
               {kanbanQuery.data?.total ?? 0} atendimento(s) no escopo atual
             </span>
+            {!canOperateAttendances ? (
+              <span className="text-xs text-muted-foreground">
+                Visualização somente
+              </span>
+            ) : null}
           </div>
         </div>
 
@@ -126,7 +347,7 @@ export default function OperationAttendanceKanbanPage() {
             status={realtime.status}
             joinedWorkspace={realtime.joinedWorkspace}
           />
-          {kanbanQuery.isFetching ? (
+          {kanbanQuery.isFetching || isMutationPending ? (
             <Loader2
               className="h-4 w-4 animate-spin text-muted-foreground"
               aria-label="Atualizando quadro"
@@ -150,7 +371,7 @@ export default function OperationAttendanceKanbanPage() {
                 size="icon"
                 className="h-7 w-7"
                 aria-label="Página anterior"
-                disabled={page <= 1 || kanbanQuery.isFetching}
+                disabled={page <= 1 || kanbanQuery.isFetching || isMutationPending}
                 onClick={() => setPage((current) => Math.max(1, current - 1))}
               >
                 <ChevronLeft className="h-4 w-4" />
@@ -164,7 +385,7 @@ export default function OperationAttendanceKanbanPage() {
                 size="icon"
                 className="h-7 w-7"
                 aria-label="Próxima página"
-                disabled={page >= maxPages || kanbanQuery.isFetching}
+                disabled={page >= maxPages || kanbanQuery.isFetching || isMutationPending}
                 onClick={() => setPage((current) => current + 1)}
               >
                 <ChevronRight className="h-4 w-4" />
@@ -199,9 +420,352 @@ export default function OperationAttendanceKanbanPage() {
         <OperationalAttendanceKanbanBoard
           data={kanbanQuery.data}
           channelNames={channelNames}
+          canOperate={canOperateAttendances}
+          movingAttendanceId={movingAttendanceId}
           isLoading={kanbanQuery.isLoading}
+          onMoveAttendance={handleMoveAttendance}
+          onAction={openAction}
         />
       </div>
+
+      {activeAction ? (
+        <AttendanceActionDialog
+          open
+          action={activeAction.action as AttendanceAction}
+          attendance={activeAction.attendance}
+          options={options}
+          isSubmitting={isMutationPending}
+          onOpenChange={(open) => {
+            if (!open && !isMutationPending) setActiveAction(null);
+          }}
+          onSubmit={(values) => void submitAction(values)}
+        />
+      ) : null}
     </section>
   );
+
+  async function dispatchAttendanceCommand(
+    attendance: AttendanceWithDetails,
+    action: OperationalKanbanMoveAction,
+    values?: AttendanceActionFormValues,
+  ): Promise<AttendanceCommandResponse> {
+    const common = {
+      attendanceId: attendance.id,
+      expectedVersion: attendance.version,
+    };
+
+    switch (action) {
+      case "ROUTE":
+        return attendanceMutations.route.mutateAsync({
+          ...common,
+          targetAreaId: requiredValue(
+            values?.targetAreaId,
+            "Selecione uma área de destino.",
+          ),
+          targetQueueId: requiredValue(
+            values?.targetQueueId,
+            "Selecione uma fila de destino.",
+          ),
+          reason: optionalValue(values?.reason),
+        });
+      case "CLAIM":
+        return attendanceMutations.claim.mutateAsync(common);
+      case "ASSIGN":
+        return attendanceMutations.assign.mutateAsync({
+          ...common,
+          targetUserId: requiredValue(
+            values?.targetUserId,
+            "Selecione um responsável.",
+          ),
+          reason: optionalValue(values?.reason),
+        });
+      case "TRANSFER":
+        return attendanceMutations.transfer.mutateAsync({
+          ...common,
+          targetAreaId: requiredValue(
+            values?.targetAreaId,
+            "Selecione uma área de destino.",
+          ),
+          targetQueueId: requiredValue(
+            values?.targetQueueId,
+            "Selecione uma fila de destino.",
+          ),
+          targetUserId: optionalValue(values?.targetUserId),
+          reason: optionalValue(values?.reason),
+        });
+      case "PENDING": {
+        const reason = requiredValue(
+          values?.reason,
+          "Informe o motivo da pendência.",
+        );
+        const followUp = values?.includeFollowUp
+          ? {
+              title: requiredValue(
+                values.followUpTitle,
+                "Informe o título do follow-up.",
+              ),
+              timezone: getTimeZone(),
+              schedule: {
+                kind: "ONCE" as const,
+                firstRunAt: toIsoDateTime(
+                  requiredValue(
+                    values.followUpAt,
+                    "Informe quando o follow-up deve ocorrer.",
+                  ),
+                ),
+              },
+              content: {
+                kind: "TEXT" as const,
+                text: requiredValue(
+                  values.followUpText,
+                  "Informe o conteúdo do follow-up.",
+                ),
+              },
+            }
+          : undefined;
+
+        return attendanceMutations.pending.mutateAsync({
+          ...common,
+          reason,
+          pendingDueAt: values?.pendingDueAt
+            ? toIsoDateTime(values.pendingDueAt)
+            : undefined,
+          followUp,
+        });
+      }
+      case "RESUME":
+        return attendanceMutations.resume.mutateAsync({
+          ...common,
+          reason: optionalValue(values?.reason),
+        });
+      case "UNASSIGN":
+        return attendanceMutations.unassign.mutateAsync({
+          ...common,
+          reason: optionalValue(values?.reason),
+        });
+      case "CLOSE":
+        return attendanceMutations.close.mutateAsync({
+          ...common,
+          closeSummary: requiredValue(
+            values?.closeSummary,
+            "Informe um resumo para encerrar o atendimento.",
+          ),
+        });
+    }
+  }
+}
+
+function isDialogAction(
+  action: OperationalKanbanMoveAction,
+): action is DialogAction {
+  return DIALOG_ACTIONS.includes(action as DialogAction);
+}
+
+function requiresAttendanceOptions(action: OperationalKanbanMoveAction) {
+  return action === "ROUTE" || action === "ASSIGN" || action === "TRANSFER";
+}
+
+function getActionTargetStatus(
+  action: OperationalKanbanMoveAction,
+  values?: AttendanceActionFormValues,
+): AttendanceStatus {
+  switch (action) {
+    case "ROUTE":
+      return "WAITING_QUEUE";
+    case "CLAIM":
+    case "ASSIGN":
+    case "RESUME":
+      return "IN_PROGRESS";
+    case "TRANSFER":
+      return values?.targetUserId ? "IN_PROGRESS" : "WAITING_QUEUE";
+    case "PENDING":
+      return "PENDING";
+    case "UNASSIGN":
+      return "WAITING_QUEUE";
+    case "CLOSE":
+      return "CLOSED";
+  }
+}
+
+function getOptimisticUpdates(
+  attendance: AttendanceWithDetails,
+  action: OperationalKanbanMoveAction,
+  values: AttendanceActionFormValues | undefined,
+  options: AttendanceOptions | undefined,
+): Partial<AttendanceWithDetails> {
+  const selectedArea = values?.targetAreaId
+    ? options?.areas.find((area) => area.id === values.targetAreaId)
+    : undefined;
+  const selectedQueue = values?.targetQueueId
+    ? selectedArea?.queues.find((queue) => queue.id === values.targetQueueId)
+    : undefined;
+  const destination = values?.targetAreaId
+    ? {
+        areaName: selectedArea?.name ?? null,
+        queueName: selectedQueue?.name ?? null,
+      }
+    : attendance.destination;
+
+  switch (action) {
+    case "ROUTE":
+      return {
+        targetAreaId: values?.targetAreaId ?? attendance.targetAreaId,
+        targetQueueId: values?.targetQueueId ?? attendance.targetQueueId,
+        destination,
+      };
+    case "ASSIGN": {
+      const user = options?.users.find((item) => item.id === values?.targetUserId);
+      return {
+        assignee: user
+          ? { type: "USER", id: user.id, name: user.name }
+          : attendance.assignee,
+        assigneeUserId: values?.targetUserId ?? attendance.assigneeUserId,
+        assigneeAssistantId: null,
+      };
+    }
+    case "TRANSFER": {
+      const user = options?.users.find((item) => item.id === values?.targetUserId);
+      return {
+        targetAreaId: values?.targetAreaId ?? attendance.targetAreaId,
+        targetQueueId: values?.targetQueueId ?? attendance.targetQueueId,
+        destination,
+        assignee: user
+          ? { type: "USER", id: user.id, name: user.name }
+          : null,
+        assigneeUserId: user?.id ?? null,
+        assigneeAssistantId: null,
+      };
+    }
+    case "PENDING":
+      return {
+        pendingReason: values?.reason?.trim() || attendance.pendingReason,
+        pendingDueAt: values?.pendingDueAt
+          ? toIsoDateTime(values.pendingDueAt)
+          : attendance.pendingDueAt,
+      };
+    case "RESUME":
+      return { pendingReason: null, pendingDueAt: null };
+    case "UNASSIGN":
+      return { assignee: null, assigneeUserId: null, assigneeAssistantId: null };
+    case "CLOSE":
+      return {
+        targetAreaId: null,
+        targetQueueId: null,
+        destination: { areaName: null, queueName: null },
+        assignee: null,
+        assigneeUserId: null,
+        assigneeAssistantId: null,
+        pendingReason: null,
+        pendingDueAt: null,
+        closedAt: new Date().toISOString(),
+      };
+    case "CLAIM":
+      return {};
+  }
+}
+
+function moveAttendanceInKanban(
+  data: AttendanceKanbanPage,
+  attendance: AttendanceWithDetails,
+  targetStatus: AttendanceStatus,
+  updates: Partial<AttendanceWithDetails>,
+): AttendanceKanbanPage {
+  const sourceColumn = data.columns.find((column) =>
+    column.items.some((item) => item.id === attendance.id),
+  );
+  if (!sourceColumn) return data;
+
+  const nextAttendance: AttendanceWithDetails = {
+    ...attendance,
+    ...updates,
+    status: targetStatus,
+  };
+  if (sourceColumn.status === targetStatus) {
+    return replaceAttendanceInKanban(data, nextAttendance);
+  }
+
+  return {
+    ...data,
+    columns: data.columns.map((column) => {
+      if (column.status === sourceColumn.status) {
+        return updateColumnTotals({
+          ...column,
+          items: column.items.filter((item) => item.id !== attendance.id),
+        }, -1);
+      }
+      if (column.status === targetStatus) {
+        return updateColumnTotals(
+          {
+            ...column,
+            items: [nextAttendance, ...column.items.filter((item) => item.id !== attendance.id)],
+          },
+          1,
+        );
+      }
+      return column;
+    }),
+  };
+}
+
+function replaceAttendanceInKanban(
+  data: AttendanceKanbanPage,
+  attendance: AttendanceWithDetails,
+): AttendanceKanbanPage {
+  const currentColumn = data.columns.find((column) =>
+    column.items.some((item) => item.id === attendance.id),
+  );
+  if (!currentColumn) return data;
+  if (currentColumn.status === attendance.status) {
+    return {
+      ...data,
+      columns: data.columns.map((column) =>
+        column.status === currentColumn.status
+          ? {
+              ...column,
+              items: column.items.map((item) =>
+                item.id === attendance.id ? attendance : item,
+              ),
+            }
+          : column,
+      ),
+    };
+  }
+
+  return moveAttendanceInKanban(data, currentColumn.items.find((item) => item.id === attendance.id)!, attendance.status, attendance);
+}
+
+function updateColumnTotals(
+  column: AttendanceKanbanPage["columns"][number],
+  delta: number,
+) {
+  const total = Math.max(0, column.total + delta);
+  return {
+    ...column,
+    total,
+    totalPages:
+      total > 0 && column.limit > 0 ? Math.ceil(total / column.limit) : 0,
+  };
+}
+
+function requiredValue(value: string | undefined, message: string) {
+  const normalized = value?.trim();
+  if (!normalized) throw new Error(message);
+  return normalized;
+}
+
+function optionalValue(value: string | undefined) {
+  const normalized = value?.trim();
+  return normalized || undefined;
+}
+
+function getTimeZone() {
+  return Intl.DateTimeFormat().resolvedOptions().timeZone || "America/Sao_Paulo";
+}
+
+function toIsoDateTime(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    throw new Error("Informe uma data válida.");
+  }
+  return date.toISOString();
 }

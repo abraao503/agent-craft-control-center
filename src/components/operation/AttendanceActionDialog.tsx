@@ -69,7 +69,10 @@ export type AttendanceActionFormValues = z.infer<
 interface AttendanceActionDialogProps {
   open: boolean;
   action: AttendanceAction | null;
-  attendance: AttendanceDetail;
+  attendance: Pick<
+    AttendanceDetail,
+    "id" | "targetAreaId" | "targetQueueId"
+  >;
   options?: AttendanceOptions;
   isSubmitting: boolean;
   onOpenChange: (open: boolean) => void;
