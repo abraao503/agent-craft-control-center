@@ -114,8 +114,6 @@ export function AttendanceComposer({
 }: AttendanceComposerProps) {
   const { toast } = useToast();
   const mutations = useOperationalAttendanceMutations(workspaceId);
-  const provider = attendance.channel?.provider?.toLowerCase().replace(/_/g, "-");
-  const isMetaCloud = provider === "meta-cloud";
   const statusAllowsSend = ["IN_PROGRESS", "PENDING"].includes(attendance.status);
   const isTemplateRequired =
     attendance.replyCapabilities.status === "TEMPLATE_REQUIRED";
@@ -132,7 +130,7 @@ export function AttendanceComposer({
     const modes: ComposerMode[] = [];
     if (attendance.replyCapabilities.supportsText) modes.push("TEXT");
     if (attendance.replyCapabilities.supportsMedia) modes.push("MEDIA");
-    if (attendance.replyCapabilities.supportsTemplate && isMetaCloud) {
+    if (attendance.replyCapabilities.supportsTemplate) {
       modes.push("TEMPLATE");
     }
     return isTemplateRequired ? modes.filter((mode) => mode === "TEMPLATE") : modes;
@@ -141,7 +139,6 @@ export function AttendanceComposer({
     attendance.replyCapabilities.supportsTemplate,
     attendance.replyCapabilities.supportsText,
     canCompose,
-    isMetaCloud,
     isTemplateRequired,
   ]);
 
@@ -165,7 +162,7 @@ export function AttendanceComposer({
   const templatesQuery = useOperationalAttendanceTemplates(
     workspaceId,
     attendance.id,
-    canCompose && isMetaCloud && attendance.replyCapabilities.supportsTemplate,
+    canCompose && attendance.replyCapabilities.supportsTemplate,
   );
   const templates = useMemo(() => templatesQuery.data ?? [], [templatesQuery.data]);
   const selectedTemplate = templates.find(
