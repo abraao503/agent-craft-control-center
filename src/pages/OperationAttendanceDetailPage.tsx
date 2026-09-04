@@ -17,7 +17,9 @@ import {
   UserMinus,
   UserPlus,
   UserRound,
+  XCircle,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { useWorkspaceContext } from "@/contexts/workspace/WorkspaceContext";
 import {
   useMarkOperationalAttendanceRead,
@@ -99,6 +101,19 @@ const EVENT_LABELS: Record<string, string> = {
   PENDING: "Marcado como pendente",
   RESUME: "Retomado",
   CLOSE: "Encerrado",
+};
+
+const EVENT_ICONS: Record<string, LucideIcon> = {
+  INBOUND_CREATE: MessageSquare,
+  INBOUND_RESUME: PlayCircle,
+  ROUTE: ArrowRight,
+  CLAIM: CheckCircle2,
+  ASSIGN: UserPlus,
+  TRANSFER: ArrowRightLeft,
+  UNASSIGN: UserMinus,
+  PENDING: PauseCircle,
+  RESUME: PlayCircle,
+  CLOSE: XCircle,
 };
 
 interface OperationAttendanceDetailPageProps {
@@ -1030,33 +1045,42 @@ function ConversationMessage({ message }: { message: AttendanceMessageItem }) {
 function TimelineEvent({ event }: { event: AttendanceEvent }) {
   const metadataEntries = getSafeObservabilityEntries(event.metadata);
   const reason = sanitizeObservabilityText(event.reason, 500);
+  const label = EVENT_LABELS[event.action] || event.action;
+  const details = [
+    reason ? `Motivo: ${reason}` : null,
+    ...metadataEntries.map(
+      ({ key, value }) => `${formatMetadataKey(key)}: ${value}`,
+    ),
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  const accessibleLabel = [
+    label,
+    formatDateTime(event.createdAt),
+    formatActor(event.actorType),
+    `Versão ${event.aggregateVersion}`,
+    details,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  const EventIcon = EVENT_ICONS[event.action] || ArrowRightLeft;
 
   return (
-    <article className="mx-auto max-w-xl rounded-lg border border-dashed bg-muted/20 px-3 py-2.5 text-center text-xs">
-      <p className="font-medium text-foreground">
-        {EVENT_LABELS[event.action] || event.action}
-      </p>
-      <p className="mt-1 text-muted-foreground">
-        {formatDateTime(event.createdAt)} · {formatActor(event.actorType)} ·
-        Versão {event.aggregateVersion}
-      </p>
-      {reason ? (
-        <p className="mt-2 whitespace-pre-wrap break-words text-sm text-muted-foreground">
-          {reason}
-        </p>
-      ) : null}
-      {metadataEntries.length > 0 ? (
-        <dl className="mt-2 grid gap-1 rounded-md bg-muted/40 px-2.5 py-2 text-left text-xs">
-          {metadataEntries.map(({ key, value }) => (
-            <div key={key} className="grid grid-cols-[auto_minmax(0,1fr)] gap-2">
-              <dt className="font-medium text-muted-foreground">
-                {formatMetadataKey(key)}
-              </dt>
-              <dd className="break-words text-right text-foreground">{value}</dd>
-            </div>
-          ))}
-        </dl>
-      ) : null}
+    <article
+      aria-label={accessibleLabel}
+      title={details || undefined}
+      className="mx-auto flex w-fit max-w-full min-w-0 items-center justify-center gap-1.5 rounded-full border bg-background/90 px-3 py-1.5 text-xs text-muted-foreground shadow-sm"
+    >
+      <EventIcon
+        className="h-3.5 w-3.5 shrink-0"
+        aria-hidden="true"
+      />
+      <span className="min-w-0 truncate font-medium text-foreground">
+        {label}
+      </span>
+      <span className="shrink-0">· {formatActor(event.actorType)}</span>
+      <span className="shrink-0">· V{event.aggregateVersion}</span>
+      <span className="shrink-0">· {formatCompactDateTime(event.createdAt)}</span>
     </article>
   );
 }
@@ -1192,6 +1216,19 @@ function formatDateTime(value: string) {
     dateStyle: "short",
     timeStyle: "short",
   }).format(date);
+}
+
+function formatCompactDateTime(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Data indisponível";
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  })
+    .format(date)
+    .replace(", ", " ");
 }
 
 function getTimeZone() {
