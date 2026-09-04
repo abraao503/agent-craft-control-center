@@ -35,7 +35,7 @@ export function useOperationalAttendanceMutations(workspaceId?: string) {
     workspaceId ??
     (currentWorkspace?.type === "OPERATION" ? currentWorkspace.id : undefined);
 
-  const invalidateAttendanceScope = (attendanceId?: string) => {
+  const invalidateAttendanceLists = () => {
     if (!resolvedWorkspaceId) return;
 
     void queryClient.invalidateQueries({
@@ -44,6 +44,15 @@ export function useOperationalAttendanceMutations(workspaceId?: string) {
     void queryClient.invalidateQueries({
       queryKey: ["operation", "attendance-kanban", resolvedWorkspaceId],
     });
+    void queryClient.invalidateQueries({
+      queryKey: ["operation", "attendance-summary", resolvedWorkspaceId],
+    });
+  };
+
+  const invalidateAttendanceScope = (attendanceId?: string) => {
+    if (!resolvedWorkspaceId) return;
+
+    invalidateAttendanceLists();
 
     if (attendanceId) {
       void queryClient.invalidateQueries({
@@ -64,9 +73,6 @@ export function useOperationalAttendanceMutations(workspaceId?: string) {
           resolvedWorkspaceId,
           attendanceId,
         ],
-      });
-      void queryClient.invalidateQueries({
-        queryKey: ["operation", "attendance-summary", resolvedWorkspaceId],
       });
       void queryClient.invalidateQueries({
         queryKey: [
@@ -285,8 +291,8 @@ export function useOperationalAttendanceMutations(workspaceId?: string) {
         workspaceId: targetWorkspaceId,
       });
     },
-    onSuccess: (_data, variables) => {
-      invalidateAttendanceScope(variables.attendanceId);
+    onSuccess: () => {
+      invalidateAttendanceLists();
     },
     onError: (error, variables) => {
       handleMutationError(error, variables.attendanceId);

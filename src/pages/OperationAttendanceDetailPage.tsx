@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   AlertCircle,
   ArrowLeft,
@@ -115,6 +115,7 @@ export default function OperationAttendanceDetailPage({
   const { attendanceId } = useParams<{ attendanceId: string }>();
   const { currentWorkspace } = useWorkspaceContext();
   const { has } = usePermissions();
+  const navigate = useNavigate();
   const workspaceId =
     currentWorkspace?.type === "OPERATION" ? currentWorkspace.id : undefined;
   const canViewAttendances = has("view:operation-attendances");
@@ -402,6 +403,9 @@ export default function OperationAttendanceDetailPage({
         description: "O atendimento, a timeline e os follow-ups foram atualizados.",
       });
       setActiveAction(null);
+      if (activeAction === "CLOSE") {
+        navigate("/operation/attendances", { replace: true });
+      }
     } catch (error) {
       toast({
         title: "Não foi possível concluir a ação",
