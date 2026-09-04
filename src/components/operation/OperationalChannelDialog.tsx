@@ -8,7 +8,10 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/auth/hooks";
-import { listMetaCloudPhoneNumbers } from "@/services/whatsapp/metaCloud";
+import {
+  getMetaCloudDiagnostic,
+  listMetaCloudPhoneNumbers,
+} from "@/services/whatsapp/metaCloud";
 import {
   OperationalChannel,
   OperationalChannelProvider,
@@ -80,22 +83,35 @@ export function OperationalChannelDialog({
   onOpenChange,
   onSubmit,
 }: OperationalChannelDialogProps) {
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
   const form = useForm<OperationalChannelFormValues>({
     resolver: zodResolver(channelFormSchema),
     defaultValues: getDefaultValues(channel, defaultProvider),
   });
   const selectedProvider = form.watch("provider");
+  const shouldLoadMetaCloud = Boolean(
+    open &&
+      !channel &&
+      user?.companyId &&
+      canViewIntegrations &&
+      selectedProvider === "meta-cloud",
+  );
+  const shouldCheckMetaCloud =
+    shouldLoadMetaCloud && userProfile?.metaCloudWhatsappEnabled !== false;
+  const metaCloudDiagnosticQuery = useQuery({
+    queryKey: ["operation-meta-cloud-diagnostic", user?.companyId],
+    queryFn: getMetaCloudDiagnostic,
+    enabled: shouldCheckMetaCloud,
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
   const phoneNumbersQuery = useQuery({
     queryKey: ["operation-meta-cloud-phone-numbers", user?.companyId],
     queryFn: listMetaCloudPhoneNumbers,
-    enabled: Boolean(
-      open &&
-        !channel &&
-        user?.companyId &&
-        canViewIntegrations &&
-        selectedProvider === "meta-cloud",
-    ),
+    enabled:
+      shouldCheckMetaCloud && metaCloudDiagnosticQuery.data?.enabled === true,
+    retry: false,
+    refetchOnWindowFocus: false,
   });
 
   useEffect(() => {
@@ -138,10 +154,17 @@ export function OperationalChannelDialog({
     (provider) => provider.name === selectedProvider,
   );
   const phoneNumbers = phoneNumbersQuery.data ?? [];
+  const metaCloudUnavailable =
+    shouldLoadMetaCloud &&
+    (userProfile?.metaCloudWhatsappEnabled === false ||
+      (metaCloudDiagnosticQuery.isSuccess &&
+        metaCloudDiagnosticQuery.data.enabled === false));
   const showPhoneNumberSelect =
     !channel &&
     selectedProvider === "meta-cloud" &&
     canViewIntegrations &&
+    userProfile?.metaCloudWhatsappEnabled !== false &&
+    metaCloudDiagnosticQuery.data?.enabled === true &&
     !phoneNumbersQuery.isError &&
     (phoneNumbersQuery.isLoading || phoneNumbers.length > 0);
 
@@ -279,6 +302,10 @@ export function OperationalChannelDialog({
                     channel.metaPhoneNumberId ||
                     "Número não informado"}
                 </div>
+              ) : metaCloudDiagnosticQuery.isLoading ? (
+                <p className="text-sm text-muted-foreground">
+                  Verificando a disponibilidade da Meta Cloud...
+                </p>
               ) : showPhoneNumberSelect ? (
                 <Controller
                   control={form.control}
@@ -322,17 +349,32 @@ export function OperationalChannelDialog({
               <FieldError
                 message={form.formState.errors.metaPhoneNumberId?.message}
               />
+              {!channel && metaCloudUnavailable ? (
+                <p className="text-xs text-muted-foreground">
+                  A Meta Cloud está indisponível neste ambiente. Para
+                  configurar uma conexão agora, selecione Z-API no provider.
+                </p>
+              ) : null}
+              {!channel && metaCloudDiagnosticQuery.isError ? (
+                <p className="text-xs text-muted-foreground">
+                  Não foi possível verificar a Meta Cloud. Informe o ID
+                  manualmente ou selecione Z-API no provider.
+                </p>
+              ) : null}
               {!channel && phoneNumbersQuery.isError ? (
                 <p className="text-xs text-muted-foreground">
                   Não foi possível carregar a lista de números. Informe o ID
-                  sincronizado pela empresa manualmente.
+                  sincronizado pela empresa manualmente ou selecione Z-API no
+                  provider.
                 </p>
               ) : null}
               {!channel &&
               canViewIntegrations &&
               !phoneNumbersQuery.isLoading &&
               !phoneNumbers.length &&
-              !phoneNumbersQuery.isError ? (
+              !phoneNumbersQuery.isError &&
+              !metaCloudDiagnosticQuery.isError &&
+              !metaCloudUnavailable ? (
                 <p className="text-xs text-muted-foreground">
                   Nenhum número Meta sincronizado foi encontrado para esta
                   empresa.
