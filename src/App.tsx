@@ -550,7 +550,12 @@ const App = () => (
                     />
                     <Route
                       path="/workspace/settings"
-                      element={<WorkspaceSettingsViewPage />}
+                      element={
+                        <ProtectedRoute
+                          requiredPermission="list:users"
+                          component={WorkspaceSettingsViewPage}
+                        />
+                      }
                     />
                     <Route path="*" element={<NotFoundPage />} />
                   </Route>
