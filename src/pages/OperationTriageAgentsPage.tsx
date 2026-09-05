@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import {
   AlertCircle,
   ArrowLeft,
-  Bot,
   KeyRound,
   Loader2,
   Pencil,
@@ -109,8 +108,8 @@ export default function OperationTriageAgentsPage() {
           body,
         });
         toast({
-          title: "Agente atualizado",
-          description: "A configuração do agente foi atualizada com segurança.",
+          title: "Integração de triagem atualizada",
+          description: "A configuração da integração foi atualizada com segurança.",
         });
       } else {
         const body: CreateOperationalTriageAgentBody = {
@@ -124,22 +123,22 @@ export default function OperationTriageAgentsPage() {
         };
         await mutations.create.mutateAsync(body);
         toast({
-          title: "Agente criado",
-          description: "O agente já pode ser selecionado em uma rota externa.",
+          title: "Integração de triagem criada",
+          description: "A integração já pode ser selecionada em uma rota de triagem.",
         });
       }
 
       closeDialog(false);
     } catch (error) {
       toast({
-        title: "Não foi possível salvar o agente",
+        title: "Não foi possível salvar a integração",
         description: getOperationalTriageAgentErrorMessage(
           error,
           "Verifique os dados e tente novamente.",
         ),
         action: isOperationalTriageAgentStaleVersion(error) ? (
           <ToastAction
-            altText="Recarregar agentes"
+            altText="Recarregar integrações"
             onClick={() => void agentsQuery.refetch()}
           >
             Recarregar
@@ -178,13 +177,13 @@ export default function OperationTriageAgentsPage() {
         expectedVersion: agentToDeactivate.version,
       });
       toast({
-        title: "Agente desativado",
-        description: "O histórico foi preservado e ele saiu das rotas disponíveis.",
+        title: "Integração de triagem desativada",
+        description: "O histórico foi preservado e a integração saiu das rotas disponíveis.",
       });
       setAgentToDeactivate(null);
     } catch (error) {
       toast({
-        title: "Não foi possível desativar o agente",
+        title: "Não foi possível desativar a integração",
         description: getOperationalTriageAgentErrorMessage(
           error,
           "Desative as rotas dependentes e tente novamente.",
@@ -201,7 +200,7 @@ export default function OperationTriageAgentsPage() {
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Seção disponível apenas em ambientes operacionais</AlertTitle>
           <AlertDescription>
-            Selecione um ambiente operacional para administrar agentes de triagem.
+            Selecione um ambiente operacional para administrar integrações de triagem.
           </AlertDescription>
         </Alert>
       </section>
@@ -213,7 +212,7 @@ export default function OperationTriageAgentsPage() {
       <header className="flex flex-col gap-4 border-b pb-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <Link
-            to="/operation"
+            to="/operation/agents"
             className={buttonVariants({
               variant: "ghost",
               size: "sm",
@@ -221,17 +220,17 @@ export default function OperationTriageAgentsPage() {
             })}
           >
             <ArrowLeft className="h-4 w-4" />
-            Configuração operacional
+            Agentes
           </Link>
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
             Administração operacional
           </p>
           <h1 className="mt-2 text-3xl font-semibold tracking-tight">
-            Agentes de triagem
+            Integrações de triagem
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-            Cadastre serviços externos, valide a conexão e vincule cada agente
-            a uma rota de agente externo dos canais operacionais.
+            Cadastre serviços externos, valide a conexão e vincule cada integração
+            a uma rota de triagem dos canais operacionais.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -246,7 +245,7 @@ export default function OperationTriageAgentsPage() {
           ) : null}
           <Button onClick={openCreateDialog} disabled={!canManage}>
             <Plus className="h-4 w-4" />
-            Novo agente
+            Nova integração
           </Button>
           <Badge variant="outline" className="h-10 gap-2 px-3">
             <Settings2 className="h-4 w-4" />
@@ -268,13 +267,13 @@ export default function OperationTriageAgentsPage() {
         <Card>
           <CardContent className="flex min-h-48 items-center justify-center gap-2">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            <span className="sr-only">Carregando agentes de triagem</span>
+            <span className="sr-only">Carregando integrações de triagem</span>
           </CardContent>
         </Card>
       ) : agentsQuery.isError ? (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Não foi possível carregar os agentes</AlertTitle>
+          <AlertTitle>Não foi possível carregar as integrações</AlertTitle>
           <AlertDescription className="flex flex-wrap items-center gap-3">
             {getOperationalTriageAgentErrorMessage(
               agentsQuery.error,
@@ -294,9 +293,9 @@ export default function OperationTriageAgentsPage() {
       ) : (
         <Card>
           <CardHeader>
-            <CardTitle>Agentes deste ambiente</CardTitle>
+            <CardTitle>Integrações deste ambiente</CardTitle>
             <CardDescription>
-              Somente agentes ativos aparecem como destino de novas rotas.
+              Somente integrações ativas aparecem como destino de novas rotas.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -316,14 +315,14 @@ export default function OperationTriageAgentsPage() {
               </div>
             ) : (
               <div className="rounded-lg border border-dashed p-8 text-center">
-                <Bot className="mx-auto h-8 w-8 text-muted-foreground" />
-                <p className="mt-3 font-medium">Nenhum agente de triagem</p>
+                <Radio className="mx-auto h-8 w-8 text-muted-foreground" />
+                <p className="mt-3 font-medium">Nenhuma integração de triagem</p>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Cadastre o primeiro serviço para habilitar rotas externas.
+                  Cadastre o primeiro serviço externo para habilitar rotas de triagem.
                 </p>
                 <Button className="mt-4" onClick={openCreateDialog} disabled={!canManage}>
                   <Plus className="h-4 w-4" />
-                  Criar agente
+                  Criar integração
                 </Button>
               </div>
             )}
@@ -347,10 +346,10 @@ export default function OperationTriageAgentsPage() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Desativar agente?</AlertDialogTitle>
-            <AlertDialogDescription>
-              O agente “{agentToDeactivate?.name}” não poderá ser usado em novas
-              rotas. O histórico de execuções será preservado.
+          <AlertDialogTitle>Desativar integração de triagem?</AlertDialogTitle>
+          <AlertDialogDescription>
+            A integração “{agentToDeactivate?.name}” não poderá ser usada em
+            novas rotas. O histórico de execuções será preservado.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -392,7 +391,7 @@ function AgentRow({
     <div className="flex flex-col gap-4 rounded-lg border p-4 lg:flex-row lg:items-center lg:justify-between">
       <div className="min-w-0 space-y-2">
         <div className="flex flex-wrap items-center gap-2">
-          <Bot className="h-4 w-4 text-primary" />
+          <Radio className="h-4 w-4 text-primary" />
           <p className="font-medium">{agent.name}</p>
           <Badge variant={agent.enabled ? "secondary" : "outline"}>
             {agent.enabled ? "Ativo" : "Desativado"}
@@ -400,15 +399,15 @@ function AgentRow({
           {agent.credentialConfigured ? (
             <Badge variant="outline">
               <KeyRound className="mr-1 h-3 w-3" />
-              Credencial configurada
+              Chave de acesso configurada
             </Badge>
           ) : (
-            <Badge variant="outline">Sem credencial</Badge>
+            <Badge variant="outline">Chave de acesso ausente</Badge>
           )}
         </div>
         <p className="truncate text-sm text-muted-foreground">{agent.baseUrl}</p>
         <p className="text-xs text-muted-foreground">
-          Tempo limite: {agent.timeoutMs} ms · {agent.maxAttempts} tentativa(s) · versão {agent.version}
+          Resposta: {agent.timeoutMs} ms · até {agent.maxAttempts} tentativas
           {agent.updatedAt ? ` · atualizado em ${formatOperationalDateTime(agent.updatedAt)}` : ""}
         </p>
       </div>

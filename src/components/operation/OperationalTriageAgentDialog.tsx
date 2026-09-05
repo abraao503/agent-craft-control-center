@@ -60,11 +60,13 @@ export function OperationalTriageAgentDialog({
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[620px]">
         <DialogHeader>
           <DialogTitle>
-            {agent ? "Editar agente de triagem" : "Novo agente de triagem"}
+            {agent
+              ? "Editar integração de triagem"
+              : "Nova integração de triagem"}
           </DialogTitle>
           <DialogDescription>
-            Configure um serviço HTTP compatível com o protocolo de triagem
-            operacional. O segredo é somente para gravação (não pode ser lido depois).
+            Configure um serviço externo para analisar as entradas da operação.
+            A chave de acesso é somente para gravação e nunca pode ser lida depois.
           </DialogDescription>
         </DialogHeader>
 
@@ -73,7 +75,7 @@ export function OperationalTriageAgentDialog({
             if (!agent && !values.credential.trim()) {
               form.setError("credential", {
                 type: "custom",
-                message: "Informe a credencial para criar um agente.",
+                message: "Informe a chave de acesso para criar uma integração.",
               });
               return;
             }
@@ -89,26 +91,26 @@ export function OperationalTriageAgentDialog({
           >
             <Input
               id="operational-triage-agent-name"
-              placeholder="Agente de triagem principal"
+              placeholder="Integração principal"
               {...form.register("name")}
             />
           </Field>
 
           <Field
-            label="URL base"
+            label="Endereço do serviço"
             htmlFor="operational-triage-agent-base-url"
             error={form.formState.errors.baseUrl?.message}
           >
             <Input
               id="operational-triage-agent-base-url"
               type="url"
-              placeholder="https://agente.exemplo.internal"
+              placeholder="https://servico.exemplo.internal"
               {...form.register("baseUrl")}
             />
           </Field>
 
           <Field
-            label="Credencial"
+            label="Chave de acesso"
             htmlFor="operational-triage-agent-credential"
             error={form.formState.errors.credential?.message}
           >
@@ -118,7 +120,7 @@ export function OperationalTriageAgentDialog({
               autoComplete="new-password"
               placeholder={
                 agent?.credentialConfigured
-                  ? "Credencial configurada; informe apenas para substituir"
+                  ? "Chave configurada; informe apenas para substituir"
                   : "Chave de acesso do serviço"
               }
               {...form.register("credential")}
@@ -126,13 +128,13 @@ export function OperationalTriageAgentDialog({
             <p className="text-xs text-muted-foreground">
               {agent
                 ? "Deixe em branco para manter o segredo atual."
-                : "A credencial nunca será exibida novamente."}
+                : "A chave nunca será exibida novamente."}
             </p>
           </Field>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <Field
-              label="Tempo limite (ms)"
+              label="Tempo máximo de resposta (ms)"
               htmlFor="operational-triage-agent-timeout"
               error={form.formState.errors.timeoutMs?.message}
             >
@@ -145,7 +147,7 @@ export function OperationalTriageAgentDialog({
               />
             </Field>
             <Field
-              label="Tentativas"
+              label="Número de tentativas"
               htmlFor="operational-triage-agent-attempts"
               error={form.formState.errors.maxAttempts?.message}
             >
@@ -166,10 +168,10 @@ export function OperationalTriageAgentDialog({
               <div className="flex items-center justify-between gap-4 rounded-lg border p-4">
                 <div>
                   <Label htmlFor="operational-triage-agent-enabled">
-                    Agente ativo
+                    Integração ativa
                   </Label>
                   <p className="text-sm text-muted-foreground">
-                    Agentes inativos não podem ser selecionados em novas rotas.
+                    Integrações inativas não podem ser selecionadas em novas rotas.
                   </p>
                 </div>
                 <Switch
@@ -185,8 +187,8 @@ export function OperationalTriageAgentDialog({
           <Alert>
             <Info className="h-4 w-4" />
             <AlertDescription>
-              O serviço deve responder ao teste de conexão e aceitar o contrato
-              `v1` da operação.
+              O serviço precisa responder ao teste de conexão e seguir o formato
+              esperado pela operação.
             </AlertDescription>
           </Alert>
 
@@ -201,7 +203,7 @@ export function OperationalTriageAgentDialog({
             </Button>
             <Button type="submit" disabled={isPending}>
               {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-              {isPending ? "Salvando..." : "Salvar agente"}
+              {isPending ? "Salvando..." : "Salvar integração"}
             </Button>
           </DialogFooter>
         </form>
