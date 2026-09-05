@@ -13,7 +13,7 @@ export const OPERATIONAL_ATTENDANCE_ERROR_MESSAGES: Record<string, string> = {
   DESTINATION_INACTIVE:
     "A área ou fila de destino está inativa.",
   DESTINATION_WORKSPACE_MISMATCH:
-    "A área ou fila de destino não pertence ao workspace atual.",
+    "A área ou fila de destino não pertence ao ambiente atual.",
 
   // Envio de mensagens
   NOT_CURRENT_ASSIGNEE:
@@ -58,11 +58,11 @@ export const OPERATIONAL_ATTENDANCE_ERROR_MESSAGES: Record<string, string> = {
 
   // Entidades e Tenancy
   WORKSPACE_NOT_FOUND:
-    "Workspace operacional não encontrado.",
+    "Ambiente operacional não encontrado.",
   WORKSPACE_TYPE_INCOMPATIBLE:
-    "O workspace informado não é do tipo operacional.",
+    "O ambiente informado não é do tipo operacional.",
   WORKSPACE_TYPE_INVALID:
-    "O workspace informado não é do tipo operacional.",
+    "O ambiente informado não é do tipo operacional.",
   ATTENDANCE_NOT_FOUND:
     "Atendimento não encontrado ou inacessível no escopo atual.",
   AREA_NOT_FOUND:

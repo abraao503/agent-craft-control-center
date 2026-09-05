@@ -144,9 +144,9 @@ export default function OperationDistributionPage() {
       <section className="mx-auto w-full max-w-5xl">
         <Alert>
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Seção disponível apenas em workspaces operacionais</AlertTitle>
+          <AlertTitle>Seção disponível apenas em ambientes operacionais</AlertTitle>
           <AlertDescription>
-            Selecione um workspace operacional para administrar a distribuição.
+            Selecione um ambiente operacional para administrar a distribuição.
           </AlertDescription>
         </Alert>
       </section>
@@ -184,7 +184,7 @@ export default function OperationDistributionPage() {
         </div>
         <Badge variant="outline" className="w-fit gap-2 px-3 py-2">
           <Settings2 className="h-4 w-4" />
-          Workspace: {currentWorkspace.name}
+          Ambiente: {currentWorkspace.name}
         </Badge>
       </header>
 
@@ -250,7 +250,7 @@ export default function OperationDistributionPage() {
                           Ativar distribuição automática
                         </Label>
                         <p className="text-sm text-muted-foreground">
-                          A configuração é global para este workspace e pode ser
+                          A configuração é global para este ambiente e pode ser
                           desligada sem perder as exceções salvas.
                         </p>
                       </div>

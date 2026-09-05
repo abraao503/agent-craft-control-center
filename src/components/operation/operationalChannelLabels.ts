@@ -48,8 +48,8 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const ERROR_LABELS: Record<string, string> = {
-  CHANNEL_ALREADY_EXISTS: "Já existe uma conexão deste provedor neste workspace.",
-  CHANNEL_NOT_FOUND: "A conexão não existe mais neste workspace.",
+  CHANNEL_ALREADY_EXISTS: "Já existe uma conexão deste provedor neste ambiente.",
+  CHANNEL_NOT_FOUND: "A conexão não existe mais neste ambiente.",
   DESTINATION_NOT_FOUND: "Um dos destinos não existe mais ou está inativo.",
   DESTINATION_WORKSPACE_MISMATCH:
     "A fila selecionada não pertence à área informada.",
@@ -71,9 +71,9 @@ const ERROR_LABELS: Record<string, string> = {
   ROUTE_INCOMPLETE: "Complete uma rota válida antes de solicitar o QR Code.",
   STALE_VERSION:
     "O recurso foi alterado por outra pessoa. Atualize a lista e tente novamente.",
-  ASSISTANT_NOT_FOUND: "O Assistente não está ativo neste workspace.",
+  ASSISTANT_NOT_FOUND: "O Assistente não está ativo neste ambiente.",
   TRIAGE_AGENT_NOT_FOUND:
-    "O agente de triagem não está ativo neste workspace.",
+    "O agente de triagem não está ativo neste ambiente.",
   HARNESS_DISABLED:
     "O console sintético está desabilitado neste ambiente de execução.",
   EVENT_PROCESSING:

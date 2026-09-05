@@ -187,7 +187,7 @@ export function OperationalAssistantDialog({
             {assistant ? "Editar Assistente operacional" : "Novo Assistente operacional"}
           </DialogTitle>
           <DialogDescription>
-            A configuração pertence somente ao workspace operacional selecionado.
+            A configuração pertence somente ao ambiente operacional selecionado.
             Credenciais são gravadas no servidor e nunca retornam para a tela.
           </DialogDescription>
         </DialogHeader>
@@ -615,7 +615,7 @@ export function OperationalAssistantDialog({
             <section className="space-y-4 border-t pt-6">
               <SectionHeading
                 title="Conteúdo de conhecimento"
-                description="Selecione conteúdos já pertencentes a este workspace."
+                description="Selecione conteúdos já pertencentes a este ambiente."
               />
               {contentsError ? (
                 <Alert variant="destructive">
@@ -624,7 +624,7 @@ export function OperationalAssistantDialog({
                   <AlertDescription className="flex flex-wrap items-center gap-3">
                     {getOperationalAssistantErrorMessage(
                       contentsError,
-                      "Tente novamente para consultar os conteúdos deste workspace.",
+                      "Tente novamente para consultar os conteúdos deste ambiente.",
                     )}
                     <Button
                       type="button"
@@ -676,7 +676,7 @@ export function OperationalAssistantDialog({
                 </div>
               ) : contentsError ? null : (
                 <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
-                  Nenhum conteúdo disponível para este workspace.
+                  Nenhum conteúdo disponível para este ambiente.
                 </div>
               )}
             </section>

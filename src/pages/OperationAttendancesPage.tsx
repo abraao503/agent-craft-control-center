@@ -178,9 +178,9 @@ export default function OperationAttendancesPage({
       <section className="mx-auto w-full max-w-5xl">
         <Alert>
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Seção disponível apenas em workspaces operacionais</AlertTitle>
+          <AlertTitle>Seção disponível apenas em ambientes operacionais</AlertTitle>
           <AlertDescription>
-            Selecione um workspace operacional para abrir os atendimentos.
+            Selecione um ambiente operacional para abrir os atendimentos.
           </AlertDescription>
         </Alert>
       </section>
@@ -194,7 +194,7 @@ export default function OperationAttendancesPage({
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Acesso operacional revogado</AlertTitle>
           <AlertDescription>
-            A sessão perdeu acesso a este workspace. A lista foi removida e será
+            A sessão perdeu acesso a este ambiente. A lista foi removida e será
             reconciliada quando o acesso for restabelecido.
           </AlertDescription>
         </Alert>
@@ -293,7 +293,7 @@ export default function OperationAttendancesPage({
             </h1>
             <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
               Encontre conversas no escopo autorizado e abra o ciclo operacional
-              sem sair do workspace atual.
+              sem sair do ambiente atual.
             </p>
           </div>
           <div className="flex flex-col items-end gap-2">
@@ -1061,7 +1061,7 @@ function AttendanceListError({
       <AlertCircle className="h-8 w-8 text-destructive" />
       <p className="font-medium">A lista de atendimentos não está disponível</p>
       <p className="max-w-md text-sm text-muted-foreground">
-        Ocorreu uma falha ao consultar este workspace. Tente novamente para
+        Ocorreu uma falha ao consultar este ambiente. Tente novamente para
         carregar a caixa de entrada.
       </p>
       <Button

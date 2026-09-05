@@ -209,7 +209,7 @@ export function OperationalRouteDialog({
             {route ? "Editar rota de entrada" : "Nova rota de entrada"}
           </DialogTitle>
           <DialogDescription>
-            Salve uma rota coerente com os destinos deste workspace. O agente
+            Salve uma rota coerente com os destinos deste ambiente. O agente
             externo só será usado quando a configuração e o recebimento de mensagens estiverem
             disponíveis.
           </DialogDescription>

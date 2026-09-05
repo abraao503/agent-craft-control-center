@@ -217,7 +217,7 @@ export function OperationalAreasCard({ workspaceId }: { workspaceId?: string }) 
           <div className="rounded-lg border border-dashed p-6 text-center">
             <p className="font-medium">Nenhuma área ativa</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              Crie a primeira área para começar a estruturar o workspace.
+              Crie a primeira área para começar a estruturar o ambiente.
             </p>
           </div>
         )}
@@ -301,7 +301,7 @@ function OperationalAreaDialog({
         <DialogHeader>
           <DialogTitle>{area ? "Editar área" : "Nova área"}</DialogTitle>
           <DialogDescription>
-            Informe um nome único entre as áreas ativas deste workspace.
+            Informe um nome único entre as áreas ativas deste ambiente.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">

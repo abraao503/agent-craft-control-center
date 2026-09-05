@@ -178,7 +178,7 @@ export function OperationalChannelDialog({
           <DialogDescription>
             {channel
               ? "Atualize o nome ou substitua credenciais. A API nunca devolve secrets já gravados."
-              : "Conecte um provedor a este workspace operacional. A conexão será criada como rascunho até a rota ficar válida."}
+              : "Conecte um provedor a este ambiente operacional. A conexão será criada como rascunho até a rota ficar válida."}
           </DialogDescription>
         </DialogHeader>
 

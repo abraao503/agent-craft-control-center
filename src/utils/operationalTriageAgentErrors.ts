@@ -1,11 +1,11 @@
 import axios from "axios";
 
 const TRIAGE_AGENT_ERROR_MESSAGES: Record<string, string> = {
-  WORKSPACE_NOT_FOUND: "Workspace operacional não encontrado.",
+  WORKSPACE_NOT_FOUND: "Ambiente operacional não encontrado.",
   WORKSPACE_TYPE_INCOMPATIBLE:
-    "O workspace atual não é compatível com esta configuração operacional.",
-  TRIAGE_AGENT_NOT_FOUND: "O agente de triagem não existe mais neste workspace.",
-  AGENT_NAME_CONFLICT: "Já existe um agente com este nome neste workspace.",
+    "O ambiente atual não é compatível com esta configuração operacional.",
+  TRIAGE_AGENT_NOT_FOUND: "O agente de triagem não existe mais neste ambiente.",
+  AGENT_NAME_CONFLICT: "Já existe um agente com este nome neste ambiente.",
   INVALID_TRIAGE_AGENT_CONFIG:
     "Revise a URL, o timeout e o número de tentativas do agente.",
   TRIAGE_AGENT_HOST_NOT_ALLOWED:

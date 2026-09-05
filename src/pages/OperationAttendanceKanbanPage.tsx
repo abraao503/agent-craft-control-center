@@ -342,9 +342,9 @@ export default function OperationAttendanceKanbanPage() {
       <section className="m-4 w-auto">
         <Alert>
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Seção disponível apenas em workspaces operacionais</AlertTitle>
+          <AlertTitle>Seção disponível apenas em ambientes operacionais</AlertTitle>
           <AlertDescription>
-            Selecione um workspace operacional para abrir o quadro.
+            Selecione um ambiente operacional para abrir o quadro.
           </AlertDescription>
         </Alert>
       </section>
@@ -359,7 +359,7 @@ export default function OperationAttendanceKanbanPage() {
           <AlertTitle>Visualização operacional não autorizada</AlertTitle>
           <AlertDescription>
             Sua sessão não possui permissão para consultar os atendimentos deste
-            workspace.
+            ambiente.
           </AlertDescription>
         </Alert>
       </section>
@@ -373,7 +373,7 @@ export default function OperationAttendanceKanbanPage() {
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Acesso operacional revogado</AlertTitle>
           <AlertDescription>
-            A sessão perdeu acesso a este workspace. O quadro foi removido e
+            A sessão perdeu acesso a este ambiente. O quadro foi removido e
             será reconciliado quando o acesso for restabelecido.
           </AlertDescription>
         </Alert>

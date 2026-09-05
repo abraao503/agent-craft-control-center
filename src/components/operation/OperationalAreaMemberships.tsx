@@ -250,7 +250,7 @@ export function OperationalAreaMemberships({
             </div>
           ) : (
             <p className="text-sm text-muted-foreground">
-              Não há usuários `WORKSPACE_MEMBER` disponíveis para adicionar.
+              Não há membros operacionais disponíveis para adicionar.
             </p>
           )}
         </div>
@@ -382,9 +382,9 @@ function getApiErrorMessage(error: unknown, fallback: string) {
 
   const code = error.response?.data?.message;
   const messages: Record<string, string> = {
-    AREA_NOT_FOUND: "A área não está mais ativa ou não pertence a este workspace.",
-    USER_NOT_FOUND: "O usuário não pertence a este workspace.",
-    USER_NOT_ELIGIBLE: "Somente usuários WORKSPACE_MEMBER podem ser associados.",
+    AREA_NOT_FOUND: "A área não está mais ativa ou não pertence a este ambiente.",
+    USER_NOT_FOUND: "O usuário não pertence a este ambiente.",
+    USER_NOT_ELIGIBLE: "Somente membros operacionais podem ser associados.",
     STALE_VERSION:
       "A associação foi alterada por outra pessoa. Atualize a lista e tente novamente.",
   };

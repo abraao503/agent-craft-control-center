@@ -199,9 +199,9 @@ export default function OperationTriageAgentsPage() {
       <section className="mx-auto w-full max-w-5xl">
         <Alert>
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Seção disponível apenas em workspaces operacionais</AlertTitle>
+          <AlertTitle>Seção disponível apenas em ambientes operacionais</AlertTitle>
           <AlertDescription>
-            Selecione um workspace operacional para administrar agentes de triagem.
+            Selecione um ambiente operacional para administrar agentes de triagem.
           </AlertDescription>
         </Alert>
       </section>
@@ -294,7 +294,7 @@ export default function OperationTriageAgentsPage() {
       ) : (
         <Card>
           <CardHeader>
-            <CardTitle>Agentes deste workspace</CardTitle>
+            <CardTitle>Agentes deste ambiente</CardTitle>
             <CardDescription>
               Somente agentes ativos aparecem como destino de novas rotas.
             </CardDescription>

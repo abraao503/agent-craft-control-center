@@ -2,14 +2,14 @@ import axios from "axios";
 
 const OPERATIONAL_DISTRIBUTION_ERROR_MESSAGES: Record<string, string> = {
   DISTRIBUTION_NOT_INITIALIZED:
-    "A configuração de distribuição ainda não foi inicializada neste workspace.",
+    "A configuração de distribuição ainda não foi inicializada neste ambiente.",
   INVALID_DISTRIBUTION_REFERENCES:
-    "Uma ou mais exceções não pertencem mais a este workspace ou estão inativas.",
+    "Uma ou mais exceções não pertencem mais a este ambiente ou estão inativas.",
   STALE_VERSION:
     "A configuração foi alterada por outra pessoa. Recarregue os dados e tente novamente.",
-  WORKSPACE_NOT_FOUND: "Workspace operacional não encontrado.",
+  WORKSPACE_NOT_FOUND: "Ambiente operacional não encontrado.",
   WORKSPACE_TYPE_INCOMPATIBLE:
-    "O workspace atual não é compatível com a configuração operacional.",
+    "O ambiente atual não é compatível com a configuração operacional.",
   FORBIDDEN: "Você não tem permissão para administrar a distribuição.",
 };
 

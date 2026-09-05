@@ -368,9 +368,9 @@ export function OperationalChannelsManager({
       <section className="mx-auto w-full max-w-5xl p-6">
         <Alert>
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Workspace operacional não selecionado</AlertTitle>
+          <AlertTitle>Ambiente operacional não selecionado</AlertTitle>
           <AlertDescription>
-            Selecione um workspace operacional para consultar os canais.
+            Selecione um ambiente operacional para consultar os canais.
           </AlertDescription>
         </Alert>
       </section>
@@ -382,13 +382,13 @@ export function OperationalChannelsManager({
       <header className="flex flex-col gap-5 border-b pb-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
-            Workspace operacional
+            Ambiente operacional
           </p>
           <h1 className="mt-2 text-3xl font-semibold tracking-tight">
             Canais de entrada
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-            Configure as conexões e escolha para onde as mensagens de {workspaceName || "este workspace"} serão direcionadas.
+            Configure as conexões e escolha para onde as mensagens de {workspaceName || "este ambiente"} serão direcionadas.
           </p>
         </div>
         {canConnectChannels ? (
@@ -472,7 +472,7 @@ export function OperationalChannelsManager({
             <p className="mt-1 text-sm text-muted-foreground">
               {canConnectChannels
                 ? "Crie a primeira conexão para começar a configurar a entrada."
-                : "Um administrador autorizado ainda não configurou um canal neste workspace."}
+                : "Um administrador autorizado ainda não configurou um canal neste ambiente."}
             </p>
             {canConnectChannels ? (
               <Button

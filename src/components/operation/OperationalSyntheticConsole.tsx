@@ -134,7 +134,7 @@ export function OperationalSyntheticConsole({
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Console indisponível</AlertTitle>
             <AlertDescription>
-              Não foi possível carregar os canais deste workspace.
+              Não foi possível carregar os canais deste ambiente.
             </AlertDescription>
           </Alert>
         ) : !activeChannels.length ? (

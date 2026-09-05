@@ -44,7 +44,7 @@ export default function OperationAttendanceStationPage() {
               Atendimentos
             </p>
             <p className="truncate text-xs text-muted-foreground">
-              {currentWorkspace?.name || "Workspace operacional"}
+              {currentWorkspace?.name || "Ambiente operacional"}
             </p>
           </div>
         </div>

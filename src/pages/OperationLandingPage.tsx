@@ -209,7 +209,7 @@ export default function OperationLandingPage() {
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Configuração indisponível</AlertTitle>
           <AlertDescription>
-            Este workspace ainda não possui uma configuração operacional
+              Este ambiente ainda não possui uma configuração operacional
             inicializada.
           </AlertDescription>
         </Alert>
@@ -240,7 +240,7 @@ function OperationalChannelsEntryCard({
               Canais de entrada
             </CardTitle>
             <CardDescription>
-              Conexões, rotas e diagnóstico do workspace operacional.
+              Conexões, rotas e diagnóstico do ambiente operacional.
             </CardDescription>
           </div>
           <Link

@@ -219,9 +219,9 @@ export default function OperationAttendanceDetailPage({
       <section className="mx-auto w-full max-w-4xl">
         <Alert>
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Workspace operacional não selecionado</AlertTitle>
+          <AlertTitle>Ambiente operacional não selecionado</AlertTitle>
           <AlertDescription>
-            Selecione um workspace operacional para abrir este atendimento.
+            Selecione um ambiente operacional para abrir este atendimento.
           </AlertDescription>
         </Alert>
       </section>
@@ -243,7 +243,7 @@ export default function OperationAttendanceDetailPage({
           <AlertTitle>Acesso operacional revogado</AlertTitle>
           <AlertDescription>
             Este atendimento foi removido da tela porque a sessão perdeu acesso
-            ao workspace operacional.
+            ao ambiente operacional.
           </AlertDescription>
         </Alert>
       </section>

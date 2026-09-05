@@ -14,9 +14,9 @@ export default function OperationChannelsPage() {
       <section className="mx-auto w-full max-w-5xl p-6">
         <Alert>
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Seção disponível apenas em workspaces operacionais</AlertTitle>
+          <AlertTitle>Seção disponível apenas em ambientes operacionais</AlertTitle>
           <AlertDescription>
-            Selecione um workspace operacional para administrar canais e rotas.
+            Selecione um ambiente operacional para administrar canais e rotas.
           </AlertDescription>
         </Alert>
       </section>

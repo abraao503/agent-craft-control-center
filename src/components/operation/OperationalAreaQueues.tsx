@@ -417,7 +417,7 @@ function getApiErrorMessage(error: unknown, fallback: string) {
   const code = error.response?.data?.message;
   const messages: Record<string, string> = {
     AREA_NOT_FOUND:
-      "A área não está mais ativa ou não pertence a este workspace.",
+      "A área não está mais ativa ou não pertence a este ambiente.",
     QUEUE_NAME_CONFLICT: "Já existe uma fila ativa com esse nome nesta área.",
     STALE_VERSION:
       "A fila foi alterada por outra pessoa. Atualize a lista e tente novamente.",

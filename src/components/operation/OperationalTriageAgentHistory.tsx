@@ -40,6 +40,7 @@ const EXECUTION_ERROR_CODE_LABELS: Record<string, string> = {
   TRIAGE_AGENT_UNAUTHORIZED: "Acesso negado pelo agente",
   TRIAGE_AGENT_INVALID_RESPONSE: "Resposta inválida do agente",
   TRIAGE_AGENT_UNAVAILABLE: "Agente indisponível no momento",
+  CHANNEL_UNAVAILABLE: "Canal indisponível para resposta",
   TRIAGE_ROUTE_NOT_FOUND: "Destino indicado não existe",
   TRIAGE_RUNTIME_FAILED: "Falha ao processar a triagem",
   EXECUTION_VERSION_PAYLOAD_MISMATCH: "Registro desatualizado",
@@ -51,7 +52,10 @@ const EXECUTION_ERROR_CODE_LABELS: Record<string, string> = {
 function formatExecutionErrorCode(errorCode: string | null): string {
   if (!errorCode) return "Nenhum";
 
-  return EXECUTION_ERROR_CODE_LABELS[errorCode] ?? errorCode;
+  return (
+    EXECUTION_ERROR_CODE_LABELS[errorCode] ??
+    "Não foi possível concluir a triagem"
+  );
 }
 
 export function OperationalTriageAgentHistory({

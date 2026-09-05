@@ -85,7 +85,7 @@ export default function OperationAssistantsPage() {
     queryKey: ["operation-assistant-contents", workspaceId],
     queryFn: () => {
       if (!workspaceId) {
-        throw new Error("Workspace operacional não selecionado");
+        throw new Error("Ambiente operacional não selecionado");
       }
 
       return listContent(workspaceId);
@@ -230,9 +230,9 @@ export default function OperationAssistantsPage() {
       <section className="mx-auto w-full max-w-5xl">
         <Alert>
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Seção disponível apenas em workspaces operacionais</AlertTitle>
+          <AlertTitle>Seção disponível apenas em ambientes operacionais</AlertTitle>
           <AlertDescription>
-            Selecione um workspace operacional para administrar Assistentes.
+            Selecione um ambiente operacional para administrar Assistentes.
           </AlertDescription>
         </Alert>
       </section>
@@ -260,7 +260,7 @@ export default function OperationAssistantsPage() {
             Assistentes operacionais
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-            Configure Assistentes isolados neste workspace e escolha quais podem
+            Configure Assistentes isolados neste ambiente e escolha quais podem
             receber uma rota de entrada.
           </p>
         </div>
@@ -283,7 +283,7 @@ export default function OperationAssistantsPage() {
         <AlertTitle>Credenciais protegidas</AlertTitle>
         <AlertDescription>
           As credenciais do provedor e da transcrição são somente para gravação (não podem ser lidas depois). A API
-          valida o workspace, a permissão e a integridade das referências antes
+            valida o ambiente, a permissão e a integridade das referências antes
           de persistir qualquer alteração.
         </AlertDescription>
       </Alert>
@@ -318,7 +318,7 @@ export default function OperationAssistantsPage() {
       ) : (
         <Card>
           <CardHeader>
-            <CardTitle>Assistentes deste workspace</CardTitle>
+            <CardTitle>Assistentes deste ambiente</CardTitle>
             <CardDescription>
               Somente Assistentes ativos aparecem como destino de novas rotas.
             </CardDescription>
