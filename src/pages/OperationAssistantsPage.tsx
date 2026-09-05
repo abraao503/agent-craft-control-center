@@ -36,7 +36,6 @@ import {
   isOperationalAssistantStaleVersion,
 } from "@/utils/operationalAssistantErrors";
 import { OperationalAssistantDialog, OperationalAssistantFormValues } from "@/components/operation/OperationalAssistantDialog";
-import { OperationalClaraCard } from "@/components/operation/OperationalClaraCard";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   AlertDialog,
@@ -71,7 +70,6 @@ export default function OperationAssistantsPage() {
   const canManageAssistants = has("update:assistant");
   const canCreateAssistant = has("create:assistant");
   const canDeleteAssistant = has("delete:assistant");
-  const canManageClara = has("manage:operation-setup");
   const assistantsQuery = useOperationalAssistants(
     workspaceId,
     canViewAssistants,
@@ -360,10 +358,6 @@ export default function OperationAssistantsPage() {
           </CardContent>
         </Card>
       )}
-
-      {canManageClara ? (
-        <OperationalClaraCard workspaceId={operationalWorkspaceId} />
-      ) : null}
 
       <OperationalAssistantDialog
         open={dialogOpen}

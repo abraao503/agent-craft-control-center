@@ -253,7 +253,7 @@ export function OperationalAssistantDialog({
                   <Input
                     id="operational-assistant-name"
                     autoComplete="off"
-                    placeholder="Clara operacional"
+                    placeholder="Assistente operacional"
                     {...form.register("name")}
                   />
                 </Field>
@@ -414,7 +414,7 @@ export function OperationalAssistantDialog({
             <section className="space-y-4 border-t pt-6">
               <SectionHeading
                 title="Runtime operacional"
-                description="Esses parâmetros controlam contexto, áudio e o perfil de resposta da Clara."
+                description="Esses parâmetros controlam contexto, áudio e o perfil de resposta do Assistant."
               />
               <Controller
                 control={form.control}

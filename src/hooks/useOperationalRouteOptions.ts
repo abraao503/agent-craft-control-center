@@ -55,7 +55,7 @@ export function useOperationalRouteOptions(
         throw new Error("Workspace operacional não selecionado");
       }
 
-      return listOperationalTriageAgents(workspaceId);
+      return listOperationalTriageAgents(workspaceId, { activeOnly: true });
     },
     enabled: Boolean(workspaceId && enabled && includeTriageAgents),
   });
