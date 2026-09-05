@@ -10,6 +10,7 @@ import {
   Loader2,
   Pencil,
   Plus,
+  Radio,
   RefreshCw,
   Settings2,
   Trash2,
@@ -70,6 +71,7 @@ export default function OperationAssistantsPage() {
   const canManageAssistants = has("update:assistant");
   const canCreateAssistant = has("create:assistant");
   const canDeleteAssistant = has("delete:assistant");
+  const canManageChannels = has("manage:operation-channels");
   const assistantsQuery = useOperationalAssistants(
     workspaceId,
     canViewAssistants,
@@ -265,6 +267,15 @@ export default function OperationAssistantsPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          {canManageChannels ? (
+            <Link
+              to="/operation/channels"
+              className={buttonVariants({ variant: "outline" })}
+            >
+              <Radio className="h-4 w-4" />
+              Vincular em canais
+            </Link>
+          ) : null}
           {canCreateAssistant ? (
             <Button onClick={openCreateDialog}>
               <Plus className="h-4 w-4" />

@@ -31,15 +31,15 @@ const STATUS_LABELS: Record<OperationalTriageAgentExecutionView["status"], strin
 };
 
 const EXECUTION_ERROR_CODE_LABELS: Record<string, string> = {
-  TRIAGE_AGENT_NOT_FOUND: "Agente de triagem não encontrado",
-  TRIAGE_AGENT_DISABLED: "Agente de triagem desativado",
-  TRIAGE_AGENT_INVALID_REQUEST: "Pedido inválido para o agente",
-  TRIAGE_AGENT_CREDENTIAL_INVALID: "Credencial do agente rejeitada",
-  TRIAGE_AGENT_TIMEOUT: "O agente não respondeu a tempo",
-  TRIAGE_AGENT_RATE_LIMITED: "O agente está sobrecarregado",
-  TRIAGE_AGENT_UNAUTHORIZED: "Acesso negado pelo agente",
-  TRIAGE_AGENT_INVALID_RESPONSE: "Resposta inválida do agente",
-  TRIAGE_AGENT_UNAVAILABLE: "Agente indisponível no momento",
+  TRIAGE_AGENT_NOT_FOUND: "Integração de triagem não encontrada",
+  TRIAGE_AGENT_DISABLED: "Integração de triagem desativada",
+  TRIAGE_AGENT_INVALID_REQUEST: "Pedido inválido para a integração",
+  TRIAGE_AGENT_CREDENTIAL_INVALID: "Chave de acesso rejeitada",
+  TRIAGE_AGENT_TIMEOUT: "A integração não respondeu a tempo",
+  TRIAGE_AGENT_RATE_LIMITED: "A integração está sobrecarregada",
+  TRIAGE_AGENT_UNAUTHORIZED: "Acesso negado pela integração",
+  TRIAGE_AGENT_INVALID_RESPONSE: "Resposta inválida da integração",
+  TRIAGE_AGENT_UNAVAILABLE: "Integração indisponível no momento",
   CHANNEL_UNAVAILABLE: "Canal indisponível para resposta",
   TRIAGE_ROUTE_NOT_FOUND: "Destino indicado não existe",
   TRIAGE_RUNTIME_FAILED: "Falha ao processar a triagem",
@@ -78,10 +78,10 @@ export function OperationalTriageAgentHistory({
       <CardHeader className="p-3 pb-2">
         <CardTitle className="flex items-center gap-2 text-base">
           <Route className="h-5 w-5 text-primary" />
-          Triagem externa
+          Integração de triagem
         </CardTitle>
         <CardDescription>
-          Histórico resumido das execuções do agente neste atendimento.
+          Histórico resumido das execuções da integração neste atendimento.
         </CardDescription>
       </CardHeader>
       <CardContent className="px-3 pb-3">
@@ -119,7 +119,7 @@ export function OperationalTriageAgentHistory({
           </div>
         ) : (
           <p className="rounded-md border border-dashed p-4 text-center text-sm text-muted-foreground">
-            Nenhuma execução de agente registrada neste atendimento.
+            Nenhuma execução de triagem registrada neste atendimento.
           </p>
         )}
       </CardContent>

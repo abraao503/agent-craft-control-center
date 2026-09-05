@@ -19,8 +19,8 @@ export const OPERATIONAL_CHANNEL_ENTRY_MODE_LABELS: Record<
 > = {
   TRIAGE: "Triagem",
   QUEUE: "Fila",
-  ASSISTANT: "Assistente",
-  EXTERNAL_AGENT: "Agente externo",
+  ASSISTANT: "Assistente de atendimento",
+  EXTERNAL_AGENT: "Integração de triagem",
 };
 
 export const OPERATIONAL_CHANNEL_ROUTE_MISSING_LABELS: Record<
@@ -28,8 +28,8 @@ export const OPERATIONAL_CHANNEL_ROUTE_MISSING_LABELS: Record<
   string
 > = {
   route: "rota",
-  TRIAGE_AGENT: "agente de triagem",
-  ASSISTANT: "Assistente ativo",
+  TRIAGE_AGENT: "integração de triagem",
+  ASSISTANT: "assistente de atendimento ativo",
   TARGET_AREA: "área de entrada",
   TARGET_QUEUE: "fila de entrada",
   FALLBACK_AREA: "área alternativa",
@@ -71,9 +71,10 @@ const ERROR_LABELS: Record<string, string> = {
   ROUTE_INCOMPLETE: "Complete uma rota válida antes de solicitar o QR Code.",
   STALE_VERSION:
     "O recurso foi alterado por outra pessoa. Atualize a lista e tente novamente.",
-  ASSISTANT_NOT_FOUND: "O Assistente não está ativo neste ambiente.",
+  ASSISTANT_NOT_FOUND:
+    "O assistente de atendimento não está ativo neste ambiente.",
   TRIAGE_AGENT_NOT_FOUND:
-    "O agente de triagem não está ativo neste ambiente.",
+    "A integração de triagem não está ativa neste ambiente.",
   HARNESS_DISABLED:
     "O console sintético está desabilitado neste ambiente de execução.",
   EVENT_PROCESSING:

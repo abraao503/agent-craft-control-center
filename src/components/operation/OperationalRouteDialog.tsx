@@ -38,8 +38,8 @@ const routeFormSchema = z
   .object({
     channelId: z.string().uuid("Selecione um canal"),
     entryMode: z.enum(["TRIAGE", "QUEUE", "ASSISTANT", "EXTERNAL_AGENT"]),
-    triageAgentId: z.string().uuid("Selecione um agente de triagem").nullable(),
-    assistantId: z.string().uuid("Selecione um Assistente").nullable(),
+    triageAgentId: z.string().uuid("Selecione uma integração de triagem").nullable(),
+    assistantId: z.string().uuid("Selecione um assistente de atendimento").nullable(),
     targetAreaId: z.string().uuid("Selecione uma área").nullable(),
     targetQueueId: z.string().uuid("Selecione uma fila").nullable(),
     fallbackAreaId: z.string().uuid("Selecione uma área alternativa").nullable(),
@@ -69,7 +69,7 @@ const routeFormSchema = z
         context.addIssue({
           code: z.ZodIssueCode.custom,
           path: ["assistantId"],
-          message: "Selecione o Assistente de entrada",
+          message: "Selecione o assistente de atendimento de entrada",
         });
       }
       if (!values.fallbackAreaId) {
@@ -92,7 +92,7 @@ const routeFormSchema = z
       context.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["triageAgentId"],
-        message: "Selecione o agente de triagem",
+        message: "Selecione a integração de triagem",
       });
     }
   });
@@ -209,9 +209,9 @@ export function OperationalRouteDialog({
             {route ? "Editar rota de entrada" : "Nova rota de entrada"}
           </DialogTitle>
           <DialogDescription>
-            Salve uma rota coerente com os destinos deste ambiente. O agente
-            externo só será usado quando a configuração e o recebimento de mensagens estiverem
-            disponíveis.
+            Salve uma rota coerente com os destinos deste ambiente. A integração
+            de triagem só será usada quando a configuração e o recebimento de
+            mensagens estiverem disponíveis.
           </DialogDescription>
         </DialogHeader>
 
@@ -221,7 +221,7 @@ export function OperationalRouteDialog({
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Não foi possível carregar os destinos</AlertTitle>
               <AlertDescription className="flex flex-wrap items-center gap-3">
-                Atualize as áreas, filas, Assistentes e agentes antes de salvar a rota.
+                Atualize as áreas, filas, assistentes e integrações antes de salvar a rota.
                 <Button
                   type="button"
                   size="sm"
@@ -282,21 +282,21 @@ export function OperationalRouteDialog({
               : entryMode === "QUEUE"
                 ? "Cada entrada será encaminhada para a área e a fila selecionadas."
                 : entryMode === "ASSISTANT"
-                  ? "O Assistente fica registrado como destino e usa as áreas alternativas configuradas."
-                  : "A mensagem será agrupada no atendimento e enviada ao agente externo configurado."}
+                  ? "O assistente de atendimento fica registrado como destino e usa as áreas alternativas configuradas."
+                  : "A mensagem será agrupada no atendimento e enviada à integração de triagem configurada."}
           </div>
 
           {entryMode === "EXTERNAL_AGENT" ? (
             <div className="space-y-3 rounded-md border p-4">
               <SelectField
-                label="Agente de triagem"
+                label="Integração de triagem"
                 value={form.watch("triageAgentId")}
                 placeholder={
                   optionsError
                     ? "Opções indisponíveis"
                     : optionsLoading
-                    ? "Carregando agentes..."
-                    : "Selecione um agente de triagem"
+                    ? "Carregando integrações..."
+                    : "Selecione uma integração de triagem"
                 }
                 disabled={
                   isPending || optionsLoading || optionsError || !allowExternalAgent
@@ -315,8 +315,8 @@ export function OperationalRouteDialog({
               />
               {!allowExternalAgent ? (
                 <p className="text-xs text-muted-foreground">
-                  Você precisa da permissão de setup para escolher agentes
-                  externos.
+                  Você precisa da permissão de configuração para escolher uma
+                  integração de triagem.
                 </p>
               ) : null}
             </div>
@@ -365,14 +365,14 @@ export function OperationalRouteDialog({
           {entryMode === "ASSISTANT" ? (
             <div className="space-y-4 rounded-md border p-4">
               <SelectField
-                label="Assistente de entrada"
+                label="Assistente de atendimento de entrada"
                 value={form.watch("assistantId")}
                 placeholder={
                   optionsError
                     ? "Opções indisponíveis"
                     : optionsLoading
-                      ? "Carregando Assistentes..."
-                      : "Selecione um Assistente"
+                      ? "Carregando assistentes..."
+                      : "Selecione um assistente de atendimento"
                 }
                 disabled={isPending || optionsLoading || optionsError}
                 unavailable={optionsError}

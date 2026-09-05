@@ -414,7 +414,7 @@ export function OperationalChannelsManager({
               </Button>
             </CollapsibleTrigger>
             <CollapsibleContent className="pt-1 text-xs text-muted-foreground">
-              O recebimento e o envio de mensagens permanecem bloqueados por enquanto; Assistentes operacionais estarão disponíveis em uma etapa futura.
+              O recebimento e o envio de mensagens permanecem bloqueados por enquanto; assistentes de atendimento estarão disponíveis em uma etapa futura.
             </CollapsibleContent>
           </Collapsible>
         </AlertDescription>
@@ -947,10 +947,10 @@ function describeRoute(route: OperationalChannelRoute): string {
   }
 
   if (route.entryMode === "EXTERNAL_AGENT") {
-    return `Agente externo: ${route.destinations.triageAgent?.name || "agente indisponível"}`;
+    return `Integração de triagem: ${route.destinations.triageAgent?.name || "integração indisponível"}`;
   }
 
-  return `${route.destinations.assistant?.name || "Assistente indisponível"} → alternativa: ${route.destinations.fallbackArea?.name || "Área indisponível"} / ${route.destinations.fallbackQueue?.name || "Fila indisponível"}`;
+  return `${route.destinations.assistant?.name || "Assistente de atendimento indisponível"} → alternativa: ${route.destinations.fallbackArea?.name || "Área indisponível"} / ${route.destinations.fallbackQueue?.name || "Fila indisponível"}`;
 }
 
 function buildCreateChannelBody(

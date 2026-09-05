@@ -240,7 +240,7 @@ export default function OperationTriageAgentsPage() {
               className={buttonVariants({ variant: "outline" })}
             >
               <Radio className="h-4 w-4" />
-              Vincular em canal
+              Vincular em canais
             </Link>
           ) : null}
           <Button onClick={openCreateDialog} disabled={!canManage}>
