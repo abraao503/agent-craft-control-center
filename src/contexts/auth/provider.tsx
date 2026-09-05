@@ -18,6 +18,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [profileError, setProfileError] = useState(false);
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { t } = useTranslation();
@@ -36,7 +37,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const profile = await getUserProfile();
       setUserProfile(profile);
+      setProfileError(false);
     } catch (error) {
+      if (!(error instanceof AxiosError && error.response?.status === 401)) {
+        setProfileError(true);
+      }
       console.error("Failed to load user profile:", error);
     } finally {
       setIsLoading(false);
@@ -217,6 +222,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         user,
         userProfile,
         isLoading,
+        profileError,
         login,
         impersonateUser,
         stopImpersonation,
