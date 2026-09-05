@@ -498,6 +498,7 @@ export function OperationalChannelsManager({
                 canManageRoute={canManageChannels}
                 canManageConnection={canConnectChannels}
                 isRouteLoading={routesQuery.isLoading}
+                isRouteError={routesQuery.isError}
                 isDeactivationPending={channelMutations.deactivate.isPending}
                 isActivationPending={channelMutations.activate.isPending}
                 isQrPending={channelMutations.requestQrCode.isPending}
@@ -648,6 +649,7 @@ function OperationalChannelCard({
   canManageRoute,
   canManageConnection,
   isRouteLoading,
+  isRouteError,
   isDeactivationPending,
   isActivationPending,
   isQrPending,
@@ -662,6 +664,7 @@ function OperationalChannelCard({
   canManageRoute: boolean;
   canManageConnection: boolean;
   isRouteLoading: boolean;
+  isRouteError: boolean;
   isDeactivationPending: boolean;
   isActivationPending: boolean;
   isQrPending: boolean;
@@ -676,14 +679,17 @@ function OperationalChannelCard({
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const runtimeBlocked = channel.route.trafficStatus === "BLOCKED_BY_RUNTIME";
-  const routeStatus = channel.route.configured
+  const routeUnavailable = isRouteError && channel.route.configured && !route;
+  const routeStatus = routeUnavailable
+    ? "Rota indisponível"
+    : channel.route.configured
     ? channel.route.configurationStatus === "VALID"
       ? "Rota configurada"
       : "Rota incompleta"
     : "Sem rota ativa";
   const channelName = channel.displayName || channel.providerAlias;
   const canOpenRoute = !channel.route.configured || Boolean(route);
-  const routeIsValid = channel.route.configurationStatus === "VALID";
+  const routeIsValid = !routeUnavailable && channel.route.configurationStatus === "VALID";
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
@@ -805,7 +811,13 @@ function OperationalChannelCard({
                     variant="outline"
                     onClick={() => onConfigureRoute(channel, route)}
                     disabled={isRouteLoading || !canOpenRoute}
-                    title={!canOpenRoute ? "Carregue a rota completa para editá-la" : undefined}
+                    title={
+                      routeUnavailable
+                        ? "Não foi possível carregar a rota. Tente novamente acima."
+                        : !canOpenRoute
+                          ? "Carregue a rota completa para editá-la"
+                          : undefined
+                    }
                   >
                     {route ? <Pencil className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
                     {route ? "Editar rota" : "Configurar rota"}
@@ -821,9 +833,18 @@ function OperationalChannelCard({
                 )}
                 <div>
                   <p className="font-medium">
-                    {routeIsValid ? "Rota configurada corretamente" : "Rota incompleta"}
+                    {routeUnavailable
+                      ? "Detalhes da rota indisponíveis"
+                      : routeIsValid
+                        ? "Rota configurada corretamente"
+                        : "Rota incompleta"}
                   </p>
-                  {channel.route.missing.length ? (
+                  {routeUnavailable ? (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Não foi possível consultar o destino completo. Tente
+                      novamente no aviso acima antes de editar a rota.
+                    </p>
+                  ) : channel.route.missing.length ? (
                     <p className="mt-1 text-xs text-muted-foreground">
                       Faltando: {channel.route.missing.map((item) => OPERATIONAL_CHANNEL_ROUTE_MISSING_LABELS[item]).join(", ")}.
                     </p>

@@ -648,6 +648,11 @@ export default function OperationAttendancesPage({
             >
               {attendancesQuery.isLoading ? (
                 <AttendanceListLoading />
+              ) : attendancesQuery.isError && !attendancesQuery.data ? (
+                <AttendanceListError
+                  onRetry={() => void attendancesQuery.refetch()}
+                  isFetching={attendancesQuery.isFetching}
+                />
               ) : attendancesQuery.data?.items.length ? (
                 attendancesQuery.data.items.map((attendance) => (
                   <AttendanceCard
@@ -1040,6 +1045,35 @@ function EmptyAttendanceList({ hasFilters }: { hasFilters: boolean }) {
           ? "Tente remover algum filtro ou buscar por outro contato."
           : "Quando houver atendimentos no seu escopo, eles aparecerão aqui."}
       </p>
+    </div>
+  );
+}
+
+function AttendanceListError({
+  onRetry,
+  isFetching,
+}: {
+  onRetry: () => void;
+  isFetching: boolean;
+}) {
+  return (
+    <div className="flex min-h-64 flex-col items-center justify-center gap-2 px-6 py-12 text-center">
+      <AlertCircle className="h-8 w-8 text-destructive" />
+      <p className="font-medium">A lista de atendimentos não está disponível</p>
+      <p className="max-w-md text-sm text-muted-foreground">
+        Ocorreu uma falha ao consultar este workspace. Tente novamente para
+        carregar a caixa de entrada.
+      </p>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={onRetry}
+        disabled={isFetching}
+      >
+        <RefreshCw className="mr-2 h-4 w-4" />
+        Tentar novamente
+      </Button>
     </div>
   );
 }

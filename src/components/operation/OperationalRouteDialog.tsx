@@ -221,7 +221,7 @@ export function OperationalRouteDialog({
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Não foi possível carregar os destinos</AlertTitle>
               <AlertDescription className="flex flex-wrap items-center gap-3">
-                Atualize as áreas, filas, Assistentes e agentes para continuar.
+                Atualize as áreas, filas, Assistentes e agentes antes de salvar a rota.
                 <Button
                   type="button"
                   size="sm"
@@ -240,7 +240,7 @@ export function OperationalRouteDialog({
               label="Canal"
               value={form.watch("channelId")}
               placeholder={optionsLoading ? "Carregando canais..." : "Selecione um canal"}
-              disabled={Boolean(route) || isPending || optionsLoading}
+              disabled={Boolean(route) || isPending || optionsLoading || optionsError}
               error={form.formState.errors.channelId?.message}
               onValueChange={(value) => form.setValue("channelId", value, { shouldValidate: true })}
               options={channelOptions.map((channel) => ({
@@ -252,7 +252,7 @@ export function OperationalRouteDialog({
               label="Modo de entrada"
               value={entryMode}
               placeholder="Selecione o modo"
-              disabled={isPending}
+              disabled={isPending || optionsError}
               error={form.formState.errors.entryMode?.message}
               onValueChange={(value) => {
                 const mode = value as OperationalChannelEntryMode;
@@ -292,11 +292,16 @@ export function OperationalRouteDialog({
                 label="Agente de triagem"
                 value={form.watch("triageAgentId")}
                 placeholder={
-                  optionsLoading
+                  optionsError
+                    ? "Opções indisponíveis"
+                    : optionsLoading
                     ? "Carregando agentes..."
                     : "Selecione um agente de triagem"
                 }
-                disabled={isPending || optionsLoading || !allowExternalAgent}
+                disabled={
+                  isPending || optionsLoading || optionsError || !allowExternalAgent
+                }
+                unavailable={optionsError}
                 error={form.formState.errors.triageAgentId?.message}
                 onValueChange={(value) =>
                   form.setValue("triageAgentId", value, {
@@ -322,8 +327,15 @@ export function OperationalRouteDialog({
               <SelectField
                 label="Área de entrada"
                 value={targetAreaId}
-                placeholder={optionsLoading ? "Carregando áreas..." : "Selecione uma área"}
-                disabled={isPending || optionsLoading}
+                placeholder={
+                  optionsError
+                    ? "Opções indisponíveis"
+                    : optionsLoading
+                      ? "Carregando áreas..."
+                      : "Selecione uma área"
+                }
+                disabled={isPending || optionsLoading || optionsError}
+                unavailable={optionsError}
                 error={form.formState.errors.targetAreaId?.message}
                 onValueChange={(value) => {
                   form.setValue("targetAreaId", value, { shouldValidate: true });
@@ -334,8 +346,15 @@ export function OperationalRouteDialog({
               <SelectField
                 label="Fila de entrada"
                 value={form.watch("targetQueueId")}
-                placeholder={targetAreaId ? "Selecione uma fila" : "Escolha a área primeiro"}
-                disabled={isPending || optionsLoading || !targetAreaId}
+                placeholder={
+                  optionsError
+                    ? "Opções indisponíveis"
+                    : targetAreaId
+                      ? "Selecione uma fila"
+                      : "Escolha a área primeiro"
+                }
+                disabled={isPending || optionsLoading || optionsError || !targetAreaId}
+                unavailable={optionsError}
                 error={form.formState.errors.targetQueueId?.message}
                 onValueChange={(value) => form.setValue("targetQueueId", value, { shouldValidate: true })}
                 options={targetQueueOptions.map((queue) => ({ id: queue.id, label: queue.name }))}
@@ -348,8 +367,15 @@ export function OperationalRouteDialog({
               <SelectField
                 label="Assistente de entrada"
                 value={form.watch("assistantId")}
-                placeholder={optionsLoading ? "Carregando Assistentes..." : "Selecione um Assistente"}
-                disabled={isPending || optionsLoading}
+                placeholder={
+                  optionsError
+                    ? "Opções indisponíveis"
+                    : optionsLoading
+                      ? "Carregando Assistentes..."
+                      : "Selecione um Assistente"
+                }
+                disabled={isPending || optionsLoading || optionsError}
+                unavailable={optionsError}
                 error={form.formState.errors.assistantId?.message}
                 onValueChange={(value) => form.setValue("assistantId", value, { shouldValidate: true })}
                 options={activeAssistants.map((assistant) => ({
@@ -361,8 +387,15 @@ export function OperationalRouteDialog({
                 <SelectField
                   label="Área alternativa"
                   value={fallbackAreaId}
-                  placeholder={optionsLoading ? "Carregando áreas..." : "Selecione uma área"}
-                  disabled={isPending || optionsLoading}
+                  placeholder={
+                    optionsError
+                      ? "Opções indisponíveis"
+                      : optionsLoading
+                        ? "Carregando áreas..."
+                        : "Selecione uma área"
+                  }
+                  disabled={isPending || optionsLoading || optionsError}
+                  unavailable={optionsError}
                   error={form.formState.errors.fallbackAreaId?.message}
                   onValueChange={(value) => {
                     form.setValue("fallbackAreaId", value, { shouldValidate: true });
@@ -373,8 +406,15 @@ export function OperationalRouteDialog({
                 <SelectField
                   label="Fila alternativa"
                   value={form.watch("fallbackQueueId")}
-                  placeholder={fallbackAreaId ? "Selecione uma fila" : "Escolha a área primeiro"}
-                  disabled={isPending || optionsLoading || !fallbackAreaId}
+                  placeholder={
+                    optionsError
+                      ? "Opções indisponíveis"
+                      : fallbackAreaId
+                        ? "Selecione uma fila"
+                        : "Escolha a área primeiro"
+                  }
+                  disabled={isPending || optionsLoading || optionsError || !fallbackAreaId}
+                  unavailable={optionsError}
                   error={form.formState.errors.fallbackQueueId?.message}
                   onValueChange={(value) => form.setValue("fallbackQueueId", value, { shouldValidate: true })}
                   options={fallbackQueueOptions.map((queue) => ({ id: queue.id, label: queue.name }))}
@@ -415,7 +455,10 @@ export function OperationalRouteDialog({
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={isPending || optionsLoading}>
+            <Button
+              type="submit"
+              disabled={isPending || optionsLoading || optionsError}
+            >
               {isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -480,6 +523,7 @@ function SelectField({
   value,
   placeholder,
   disabled,
+  unavailable = false,
   error,
   onValueChange,
   options,
@@ -488,6 +532,7 @@ function SelectField({
   value: string | null;
   placeholder: string;
   disabled: boolean;
+  unavailable?: boolean;
   error?: string;
   onValueChange: (value: string) => void;
   options: Array<{ id: string; label: string }>;
@@ -514,7 +559,7 @@ function SelectField({
             ))
           ) : (
             <SelectItem value="__empty__" disabled>
-              Nenhuma opção disponível
+              {unavailable ? "Opções indisponíveis" : "Nenhuma opção disponível"}
             </SelectItem>
           )}
         </SelectContent>

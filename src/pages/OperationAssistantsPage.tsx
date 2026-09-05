@@ -241,7 +241,6 @@ export default function OperationAssistantsPage() {
 
   const operationalWorkspaceId = currentWorkspace.id;
   const optionsLoading = modelsQuery.isLoading || contentsQuery.isLoading;
-  const optionsError = modelsQuery.error || contentsQuery.error;
 
   return (
     <section className="mx-auto w-full max-w-6xl space-y-6">
@@ -366,7 +365,8 @@ export default function OperationAssistantsPage() {
         models={modelsQuery.data?.iaModels ?? []}
         contents={contentsQuery.data?.contents ?? []}
         optionsLoading={optionsLoading}
-        optionsError={optionsError}
+        modelsError={modelsQuery.error}
+        contentsError={contentsQuery.error}
         isPending={mutations.create.isPending || mutations.update.isPending}
         onRetryOptions={() => {
           void modelsQuery.refetch();

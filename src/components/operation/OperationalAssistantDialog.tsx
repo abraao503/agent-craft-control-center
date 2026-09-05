@@ -94,7 +94,8 @@ type OperationalAssistantDialogProps = {
   models: IaModel[];
   contents: Content[];
   optionsLoading: boolean;
-  optionsError: unknown;
+  modelsError: unknown;
+  contentsError: unknown;
   isPending: boolean;
   onRetryOptions: () => void;
   onOpenChange: (open: boolean) => void;
@@ -108,7 +109,8 @@ export function OperationalAssistantDialog({
   models,
   contents,
   optionsLoading,
-  optionsError,
+  modelsError,
+  contentsError,
   isPending,
   onRetryOptions,
   onOpenChange,
@@ -144,6 +146,8 @@ export function OperationalAssistantDialog({
   }, [assistant, detailsQuery.data, form, open]);
 
   const handleValidSubmit = async (values: OperationalAssistantFormValues) => {
+    if (modelsError) return;
+
     if (!assistant && !values.providerCredential.trim()) {
       form.setError("providerCredential", {
         type: "manual",
@@ -192,13 +196,13 @@ export function OperationalAssistantDialog({
           <div className="flex min-h-48 items-center justify-center gap-2">
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             <span className="text-sm text-muted-foreground">
-              Carregando configuração do Assistant...
+              Carregando configuração do Assistente...
             </span>
           </div>
         ) : isDetailsError ? (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Não foi possível carregar o Assistant</AlertTitle>
+            <AlertTitle>Não foi possível carregar o Assistente</AlertTitle>
             <AlertDescription className="flex flex-wrap items-center gap-3">
               {getOperationalAssistantErrorMessage(
                 detailsQuery.error,
@@ -220,12 +224,15 @@ export function OperationalAssistantDialog({
             onSubmit={form.handleSubmit(handleValidSubmit)}
             className="space-y-6"
           >
-            {optionsError ? (
+            {modelsError ? (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Opções de configuração indisponíveis</AlertTitle>
+                <AlertTitle>Não foi possível carregar os modelos</AlertTitle>
                 <AlertDescription className="flex flex-wrap items-center gap-3">
-                  Modelos e conteúdos não puderam ser carregados.
+                  {getOperationalAssistantErrorMessage(
+                    modelsError,
+                    "Atualize para carregar os modelos de IA e continuar.",
+                  )}
                   <Button
                     type="button"
                     size="sm"
@@ -269,14 +276,16 @@ export function OperationalAssistantDialog({
                       <Select
                         value={field.value || undefined}
                         onValueChange={field.onChange}
-                        disabled={optionsLoading}
+                        disabled={optionsLoading || Boolean(modelsError)}
                       >
                         <SelectTrigger id="operational-assistant-model">
                           <SelectValue
                             placeholder={
                               optionsLoading
                                 ? "Carregando modelos..."
-                                : "Selecione um modelo"
+                                : modelsError
+                                  ? "Modelos indisponíveis"
+                                  : "Selecione um modelo"
                             }
                           />
                         </SelectTrigger>
@@ -287,6 +296,10 @@ export function OperationalAssistantDialog({
                                 {model.name}
                               </SelectItem>
                             ))
+                          ) : modelsError ? (
+                            <SelectItem value="__error__" disabled>
+                              Não foi possível carregar os modelos
+                            </SelectItem>
                           ) : (
                             <SelectItem value="__empty__" disabled>
                               Nenhum modelo disponível
@@ -604,6 +617,27 @@ export function OperationalAssistantDialog({
                 title="Conteúdo de conhecimento"
                 description="Selecione conteúdos já pertencentes a este workspace."
               />
+              {contentsError ? (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>Não foi possível carregar os conteúdos</AlertTitle>
+                  <AlertDescription className="flex flex-wrap items-center gap-3">
+                    {getOperationalAssistantErrorMessage(
+                      contentsError,
+                      "Tente novamente para consultar os conteúdos deste workspace.",
+                    )}
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={onRetryOptions}
+                      disabled={optionsLoading}
+                    >
+                      Tentar novamente
+                    </Button>
+                  </AlertDescription>
+                </Alert>
+              ) : null}
               {availableContents.length ? (
                 <div className="grid gap-2 sm:grid-cols-2">
                   {availableContents.map((content) => {
@@ -640,7 +674,7 @@ export function OperationalAssistantDialog({
                     );
                   })}
                 </div>
-              ) : (
+              ) : contentsError ? null : (
                 <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
                   Nenhum conteúdo disponível para este workspace.
                 </div>
@@ -656,7 +690,10 @@ export function OperationalAssistantDialog({
               >
                 Cancelar
               </Button>
-              <Button type="submit" disabled={isPending || optionsLoading}>
+              <Button
+                type="submit"
+                disabled={isPending || optionsLoading || Boolean(modelsError)}
+              >
                 {isPending ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
