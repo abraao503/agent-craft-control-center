@@ -34,7 +34,7 @@ const MISSING_LABELS = {
 
 export default function OperationLandingPage() {
   const { currentWorkspace } = useWorkspaceContext();
-  const { has } = usePermissions();
+  const { has, hasAny } = usePermissions();
   const setupQuery = useOperationalSetup();
   const workspaceId =
     currentWorkspace?.type === "OPERATION" ? currentWorkspace.id : undefined;
@@ -87,22 +87,13 @@ export default function OperationLandingPage() {
               Abrir atendimentos
             </Link>
           ) : null}
-          {has("view:assistant") ? (
+          {hasAny(["view:assistant", "manage:operation-setup"]) ? (
             <Link
-              to="/operation/assistants"
+              to="/operation/agents"
               className={buttonVariants({ variant: "outline", size: "lg" })}
             >
               <Bot className="mr-2 h-4 w-4" />
-              Assistentes
-            </Link>
-          ) : null}
-          {has("manage:operation-setup") ? (
-            <Link
-              to="/operation/triage-agents"
-              className={buttonVariants({ variant: "outline", size: "lg" })}
-            >
-              <Bot className="mr-2 h-4 w-4" />
-              Agentes de triagem
+              Agentes
             </Link>
           ) : null}
         </div>

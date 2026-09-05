@@ -417,7 +417,7 @@ const SidebarMenuContent = () => {
   const { user, logout } = useAuth();
   const { state } = useSidebar();
   const { requestNavigation } = useUnsavedChanges();
-  const { has, role } = usePermissions();
+  const { has, hasAny, role } = usePermissions();
   const { currentWorkspace } = useWorkspaceContext();
   const isCollapsed = state === "collapsed";
   const { isLoading: isWorkspaceLoading } = useWorkspace();
@@ -443,6 +443,7 @@ const SidebarMenuContent = () => {
     label: string;
     icon: JSX.Element;
     requiredPermission?: Permission;
+    requiredPermissions?: Permission[];
   }
 
   const allMenuItems: MenuItem[] = currentWorkspace?.type === "OPERATION"
@@ -466,16 +467,10 @@ const SidebarMenuContent = () => {
           requiredPermission: "view:operation-channels",
         },
         {
-          path: "/operation/assistants",
-          label: "Assistentes",
+          path: "/operation/agents",
+          label: "Agentes",
           icon: <Bot className="h-5 w-5" />,
-          requiredPermission: "view:assistant",
-        },
-        {
-          path: "/operation/triage-agents",
-          label: "Agentes de triagem",
-          icon: <Bot className="h-5 w-5" />,
-          requiredPermission: "manage:operation-setup",
+          requiredPermissions: ["view:assistant", "manage:operation-setup"],
         },
         {
           path: "/operation/distribution",
@@ -578,6 +573,9 @@ const SidebarMenuContent = () => {
   const menuItems = allMenuItems.filter((item) => {
     if (item.requiredPermission) {
       return has(item.requiredPermission);
+    }
+    if (item.requiredPermissions) {
+      return hasAny(item.requiredPermissions);
     }
     return true;
   });

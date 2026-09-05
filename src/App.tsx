@@ -60,6 +60,7 @@ import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import TagsPage from "./pages/TagsPage";
 import OperationLandingPage from "./pages/OperationLandingPage";
+import OperationAgentsPage from "./pages/OperationAgentsPage";
 import OperationChannelsPage from "./pages/OperationChannelsPage";
 import OperationDistributionPage from "./pages/OperationDistributionPage";
 import OperationAssistantsPage from "./pages/OperationAssistantsPage";
@@ -411,7 +412,19 @@ const App = () => (
                       }
                     />
                     <Route
-                      path="/operation/assistants"
+                      path="/operation/agents"
+                      element={
+                        <ProtectedRoute
+                          requiredPermissions={[
+                            "view:assistant",
+                            "manage:operation-setup",
+                          ]}
+                          component={OperationAgentsPage}
+                        />
+                      }
+                    />
+                    <Route
+                      path="/operation/agents/assistants"
                       element={
                         <ProtectedRoute
                           requiredPermission="view:assistant"
@@ -420,7 +433,7 @@ const App = () => (
                       }
                     />
                     <Route
-                      path="/operation/triage-agents"
+                      path="/operation/agents/triage"
                       element={
                         <ProtectedRoute
                           requiredPermission="manage:operation-setup"
