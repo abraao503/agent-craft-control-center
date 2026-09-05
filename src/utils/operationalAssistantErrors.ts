@@ -4,16 +4,16 @@ const OPERATIONAL_ASSISTANT_ERROR_MESSAGES: Record<string, string> = {
   WORKSPACE_NOT_FOUND: "Workspace operacional não encontrado.",
   WORKSPACE_TYPE_INCOMPATIBLE:
     "O workspace atual não é compatível com esta configuração operacional.",
-  ASSISTANT_NOT_FOUND: "O Assistant não existe mais neste workspace.",
+  ASSISTANT_NOT_FOUND: "O Assistente não existe mais neste workspace.",
   ASSISTANT_IN_USE:
-    "Desative as rotas e finalize os atendimentos deste Assistant antes de desativá-lo.",
+    "Desative as rotas e finalize os atendimentos deste Assistente antes de desativá-lo.",
   IA_MODEL_NOT_FOUND: "O modelo de IA selecionado não está disponível.",
   AVATAR_NOT_FOUND: "O avatar selecionado não está disponível.",
   AVATAR_INVALID: "O arquivo de avatar não é uma imagem válida.",
   CONTENT_NOT_FOUND:
     "Um dos conteúdos selecionados não pertence a este workspace.",
   PROVIDER_CREDENTIAL_REQUIRED:
-    "Informe a credencial do provider para ativar o Assistant.",
+    "Informe a credencial do provedor para ativar o Assistente.",
   TRANSCRIPTION_CREDENTIAL_REQUIRED:
     "Informe a credencial de transcrição para ativar a transcrição de áudio.",
   IDEMPOTENCY_PAYLOAD_CONFLICT:

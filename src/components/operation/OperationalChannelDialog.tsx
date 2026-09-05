@@ -178,13 +178,13 @@ export function OperationalChannelDialog({
           <DialogDescription>
             {channel
               ? "Atualize o nome ou substitua credenciais. A API nunca devolve secrets já gravados."
-              : "Conecte um provider a este workspace operacional. A conexão será criada como rascunho até a rota ficar válida."}
+              : "Conecte um provedor a este workspace operacional. A conexão será criada como rascunho até a rota ficar válida."}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="space-y-2">
-            <Label htmlFor="operational-channel-provider">Provider</Label>
+            <Label htmlFor="operational-channel-provider">Provedor</Label>
             {channel ? (
               <div
                 id="operational-channel-provider"
@@ -203,7 +203,7 @@ export function OperationalChannelDialog({
                     disabled={isPending || providersLoading}
                   >
                     <SelectTrigger id="operational-channel-provider">
-                      <SelectValue placeholder="Selecione um provider" />
+                      <SelectValue placeholder="Selecione um provedor" />
                     </SelectTrigger>
                     <SelectContent>
                       {providers.map((provider) => (
@@ -249,7 +249,7 @@ export function OperationalChannelDialog({
                 <p className="text-sm font-medium">Credenciais Z-API</p>
                 <p className="text-xs text-muted-foreground">
                   {channel
-                    ? "Deixe em branco para manter o valor atual. Os campos são write-only."
+                    ? "Deixe em branco para manter o valor atual. Os campos são somente para gravação (não podem ser lidos depois)."
                     : "Os valores são enviados somente na gravação e nunca aparecem na listagem."}
                 </p>
               </div>
@@ -287,7 +287,7 @@ export function OperationalChannelDialog({
           {selectedProvider === "evolux" ? (
             <div className="rounded-md border bg-muted/20 p-4 text-sm text-muted-foreground">
               A instância Evolux é provisionada pela API. Depois de salvar, a
-              conexão ainda aguardará uma rota válida e a liberação do runtime.
+              conexão ainda aguardará uma rota válida e a liberação do recebimento de mensagens.
             </div>
           ) : null}
 
@@ -352,20 +352,20 @@ export function OperationalChannelDialog({
               {!channel && metaCloudUnavailable ? (
                 <p className="text-xs text-muted-foreground">
                   A Meta Cloud está indisponível neste ambiente. Para
-                  configurar uma conexão agora, selecione Z-API no provider.
+                  configurar uma conexão agora, selecione Z-API no provedor.
                 </p>
               ) : null}
               {!channel && metaCloudDiagnosticQuery.isError ? (
                 <p className="text-xs text-muted-foreground">
                   Não foi possível verificar a Meta Cloud. Informe o ID
-                  manualmente ou selecione Z-API no provider.
+                  manualmente ou selecione Z-API no provedor.
                 </p>
               ) : null}
               {!channel && phoneNumbersQuery.isError ? (
                 <p className="text-xs text-muted-foreground">
                   Não foi possível carregar a lista de números. Informe o ID
                   sincronizado pela empresa manualmente ou selecione Z-API no
-                  provider.
+                  provedor.
                 </p>
               ) : null}
               {!channel &&

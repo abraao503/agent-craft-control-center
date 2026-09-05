@@ -29,7 +29,7 @@ const MISSING_LABELS = {
   ACTIVE_AREA: "Área ativa",
   ACTIVE_QUEUE: "Fila ativa",
   ACTIVE_MEMBER: "Membro operacional",
-  FALLBACK_ROUTE: "Rota de fallback",
+  FALLBACK_ROUTE: "Rota alternativa",
 } as const;
 
 export default function OperationLandingPage() {
@@ -93,7 +93,7 @@ export default function OperationLandingPage() {
               className={buttonVariants({ variant: "outline", size: "lg" })}
             >
               <Bot className="mr-2 h-4 w-4" />
-              Assistants
+              Assistentes
             </Link>
           ) : null}
           {has("manage:operation-setup") ? (
@@ -120,7 +120,7 @@ export default function OperationLandingPage() {
       ) : setupQuery.isError ? (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Não foi possível carregar o setup</AlertTitle>
+          <AlertTitle>Não foi possível carregar a configuração</AlertTitle>
           <AlertDescription className="flex flex-wrap items-center gap-3">
             Verifique sua permissão ou tente novamente.
             <Button
@@ -182,7 +182,7 @@ export default function OperationLandingPage() {
                 <div className="rounded-lg bg-amber-50/70 p-4 dark:bg-amber-950/20">
                   <p className="text-sm font-medium text-amber-900 dark:text-amber-200">
                     {isStructured && hasPendingFallback && !hasPendingStructuralItems
-                      ? "Configure a rota de fallback para concluir a ativação."
+                      ? "Configure a rota alternativa para concluir a ativação."
                       : "Conclua os itens abaixo para liberar a operação."}
                   </p>
                   {setup.readiness.missing.length > 0 ? (
@@ -207,7 +207,7 @@ export default function OperationLandingPage() {
       ) : (
         <Alert>
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Setup indisponível</AlertTitle>
+          <AlertTitle>Configuração indisponível</AlertTitle>
           <AlertDescription>
             Este workspace ainda não possui uma configuração operacional
             inicializada.

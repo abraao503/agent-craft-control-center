@@ -155,14 +155,14 @@ export default function OperationTriageAgentsPage() {
       const result = await mutations.test.mutateAsync({ agentId: agent.id });
       toast({
         title: "Conexão aprovada",
-        description: `Health check respondeu ${result.status} em ${result.latencyMs} ms.`,
+        description: `O teste de conexão respondeu ${result.status} em ${result.latencyMs} ms.`,
       });
     } catch (error) {
       toast({
         title: "Falha no teste de conexão",
         description: getOperationalTriageAgentErrorMessage(
           error,
-          "O endpoint remoto não respondeu conforme esperado.",
+          "O serviço remoto não respondeu conforme esperado.",
         ),
         variant: "destructive",
       });
@@ -221,7 +221,7 @@ export default function OperationTriageAgentsPage() {
             })}
           >
             <ArrowLeft className="h-4 w-4" />
-            Setup operacional
+            Configuração operacional
           </Link>
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
             Administração operacional
@@ -230,8 +230,8 @@ export default function OperationTriageAgentsPage() {
             Agentes de triagem
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-            Cadastre endpoints externos, valide a conexão e vincule cada agente
-            a uma rota EXTERNAL_AGENT dos canais operacionais.
+            Cadastre serviços externos, valide a conexão e vincule cada agente
+            a uma rota de agente externo dos canais operacionais.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -259,7 +259,7 @@ export default function OperationTriageAgentsPage() {
         <KeyRound className="h-4 w-4" />
         <AlertTitle>Credenciais protegidas</AlertTitle>
         <AlertDescription>
-          O segredo é write-only. A API valida o tenant, o host permitido e a
+          O segredo é somente para gravação (não pode ser lido depois). A API valida a empresa, o host permitido e a
           versão do registro antes de persistir qualquer alteração.
         </AlertDescription>
       </Alert>
@@ -319,7 +319,7 @@ export default function OperationTriageAgentsPage() {
                 <Bot className="mx-auto h-8 w-8 text-muted-foreground" />
                 <p className="mt-3 font-medium">Nenhum agente de triagem</p>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Cadastre o primeiro endpoint para habilitar rotas externas.
+                  Cadastre o primeiro serviço para habilitar rotas externas.
                 </p>
                 <Button className="mt-4" onClick={openCreateDialog} disabled={!canManage}>
                   <Plus className="h-4 w-4" />
@@ -408,7 +408,7 @@ function AgentRow({
         </div>
         <p className="truncate text-sm text-muted-foreground">{agent.baseUrl}</p>
         <p className="text-xs text-muted-foreground">
-          Timeout {agent.timeoutMs} ms · {agent.maxAttempts} tentativa(s) · versão {agent.version}
+          Tempo limite: {agent.timeoutMs} ms · {agent.maxAttempts} tentativa(s) · versão {agent.version}
           {agent.updatedAt ? ` · atualizado em ${formatOperationalDateTime(agent.updatedAt)}` : ""}
         </p>
       </div>

@@ -19,7 +19,7 @@ export const OPERATIONAL_CHANNEL_ENTRY_MODE_LABELS: Record<
 > = {
   TRIAGE: "Triagem",
   QUEUE: "Fila",
-  ASSISTANT: "Assistant",
+  ASSISTANT: "Assistente",
   EXTERNAL_AGENT: "Agente externo",
 };
 
@@ -29,11 +29,11 @@ export const OPERATIONAL_CHANNEL_ROUTE_MISSING_LABELS: Record<
 > = {
   route: "rota",
   TRIAGE_AGENT: "agente de triagem",
-  ASSISTANT: "Assistant ativo",
+  ASSISTANT: "Assistente ativo",
   TARGET_AREA: "área de entrada",
   TARGET_QUEUE: "fila de entrada",
-  FALLBACK_AREA: "área de fallback",
-  FALLBACK_QUEUE: "fila de fallback",
+  FALLBACK_AREA: "área alternativa",
+  FALLBACK_QUEUE: "fila alternativa",
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -48,7 +48,7 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const ERROR_LABELS: Record<string, string> = {
-  CHANNEL_ALREADY_EXISTS: "Já existe uma conexão deste provider neste workspace.",
+  CHANNEL_ALREADY_EXISTS: "Já existe uma conexão deste provedor neste workspace.",
   CHANNEL_NOT_FOUND: "A conexão não existe mais neste workspace.",
   DESTINATION_NOT_FOUND: "Um dos destinos não existe mais ou está inativo.",
   DESTINATION_WORKSPACE_MISMATCH:
@@ -58,20 +58,20 @@ const ERROR_LABELS: Record<string, string> = {
   IDEMPOTENCY_PAYLOAD_CONFLICT:
     "A chave de idempotência já foi usada com outro conteúdo.",
   INVALID_PROVIDER_CONFIGURATION:
-    "As credenciais não são compatíveis com este provider.",
+    "As credenciais não são compatíveis com este provedor.",
   INVALID_ROUTE_CONFIGURATION:
     "A combinação de destinos não é compatível com o modo da rota.",
   META_PHONE_NUMBER_NOT_FOUND:
     "O número Meta não está sincronizado ou não pertence à empresa.",
   OPERATIONAL_RUNTIME_NOT_READY:
-    "O runtime de atendimento ainda não está disponível. A ativação permanece bloqueada até E4.",
-  PROVIDER_QR_UNSUPPORTED: "Este provider não oferece QR Code.",
-  PROVIDER_UNAVAILABLE: "Este provider está indisponível no momento.",
+    "O recebimento de mensagens ainda não está disponível. A ativação permanece bloqueada por enquanto.",
+  PROVIDER_QR_UNSUPPORTED: "Este provedor não oferece QR Code.",
+  PROVIDER_UNAVAILABLE: "Este provedor está indisponível no momento.",
   ROUTE_ALREADY_EXISTS: "Este canal já possui uma rota configurada.",
   ROUTE_INCOMPLETE: "Complete uma rota válida antes de solicitar o QR Code.",
   STALE_VERSION:
     "O recurso foi alterado por outra pessoa. Atualize a lista e tente novamente.",
-  ASSISTANT_NOT_FOUND: "O Assistant não está ativo neste workspace.",
+  ASSISTANT_NOT_FOUND: "O Assistente não está ativo neste workspace.",
   TRIAGE_AGENT_NOT_FOUND:
     "O agente de triagem não está ativo neste workspace.",
   HARNESS_DISABLED:
@@ -100,7 +100,7 @@ export function getOperationalErrorMessage(
 }
 
 export function getOperationalStatusLabel(status: string): string {
-  return STATUS_LABELS[status] || status;
+  return STATUS_LABELS[status] || "Desconhecido";
 }
 
 export function formatOperationalDateTime(value: string): string {

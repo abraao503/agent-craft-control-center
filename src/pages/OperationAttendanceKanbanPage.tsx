@@ -392,7 +392,7 @@ export default function OperationAttendanceKanbanPage() {
           </p>
           <div className="mt-1 flex flex-wrap items-center gap-3">
             <h1 className="text-lg font-semibold tracking-tight">
-              Kanban de atendimentos
+              Quadro de atendimentos (Kanban)
             </h1>
             <span className="text-xs text-muted-foreground">
               {kanbanQuery.data?.total ?? 0} atendimento(s) no escopo atual

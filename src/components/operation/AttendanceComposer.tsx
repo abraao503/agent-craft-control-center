@@ -16,6 +16,7 @@ import {
   SendOperationalAttendanceMessageResponse,
 } from "@/types/operation-attendance";
 import { getOperationalAttendanceErrorMessage } from "@/utils/operationalAttendanceErrors";
+import { formatOperationalMessageStatus } from "@/utils/operationalMessageStatus";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -720,11 +721,17 @@ export function AttendanceComposer({
         <div className="mt-4 rounded-md border bg-muted/20 p-3 text-sm">
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-medium">Última tentativa</span>
-            <Badge variant="outline">{lastSent.message.dispatchStatus ?? "Sem dispatch"}</Badge>
+            <Badge variant="outline">
+              {formatOperationalMessageStatus(lastSent.message.dispatchStatus)}
+            </Badge>
             {lastSent.message.deliveryStatus ? (
-              <Badge variant="outline">{lastSent.message.deliveryStatus}</Badge>
+              <Badge variant="outline">
+                {formatOperationalMessageStatus(lastSent.message.deliveryStatus)}
+              </Badge>
             ) : null}
-            {lastSent.duplicate ? <Badge variant="secondary">Idempotente</Badge> : null}
+            {lastSent.duplicate ? (
+              <Badge variant="secondary">Reenvio ignorado</Badge>
+            ) : null}
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
             A mensagem também aparece na conversa após a atualização do histórico.

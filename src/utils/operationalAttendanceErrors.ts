@@ -40,7 +40,7 @@ export const OPERATIONAL_ATTENDANCE_ERROR_MESSAGES: Record<string, string> = {
   PROVIDER_UNAVAILABLE:
     "O provedor do canal está indisponível. Tente novamente em instantes.",
   OPERATIONAL_RUNTIME_NOT_READY:
-    "O runtime operacional ainda não está pronto para envio.",
+    "O recebimento de mensagens ainda não está pronto para envio.",
   FAILED_TO_SEND_OPERATIONAL_MESSAGE:
     "Não foi possível enviar a mensagem operacional.",
 

@@ -63,8 +63,8 @@ export function OperationalTriageAgentDialog({
             {agent ? "Editar agente de triagem" : "Novo agente de triagem"}
           </DialogTitle>
           <DialogDescription>
-            Configure um endpoint HTTP compatível com o protocolo de triagem
-            operacional. O segredo é write-only.
+            Configure um serviço HTTP compatível com o protocolo de triagem
+            operacional. O segredo é somente para gravação (não pode ser lido depois).
           </DialogDescription>
         </DialogHeader>
 
@@ -102,7 +102,7 @@ export function OperationalTriageAgentDialog({
             <Input
               id="operational-triage-agent-base-url"
               type="url"
-              placeholder="https://triage.example.internal"
+              placeholder="https://agente.exemplo.internal"
               {...form.register("baseUrl")}
             />
           </Field>
@@ -119,7 +119,7 @@ export function OperationalTriageAgentDialog({
               placeholder={
                 agent?.credentialConfigured
                   ? "Credencial configurada; informe apenas para substituir"
-                  : "Bearer ou segredo do endpoint"
+                  : "Chave de acesso do serviço"
               }
               {...form.register("credential")}
             />
@@ -132,7 +132,7 @@ export function OperationalTriageAgentDialog({
 
           <div className="grid gap-4 sm:grid-cols-2">
             <Field
-              label="Timeout (ms)"
+              label="Tempo limite (ms)"
               htmlFor="operational-triage-agent-timeout"
               error={form.formState.errors.timeoutMs?.message}
             >
@@ -185,8 +185,8 @@ export function OperationalTriageAgentDialog({
           <Alert>
             <Info className="h-4 w-4" />
             <AlertDescription>
-              O endpoint deve responder ao health check e aceitar o contrato
-              `v1` usado pelo runtime operacional.
+              O serviço deve responder ao teste de conexão e aceitar o contrato
+              `v1` da operação.
             </AlertDescription>
           </Alert>
 

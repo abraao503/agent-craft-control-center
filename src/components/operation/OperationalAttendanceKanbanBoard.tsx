@@ -203,7 +203,7 @@ export function OperationalAttendanceKanbanBoard({
       <div
         className="min-h-0 h-full overflow-x-auto p-3 sm:p-4 lg:p-5"
         role="region"
-        aria-label="Quadro Kanban operacional"
+        aria-label="Quadro (Kanban) operacional"
       >
         <div className="flex h-full min-w-max items-stretch gap-4">
           {columns.map((column) => (

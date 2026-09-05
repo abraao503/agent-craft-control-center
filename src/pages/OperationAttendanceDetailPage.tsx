@@ -74,6 +74,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { formatOperationalMessageStatus } from "@/utils/operationalMessageStatus";
 
 const STATUS_LABELS: Record<AttendanceStatus, string> = {
   TRIAGE: "Triagem",
@@ -206,7 +207,7 @@ export default function OperationAttendanceDetailPage({
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Atendimento não informado</AlertTitle>
           <AlertDescription>
-            Volte para a inbox e selecione um atendimento válido.
+            Volte para a caixa de entrada e selecione um atendimento válido.
           </AlertDescription>
         </Alert>
       </section>
@@ -1038,9 +1039,9 @@ function ConversationMessage({ message }: { message: AttendanceMessageItem }) {
         {content ? <p className="whitespace-pre-wrap break-words">{content}</p> : null}
         {message.dispatchStatus || message.deliveryStatus ? (
           <p className="mt-2 text-xs opacity-75">
-            {formatMessageStatus(message.dispatchStatus)}
+            {formatOperationalMessageStatus(message.dispatchStatus)}
             {message.deliveryStatus
-              ? ` · ${formatMessageStatus(message.deliveryStatus)}`
+              ? ` · ${formatOperationalMessageStatus(message.deliveryStatus)}`
               : ""}
           </p>
         ) : null}
@@ -1183,23 +1184,6 @@ function formatMetadataKey(key: string) {
     .replace(/([a-z])([A-Z])/g, "$1 $2")
     .replace(/[_-]+/g, " ")
     .replace(/^./, (character) => character.toUpperCase());
-}
-
-function formatMessageStatus(status?: string | null) {
-  if (!status) return "Status não informado";
-
-  const labels: Record<string, string> = {
-    ACCEPTED: "Aceita",
-    DELIVERED: "Entregue",
-    FAILED: "Falhou",
-    PENDING: "Pendente",
-    PROCESSING: "Processando",
-    QUEUED: "Na fila",
-    READ: "Lida",
-    SENT: "Enviada",
-  };
-
-  return labels[status.toUpperCase()] || status.toLowerCase().replace(/_/g, " ");
 }
 
 function formatReplyModes(capabilities: AttendanceReplyCapabilities) {

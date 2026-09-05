@@ -30,6 +30,30 @@ const STATUS_LABELS: Record<OperationalTriageAgentExecutionView["status"], strin
   CANCELLED: "Cancelada",
 };
 
+const EXECUTION_ERROR_CODE_LABELS: Record<string, string> = {
+  TRIAGE_AGENT_NOT_FOUND: "Agente de triagem não encontrado",
+  TRIAGE_AGENT_DISABLED: "Agente de triagem desativado",
+  TRIAGE_AGENT_INVALID_REQUEST: "Pedido inválido para o agente",
+  TRIAGE_AGENT_CREDENTIAL_INVALID: "Credencial do agente rejeitada",
+  TRIAGE_AGENT_TIMEOUT: "O agente não respondeu a tempo",
+  TRIAGE_AGENT_RATE_LIMITED: "O agente está sobrecarregado",
+  TRIAGE_AGENT_UNAUTHORIZED: "Acesso negado pelo agente",
+  TRIAGE_AGENT_INVALID_RESPONSE: "Resposta inválida do agente",
+  TRIAGE_AGENT_UNAVAILABLE: "Agente indisponível no momento",
+  TRIAGE_ROUTE_NOT_FOUND: "Destino indicado não existe",
+  TRIAGE_RUNTIME_FAILED: "Falha ao processar a triagem",
+  EXECUTION_VERSION_PAYLOAD_MISMATCH: "Registro desatualizado",
+  AUTOMATION_OWNERSHIP_STALE: "O atendimento mudou de estado",
+  ATTENDANCE_NOT_FOUND: "Atendimento não encontrado",
+  STALE_VERSION: "Registro desatualizado",
+};
+
+function formatExecutionErrorCode(errorCode: string | null): string {
+  if (!errorCode) return "Nenhum";
+
+  return EXECUTION_ERROR_CODE_LABELS[errorCode] ?? errorCode;
+}
+
 export function OperationalTriageAgentHistory({
   workspaceId,
   attendanceId,
@@ -53,7 +77,7 @@ export function OperationalTriageAgentHistory({
           Triagem externa
         </CardTitle>
         <CardDescription>
-          Histórico sanitizado das execuções do agente neste atendimento.
+          Histórico resumido das execuções do agente neste atendimento.
         </CardDescription>
       </CardHeader>
       <CardContent className="px-3 pb-3">
@@ -70,7 +94,7 @@ export function OperationalTriageAgentHistory({
               <p>
                 {getOperationalTriageAgentErrorMessage(
                   query.error,
-                  "Não foi possível consultar a observabilidade da triagem.",
+                  "Não foi possível consultar o histórico da triagem.",
                 )}
               </p>
               <Button
@@ -156,7 +180,7 @@ function ExecutionRow({
         />
         <HistoryField
           label="Erro"
-          value={execution.errorCode || "Nenhum"}
+          value={formatExecutionErrorCode(execution.errorCode)}
           attention={Boolean(execution.errorCode)}
         />
       </div>

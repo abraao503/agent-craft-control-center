@@ -14,7 +14,7 @@ const TRIAGE_AGENT_ERROR_MESSAGES: Record<string, string> = {
     "A credencial não pode ser salva neste ambiente.",
   TRIAGE_AGENT_CREDENTIAL_INVALID: "A credencial do agente foi rejeitada.",
   TRIAGE_AGENT_CONNECTION_FAILED:
-    "Não foi possível conectar ao endpoint do agente.",
+    "Não foi possível conectar ao serviço do agente.",
   STALE_VERSION:
     "A configuração foi alterada por outra pessoa. Recarregue e tente novamente.",
   TRIAGE_AGENT_IN_USE:

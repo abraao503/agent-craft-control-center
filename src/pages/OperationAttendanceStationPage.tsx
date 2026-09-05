@@ -52,7 +52,7 @@ export default function OperationAttendanceStationPage() {
           <div className="flex items-center gap-1 rounded-md border bg-muted/30 p-1">
             <Link
               to="/operation/attendances"
-              aria-label="Abrir inbox de atendimentos"
+              aria-label="Abrir caixa de entrada de atendimentos"
               aria-current={!isKanbanView ? "page" : undefined}
               className={cn(
                 buttonVariants({
@@ -63,11 +63,11 @@ export default function OperationAttendanceStationPage() {
               )}
             >
               <List className="h-4 w-4" />
-              <span className="hidden md:inline">Inbox</span>
+              <span className="hidden md:inline">Caixa de entrada</span>
             </Link>
             <Link
               to="/operation/attendances?view=kanban"
-              aria-label="Abrir Kanban de atendimentos"
+              aria-label="Abrir quadro (Kanban) de atendimentos"
               aria-current={isKanbanView ? "page" : undefined}
               className={cn(
                 buttonVariants({
@@ -78,7 +78,7 @@ export default function OperationAttendanceStationPage() {
               )}
             >
               <LayoutGrid className="h-4 w-4" />
-              <span className="hidden md:inline">Kanban</span>
+              <span className="hidden md:inline">Quadro</span>
             </Link>
           </div>
           <Link

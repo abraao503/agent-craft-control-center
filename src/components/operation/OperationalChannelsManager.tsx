@@ -316,7 +316,7 @@ export function OperationalChannelsManager({
         title: "Ativação bloqueada",
         description: getOperationalErrorMessage(
           error,
-          "O runtime operacional ainda não está disponível.",
+          "A execução de mensagens ainda não está disponível.",
         ),
         variant: "destructive",
       });
@@ -337,7 +337,7 @@ export function OperationalChannelsManager({
         title: "Não foi possível solicitar o QR Code",
         description: getOperationalErrorMessage(
           error,
-          "O runtime operacional ainda não está disponível.",
+          "A execução de mensagens ainda não está disponível.",
         ),
         variant: "destructive",
       });
@@ -404,7 +404,7 @@ export function OperationalChannelsManager({
         <AlertTitle>Recebimento de mensagens ainda indisponível</AlertTitle>
         <AlertDescription className="mt-1">
           <p>
-            As conexões podem ser configuradas e validadas, mas o runtime de atendimento ainda não está habilitado.
+            As conexões podem ser configuradas e validadas, mas o recebimento de mensagens ainda não está habilitado.
           </p>
           <Collapsible>
             <CollapsibleTrigger asChild>
@@ -414,7 +414,7 @@ export function OperationalChannelsManager({
               </Button>
             </CollapsibleTrigger>
             <CollapsibleContent className="pt-1 text-xs text-muted-foreground">
-              O tráfego permanece bloqueado até E4. Assistants operacionais estarão disponíveis a partir de E6.
+              O recebimento e o envio de mensagens permanecem bloqueados por enquanto; Assistentes operacionais estarão disponíveis em uma etapa futura.
             </CollapsibleContent>
           </Collapsible>
         </AlertDescription>
@@ -621,8 +621,8 @@ export function OperationalChannelsManager({
           <DialogHeader>
             <DialogTitle>QR Code · {qrCode?.channelName}</DialogTitle>
             <DialogDescription>
-              Use este código somente quando o runtime operacional estiver
-              liberado para o provider.
+              Use este código somente quando o recebimento de mensagens estiver
+              liberado para o provedor.
             </DialogDescription>
           </DialogHeader>
           {qrCode?.value.startsWith("data:image/") ? (
@@ -846,14 +846,14 @@ function OperationalChannelCard({
               </CollapsibleTrigger>
               <CollapsibleContent className="border-t pb-3">
                 <div className="divide-y">
-                  <PropertyRow label="Provider" value={`${channel.providerAlias} · ${getOperationalStatusLabel(channel.status)}`} />
+                  <PropertyRow label="Provedor" value={`${channel.providerAlias} · ${getOperationalStatusLabel(channel.status)}`} />
                   <PropertyRow label="Versão" value={`v${channel.version}`} />
                   <PropertyRow label="Diagnóstico" value={channel.route.diagnostic.code} code />
                   <PropertyRow label="Mensagem do diagnóstico" value={channel.route.diagnostic.message} />
                   <PropertyRow label="Modo de conexão" value={channel.connectionMode === "provisioned-number" ? "Número provisionado" : "Credenciais próprias"} />
                   <PropertyRow label="Mídia" value={channel.capabilities.supportsMedia ? "Suportada" : "Não suportada"} />
                   <PropertyRow label="QR Code" value={channel.capabilities.supportsQr ? "Suportado" : "Não suportado"} />
-                  <PropertyRow label="Runtime" value={runtimeBlocked ? "Tráfego bloqueado até E4; assistants a partir de E6" : "Disponível"} />
+                  <PropertyRow label="Execução" value={runtimeBlocked ? "Bloqueada por enquanto; Assistentes em etapa futura" : "Disponível"} />
                 </div>
               </CollapsibleContent>
             </Collapsible>
@@ -866,7 +866,7 @@ function OperationalChannelCard({
                     variant="outline"
                     onClick={() => onActivate(channel)}
                     disabled={runtimeBlocked || isActivationPending}
-                    title={runtimeBlocked ? "Ativação bloqueada até E4" : undefined}
+                    title={runtimeBlocked ? "Ativação bloqueada por enquanto" : undefined}
                   >
                     <CheckCircle2 className="h-4 w-4" />
                     {runtimeBlocked ? "Ativação indisponível" : "Ativar conexão"}
@@ -878,7 +878,7 @@ function OperationalChannelCard({
                     variant="outline"
                     onClick={() => onRequestQrCode(channel)}
                     disabled={!channel.active || runtimeBlocked || isQrPending}
-                    title={runtimeBlocked ? "QR Code bloqueado até E4" : undefined}
+                    title={runtimeBlocked ? "QR Code indisponível por enquanto" : undefined}
                   >
                     <QrCode className="h-4 w-4" />
                     {runtimeBlocked ? "QR Code indisponível" : "Solicitar QR Code"}
@@ -929,7 +929,7 @@ function describeRoute(route: OperationalChannelRoute): string {
     return `Agente externo: ${route.destinations.triageAgent?.name || "agente indisponível"}`;
   }
 
-  return `${route.destinations.assistant?.name || "Assistant indisponível"} → fallback: ${route.destinations.fallbackArea?.name || "Área indisponível"} / ${route.destinations.fallbackQueue?.name || "Fila indisponível"}`;
+  return `${route.destinations.assistant?.name || "Assistente indisponível"} → alternativa: ${route.destinations.fallbackArea?.name || "Área indisponível"} / ${route.destinations.fallbackQueue?.name || "Fila indisponível"}`;
 }
 
 function buildCreateChannelBody(

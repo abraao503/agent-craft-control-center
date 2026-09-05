@@ -315,7 +315,7 @@ export default function OperationAttendancesPage({
       {hasQueryError ? (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Não foi possível carregar a inbox</AlertTitle>
+          <AlertTitle>Não foi possível carregar a caixa de entrada</AlertTitle>
           <AlertDescription className="flex flex-wrap items-center gap-3">
             {getOperationalAttendanceErrorMessage(
               attendancesQuery.error || summaryQuery.error || optionsQuery.error,
@@ -380,7 +380,7 @@ export default function OperationAttendancesPage({
           <div className={embedded ? "space-y-2" : "space-y-4"}>
             {!embedded ? <div className="flex items-center gap-2">
               <SlidersHorizontal className="h-4 w-4 text-primary" />
-              <h2 className="text-sm font-semibold">Filtros da inbox</h2>
+              <h2 className="text-sm font-semibold">Filtros da caixa de entrada</h2>
               {hasActiveFilters ? (
                 <Badge variant="secondary">Aplicados</Badge>
               ) : null}
@@ -628,7 +628,7 @@ export default function OperationAttendancesPage({
               <div>
                 <h2 className="flex items-center gap-2 text-sm font-semibold">
                   <Inbox className="h-5 w-5 text-primary" />
-                  {embedded ? "Conversas" : "Inbox operacional"}
+                  {embedded ? "Conversas" : "Caixa de entrada operacional"}
                 </h2>
                 <p className="mt-1 text-xs text-muted-foreground">
                   {attendancesQuery.data?.total ?? 0} atendimento(s) no filtro atual
@@ -1033,7 +1033,7 @@ function EmptyAttendanceList({ hasFilters }: { hasFilters: boolean }) {
     <div className="flex min-h-64 flex-col items-center justify-center gap-2 px-6 py-12 text-center">
       <Inbox className="h-8 w-8 text-muted-foreground" />
       <p className="font-medium">
-        {hasFilters ? "Nenhum atendimento encontrado" : "Inbox sem atendimentos"}
+        {hasFilters ? "Nenhum atendimento encontrado" : "Caixa de entrada sem atendimentos"}
       </p>
       <p className="max-w-md text-sm text-muted-foreground">
         {hasFilters

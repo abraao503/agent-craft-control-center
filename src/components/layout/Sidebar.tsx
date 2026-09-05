@@ -467,7 +467,7 @@ const SidebarMenuContent = () => {
         },
         {
           path: "/operation/assistants",
-          label: "Assistants",
+          label: "Assistentes",
           icon: <Bot className="h-5 w-5" />,
           requiredPermission: "view:assistant",
         },

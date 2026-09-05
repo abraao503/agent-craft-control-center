@@ -169,7 +169,7 @@ export default function OperationDistributionPage() {
             })}
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Setup estrutural
+            Configuração estrutural
           </Link>
           <p className="text-sm font-medium uppercase tracking-wide text-primary">
             Administração operacional
@@ -192,7 +192,7 @@ export default function OperationDistributionPage() {
         <Info className="h-4 w-4" />
         <AlertTitle>Como a distribuição funciona</AlertTitle>
         <AlertDescription>
-          Depois de um <code>ROUTE</code>, o atendimento tenta seguir a ordem
+          Depois do encaminhamento automático, o atendimento tenta seguir a ordem
           uniforme dos operadores ativos na área e na fila. Sem operador
           elegível, ele permanece em <strong>Aguardando fila</strong> para
           atendimento manual. Presença online não altera a elegibilidade.
@@ -268,7 +268,7 @@ export default function OperationDistributionPage() {
                 <div className="rounded-lg border bg-muted/20 p-4">
                   <p className="text-sm font-medium">Estratégia</p>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Uniforme (round-robin por fila), com desempate pelo ID do
+                    Uniforme (distribuição alternada por fila), com desempate pelo ID do
                     operador quando o cursor ainda não foi usado.
                   </p>
                 </div>

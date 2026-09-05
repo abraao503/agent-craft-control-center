@@ -88,8 +88,8 @@ export function OperationalSyntheticConsole({
       toast({
         title: result.duplicate ? "Mensagem já processada" : "Mensagem sintética criada",
         description: result.attendanceId
-          ? "O Attendance foi aberto e será exibido agora."
-          : "O evento foi aceito; aguarde o worker concluir a criação do Attendance.",
+          ? "O atendimento foi aberto e será exibido agora."
+          : "O evento foi aceito; aguarde o processamento concluir a criação do atendimento.",
       });
       if (result.attendanceId) {
         navigate(`/operation/attendances/${result.attendanceId}`);
@@ -119,7 +119,8 @@ export function OperationalSyntheticConsole({
         </CardTitle>
         <CardDescription>
           Crie uma mensagem controlada no canal selecionado para validar a rota
-          EXTERNAL_AGENT e abrir o Attendance sem enviar nada a um provider real.
+          de agente externo e abrir o atendimento sem enviar nada a um provedor
+          real.
         </CardDescription>
       </CardHeader>
       <CardContent>

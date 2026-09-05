@@ -159,7 +159,7 @@ export default function OperationAssistantsPage() {
           body,
         });
         toast({
-          title: "Assistant atualizado",
+          title: "Assistente atualizado",
           description: "A configuração operacional foi atualizada.",
         });
       } else {
@@ -175,22 +175,22 @@ export default function OperationAssistantsPage() {
         };
         await mutations.create.mutateAsync({ body });
         toast({
-          title: "Assistant criado",
-          description: "O Assistant já pode ser selecionado em uma rota operacional.",
+          title: "Assistente criado",
+          description: "O Assistente já pode ser selecionado em uma rota operacional.",
         });
       }
 
       closeDialog(false);
     } catch (error) {
       toast({
-        title: "Não foi possível salvar o Assistant",
+        title: "Não foi possível salvar o Assistente",
         description: getOperationalAssistantErrorMessage(
           error,
           "Verifique os dados e tente novamente.",
         ),
         action: isOperationalAssistantStaleVersion(error) ? (
           <ToastAction
-            altText="Recarregar Assistants"
+            altText="Recarregar Assistentes"
             onClick={() => void assistantsQuery.refetch()}
           >
             Recarregar
@@ -209,16 +209,16 @@ export default function OperationAssistantsPage() {
         assistantId: assistantToDeactivate.id,
       });
       toast({
-        title: "Assistant desativado",
+        title: "Assistente desativado",
         description: "O histórico foi preservado e ele saiu das opções ativas.",
       });
       setAssistantToDeactivate(null);
     } catch (error) {
       toast({
-        title: "Não foi possível desativar o Assistant",
+        title: "Não foi possível desativar o Assistente",
         description: getOperationalAssistantErrorMessage(
           error,
-          "O Assistant pode estar vinculado a uma rota ou atendimento aberto.",
+          "O Assistente pode estar vinculado a uma rota ou atendimento aberto.",
         ),
         variant: "destructive",
       });
@@ -232,7 +232,7 @@ export default function OperationAssistantsPage() {
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Seção disponível apenas em workspaces operacionais</AlertTitle>
           <AlertDescription>
-            Selecione um workspace operacional para administrar Assistants.
+            Selecione um workspace operacional para administrar Assistentes.
           </AlertDescription>
         </Alert>
       </section>
@@ -252,16 +252,16 @@ export default function OperationAssistantsPage() {
             className={buttonVariants({ variant: "ghost", size: "sm", className: "-ml-3 mb-2" })}
           >
             <ArrowLeft className="h-4 w-4" />
-            Setup operacional
+            Configuração operacional
           </Link>
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
             Administração operacional
           </p>
           <h1 className="mt-2 text-3xl font-semibold tracking-tight">
-            Assistants operacionais
+            Assistentes operacionais
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-            Configure Assistants isolados neste workspace e escolha quais podem
+            Configure Assistentes isolados neste workspace e escolha quais podem
             receber uma rota de entrada.
           </p>
         </div>
@@ -269,7 +269,7 @@ export default function OperationAssistantsPage() {
           {canCreateAssistant ? (
             <Button onClick={openCreateDialog}>
               <Plus className="h-4 w-4" />
-              Novo Assistant
+              Novo Assistente
             </Button>
           ) : null}
           <Badge variant="outline" className="h-10 gap-2 px-3">
@@ -283,7 +283,7 @@ export default function OperationAssistantsPage() {
         <KeyRound className="h-4 w-4" />
         <AlertTitle>Credenciais protegidas</AlertTitle>
         <AlertDescription>
-          As credenciais dos providers e da transcrição são write-only. A API
+          As credenciais do provedor e da transcrição são somente para gravação (não podem ser lidas depois). A API
           valida o workspace, a permissão e a integridade das referências antes
           de persistir qualquer alteração.
         </AlertDescription>
@@ -293,13 +293,13 @@ export default function OperationAssistantsPage() {
         <Card>
           <CardContent className="flex min-h-48 items-center justify-center gap-2">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            <span className="sr-only">Carregando Assistants operacionais</span>
+            <span className="sr-only">Carregando Assistentes operacionais</span>
           </CardContent>
         </Card>
       ) : assistantsQuery.isError ? (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Não foi possível carregar os Assistants</AlertTitle>
+          <AlertTitle>Não foi possível carregar os Assistentes</AlertTitle>
           <AlertDescription className="flex flex-wrap items-center gap-3">
             {getOperationalAssistantErrorMessage(
               assistantsQuery.error,
@@ -319,9 +319,9 @@ export default function OperationAssistantsPage() {
       ) : (
         <Card>
           <CardHeader>
-            <CardTitle>Assistants deste workspace</CardTitle>
+            <CardTitle>Assistentes deste workspace</CardTitle>
             <CardDescription>
-              Somente Assistants ativos aparecem como destino de novas rotas.
+              Somente Assistentes ativos aparecem como destino de novas rotas.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -341,16 +341,16 @@ export default function OperationAssistantsPage() {
             ) : (
               <div className="rounded-lg border border-dashed p-8 text-center">
                 <Bot className="mx-auto h-8 w-8 text-muted-foreground" />
-                <p className="mt-3 font-medium">Nenhum Assistant operacional</p>
+                <p className="mt-3 font-medium">Nenhum Assistente operacional</p>
                 <p className="mt-1 text-sm text-muted-foreground">
                   {canCreateAssistant
-                    ? "Crie o primeiro Assistant para habilitar rotas com IA."
-                    : "Um administrador da empresa ainda não configurou um Assistant."}
+                    ? "Crie o primeiro Assistente para habilitar rotas com IA."
+                    : "Um administrador da empresa ainda não configurou um Assistente."}
                 </p>
                 {canCreateAssistant ? (
                   <Button className="mt-4" onClick={openCreateDialog}>
                     <Plus className="h-4 w-4" />
-                    Criar Assistant
+                    Criar Assistente
                   </Button>
                 ) : null}
               </div>
@@ -386,9 +386,9 @@ export default function OperationAssistantsPage() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Desativar Assistant?</AlertDialogTitle>
+            <AlertDialogTitle>Desativar Assistente?</AlertDialogTitle>
             <AlertDialogDescription>
-              O Assistant “{assistantToDeactivate?.name}” ficará fora das novas
+              O Assistente “{assistantToDeactivate?.name}” ficará fora das novas
               opções. A API bloqueia a ação se ainda houver rota ativa ou
               atendimento aberto vinculado a ele.
             </AlertDialogDescription>
@@ -444,12 +444,12 @@ function AssistantRow({
             {assistant.providerCredentialConfigured ? (
               <span className="inline-flex items-center gap-1 text-green-700 dark:text-green-300">
                 <CheckCircle2 className="h-3.5 w-3.5" />
-                Provider configurado
+                Provedor configurado
               </span>
             ) : (
               <span className="inline-flex items-center gap-1 text-amber-700 dark:text-amber-300">
                 <XCircle className="h-3.5 w-3.5" />
-                Provider pendente
+                Provedor pendente
               </span>
             )}
           </div>

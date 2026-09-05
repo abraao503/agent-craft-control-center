@@ -48,12 +48,12 @@ const assistantFormSchema = z.object({
   function: z
     .string()
     .trim()
-    .min(3, "Informe a função do Assistant."),
+    .min(3, "Informe a função do Assistente."),
   style: z.string().trim().min(3, "Informe o estilo de comunicação."),
   instructions: z
     .string()
     .trim()
-    .min(3, "Informe as instruções do Assistant."),
+    .min(3, "Informe as instruções do Assistente."),
   blacklist: z.string().max(20_000, "A lista de bloqueio é muito longa."),
   links: z.array(
     z.object({
@@ -147,7 +147,7 @@ export function OperationalAssistantDialog({
     if (!assistant && !values.providerCredential.trim()) {
       form.setError("providerCredential", {
         type: "manual",
-        message: "Informe a credencial do provider para criar o Assistant.",
+        message: "Informe a credencial do provedor para criar o Assistente.",
       });
       return;
     }
@@ -180,7 +180,7 @@ export function OperationalAssistantDialog({
       <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-[820px]">
         <DialogHeader>
           <DialogTitle>
-            {assistant ? "Editar Assistant operacional" : "Novo Assistant operacional"}
+            {assistant ? "Editar Assistente operacional" : "Novo Assistente operacional"}
           </DialogTitle>
           <DialogDescription>
             A configuração pertence somente ao workspace operacional selecionado.
@@ -242,7 +242,7 @@ export function OperationalAssistantDialog({
             <section className="space-y-4">
               <SectionHeading
                 title="Identidade e modelo"
-                description="Defina como o Assistant será apresentado e qual modelo usará."
+                description="Defina como o Assistente será apresentado e qual modelo usará."
               />
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field
@@ -363,11 +363,11 @@ export function OperationalAssistantDialog({
             <section className="space-y-4 border-t pt-6">
               <SectionHeading
                 title="Credenciais"
-                description="Os campos são write-only. Deixe vazio ao editar para manter a credencial existente."
+                description="Os campos são somente para gravação (não podem ser lidos depois). Deixe vazio ao editar para manter a credencial existente."
               />
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field
-                  label="Credencial do provider"
+                  label="Credencial do provedor"
                   htmlFor="operational-assistant-provider-credential"
                   error={form.formState.errors.providerCredential?.message}
                 >
@@ -413,8 +413,8 @@ export function OperationalAssistantDialog({
 
             <section className="space-y-4 border-t pt-6">
               <SectionHeading
-                title="Runtime operacional"
-                description="Esses parâmetros controlam contexto, áudio e o perfil de resposta do Assistant."
+                title="Parâmetros de execução"
+                description="Esses parâmetros controlam contexto, áudio e o perfil de resposta do Assistente."
               />
               <Controller
                 control={form.control}
@@ -491,7 +491,7 @@ export function OperationalAssistantDialog({
             <section className="space-y-4 border-t pt-6">
               <SectionHeading
                 title="Prompt e contexto"
-                description="Mantenha as instruções operacionais e referências usadas pelo Assistant."
+                description="Mantenha as instruções operacionais e referências usadas pelo Assistente."
               />
               <Field
                 label="Função"
@@ -537,7 +537,7 @@ export function OperationalAssistantDialog({
                 <Textarea
                   id="operational-assistant-blacklist"
                   className="min-h-24"
-                  placeholder="Tópicos ou orientações que o Assistant deve evitar."
+                  placeholder="Tópicos ou orientações que o Assistente deve evitar."
                   {...form.register("blacklist")}
                 />
               </Field>
@@ -665,7 +665,7 @@ export function OperationalAssistantDialog({
                 ) : assistant ? (
                   "Salvar alterações"
                 ) : (
-                  "Criar Assistant"
+                  "Criar Assistente"
                 )}
               </Button>
             </DialogFooter>

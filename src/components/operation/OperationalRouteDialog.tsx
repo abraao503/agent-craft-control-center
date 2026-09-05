@@ -39,11 +39,11 @@ const routeFormSchema = z
     channelId: z.string().uuid("Selecione um canal"),
     entryMode: z.enum(["TRIAGE", "QUEUE", "ASSISTANT", "EXTERNAL_AGENT"]),
     triageAgentId: z.string().uuid("Selecione um agente de triagem").nullable(),
-    assistantId: z.string().uuid("Selecione um Assistant").nullable(),
+    assistantId: z.string().uuid("Selecione um Assistente").nullable(),
     targetAreaId: z.string().uuid("Selecione uma área").nullable(),
     targetQueueId: z.string().uuid("Selecione uma fila").nullable(),
-    fallbackAreaId: z.string().uuid("Selecione uma área de fallback").nullable(),
-    fallbackQueueId: z.string().uuid("Selecione uma fila de fallback").nullable(),
+    fallbackAreaId: z.string().uuid("Selecione uma área alternativa").nullable(),
+    fallbackQueueId: z.string().uuid("Selecione uma fila alternativa").nullable(),
     active: z.boolean(),
   })
   .superRefine((values, context) => {
@@ -69,21 +69,21 @@ const routeFormSchema = z
         context.addIssue({
           code: z.ZodIssueCode.custom,
           path: ["assistantId"],
-          message: "Selecione o Assistant de entrada",
+          message: "Selecione o Assistente de entrada",
         });
       }
       if (!values.fallbackAreaId) {
         context.addIssue({
           code: z.ZodIssueCode.custom,
           path: ["fallbackAreaId"],
-          message: "Selecione a área de fallback",
+          message: "Selecione a área alternativa",
         });
       }
       if (!values.fallbackQueueId) {
         context.addIssue({
           code: z.ZodIssueCode.custom,
           path: ["fallbackQueueId"],
-          message: "Selecione a fila de fallback",
+          message: "Selecione a fila alternativa",
         });
       }
     }
@@ -210,7 +210,7 @@ export function OperationalRouteDialog({
           </DialogTitle>
           <DialogDescription>
             Salve uma rota coerente com os destinos deste workspace. O agente
-            externo só será usado quando a configuração e o runtime estiverem
+            externo só será usado quando a configuração e o recebimento de mensagens estiverem
             disponíveis.
           </DialogDescription>
         </DialogHeader>
@@ -221,7 +221,7 @@ export function OperationalRouteDialog({
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Não foi possível carregar os destinos</AlertTitle>
               <AlertDescription className="flex flex-wrap items-center gap-3">
-                Atualize as áreas, filas, Assistants e agentes para continuar.
+                Atualize as áreas, filas, Assistentes e agentes para continuar.
                 <Button
                   type="button"
                   size="sm"
@@ -282,8 +282,8 @@ export function OperationalRouteDialog({
               : entryMode === "QUEUE"
                 ? "Cada entrada será encaminhada para a área e a fila selecionadas."
                 : entryMode === "ASSISTANT"
-                  ? "O Assistant fica registrado como destino e usa as áreas de fallback configuradas."
-                  : "A mensagem será agrupada no Attendance e enviada ao agente externo configurado."}
+                  ? "O Assistente fica registrado como destino e usa as áreas alternativas configuradas."
+                  : "A mensagem será agrupada no atendimento e enviada ao agente externo configurado."}
           </div>
 
           {entryMode === "EXTERNAL_AGENT" ? (
@@ -346,9 +346,9 @@ export function OperationalRouteDialog({
           {entryMode === "ASSISTANT" ? (
             <div className="space-y-4 rounded-md border p-4">
               <SelectField
-                label="Assistant de entrada"
+                label="Assistente de entrada"
                 value={form.watch("assistantId")}
-                placeholder={optionsLoading ? "Carregando Assistants..." : "Selecione um Assistant"}
+                placeholder={optionsLoading ? "Carregando Assistentes..." : "Selecione um Assistente"}
                 disabled={isPending || optionsLoading}
                 error={form.formState.errors.assistantId?.message}
                 onValueChange={(value) => form.setValue("assistantId", value, { shouldValidate: true })}
@@ -359,7 +359,7 @@ export function OperationalRouteDialog({
               />
               <div className="grid gap-4 sm:grid-cols-2">
                 <SelectField
-                  label="Área de fallback"
+                  label="Área alternativa"
                   value={fallbackAreaId}
                   placeholder={optionsLoading ? "Carregando áreas..." : "Selecione uma área"}
                   disabled={isPending || optionsLoading}
@@ -371,7 +371,7 @@ export function OperationalRouteDialog({
                   options={fallbackAreaOptions.map((area) => ({ id: area.id, label: area.name }))}
                 />
                 <SelectField
-                  label="Fila de fallback"
+                  label="Fila alternativa"
                   value={form.watch("fallbackQueueId")}
                   placeholder={fallbackAreaId ? "Selecione uma fila" : "Escolha a área primeiro"}
                   disabled={isPending || optionsLoading || !fallbackAreaId}
