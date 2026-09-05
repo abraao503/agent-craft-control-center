@@ -119,6 +119,7 @@ export function OperationalChannelsManager({
   const [qrCode, setQrCode] = useState<QrCodeState | null>(null);
 
   const canManageChannels = has("manage:operation-channels");
+  const canManageTriageAgents = has("manage:operation-setup");
   const canConnectChannels =
     canManageChannels && has("connect:whatsapp");
   const channelsQuery = useOperationalChannels(workspaceId, channelsPage);
@@ -130,6 +131,7 @@ export function OperationalChannelsManager({
   const routeOptions = useOperationalRouteOptions(
     workspaceId,
     canManageChannels,
+    canManageTriageAgents,
   );
   const channelMutations = useOperationalChannelMutations(workspaceId);
   const routeMutations = useOperationalChannelRouteMutations(workspaceId);
@@ -223,6 +225,7 @@ export function OperationalChannelsManager({
     try {
       const configuration = {
         entryMode: values.entryMode,
+        triageAgentId: values.triageAgentId,
         assistantId: values.assistantId,
         targetAreaId: values.targetAreaId,
         targetQueueId: values.targetQueueId,
@@ -561,6 +564,8 @@ export function OperationalChannelsManager({
         areas={routeOptions.areas}
         queues={routeOptions.queues}
         assistants={routeOptions.assistants}
+        triageAgents={routeOptions.triageAgents}
+        allowExternalAgent={canManageTriageAgents}
         optionsLoading={routeOptions.isLoading}
         optionsError={routeOptions.isError}
         isPending={routeDialogPending}
@@ -918,6 +923,10 @@ function describeRoute(route: OperationalChannelRoute): string {
 
   if (route.entryMode === "QUEUE") {
     return `${route.destinations.targetArea?.name || "Área indisponível"} → ${route.destinations.targetQueue?.name || "Fila indisponível"}`;
+  }
+
+  if (route.entryMode === "EXTERNAL_AGENT") {
+    return `Agente externo: ${route.destinations.triageAgent?.name || "agente indisponível"}`;
   }
 
   return `${route.destinations.assistant?.name || "Assistant indisponível"} → fallback: ${route.destinations.fallbackArea?.name || "Área indisponível"} / ${route.destinations.fallbackQueue?.name || "Fila indisponível"}`;

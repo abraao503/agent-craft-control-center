@@ -472,6 +472,12 @@ const SidebarMenuContent = () => {
           requiredPermission: "view:assistant",
         },
         {
+          path: "/operation/triage-agents",
+          label: "Agentes de triagem",
+          icon: <Bot className="h-5 w-5" />,
+          requiredPermission: "manage:operation-setup",
+        },
+        {
           path: "/operation/distribution",
           label: "Distribuição",
           icon: <SlidersHorizontal className="h-5 w-5" />,

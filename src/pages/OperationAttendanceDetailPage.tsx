@@ -48,6 +48,7 @@ import {
   AttendanceActionFormValues,
 } from "@/components/operation/AttendanceActionDialog";
 import { AttendanceFollowUpsCard } from "@/components/operation/AttendanceFollowUpsCard";
+import { OperationalTriageAgentHistory } from "@/components/operation/OperationalTriageAgentHistory";
 import { AttendanceComposer } from "@/components/operation/AttendanceComposer";
 import { OperationalRealtimeStatus } from "@/components/operation/OperationalRealtimeStatus";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -824,6 +825,12 @@ export default function OperationAttendanceDetailPage({
               expectedVersion={attendance.version}
               status={attendance.status}
               canManage={canOperateAttendances}
+            />
+
+            <OperationalTriageAgentHistory
+              workspaceId={workspaceId!}
+              attendanceId={attendance.id}
+              enabled={canViewAttendances}
             />
 
             <Card className="shadow-none">

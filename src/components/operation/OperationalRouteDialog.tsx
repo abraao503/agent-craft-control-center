@@ -9,6 +9,7 @@ import {
   OperationalChannelRoute,
 } from "@/types/operation-channels";
 import { OperationalAssistantOption } from "@/types/operation-assistant";
+import { OperationalTriageAgent } from "@/types/operation-triage-agent";
 import { ServiceArea, ServiceQueue } from "@/types/operation";
 import {
   OPERATIONAL_CHANNEL_ENTRY_MODE_LABELS,
@@ -36,7 +37,8 @@ import { Switch } from "@/components/ui/switch";
 const routeFormSchema = z
   .object({
     channelId: z.string().uuid("Selecione um canal"),
-    entryMode: z.enum(["TRIAGE", "QUEUE", "ASSISTANT"]),
+    entryMode: z.enum(["TRIAGE", "QUEUE", "ASSISTANT", "EXTERNAL_AGENT"]),
+    triageAgentId: z.string().uuid("Selecione um agente de triagem").nullable(),
     assistantId: z.string().uuid("Selecione um Assistant").nullable(),
     targetAreaId: z.string().uuid("Selecione uma área").nullable(),
     targetQueueId: z.string().uuid("Selecione uma fila").nullable(),
@@ -85,6 +87,14 @@ const routeFormSchema = z
         });
       }
     }
+
+    if (values.entryMode === "EXTERNAL_AGENT" && !values.triageAgentId) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["triageAgentId"],
+        message: "Selecione o agente de triagem",
+      });
+    }
   });
 
 export type OperationalRouteFormValues = z.infer<typeof routeFormSchema>;
@@ -97,6 +107,8 @@ type OperationalRouteDialogProps = {
   areas: ServiceArea[];
   queues: ServiceQueue[];
   assistants: OperationalAssistantOption[];
+  triageAgents: OperationalTriageAgent[];
+  allowExternalAgent: boolean;
   optionsLoading: boolean;
   optionsError: boolean;
   isPending: boolean;
@@ -113,6 +125,8 @@ export function OperationalRouteDialog({
   areas,
   queues,
   assistants,
+  triageAgents,
+  allowExternalAgent,
   optionsLoading,
   optionsError,
   isPending,
@@ -175,6 +189,17 @@ export function OperationalRouteDialog({
     route?.assistantId,
     route?.destinations.assistant?.name,
   );
+  const activeTriageAgents = addCurrentOption(
+    triageAgents.filter((agent) => agent.enabled),
+    route?.triageAgentId,
+    route?.destinations.triageAgent?.name,
+  );
+  const entryModeOptions = Object.entries(OPERATIONAL_CHANNEL_ENTRY_MODE_LABELS).filter(
+    ([id]) =>
+      id !== "EXTERNAL_AGENT" ||
+      allowExternalAgent ||
+      route?.entryMode === "EXTERNAL_AGENT",
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -184,8 +209,9 @@ export function OperationalRouteDialog({
             {route ? "Editar rota de entrada" : "Nova rota de entrada"}
           </DialogTitle>
           <DialogDescription>
-            Salve um rascunho coerente com áreas, filas e Assistants deste
-            workspace. O tráfego continuará bloqueado até E4.
+            Salve uma rota coerente com os destinos deste workspace. O agente
+            externo só será usado quando a configuração e o runtime estiverem
+            disponíveis.
           </DialogDescription>
         </DialogHeader>
 
@@ -195,7 +221,7 @@ export function OperationalRouteDialog({
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Não foi possível carregar os destinos</AlertTitle>
               <AlertDescription className="flex flex-wrap items-center gap-3">
-                Atualize as áreas, filas e Assistants para continuar.
+                Atualize as áreas, filas, Assistants e agentes para continuar.
                 <Button
                   type="button"
                   size="sm"
@@ -236,12 +262,15 @@ export function OperationalRouteDialog({
                   form.setValue("fallbackAreaId", null);
                   form.setValue("fallbackQueueId", null);
                 }
+                if (mode !== "EXTERNAL_AGENT") {
+                  form.setValue("triageAgentId", null);
+                }
                 if (mode !== "QUEUE") {
                   form.setValue("targetAreaId", null);
                   form.setValue("targetQueueId", null);
                 }
               }}
-              options={Object.entries(OPERATIONAL_CHANNEL_ENTRY_MODE_LABELS).map(
+              options={entryModeOptions.map(
                 ([id, label]) => ({ id, label }),
               )}
             />
@@ -252,8 +281,41 @@ export function OperationalRouteDialog({
               ? "A entrada será entregue para triagem. Não há um destino fixo nesta configuração."
               : entryMode === "QUEUE"
                 ? "Cada entrada será encaminhada para a área e a fila selecionadas."
-                : "O Assistant fica registrado como destino, mas sua execução operacional só será habilitada em E6."}
+                : entryMode === "ASSISTANT"
+                  ? "O Assistant fica registrado como destino e usa as áreas de fallback configuradas."
+                  : "A mensagem será agrupada no Attendance e enviada ao agente externo configurado."}
           </div>
+
+          {entryMode === "EXTERNAL_AGENT" ? (
+            <div className="space-y-3 rounded-md border p-4">
+              <SelectField
+                label="Agente de triagem"
+                value={form.watch("triageAgentId")}
+                placeholder={
+                  optionsLoading
+                    ? "Carregando agentes..."
+                    : "Selecione um agente de triagem"
+                }
+                disabled={isPending || optionsLoading || !allowExternalAgent}
+                error={form.formState.errors.triageAgentId?.message}
+                onValueChange={(value) =>
+                  form.setValue("triageAgentId", value, {
+                    shouldValidate: true,
+                  })
+                }
+                options={activeTriageAgents.map((agent) => ({
+                  id: agent.id,
+                  label: `${agent.name}${agent.enabled ? "" : " · desativado"}`,
+                }))}
+              />
+              {!allowExternalAgent ? (
+                <p className="text-xs text-muted-foreground">
+                  Você precisa da permissão de setup para escolher agentes
+                  externos.
+                </p>
+              ) : null}
+            </div>
+          ) : null}
 
           {entryMode === "QUEUE" ? (
             <div className="grid gap-4 rounded-md border p-4 sm:grid-cols-2">
@@ -379,6 +441,7 @@ function getDefaultValues(
   return {
     channelId: route?.channelId ?? defaultChannelId,
     entryMode: route?.entryMode ?? "TRIAGE",
+    triageAgentId: route?.triageAgentId ?? null,
     assistantId: route?.assistantId ?? null,
     targetAreaId: route?.targetAreaId ?? null,
     targetQueueId: route?.targetQueueId ?? null,

@@ -3,7 +3,11 @@ export type OperationalChannelProviderName =
   | "evolux"
   | "meta-cloud";
 
-export type OperationalChannelEntryMode = "TRIAGE" | "QUEUE" | "ASSISTANT";
+export type OperationalChannelEntryMode =
+  | "TRIAGE"
+  | "QUEUE"
+  | "ASSISTANT"
+  | "EXTERNAL_AGENT";
 
 export type OperationalChannelRouteConfigurationStatus =
   | "INCOMPLETE"
@@ -14,6 +18,7 @@ export type OperationalChannelRouteTrafficStatus = "BLOCKED_BY_RUNTIME";
 export type OperationalChannelRouteMissing =
   | "route"
   | "ASSISTANT"
+  | "TRIAGE_AGENT"
   | "TARGET_AREA"
   | "TARGET_QUEUE"
   | "FALLBACK_AREA"
@@ -23,6 +28,7 @@ export type OperationalChannelRouteDiagnosticCode =
   | "CONFIGURATION_READY"
   | "ROUTE_INCOMPLETE"
   | "INVALID_ROUTE_CONFIGURATION"
+  | "TRIAGE_AGENT_NOT_FOUND"
   | "ASSISTANT_NOT_FOUND"
   | "DESTINATION_NOT_FOUND"
   | "DESTINATION_WORKSPACE_MISMATCH";
@@ -94,6 +100,7 @@ export interface OperationalChannelRoute {
   workspaceId: string;
   channelId: string;
   entryMode: OperationalChannelEntryMode;
+  triageAgentId: string | null;
   assistantId: string | null;
   targetAreaId: string | null;
   targetQueueId: string | null;
@@ -105,6 +112,7 @@ export interface OperationalChannelRoute {
   trafficStatus: OperationalChannelRouteTrafficStatus;
   missing: OperationalChannelRouteMissing[];
   destinations: {
+    triageAgent: OperationalChannelRouteDestination | null;
     assistant: OperationalChannelRouteDestination | null;
     targetArea: OperationalChannelRouteDestination | null;
     targetQueue: OperationalChannelRouteDestination | null;
@@ -185,6 +193,7 @@ export interface UpdateOperationalChannelBody {
 export interface CreateOperationalChannelRouteBody {
   channelId: string;
   entryMode: OperationalChannelEntryMode;
+  triageAgentId: string | null;
   assistantId: string | null;
   targetAreaId: string | null;
   targetQueueId: string | null;
@@ -194,6 +203,7 @@ export interface CreateOperationalChannelRouteBody {
 
 export interface UpdateOperationalChannelRouteBody {
   entryMode: OperationalChannelEntryMode;
+  triageAgentId: string | null;
   assistantId: string | null;
   targetAreaId: string | null;
   targetQueueId: string | null;

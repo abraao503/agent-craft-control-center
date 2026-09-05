@@ -96,6 +96,15 @@ export default function OperationLandingPage() {
               Assistants
             </Link>
           ) : null}
+          {has("manage:operation-setup") ? (
+            <Link
+              to="/operation/triage-agents"
+              className={buttonVariants({ variant: "outline", size: "lg" })}
+            >
+              <Bot className="mr-2 h-4 w-4" />
+              Agentes de triagem
+            </Link>
+          ) : null}
         </div>
       </header>
 

@@ -20,6 +20,7 @@ export const OPERATIONAL_CHANNEL_ENTRY_MODE_LABELS: Record<
   TRIAGE: "Triagem",
   QUEUE: "Fila",
   ASSISTANT: "Assistant",
+  EXTERNAL_AGENT: "Agente externo",
 };
 
 export const OPERATIONAL_CHANNEL_ROUTE_MISSING_LABELS: Record<
@@ -27,6 +28,7 @@ export const OPERATIONAL_CHANNEL_ROUTE_MISSING_LABELS: Record<
   string
 > = {
   route: "rota",
+  TRIAGE_AGENT: "agente de triagem",
   ASSISTANT: "Assistant ativo",
   TARGET_AREA: "área de entrada",
   TARGET_QUEUE: "fila de entrada",
@@ -70,6 +72,15 @@ const ERROR_LABELS: Record<string, string> = {
   STALE_VERSION:
     "O recurso foi alterado por outra pessoa. Atualize a lista e tente novamente.",
   ASSISTANT_NOT_FOUND: "O Assistant não está ativo neste workspace.",
+  TRIAGE_AGENT_NOT_FOUND:
+    "O agente de triagem não está ativo neste workspace.",
+  HARNESS_DISABLED:
+    "O console sintético está desabilitado neste ambiente de execução.",
+  EVENT_PROCESSING:
+    "O evento foi recebido, mas não pôde ser processado pela operação.",
+  EVENT_PAYLOAD_CONFLICT:
+    "Já existe um evento sintético com os mesmos identificadores e outro conteúdo.",
+  INVALID_CUSTOMER_PHONE: "Informe um telefone válido para o contato.",
 };
 
 export function getOperationalErrorCode(error: unknown): string | undefined {
