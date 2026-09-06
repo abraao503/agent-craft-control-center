@@ -68,20 +68,14 @@ export default function OperationLandingPage() {
             prontos para a equipe.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {has("manage:operation-setup") ? (
-            <Link
-              to="/operation/distribution"
-              className={buttonVariants({ variant: "outline", size: "lg" })}
-            >
-              <SlidersHorizontal className="mr-2 h-4 w-4" />
-              Distribuição
-            </Link>
-          ) : null}
+        <div className="grid w-full max-w-md grid-cols-2 gap-2 sm:w-[24rem] sm:shrink-0">
           {has("view:operation-attendances") ? (
             <Link
               to="/operation/attendances"
-              className={buttonVariants({ size: "lg" })}
+              className={buttonVariants({
+                size: "lg",
+                className: "col-span-2 w-full",
+              })}
             >
               <Inbox className="mr-2 h-4 w-4" />
               Abrir atendimentos
@@ -94,6 +88,19 @@ export default function OperationLandingPage() {
             >
               <Bot className="mr-2 h-4 w-4" />
               Agentes
+            </Link>
+          ) : null}
+          {has("manage:operation-setup") ? (
+            <Link
+              to="/operation/distribution"
+              className={buttonVariants({
+                variant: "outline",
+                size: "lg",
+                className: "w-full",
+              })}
+            >
+              <SlidersHorizontal className="mr-2 h-4 w-4" />
+              Distribuição
             </Link>
           ) : null}
         </div>
