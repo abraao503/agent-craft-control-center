@@ -336,6 +336,7 @@ const WorkspaceSelector = ({ isCollapsed }: { isCollapsed: boolean }) => {
                 variant="ghost"
                 size="icon"
                 className="w-full h-8 flex justify-center"
+                aria-label={t("legacy.Criar novo workspace")}
                 onClick={() => setIsDialogOpen(true)}
               >
                 <Plus className="h-4 w-4 text-muted-foreground" />
