@@ -9,7 +9,6 @@ import {
   Plus,
   Radio,
   RefreshCw,
-  Settings2,
   TestTube2,
   Trash2,
 } from "lucide-react";
@@ -247,10 +246,6 @@ export default function OperationTriageAgentsPage() {
             <Plus className="h-4 w-4" />
             Nova integração
           </Button>
-          <Badge variant="outline" className="h-10 gap-2 px-3">
-            <Settings2 className="h-4 w-4" />
-            {currentWorkspace.name}
-          </Badge>
         </div>
       </header>
 
