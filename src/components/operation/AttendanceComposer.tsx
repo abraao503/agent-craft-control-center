@@ -142,6 +142,13 @@ export function AttendanceComposer({
     canCompose,
     isTemplateRequired,
   ]);
+  const visibleModes = useMemo(
+    () =>
+      (["TEXT", "MEDIA", "TEMPLATE"] as ComposerMode[]).filter((option) =>
+        supportedModes.includes(option),
+      ),
+    [supportedModes],
+  );
 
   const [mode, setMode] = useState<ComposerMode>(
     isTemplateRequired ? "TEMPLATE" : "TEXT",
@@ -445,13 +452,13 @@ export function AttendanceComposer({
             className={embedded ? "space-y-2" : "space-y-4"}
           >
             <div className="flex flex-wrap gap-2">
-              {(["TEXT", "MEDIA", "TEMPLATE"] as ComposerMode[]).map((option) => (
+              {visibleModes.map((option) => (
                 <Button
                   key={option}
                   type="button"
                   size="sm"
                   variant={mode === option ? "default" : "outline"}
-                  disabled={!supportedModes.includes(option) || mutations.sendMessage.isPending}
+                  disabled={mutations.sendMessage.isPending}
                   onClick={() => setMode(option)}
                 >
                   {option === "TEXT"
