@@ -77,9 +77,9 @@ import {
 import { formatOperationalMessageStatus } from "@/utils/operationalMessageStatus";
 
 const STATUS_LABELS: Record<AttendanceStatus, string> = {
-  TRIAGE: "Triagem",
-  WAITING_QUEUE: "Aguardando fila",
-  IN_PROGRESS: "Em atendimento",
+  TRIAGE: "Triagem automática",
+  WAITING_QUEUE: "Fila humana",
+  IN_PROGRESS: "Atendimento humano",
   PENDING: "Pendente",
   CLOSED: "Encerrado",
 };
@@ -95,10 +95,10 @@ const REPLY_STATUS_LABELS = {
 const EVENT_LABELS: Record<string, string> = {
   INBOUND_CREATE: "Atendimento criado",
   INBOUND_RESUME: "Atendimento retomado",
-  ROUTE: "Encaminhado para destino",
+  ROUTE: "Encaminhado para fila",
   CLAIM: "Assumido por operador",
   ASSIGN: "Responsável atribuído",
-  TRANSFER: "Transferido",
+  TRANSFER: "Transferido para fila humana",
   UNASSIGN: "Responsável removido",
   PENDING: "Marcado como pendente",
   RESUME: "Retomado",
@@ -292,6 +292,12 @@ export default function OperationAttendanceDetailPage({
     .slice()
     .reverse()
     .flatMap((page) => page.items) ?? [];
+  const hasExternalHandoff = timelineItems.some(
+    (item) =>
+      item.kind === "event" &&
+      (item.action === "ROUTE" || item.action === "TRANSFER") &&
+      item.actorType === "INTEGRATION",
+  );
   const customerName = attendance.customer?.name || "Contato sem nome";
   const options = optionsQuery.data;
   const isActionPending =
@@ -520,7 +526,7 @@ export default function OperationAttendanceDetailPage({
             </Link>
             <div className="mt-5 flex flex-wrap items-center gap-3">
               <p className="text-sm font-medium uppercase tracking-wide text-primary">
-                Operação / atendimento humano
+                {getAttendanceContextLabel(attendance.status)}
               </p>
               <Badge
                 variant={getStatusVariant(attendance.status)}
@@ -718,7 +724,7 @@ export default function OperationAttendanceDetailPage({
             {secondaryPanelOpen ? <div>
               <p className="text-sm font-semibold">Detalhes</p>
               <p className="text-xs text-muted-foreground">
-                Atendimento, contato e histórico.
+                Atendimento, contato e etapa da triagem.
               </p>
             </div> : null}
             <CollapsibleTrigger asChild>
@@ -831,6 +837,9 @@ export default function OperationAttendanceDetailPage({
             <OperationalTriageAgentHistory
               workspaceId={workspaceId!}
               attendanceId={attendance.id}
+              attendanceStatus={attendance.status}
+              destination={attendance.destination}
+              hasExternalHandoff={hasExternalHandoff}
               enabled={canViewAttendances}
             />
 
@@ -982,15 +991,25 @@ function AttendanceActionControls({
 }
 
 function getNextStepGuidance(status: AttendanceStatus, hasAssignee: boolean) {
-  if (status === "TRIAGE") return "Defina a área e a fila para encaminhar o atendimento.";
-  if (status === "WAITING_QUEUE") return "Assuma a conversa ou transfira para outro destino.";
+  if (status === "TRIAGE") {
+    return "O MENU de entrada aguarda a escolha do cliente e a conversa com o agente externo.";
+  }
+  if (status === "WAITING_QUEUE") {
+    return "O atendimento está na fila humana; assuma a conversa ou transfira para outro destino.";
+  }
   if (status === "IN_PROGRESS") {
     return hasAssignee
-      ? "Responda o cliente ou escolha como o atendimento deve avançar."
+      ? "A conversa está com a equipe humana; responda o cliente ou escolha como o atendimento deve avançar."
       : "Defina um responsável antes de responder o cliente.";
   }
   if (status === "PENDING") return "Retome quando houver uma nova ação ou resposta do cliente.";
   return "Consulte a conversa e o histórico deste ciclo encerrado.";
+}
+
+function getAttendanceContextLabel(status: AttendanceStatus) {
+  return status === "TRIAGE"
+    ? "Operação / triagem conversacional"
+    : "Operação / atendimento humano";
 }
 
 function DetailField({ label, value }: { label: string; value: string }) {
@@ -1175,7 +1194,7 @@ function getReplyStatusVariant(
 function formatActor(actorType: AttendanceEvent["actorType"]) {
   if (actorType === "USER") return "operador";
   if (actorType === "ASSISTANT") return "assistente";
-  if (actorType === "INTEGRATION") return "integração";
+  if (actorType === "INTEGRATION") return "agente externo";
   return "sistema";
 }
 

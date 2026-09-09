@@ -1,3 +1,5 @@
+import type { AttendanceStatus } from "./operation-attendance";
+
 export type OperationalTriageAgentExecutionStatus =
   | "QUEUED"
   | "PROCESSING"
@@ -6,10 +8,28 @@ export type OperationalTriageAgentExecutionStatus =
   | "STALE"
   | "CANCELLED";
 
+export type OperationalTriageAgentStage =
+  | "MENU"
+  | "WAITING_EXTERNAL_AGENT"
+  | "CONVERSATION"
+  | "TRANSFER"
+  | "HUMAN_QUEUE"
+  | "HUMAN_CONTINGENCY"
+  | "HUMAN_SERVICE"
+  | "STALE"
+  | "CANCELLED";
+
+export interface OperationalTriageAgentHistoryContext {
+  attendanceStatus: AttendanceStatus;
+  destinationLabel: string | null;
+  hasExternalHandoff: boolean;
+}
+
 export interface OperationalTriageAgentExecutionView {
   id: string;
   status: OperationalTriageAgentExecutionStatus;
   attempts: number;
+  /** Mantidos para compatibilidade do payload; a UI exibe a etapa conversacional. */
   decision: "ROUTE" | "ASK_CLARIFICATION" | null;
   confidence: number | null;
   destination: {

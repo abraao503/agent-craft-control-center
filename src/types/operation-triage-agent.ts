@@ -1,5 +1,8 @@
 export type OperationalTriageAgentAdapter = "GENERIC_HTTP";
 
+export const OPERATIONAL_TRIAGE_AGENT_PROTOCOL_LABEL =
+  "Protocolo conversacional v1";
+
 export interface OperationalTriageAgent {
   id: string;
   companyId: string;
