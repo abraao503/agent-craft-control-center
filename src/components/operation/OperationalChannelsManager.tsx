@@ -29,11 +29,13 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { useToast } from "@/hooks/use-toast";
 import {
   CreateOperationalChannelBody,
+  CreateOperationalChannelRouteBody,
   OperationalChannel,
   OperationalChannelProviderName,
   OperationalChannelRoute,
   OperationalZApiCredentials,
   UpdateOperationalChannelBody,
+  UpdateOperationalChannelRouteBody,
 } from "@/types/operation-channels";
 import { Button } from "@/components/ui/button";
 import {
@@ -231,6 +233,7 @@ export function OperationalChannelsManager({
         targetQueueId: values.targetQueueId,
         fallbackAreaId: values.fallbackAreaId,
         fallbackQueueId: values.fallbackQueueId,
+        ...buildRouteMenuConfiguration(values),
       };
 
       if (editingRoute) {
@@ -947,10 +950,38 @@ function describeRoute(route: OperationalChannelRoute): string {
   }
 
   if (route.entryMode === "EXTERNAL_AGENT") {
-    return `Integração de triagem: ${route.destinations.triageAgent?.name || "integração indisponível"}`;
+    const handoff = route.destinations.handoffArea?.name &&
+      route.destinations.handoffQueue?.name
+      ? ` · encaminhamento: ${route.destinations.handoffArea.name} → ${route.destinations.handoffQueue.name}`
+      : "";
+    return `Integração de triagem: ${route.destinations.triageAgent?.name || "integração indisponível"}${handoff}`;
   }
 
   return `${route.destinations.assistant?.name || "Assistente de atendimento indisponível"} → alternativa: ${route.destinations.fallbackArea?.name || "Área indisponível"} / ${route.destinations.fallbackQueue?.name || "Fila indisponível"}`;
+}
+
+function buildRouteMenuConfiguration(
+  values: OperationalRouteFormValues,
+): Partial<CreateOperationalChannelRouteBody> &
+  Partial<UpdateOperationalChannelRouteBody> {
+  if (values.entryMode !== "EXTERNAL_AGENT") {
+    return {};
+  }
+
+  return {
+    menuGreeting: values.menuGreeting?.trim() || null,
+    invalidMenuMessage: values.invalidMenuMessage?.trim() || null,
+    handoffAreaId: values.handoffAreaId,
+    handoffQueueId: values.handoffQueueId,
+    menuOptions: values.menuOptions.map((option, index) => ({
+      number: index + 1,
+      label: option.label.trim(),
+      action: option.action,
+      responseText: option.responseText.trim(),
+      targetAreaId: option.action === "ROUTE" ? option.targetAreaId : null,
+      targetQueueId: option.action === "ROUTE" ? option.targetQueueId : null,
+    })),
+  };
 }
 
 function buildCreateChannelBody(

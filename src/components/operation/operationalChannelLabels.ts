@@ -1,5 +1,6 @@
 import {
   OperationalChannelEntryMode,
+  OperationalChannelMenuOptionAction,
   OperationalChannelProviderName,
   OperationalChannelRouteMissing,
 } from "@/types/operation-channels";
@@ -23,6 +24,15 @@ export const OPERATIONAL_CHANNEL_ENTRY_MODE_LABELS: Record<
   EXTERNAL_AGENT: "Integração de triagem",
 };
 
+export const OPERATIONAL_CHANNEL_MENU_ACTION_LABELS: Record<
+  OperationalChannelMenuOptionAction,
+  string
+> = {
+  START_EXTERNAL_AGENT: "Iniciar integração de triagem",
+  ROUTE: "Encaminhar para área e fila",
+  CLOSE: "Finalizar atendimento",
+};
+
 export const OPERATIONAL_CHANNEL_ROUTE_MISSING_LABELS: Record<
   OperationalChannelRouteMissing,
   string
@@ -34,6 +44,11 @@ export const OPERATIONAL_CHANNEL_ROUTE_MISSING_LABELS: Record<
   TARGET_QUEUE: "fila de entrada",
   FALLBACK_AREA: "área alternativa",
   FALLBACK_QUEUE: "fila alternativa",
+  MENU_GREETING: "saudação do menu",
+  INVALID_MENU_MESSAGE: "mensagem de opção inválida",
+  HANDOFF_AREA: "área de encaminhamento humano",
+  HANDOFF_QUEUE: "fila de encaminhamento humano",
+  MENU_OPTIONS: "opções do menu",
 };
 
 const STATUS_LABELS: Record<string, string> = {

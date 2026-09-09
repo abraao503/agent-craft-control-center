@@ -15,6 +15,30 @@ export type OperationalChannelRouteConfigurationStatus =
 
 export type OperationalChannelRouteTrafficStatus = "BLOCKED_BY_RUNTIME";
 
+export type OperationalChannelMenuOptionAction =
+  | "START_EXTERNAL_AGENT"
+  | "ROUTE"
+  | "CLOSE";
+
+export interface OperationalChannelMenuOption {
+  id: string;
+  number: number;
+  label: string;
+  action: OperationalChannelMenuOptionAction;
+  responseText: string;
+  targetAreaId: string | null;
+  targetQueueId: string | null;
+}
+
+export interface OperationalChannelMenuOptionInput {
+  number: number;
+  label: string;
+  action: OperationalChannelMenuOptionAction;
+  responseText: string;
+  targetAreaId: string | null;
+  targetQueueId: string | null;
+}
+
 export type OperationalChannelRouteMissing =
   | "route"
   | "ASSISTANT"
@@ -22,7 +46,12 @@ export type OperationalChannelRouteMissing =
   | "TARGET_AREA"
   | "TARGET_QUEUE"
   | "FALLBACK_AREA"
-  | "FALLBACK_QUEUE";
+  | "FALLBACK_QUEUE"
+  | "MENU_GREETING"
+  | "INVALID_MENU_MESSAGE"
+  | "HANDOFF_AREA"
+  | "HANDOFF_QUEUE"
+  | "MENU_OPTIONS";
 
 export type OperationalChannelRouteDiagnosticCode =
   | "CONFIGURATION_READY"
@@ -106,6 +135,11 @@ export interface OperationalChannelRoute {
   targetQueueId: string | null;
   fallbackAreaId: string | null;
   fallbackQueueId: string | null;
+  menuGreeting: string | null;
+  invalidMenuMessage: string | null;
+  handoffAreaId: string | null;
+  handoffQueueId: string | null;
+  menuOptions: OperationalChannelMenuOption[];
   active: boolean;
   configured: boolean;
   configurationStatus: OperationalChannelRouteConfigurationStatus;
@@ -118,6 +152,8 @@ export interface OperationalChannelRoute {
     targetQueue: OperationalChannelRouteDestination | null;
     fallbackArea: OperationalChannelRouteDestination | null;
     fallbackQueue: OperationalChannelRouteDestination | null;
+    handoffArea: OperationalChannelRouteDestination | null;
+    handoffQueue: OperationalChannelRouteDestination | null;
   };
   diagnostic: {
     code: OperationalChannelRouteDiagnosticCode;
@@ -199,6 +235,11 @@ export interface CreateOperationalChannelRouteBody {
   targetQueueId: string | null;
   fallbackAreaId: string | null;
   fallbackQueueId: string | null;
+  menuGreeting?: string | null;
+  invalidMenuMessage?: string | null;
+  handoffAreaId?: string | null;
+  handoffQueueId?: string | null;
+  menuOptions?: OperationalChannelMenuOptionInput[];
 }
 
 export interface UpdateOperationalChannelRouteBody {
@@ -209,6 +250,11 @@ export interface UpdateOperationalChannelRouteBody {
   targetQueueId: string | null;
   fallbackAreaId: string | null;
   fallbackQueueId: string | null;
+  menuGreeting?: string | null;
+  invalidMenuMessage?: string | null;
+  handoffAreaId?: string | null;
+  handoffQueueId?: string | null;
+  menuOptions?: OperationalChannelMenuOptionInput[];
   active: boolean;
   expectedVersion: number;
 }
