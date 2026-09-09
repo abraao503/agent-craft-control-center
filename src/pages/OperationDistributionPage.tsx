@@ -287,6 +287,7 @@ export default function OperationDistributionPage() {
                       name="excludedChannelIds"
                       id="excluded-channels"
                       label="Canais excluídos"
+                      emptyLabel="Nenhum canal excluído"
                       description="A entrada por estes canais seguirá disponível para encaminhamento manual."
                       options={selectorOptions.channels}
                     />
@@ -295,6 +296,7 @@ export default function OperationDistributionPage() {
                       name="excludedAreaIds"
                       id="excluded-areas"
                       label="Áreas excluídas"
+                      emptyLabel="Nenhuma área excluída"
                       description="Todas as filas destas áreas ficam fora da distribuição automática."
                       options={selectorOptions.areas}
                     />
@@ -303,6 +305,7 @@ export default function OperationDistributionPage() {
                       name="excludedQueueIds"
                       id="excluded-queues"
                       label="Filas excluídas"
+                      emptyLabel="Nenhuma fila excluída"
                       description="A fila permanece disponível para que um operador a assuma manualmente."
                       options={selectorOptions.queues}
                     />
@@ -311,6 +314,7 @@ export default function OperationDistributionPage() {
                       name="excludedUserIds"
                       id="excluded-users"
                       label="Operadores excluídos"
+                      emptyLabel="Nenhum operador excluído"
                       description="O operador deixa de participar da roleta, sem perder seus demais vínculos."
                       options={selectorOptions.users}
                     />
@@ -346,6 +350,7 @@ function DistributionSelector({
   name,
   id,
   label,
+  emptyLabel,
   description,
   options,
 }: {
@@ -353,6 +358,7 @@ function DistributionSelector({
   name: SelectorField;
   id: string;
   label: string;
+  emptyLabel: string;
   description: string;
   options: Option[];
 }) {
@@ -369,7 +375,7 @@ function DistributionSelector({
             options={options}
             selected={field.value}
             onChange={field.onChange}
-            placeholder={`Nenhum ${label.toLowerCase()}`}
+            placeholder={emptyLabel}
           />
           <p className="text-sm text-muted-foreground">{description}</p>
         </div>
