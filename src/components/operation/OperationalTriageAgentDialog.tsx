@@ -18,11 +18,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 
+const MAX_TIMEOUT_MS = 90_000;
+
 const formSchema = z.object({
     name: z.string().trim().min(1, "Informe um nome").max(120),
     baseUrl: z.string().trim().url("Informe uma URL válida").max(2_048),
     credential: z.string().max(5_000),
-    timeoutMs: z.coerce.number().int().min(100).max(30_000),
+    timeoutMs: z.coerce.number().int().min(100).max(MAX_TIMEOUT_MS),
     maxAttempts: z.coerce.number().int().min(1).max(3),
     enabled: z.boolean(),
   });
@@ -142,9 +144,12 @@ export function OperationalTriageAgentDialog({
                 id="operational-triage-agent-timeout"
                 type="number"
                 min={100}
-                max={30_000}
+                max={MAX_TIMEOUT_MS}
                 {...form.register("timeoutMs", { valueAsNumber: true })}
               />
+              <p className="text-xs text-muted-foreground">
+                Até 90 segundos, conforme o limite da API.
+              </p>
             </Field>
             <Field
               label="Número de tentativas"
@@ -219,7 +224,7 @@ function getDefaultValues(
     name: agent?.name ?? "",
     baseUrl: agent?.baseUrl ?? "",
     credential: "",
-    timeoutMs: agent?.timeoutMs ?? 8_000,
+    timeoutMs: agent?.timeoutMs ?? MAX_TIMEOUT_MS,
     maxAttempts: agent?.maxAttempts ?? 2,
     enabled: agent?.enabled ?? true,
   };
