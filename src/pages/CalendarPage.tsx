@@ -371,7 +371,7 @@ export default function CalendarPage() {
   }
 
   return (
-    <div className="calendar-page space-y-6 flex flex-col h-[calc(100vh-6rem)]">
+    <div className="calendar-page space-y-6 flex flex-col h-full">
       <div className="flex flex-col sm:flex-row gap-4 sm:items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">

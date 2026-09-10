@@ -203,7 +203,7 @@ export default function ChatsPage() {
   };
 
   return (
-    <div className="flex h-[calc(100vh-64px)] overflow-hidden">
+    <div className="flex h-full overflow-hidden">
       {conversationsQuery.isError ? (
         <div className="flex flex-1 items-center justify-center p-4">
           <Alert variant="destructive" className="max-w-md"><AlertDescription>{t("chats.loadError")}</AlertDescription></Alert>
