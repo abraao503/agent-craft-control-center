@@ -156,6 +156,9 @@ export function OperationalChannelsManager({
     channels.find((channel) => channel.active)?.id ?? "";
   const channelDialogPending =
     channelMutations.create.isPending || channelMutations.update.isPending;
+  const metaOnboardingPending =
+    channelMutations.startMetaOnboarding.isPending ||
+    channelMutations.completeMetaOnboarding.isPending;
   const routeDialogPending =
     routeMutations.create.isPending || routeMutations.update.isPending;
   const canOpenCreateChannel =
@@ -548,16 +551,24 @@ export function OperationalChannelsManager({
       <OperationalChannelDialog
         open={channelDialogOpen}
         channel={editingChannel}
+        workspaceId={workspaceId}
         defaultProvider={defaultProvider}
         providers={providersQuery.data ?? []}
         providersLoading={providersQuery.isLoading}
-        canViewIntegrations={has("view:integrations")}
+        canManageConnection={canConnectChannels}
         isPending={channelDialogPending}
+        isOnboardingPending={metaOnboardingPending}
         onOpenChange={(open) => {
           setChannelDialogOpen(open);
           if (!open) setEditingChannel(null);
         }}
         onSubmit={handleChannelSubmit}
+        onStartMetaOnboarding={() =>
+          channelMutations.startMetaOnboarding.mutateAsync()
+        }
+        onCompleteMetaOnboarding={(body) =>
+          channelMutations.completeMetaOnboarding.mutateAsync(body)
+        }
       />
 
       <OperationalRouteDialog

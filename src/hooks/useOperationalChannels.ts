@@ -6,9 +6,12 @@ import { activateOperationalChannel } from "@/services/operation/activateOperati
 import { listOperationalChannelProviders } from "@/services/operation/listOperationalChannelProviders";
 import { listOperationalChannels } from "@/services/operation/listOperationalChannels";
 import { requestOperationalChannelQrCode } from "@/services/operation/requestOperationalChannelQrCode";
+import { startOperationalMetaOnboarding } from "@/services/operation/startOperationalMetaOnboarding";
+import { completeOperationalMetaOnboarding } from "@/services/operation/completeOperationalMetaOnboarding";
 import { updateOperationalChannel } from "@/services/operation/updateOperationalChannel";
 import {
   ActivateOperationalChannelParams,
+  CompleteOperationalMetaOnboardingBody,
   CreateOperationalChannelParams,
   DeactivateOperationalChannelParams,
   RequestOperationalChannelQrCodeParams,
@@ -69,6 +72,9 @@ export function useOperationalChannelMutations(workspaceId?: string) {
       }),
       queryClient.invalidateQueries({
         queryKey: ["operation-setup", resolvedWorkspaceId],
+      }),
+      queryClient.invalidateQueries({
+        queryKey: ["operation-meta-phone-numbers", resolvedWorkspaceId],
       }),
     ]);
   };
@@ -152,5 +158,37 @@ export function useOperationalChannelMutations(workspaceId?: string) {
     },
   });
 
-  return { create, update, deactivate, activate, requestQrCode };
+  const startMetaOnboarding = useMutation({
+    mutationFn: () => {
+      if (!resolvedWorkspaceId) {
+        throw new Error("Workspace operacional não selecionado");
+      }
+
+      return startOperationalMetaOnboarding(resolvedWorkspaceId);
+    },
+  });
+
+  const completeMetaOnboarding = useMutation({
+    mutationFn: (body: CompleteOperationalMetaOnboardingBody) => {
+      if (!resolvedWorkspaceId) {
+        throw new Error("Workspace operacional não selecionado");
+      }
+
+      return completeOperationalMetaOnboarding({
+        workspaceId: resolvedWorkspaceId,
+        body,
+      });
+    },
+    onSuccess: invalidateChannels,
+  });
+
+  return {
+    create,
+    update,
+    deactivate,
+    activate,
+    requestQrCode,
+    startMetaOnboarding,
+    completeMetaOnboarding,
+  };
 }
