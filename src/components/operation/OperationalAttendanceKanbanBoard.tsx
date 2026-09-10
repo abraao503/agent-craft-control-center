@@ -254,7 +254,7 @@ function OperationalAttendanceKanbanColumn({
     <Card
       ref={setNodeRef}
       className={cn(
-        "flex h-full min-h-[30rem] w-[min(22rem,calc(100vw-2rem))] flex-col overflow-hidden border-border/80 bg-background/80 shadow-sm transition-shadow sm:w-[22rem]",
+        "flex h-full min-h-0 w-[min(22rem,calc(100vw-2rem))] flex-col overflow-hidden border-border/80 bg-background/80 shadow-sm transition-shadow sm:w-[22rem]",
         isOver && "ring-2 ring-primary/60 ring-offset-2",
       )}
     >
@@ -281,8 +281,8 @@ function OperationalAttendanceKanbanColumn({
         </p>
       </CardHeader>
 
-      <CardContent className="min-h-0 flex-1 p-2">
-        <ScrollArea className="h-[calc(100vh-15rem)] min-h-[23rem] pr-2">
+      <CardContent className="flex min-h-0 flex-1 flex-col p-2">
+        <ScrollArea className="min-h-0 flex-1 pr-2">
           {column.items.length > 0 ? (
             <div className="space-y-2">
               {column.items.map((attendance) => (
@@ -297,7 +297,7 @@ function OperationalAttendanceKanbanColumn({
               ))}
             </div>
           ) : (
-            <div className="flex min-h-[23rem] flex-col items-center justify-center gap-2 px-5 text-center">
+            <div className="flex min-h-[14rem] flex-col items-center justify-center gap-2 px-5 py-6 text-center">
               <Inbox className="h-7 w-7 text-muted-foreground/70" />
               <p className="text-sm font-medium">Nenhum atendimento</p>
               <p className="text-xs leading-5 text-muted-foreground">
@@ -585,7 +585,7 @@ function KanbanBoardSkeleton() {
         {STATUS_ORDER.map((status) => (
           <Card
             key={status}
-            className="flex h-full min-h-[30rem] w-[min(22rem,calc(100vw-2rem))] flex-col sm:w-[22rem]"
+            className="flex h-full min-h-0 w-[min(22rem,calc(100vw-2rem))] flex-col sm:w-[22rem]"
           >
             <CardHeader className="space-y-3 border-b p-3">
               <div className="flex items-center justify-between">

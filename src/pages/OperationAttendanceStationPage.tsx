@@ -127,8 +127,8 @@ export default function OperationAttendanceStationPage() {
 
 function EmptyStationDetail() {
   return (
-    <Card className="h-full min-h-[32rem] rounded-none border-0 shadow-none">
-      <CardContent className="flex h-full min-h-[32rem] items-center justify-center bg-muted/10 p-8">
+    <Card className="h-full min-h-0 rounded-none border-0 shadow-none">
+      <CardContent className="flex h-full min-h-0 items-center justify-center bg-muted/10 p-8">
         <div className="max-w-md rounded-lg border bg-card p-6 shadow-sm">
           <MessageSquare className="h-6 w-6 text-primary" />
           <h2 className="mt-4 text-lg font-semibold">Escolha um atendimento</h2>
