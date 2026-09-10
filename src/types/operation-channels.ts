@@ -13,8 +13,6 @@ export type OperationalChannelRouteConfigurationStatus =
   | "INCOMPLETE"
   | "VALID";
 
-export type OperationalChannelRouteTrafficStatus = "BLOCKED_BY_RUNTIME";
-
 export type OperationalChannelMenuOptionAction =
   | "START_EXTERNAL_AGENT"
   | "ROUTE"
@@ -93,7 +91,6 @@ export interface OperationalChannelRouteDestination {
 export interface OperationalChannelRouteSummary {
   configured: boolean;
   configurationStatus: OperationalChannelRouteConfigurationStatus;
-  trafficStatus: OperationalChannelRouteTrafficStatus;
   entryMode: OperationalChannelEntryMode | null;
   missing: OperationalChannelRouteMissing[];
   diagnostic: {
@@ -143,7 +140,6 @@ export interface OperationalChannelRoute {
   active: boolean;
   configured: boolean;
   configurationStatus: OperationalChannelRouteConfigurationStatus;
-  trafficStatus: OperationalChannelRouteTrafficStatus;
   missing: OperationalChannelRouteMissing[];
   destinations: {
     triageAgent: OperationalChannelRouteDestination | null;

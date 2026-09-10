@@ -41,7 +41,10 @@ export function OperationalSyntheticConsole({
   const { has } = usePermissions();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const canRunHarness = has("manage:operation-channels");
+  const isLocalEnvironment =
+    import.meta.env.DEV && import.meta.env.VITE_APP_ENV === "development";
+  const canRunHarness =
+    isLocalEnvironment && has("manage:operation-channels");
   const channelsQuery = useOperationalChannels(
     workspaceId,
     1,

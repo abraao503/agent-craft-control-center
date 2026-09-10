@@ -3,7 +3,6 @@ import {
   AlertCircle,
   CheckCircle2,
   ChevronDown,
-  Info,
   Loader2,
   MoreHorizontal,
   Pencil,
@@ -436,27 +435,6 @@ export function OperationalChannelsManager({
         </div>
       </header>
 
-      <Alert>
-        <Info className="h-4 w-4" />
-        <AlertTitle>Recebimento de mensagens ainda indisponível</AlertTitle>
-        <AlertDescription className="mt-1">
-          <p>
-            As conexões podem ser configuradas e validadas, mas o recebimento de mensagens ainda não está habilitado.
-          </p>
-          <Collapsible>
-            <CollapsibleTrigger asChild>
-              <Button variant="link" size="sm" className="mt-1 h-auto px-0 text-muted-foreground">
-                Ver detalhes técnicos
-                <ChevronDown className="h-3.5 w-3.5" />
-              </Button>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="pt-1 text-xs text-muted-foreground">
-              O recebimento e o envio de mensagens permanecem bloqueados por enquanto; assistentes de atendimento estarão disponíveis em uma etapa futura.
-            </CollapsibleContent>
-          </Collapsible>
-        </AlertDescription>
-      </Alert>
-
       {routesQuery.isError ? (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
@@ -732,7 +710,6 @@ function OperationalChannelCard({
   onRefresh: () => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
-  const runtimeBlocked = channel.route.trafficStatus === "BLOCKED_BY_RUNTIME";
   const routeUnavailable = isRouteError && channel.route.configured && !route;
   const routeStatus = routeUnavailable
     ? "Rota indisponível"
@@ -743,7 +720,19 @@ function OperationalChannelCard({
     : "Sem rota ativa";
   const channelName = channel.displayName || channel.providerAlias;
   const canOpenRoute = !channel.route.configured || Boolean(route);
-  const routeIsValid = !routeUnavailable && channel.route.configurationStatus === "VALID";
+  const routeIsValid =
+    !routeUnavailable && channel.route.configurationStatus === "VALID";
+  const connectionReady = ["CONNECTED", "OPEN"].includes(
+    channel.connectionStatus.toUpperCase(),
+  );
+  const channelReady = channel.active && routeIsValid && connectionReady;
+  const availabilityMessage = !channel.active
+    ? "Conexão desativada"
+    : !routeIsValid
+      ? "Configure uma rota válida para liberar o tráfego"
+      : connectionReady
+        ? "Conexão pronta para tráfego"
+        : `Conexão pendente: ${getOperationalStatusLabel(channel.connectionStatus)}`;
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
@@ -774,17 +763,15 @@ function OperationalChannelCard({
                 </Badge>
               </div>
 
-              <div className="mt-3 flex items-start gap-2 text-sm">
-                {runtimeBlocked ? (
+              <div className="mt-3 flex items-start gap-2 text-sm" aria-live="polite">
+                {channelReady ? (
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-green-600" />
+                ) : channel.active ? (
                   <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
                 ) : (
-                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-green-600" />
+                  <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
                 )}
-                <span className="font-medium">
-                  {runtimeBlocked
-                    ? "Configurado, mas ainda não recebe atendimentos"
-                    : "Disponível para receber atendimentos"}
-                </span>
+                <span className="font-medium">{availabilityMessage}</span>
               </div>
 
               {route ? (
@@ -943,7 +930,7 @@ function OperationalChannelCard({
                   <PropertyRow label="Modo de conexão" value={channel.connectionMode === "provisioned-number" ? "Número provisionado" : "Credenciais próprias"} />
                   <PropertyRow label="Mídia" value={channel.capabilities.supportsMedia ? "Suportada" : "Não suportada"} />
                   <PropertyRow label="QR Code" value={channel.capabilities.supportsQr ? "Suportado" : "Não suportado"} />
-                  <PropertyRow label="Execução" value={runtimeBlocked ? "Bloqueada por enquanto; Assistentes em etapa futura" : "Disponível"} />
+                  <PropertyRow label="Disponibilidade" value={availabilityMessage} />
                 </div>
               </CollapsibleContent>
             </Collapsible>
@@ -955,11 +942,10 @@ function OperationalChannelCard({
                     size="sm"
                     variant="outline"
                     onClick={() => onActivate(channel)}
-                    disabled={runtimeBlocked || isActivationPending}
-                    title={runtimeBlocked ? "Ativação bloqueada por enquanto" : undefined}
+                    disabled={isActivationPending}
                   >
                     <CheckCircle2 className="h-4 w-4" />
-                    {runtimeBlocked ? "Ativação indisponível" : "Ativar conexão"}
+                    Ativar conexão
                   </Button>
                 ) : null}
                 {channel.capabilities.supportsQr ? (
@@ -967,11 +953,10 @@ function OperationalChannelCard({
                     size="sm"
                     variant="outline"
                     onClick={() => onRequestQrCode(channel)}
-                    disabled={!channel.active || runtimeBlocked || isQrPending}
-                    title={runtimeBlocked ? "QR Code indisponível por enquanto" : undefined}
+                    disabled={!channel.active || isQrPending}
                   >
                     <QrCode className="h-4 w-4" />
-                    {runtimeBlocked ? "QR Code indisponível" : "Solicitar QR Code"}
+                    Solicitar QR Code
                   </Button>
                 ) : null}
               </div>
