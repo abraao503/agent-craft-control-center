@@ -199,9 +199,15 @@ function loadMetaFacebookSdk(
         return;
       }
 
+      try {
+        initializeMetaFacebookSdk(window.FB, onboarding);
+      } catch {
+        settleFailure();
+        return;
+      }
+
       settled = true;
       window.clearTimeout(timeoutId);
-      initializeMetaFacebookSdk(window.FB, onboarding);
       if (window.fbAsyncInit === handleAsyncInit) {
         window.fbAsyncInit = previousAsyncInit;
       }

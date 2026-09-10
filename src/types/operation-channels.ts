@@ -184,6 +184,14 @@ export interface OperationalChannelQrCode {
   qrCode: string;
 }
 
+export interface ActivateOperationalChannelData {
+  channelId: string;
+  active: boolean;
+  status: string;
+  connectionStatus: string;
+  webhookUrl: string;
+}
+
 export interface OperationalMetaPhoneNumberAvailability {
   id: string;
   phoneNumberId: string;

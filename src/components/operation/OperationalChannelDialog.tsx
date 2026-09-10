@@ -356,7 +356,7 @@ export function OperationalChannelDialog({
                 <p className="text-xs text-muted-foreground">
                   {channel
                     ? "Deixe em branco para manter o valor atual. Os campos são somente para gravação (não podem ser lidos depois)."
-                    : "Os valores são enviados somente na gravação e nunca aparecem na listagem."}
+                    : "Os valores são enviados somente na gravação e nunca aparecem na listagem. Ao ativar, a API registra o webhook operacional no provedor."}
                 </p>
               </div>
               <SecretField

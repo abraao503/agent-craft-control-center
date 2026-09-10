@@ -119,6 +119,7 @@ export function OperationalChannelsManager({
   const [channelToDeactivate, setChannelToDeactivate] =
     useState<OperationalChannel | null>(null);
   const [qrCode, setQrCode] = useState<QrCodeState | null>(null);
+  const [webhookUrls, setWebhookUrls] = useState<Record<string, string>>({});
 
   const canManageChannels = has("manage:operation-channels");
   const canManageTriageAgents = has("manage:operation-setup");
@@ -176,6 +177,10 @@ export function OperationalChannelsManager({
     await Promise.all([channelsQuery.refetch(), routesQuery.refetch()]);
   };
 
+  const refreshOperationalState = async () => {
+    await Promise.all([channelsQuery.refetch(), routesQuery.refetch()]);
+  };
+
   const staleVersionAction = (error: unknown) =>
     getOperationalErrorCode(error) === "STALE_VERSION" ? (
       <ToastAction
@@ -216,7 +221,7 @@ export function OperationalChannelsManager({
     } catch (error) {
       toast({
         title: "Não foi possível salvar a conexão",
-        description: getOperationalErrorMessage(
+        description: getChannelActionErrorMessage(
           error,
           "Verifique os dados e tente novamente.",
         ),
@@ -312,17 +317,24 @@ export function OperationalChannelsManager({
 
   const handleActivate = async (channel: OperationalChannel) => {
     try {
-      await channelMutations.activate.mutateAsync({
+      const response = await channelMutations.activate.mutateAsync({
         channelId: channel.id,
         idempotencyKey: crypto.randomUUID(),
       });
-      toast({ title: "Conexão ativada" });
+      setWebhookUrls((current) => ({
+        ...current,
+        [channel.id]: response.webhookUrl,
+      }));
+      toast({
+        title: "Conexão ativada",
+        description: "O webhook operacional foi configurado pelo provedor.",
+      });
     } catch (error) {
       toast({
         title: "Ativação bloqueada",
-        description: getOperationalErrorMessage(
+        description: getChannelActionErrorMessage(
           error,
-          "A execução de mensagens ainda não está disponível.",
+          "Não foi possível ativar este provedor. Verifique a rota e tente novamente.",
         ),
         variant: "destructive",
       });
@@ -397,12 +409,31 @@ export function OperationalChannelsManager({
             Configure as conexões e escolha para onde as mensagens de {workspaceName || "este ambiente"} serão direcionadas.
           </p>
         </div>
-        {canConnectChannels ? (
-          <Button onClick={openCreateChannel} disabled={!canOpenCreateChannel}>
-            <Plus className="h-4 w-4" />
-            Nova conexão
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            onClick={() => void refreshOperationalState()}
+            disabled={channelsQuery.isFetching || routesQuery.isFetching}
+          >
+            <RefreshCw
+              className={`h-4 w-4 ${
+                channelsQuery.isFetching || routesQuery.isFetching
+                  ? "animate-spin"
+                  : ""
+              }`}
+            />
+            Atualizar status
           </Button>
-        ) : null}
+          {canConnectChannels ? (
+            <Button
+              onClick={openCreateChannel}
+              disabled={!canOpenCreateChannel}
+            >
+              <Plus className="h-4 w-4" />
+              Nova conexão
+            </Button>
+          ) : null}
+        </div>
       </header>
 
       <Alert>
@@ -507,13 +538,16 @@ export function OperationalChannelsManager({
                 isRouteError={routesQuery.isError}
                 isDeactivationPending={channelMutations.deactivate.isPending}
                 isActivationPending={channelMutations.activate.isPending}
-                isQrPending={channelMutations.requestQrCode.isPending}
-                onEditChannel={openEditChannel}
-                onConfigureRoute={openRouteDialog}
-                onDeactivate={setChannelToDeactivate}
-                onActivate={(item) => void handleActivate(item)}
-                onRequestQrCode={(item) => void handleRequestQrCode(item)}
-              />
+        isQrPending={channelMutations.requestQrCode.isPending}
+        isRefreshing={channelsQuery.isFetching}
+        webhookUrl={webhookUrls[channel.id]}
+        onEditChannel={openEditChannel}
+        onConfigureRoute={openRouteDialog}
+        onDeactivate={setChannelToDeactivate}
+        onActivate={(item) => void handleActivate(item)}
+        onRequestQrCode={(item) => void handleRequestQrCode(item)}
+        onRefresh={() => void refreshOperationalState()}
+      />
             );
           })}
         </div>
@@ -667,11 +701,14 @@ function OperationalChannelCard({
   isDeactivationPending,
   isActivationPending,
   isQrPending,
+  isRefreshing,
+  webhookUrl,
   onEditChannel,
   onConfigureRoute,
   onDeactivate,
   onActivate,
   onRequestQrCode,
+  onRefresh,
 }: {
   channel: OperationalChannel;
   route: OperationalChannelRoute | null;
@@ -682,6 +719,8 @@ function OperationalChannelCard({
   isDeactivationPending: boolean;
   isActivationPending: boolean;
   isQrPending: boolean;
+  isRefreshing: boolean;
+  webhookUrl?: string;
   onEditChannel: (channel: OperationalChannel) => void;
   onConfigureRoute: (
     channel: OperationalChannel,
@@ -690,6 +729,7 @@ function OperationalChannelCard({
   onDeactivate: (channel: OperationalChannel) => void;
   onActivate: (channel: OperationalChannel) => void;
   onRequestQrCode: (channel: OperationalChannel) => void;
+  onRefresh: () => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const runtimeBlocked = channel.route.trafficStatus === "BLOCKED_BY_RUNTIME";
@@ -756,6 +796,18 @@ function OperationalChannelCard({
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={onRefresh}
+                disabled={isRefreshing}
+                title="Atualizar status da conexão"
+              >
+                <RefreshCw
+                  className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
+                />
+                <span className="sr-only sm:not-sr-only">Atualizar</span>
+              </Button>
               {canManageConnection ? (
                 <Button size="sm" variant="outline" onClick={() => onEditChannel(channel)}>
                   <Pencil className="h-4 w-4" />
@@ -800,6 +852,9 @@ function OperationalChannelCard({
                 <PropertyRow label="Credenciais" value={channel.credentialsConfigured ? "Configuradas" : "Incompletas"} attention={!channel.credentialsConfigured} />
                 {channel.metaDisplayPhoneNumber || channel.metaPhoneNumberId ? (
                   <PropertyRow label="Número" value={channel.metaDisplayPhoneNumber || channel.metaPhoneNumberId || "—"} />
+                ) : null}
+                {webhookUrl ? (
+                  <PropertyRow label="Webhook operacional" value={webhookUrl} code />
                 ) : null}
               </div>
             </section>
@@ -943,7 +998,9 @@ function PropertyRow({
     <div className="flex flex-col gap-1 py-2.5 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-4">
       <span className="text-muted-foreground">{label}</span>
       {code ? (
-        <code className="select-all rounded bg-background px-2 py-1 text-xs font-medium">{value}</code>
+        <code className="break-all rounded bg-background px-2 py-1 text-xs font-medium sm:max-w-[70%] sm:text-right">
+          {value}
+        </code>
       ) : (
         <span className={attention ? "font-medium text-amber-700 dark:text-amber-300" : "font-medium"}>{value}</span>
       )}
@@ -1046,4 +1103,18 @@ function buildUpdateChannelBody(
     expectedVersion: channel.version,
     ...(Object.keys(credentials).length ? { credentials } : {}),
   };
+}
+
+function getChannelActionErrorMessage(error: unknown, fallback: string): string {
+  const code = getOperationalErrorCode(error);
+  if (code === "PROVIDER_CREDENTIALS_INCOMPLETE") {
+    return "Complete as credenciais e a URL de postback antes de ativar a conexão.";
+  }
+  if (code === "META_PHONE_NUMBER_IN_USE") {
+    return "Este número já está vinculado a outro canal operacional.";
+  }
+  if (code === "PROVIDER_UNAVAILABLE") {
+    return "O provedor não respondeu. Aguarde alguns instantes e tente novamente.";
+  }
+  return getOperationalErrorMessage(error, fallback);
 }

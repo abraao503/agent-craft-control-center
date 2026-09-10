@@ -1,12 +1,17 @@
 import { api } from "@/services/api";
-import { ActivateOperationalChannelParams } from "@/types/operation-channels";
+import {
+  ActivateOperationalChannelData,
+  ActivateOperationalChannelParams,
+} from "@/types/operation-channels";
 
 export async function activateOperationalChannel(
   params: ActivateOperationalChannelParams,
-): Promise<void> {
-  await api.post<void>(
+): Promise<ActivateOperationalChannelData> {
+  const { data } = await api.post<ActivateOperationalChannelData>(
     `/operation/workspaces/${params.workspaceId}/channels/${params.channelId}/activate`,
     undefined,
     { headers: { "Idempotency-Key": params.idempotencyKey } },
   );
+
+  return data;
 }
