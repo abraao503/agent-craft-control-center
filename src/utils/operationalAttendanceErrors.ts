@@ -46,13 +46,13 @@ export const OPERATIONAL_ATTENDANCE_ERROR_MESSAGES: Record<string, string> = {
 
   // Atribuição e Responsabilidade
   RESPONSIBLE_FIELDS_CONFLICT:
-    "Não é possível definir usuário e assistente de IA simultaneamente.",
+    "Não é possível definir usuário e agente de IA simultaneamente.",
   ASSISTANT_ASSIGNMENT_NOT_SUPPORTED:
-    "Atribuição a assistentes de IA não está habilitada nesta versão.",
+    "Atribuição a agentes de IA não está habilitada nesta versão.",
   ASSISTANT_TRANSFER_NOT_SUPPORTED:
-    "Transferência para assistentes de IA não está habilitada nesta versão.",
+    "Transferência para agentes de IA não está habilitada nesta versão.",
   ASSISTANT_NOT_ELIGIBLE:
-    "O assistente selecionado não está ativo ou elegível para o destino.",
+    "O agente selecionado não está ativo ou elegível para o destino.",
   USER_NOT_ELIGIBLE:
     "O usuário selecionado não é membro ativo da área ou fila de destino.",
 

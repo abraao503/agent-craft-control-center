@@ -51,7 +51,7 @@ export default function OperationAgentsPage() {
         </p>
         <h1 className="mt-2 text-3xl font-semibold tracking-tight">Agentes</h1>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-          Escolha o tipo de recurso que deseja configurar. Assistentes de
+          Escolha o tipo de recurso que deseja configurar. Agentes de
           atendimento são recursos nativos; integrações de triagem conectam
           serviços externos ao fluxo operacional.
         </p>
@@ -61,10 +61,10 @@ export default function OperationAgentsPage() {
         {canViewAssistants ? (
           <AgentCategoryCard
             icon={<Bot className="h-5 w-5 text-primary" />}
-            title="Assistentes de atendimento"
+            title="Agentes de atendimento"
             description="Configure recursos nativos que podem responder atendimentos e participar das rotas de entrada."
             to="/operation/agents/assistants"
-            actionLabel="Configurar assistentes"
+            actionLabel="Configurar agentes"
           />
         ) : null}
 

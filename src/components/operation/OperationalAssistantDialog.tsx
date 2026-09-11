@@ -48,12 +48,12 @@ const assistantFormSchema = z.object({
   function: z
     .string()
     .trim()
-    .min(3, "Informe a função do assistente."),
+    .min(3, "Informe a função do agente."),
   style: z.string().trim().min(3, "Informe o estilo de comunicação."),
   instructions: z
     .string()
     .trim()
-    .min(3, "Informe as instruções do assistente."),
+    .min(3, "Informe as instruções do agente."),
   blacklist: z.string().max(20_000, "A lista de bloqueio é muito longa."),
   links: z.array(
     z.object({
@@ -151,7 +151,7 @@ export function OperationalAssistantDialog({
     if (!assistant && !values.providerCredential.trim()) {
       form.setError("providerCredential", {
         type: "manual",
-        message: "Informe a chave do serviço de IA para criar o assistente.",
+        message: "Informe a chave do serviço de IA para criar o agente.",
       });
       return;
     }
@@ -185,8 +185,8 @@ export function OperationalAssistantDialog({
         <DialogHeader>
           <DialogTitle>
             {assistant
-              ? "Editar assistente de atendimento"
-              : "Novo assistente de atendimento"}
+              ? "Editar agente de atendimento"
+              : "Novo agente de atendimento"}
           </DialogTitle>
           <DialogDescription>
             A configuração pertence somente ao ambiente operacional selecionado.
@@ -198,13 +198,13 @@ export function OperationalAssistantDialog({
           <div className="flex min-h-48 items-center justify-center gap-2">
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             <span className="text-sm text-muted-foreground">
-              Carregando configuração do assistente...
+              Carregando configuração do agente...
             </span>
           </div>
         ) : isDetailsError ? (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Não foi possível carregar o assistente</AlertTitle>
+            <AlertTitle>Não foi possível carregar o agente</AlertTitle>
             <AlertDescription className="flex flex-wrap items-center gap-3">
               {getOperationalAssistantErrorMessage(
                 detailsQuery.error,
@@ -251,7 +251,7 @@ export function OperationalAssistantDialog({
             <section className="space-y-4">
               <SectionHeading
                 title="Identidade e modelo"
-                description="Defina como o assistente será apresentado e qual modelo usará."
+                description="Defina como o agente será apresentado e qual modelo usará."
               />
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field
@@ -262,7 +262,7 @@ export function OperationalAssistantDialog({
                   <Input
                     id="operational-assistant-name"
                     autoComplete="off"
-                    placeholder="Assistente de atendimento"
+                    placeholder="Agente de atendimento"
                     {...form.register("name")}
                   />
                 </Field>
@@ -429,7 +429,7 @@ export function OperationalAssistantDialog({
             <section className="space-y-4 border-t pt-6">
               <SectionHeading
                 title="Comportamento e resposta"
-                description="Defina contexto, áudio e o perfil de resposta do assistente."
+                description="Defina contexto, áudio e o perfil de resposta do agente."
               />
               <Controller
                 control={form.control}
@@ -506,7 +506,7 @@ export function OperationalAssistantDialog({
             <section className="space-y-4 border-t pt-6">
               <SectionHeading
                 title="Instruções e contexto"
-                description="Mantenha as instruções operacionais e referências usadas pelo assistente."
+                description="Mantenha as instruções operacionais e referências usadas pelo agente."
               />
               <Field
                 label="Função"
@@ -552,7 +552,7 @@ export function OperationalAssistantDialog({
                 <Textarea
                   id="operational-assistant-blacklist"
                   className="min-h-24"
-                  placeholder="Tópicos ou orientações que o assistente deve evitar."
+                  placeholder="Tópicos ou orientações que o agente deve evitar."
                   {...form.register("blacklist")}
                 />
               </Field>
@@ -704,7 +704,7 @@ export function OperationalAssistantDialog({
                 ) : assistant ? (
                   "Salvar alterações"
                 ) : (
-                    "Criar assistente de atendimento"
+                    "Criar agente de atendimento"
                 )}
               </Button>
             </DialogFooter>

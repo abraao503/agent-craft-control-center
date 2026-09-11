@@ -22,15 +22,20 @@ export function useOperationalChannels(
   workspaceId?: string,
   page = 1,
   enabled = true,
+  active?: boolean,
 ) {
   return useQuery({
-    queryKey: ["operation-channels", workspaceId, page],
+    queryKey: ["operation-channels", workspaceId, page, active],
     queryFn: () => {
       if (!workspaceId) {
         throw new Error("Workspace operacional não selecionado");
       }
 
-      return listOperationalChannels(workspaceId, { page, limit: 100 });
+      return listOperationalChannels(workspaceId, {
+        page,
+        limit: 100,
+        active,
+      });
     },
     enabled: Boolean(workspaceId && enabled),
   });

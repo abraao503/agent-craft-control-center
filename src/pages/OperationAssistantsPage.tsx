@@ -161,7 +161,7 @@ export default function OperationAssistantsPage() {
           body,
         });
         toast({
-          title: "Assistente de atendimento atualizado",
+          title: "Agente de atendimento atualizado",
           description: "A configuração operacional foi atualizada.",
         });
       } else {
@@ -177,22 +177,22 @@ export default function OperationAssistantsPage() {
         };
         await mutations.create.mutateAsync({ body });
         toast({
-        title: "Assistente de atendimento criado",
-        description: "O assistente já pode ser selecionado em uma rota operacional.",
+        title: "Agente de atendimento criado",
+        description: "O agente já pode ser selecionado em uma rota operacional.",
         });
       }
 
       closeDialog(false);
     } catch (error) {
       toast({
-        title: "Não foi possível salvar o assistente",
+        title: "Não foi possível salvar o agente",
         description: getOperationalAssistantErrorMessage(
           error,
           "Verifique os dados e tente novamente.",
         ),
         action: isOperationalAssistantStaleVersion(error) ? (
           <ToastAction
-            altText="Recarregar assistentes"
+            altText="Recarregar agentes"
             onClick={() => void assistantsQuery.refetch()}
           >
             Recarregar
@@ -211,16 +211,16 @@ export default function OperationAssistantsPage() {
         assistantId: assistantToDeactivate.id,
       });
       toast({
-        title: "Assistente de atendimento desativado",
+        title: "Agente de atendimento desativado",
         description: "O histórico foi preservado e ele saiu das opções ativas.",
       });
       setAssistantToDeactivate(null);
     } catch (error) {
       toast({
-        title: "Não foi possível desativar o assistente",
+        title: "Não foi possível desativar o agente",
         description: getOperationalAssistantErrorMessage(
           error,
-          "O assistente pode estar vinculado a uma rota ou atendimento aberto.",
+          "O agente pode estar vinculado a uma rota ou atendimento aberto.",
         ),
         variant: "destructive",
       });
@@ -234,7 +234,7 @@ export default function OperationAssistantsPage() {
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Seção disponível apenas em ambientes operacionais</AlertTitle>
           <AlertDescription>
-            Selecione um ambiente operacional para administrar assistentes de atendimento.
+            Selecione um ambiente operacional para administrar agentes de atendimento.
           </AlertDescription>
         </Alert>
       </section>
@@ -259,14 +259,14 @@ export default function OperationAssistantsPage() {
             Administração operacional
           </p>
           <h1 className="mt-2 text-3xl font-semibold tracking-tight">
-            Assistentes de atendimento
+            Agentes de atendimento
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-            Configure os assistentes nativos deste ambiente e escolha quais podem
+            Configure os agentes nativos deste ambiente e escolha quais podem
             receber uma rota de entrada.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex gap-2">
           {canManageChannels ? (
             <Link
               to="/operation/channels"
@@ -279,13 +279,9 @@ export default function OperationAssistantsPage() {
           {canCreateAssistant ? (
             <Button onClick={openCreateDialog}>
               <Plus className="h-4 w-4" />
-              Novo assistente de atendimento
+              Novo agente de atendimento
             </Button>
           ) : null}
-          <Badge variant="outline" className="h-10 gap-2 px-3">
-            <Settings2 className="h-4 w-4" />
-            {currentWorkspace.name}
-          </Badge>
         </div>
       </header>
 
@@ -303,13 +299,13 @@ export default function OperationAssistantsPage() {
         <Card>
           <CardContent className="flex min-h-48 items-center justify-center gap-2">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            <span className="sr-only">Carregando assistentes de atendimento</span>
+            <span className="sr-only">Carregando agentes de atendimento</span>
           </CardContent>
         </Card>
       ) : assistantsQuery.isError ? (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Não foi possível carregar os assistentes</AlertTitle>
+          <AlertTitle>Não foi possível carregar os agentes</AlertTitle>
           <AlertDescription className="flex flex-wrap items-center gap-3">
             {getOperationalAssistantErrorMessage(
               assistantsQuery.error,
@@ -329,9 +325,9 @@ export default function OperationAssistantsPage() {
       ) : (
         <Card>
           <CardHeader>
-            <CardTitle>Assistentes de atendimento deste ambiente</CardTitle>
+            <CardTitle>Agentes de atendimento deste ambiente</CardTitle>
             <CardDescription>
-              Somente assistentes ativos aparecem como destino de novas rotas.
+              Somente agentes ativos aparecem como destino de novas rotas.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -351,16 +347,16 @@ export default function OperationAssistantsPage() {
             ) : (
               <div className="rounded-lg border border-dashed p-8 text-center">
                 <Bot className="mx-auto h-8 w-8 text-muted-foreground" />
-                <p className="mt-3 font-medium">Nenhum assistente de atendimento</p>
+                <p className="mt-3 font-medium">Nenhum agente de atendimento</p>
                 <p className="mt-1 text-sm text-muted-foreground">
                   {canCreateAssistant
-                    ? "Crie o primeiro assistente para habilitar rotas com IA."
-                    : "Um administrador da empresa ainda não configurou um assistente."}
+                    ? "Crie o primeiro agente para habilitar rotas com IA."
+                    : "Um administrador da empresa ainda não configurou um agente."}
                 </p>
                 {canCreateAssistant ? (
                   <Button className="mt-4" onClick={openCreateDialog}>
                     <Plus className="h-4 w-4" />
-                    Criar assistente de atendimento
+                    Criar agente de atendimento
                   </Button>
                 ) : null}
               </div>
@@ -397,9 +393,9 @@ export default function OperationAssistantsPage() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Desativar assistente de atendimento?</AlertDialogTitle>
+            <AlertDialogTitle>Desativar agente de atendimento?</AlertDialogTitle>
             <AlertDialogDescription>
-              O assistente “{assistantToDeactivate?.name}” ficará fora das novas
+              O agente “{assistantToDeactivate?.name}” ficará fora das novas
               opções. A API bloqueia a ação se ainda houver rota ativa ou
               atendimento aberto vinculado a ele.
             </AlertDialogDescription>

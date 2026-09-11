@@ -82,7 +82,7 @@ const SECONDARY_STATUSES: AttendanceStatus[] = [
 const MESSAGE_SENDER_LABELS = {
   CUSTOMER: "Cliente",
   HUMAN: "Operador",
-  ASSISTANT: "Assistente",
+  ASSISTANT: "Agente",
 } as const;
 
 type FilterDraft = {

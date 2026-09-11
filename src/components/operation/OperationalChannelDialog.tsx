@@ -284,7 +284,7 @@ export function OperationalChannelDialog({
           <DialogDescription>
             {channel
               ? "Atualize o nome ou substitua credenciais. A API nunca devolve secrets já gravados."
-              : "Conecte um provedor a este ambiente operacional. A conexão será criada como rascunho até a rota ficar válida."}
+              : "Conecte um provedor a este ambiente operacional. Depois de salvar, configure a rota de entrada para liberar a ativação."}
           </DialogDescription>
         </DialogHeader>
 
@@ -393,7 +393,8 @@ export function OperationalChannelDialog({
           {selectedProvider === "evolux" ? (
             <div className="rounded-md border bg-muted/20 p-4 text-sm text-muted-foreground">
               A instância Evolux é provisionada pela API. Depois de salvar, a
-              conexão ainda aguardará uma rota válida e a liberação do recebimento de mensagens.
+              tela abrirá a configuração da rota de entrada antes de liberar a
+              ativação e o recebimento de mensagens.
             </div>
           ) : null}
 

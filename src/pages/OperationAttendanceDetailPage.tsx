@@ -1030,7 +1030,7 @@ function ConversationMessage({ message }: { message: AttendanceMessageItem }) {
       ? "Cliente"
       : message.sender === "HUMAN"
         ? message.sentByUser?.name || "Operador"
-        : "Assistente";
+        : "Agente";
   const content = message.content?.trim();
   const hasMedia = message.type.toLowerCase() !== "text";
 
@@ -1193,7 +1193,7 @@ function getReplyStatusVariant(
 
 function formatActor(actorType: AttendanceEvent["actorType"]) {
   if (actorType === "USER") return "operador";
-  if (actorType === "ASSISTANT") return "assistente";
+  if (actorType === "ASSISTANT") return "agente";
   if (actorType === "INTEGRATION") return "agente externo";
   return "sistema";
 }

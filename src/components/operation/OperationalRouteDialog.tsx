@@ -20,6 +20,7 @@ import { ServiceArea, ServiceQueue } from "@/types/operation";
 import {
   OPERATIONAL_CHANNEL_ENTRY_MODE_LABELS,
   OPERATIONAL_CHANNEL_MENU_ACTION_LABELS,
+  OPERATIONAL_CHANNEL_PROVIDER_LABELS,
 } from "@/components/operation/operationalChannelLabels";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -87,7 +88,7 @@ const routeFormSchema = z
     channelId: z.string().uuid("Selecione um canal"),
     entryMode: z.enum(["TRIAGE", "QUEUE", "ASSISTANT", "EXTERNAL_AGENT"]),
     triageAgentId: z.string().uuid("Selecione uma integração de triagem").nullable(),
-    assistantId: z.string().uuid("Selecione um assistente de atendimento").nullable(),
+    assistantId: z.string().uuid("Selecione um agente de atendimento").nullable(),
     targetAreaId: z.string().uuid("Selecione uma área").nullable(),
     targetQueueId: z.string().uuid("Selecione uma fila").nullable(),
     fallbackAreaId: z.string().uuid("Selecione uma área alternativa").nullable(),
@@ -128,7 +129,7 @@ const routeFormSchema = z
         context.addIssue({
           code: z.ZodIssueCode.custom,
           path: ["assistantId"],
-          message: "Selecione o assistente de atendimento de entrada",
+          message: "Selecione o agente de atendimento de entrada",
         });
       }
       if (!values.fallbackAreaId) {
@@ -225,8 +226,8 @@ export type OperationalRouteFormValues = z.infer<typeof routeFormSchema>;
 type OperationalRouteDialogProps = {
   open: boolean;
   route: OperationalChannelRoute | null;
+  channel: OperationalChannel | null;
   defaultChannelId: string;
-  channels: OperationalChannel[];
   areas: ServiceArea[];
   queues: ServiceQueue[];
   assistants: OperationalAssistantOption[];
@@ -243,8 +244,8 @@ type OperationalRouteDialogProps = {
 export function OperationalRouteDialog({
   open,
   route,
+  channel,
   defaultChannelId,
-  channels,
   areas,
   queues,
   assistants,
@@ -322,18 +323,6 @@ export function OperationalRouteDialog({
     }
   };
 
-  const channelOptions = addCurrentOption(
-    channels
-      .filter((channel) => channel.active)
-      .map((channel) => ({
-        id: channel.id,
-        name: channel.displayName || channel.providerAlias,
-        active: channel.active,
-      })),
-    route?.channelId,
-    channels.find((channel) => channel.id === route?.channelId)?.displayName ||
-      "Canal atual (desativado)",
-  );
   const areaOptions = addCurrentOption(
     areas.filter((area) => area.active),
     route?.targetAreaId,
@@ -384,19 +373,23 @@ export function OperationalRouteDialog({
             {route ? "Editar rota de entrada" : "Nova rota de entrada"}
           </DialogTitle>
           <DialogDescription>
-            Salve uma rota coerente com os destinos deste ambiente. A integração
-            de triagem só será usada quando a configuração e o recebimento de
-            mensagens estiverem disponíveis.
+            {route
+              ? "Atualize o destino e o modo de entrada desta conexão."
+              : "Defina como as mensagens desta conexão entrarão na operação."} A
+            integração de triagem só será usada quando a configuração e o
+            recebimento de mensagens estiverem disponíveis.
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-5">
+          <input type="hidden" {...form.register("channelId")} />
+
           {optionsError ? (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Não foi possível carregar os destinos</AlertTitle>
               <AlertDescription className="flex flex-wrap items-center gap-3">
-                Atualize as áreas, filas, assistentes e integrações antes de salvar a rota.
+                Atualize as áreas, filas, agentes e integrações antes de salvar a rota.
                 <Button
                   type="button"
                   size="sm"
@@ -411,18 +404,19 @@ export function OperationalRouteDialog({
           ) : null}
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <SelectField
-              label="Canal"
-              value={form.watch("channelId")}
-              placeholder={optionsLoading ? "Carregando canais..." : "Selecione um canal"}
-              disabled={Boolean(route) || isPending || optionsLoading || optionsError}
-              error={form.formState.errors.channelId?.message}
-              onValueChange={(value) => form.setValue("channelId", value, { shouldValidate: true })}
-              options={channelOptions.map((channel) => ({
-                id: channel.id,
-                label: `${channel.name}${channel.active ? "" : " · desativado"}`,
-              }))}
-            />
+            <div className="rounded-md border bg-muted/20 p-3">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Canal da rota
+              </p>
+              <p className="mt-1 truncate text-sm font-semibold">
+                {channel?.displayName || channel?.providerAlias || "Canal selecionado"}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {channel
+                  ? `${OPERATIONAL_CHANNEL_PROVIDER_LABELS[channel.provider]} · esta rota será vinculada a este canal`
+                  : "A rota será vinculada ao canal selecionado."}
+              </p>
+            </div>
             <SelectField
               label="Modo de entrada"
               value={entryMode}
@@ -445,7 +439,7 @@ export function OperationalRouteDialog({
               : entryMode === "QUEUE"
                 ? "Cada entrada será encaminhada para a área e a fila selecionadas."
                 : entryMode === "ASSISTANT"
-                  ? "O assistente de atendimento fica registrado como destino e usa as áreas alternativas configuradas."
+                  ? "O agente de atendimento fica registrado como destino e usa as áreas alternativas configuradas."
                   : "O chatbot apresenta um menu de entrada com as opções configuradas e usa a integração de triagem na conversa; o encaminhamento humano recebe as falhas e os destinos de fila."}
           </div>
 
@@ -673,14 +667,14 @@ export function OperationalRouteDialog({
           {entryMode === "ASSISTANT" ? (
             <div className="space-y-4 rounded-md border p-4">
               <SelectField
-                label="Assistente de atendimento de entrada"
+                label="Agente de atendimento de entrada"
                 value={form.watch("assistantId")}
                 placeholder={
                   optionsError
                     ? "Opções indisponíveis"
                     : optionsLoading
-                      ? "Carregando assistentes..."
-                      : "Selecione um assistente de atendimento"
+                      ? "Carregando agentes..."
+                      : "Selecione um agente de atendimento"
                 }
                 disabled={isPending || optionsLoading || optionsError}
                 unavailable={optionsError}

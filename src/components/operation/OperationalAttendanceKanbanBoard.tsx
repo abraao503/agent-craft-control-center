@@ -95,7 +95,7 @@ const COLUMN_DROPZONE_IDS: Record<AttendanceStatus, string> = {
 const MESSAGE_SENDER_LABELS = {
   CUSTOMER: "Cliente",
   HUMAN: "Operador",
-  ASSISTANT: "Assistente",
+  ASSISTANT: "Agente",
 } as const;
 
 const ACTION_LABELS: Record<OperationalKanbanMoveAction, string> = {

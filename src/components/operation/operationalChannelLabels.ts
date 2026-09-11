@@ -20,7 +20,7 @@ export const OPERATIONAL_CHANNEL_ENTRY_MODE_LABELS: Record<
 > = {
   TRIAGE: "Triagem",
   QUEUE: "Fila",
-  ASSISTANT: "Assistente de atendimento",
+  ASSISTANT: "Agente de atendimento",
   EXTERNAL_AGENT: "Integração de triagem",
 };
 
@@ -39,7 +39,7 @@ export const OPERATIONAL_CHANNEL_ROUTE_MISSING_LABELS: Record<
 > = {
   route: "rota",
   TRIAGE_AGENT: "integração de triagem",
-  ASSISTANT: "assistente de atendimento ativo",
+  ASSISTANT: "agente de atendimento ativo",
   TARGET_AREA: "área de entrada",
   TARGET_QUEUE: "fila de entrada",
   FALLBACK_AREA: "área alternativa",
@@ -87,7 +87,7 @@ const ERROR_LABELS: Record<string, string> = {
   STALE_VERSION:
     "O recurso foi alterado por outra pessoa. Atualize a lista e tente novamente.",
   ASSISTANT_NOT_FOUND:
-    "O assistente de atendimento não está ativo neste ambiente.",
+    "O agente de atendimento não está ativo neste ambiente.",
   TRIAGE_AGENT_NOT_FOUND:
     "A integração de triagem não está ativa neste ambiente.",
   HARNESS_DISABLED:
