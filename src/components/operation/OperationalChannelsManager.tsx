@@ -75,6 +75,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { OperationalChannelDialog, OperationalChannelFormValues } from "@/components/operation/OperationalChannelDialog";
+import { OperationalMetaManualAccountCard } from "@/components/operation/OperationalMetaManualAccountCard";
 import {
   OperationalRouteDialog,
   OperationalRouteFormValues,
@@ -156,9 +157,6 @@ export function OperationalChannelsManager({
     providersQuery.data?.[0]?.name ?? "z-api";
   const channelDialogPending =
     channelMutations.create.isPending || channelMutations.update.isPending;
-  const metaOnboardingPending =
-    channelMutations.startMetaOnboarding.isPending ||
-    channelMutations.completeMetaOnboarding.isPending;
   const routeDialogPending =
     routeMutations.create.isPending || routeMutations.update.isPending;
   const canOpenCreateChannel =
@@ -460,6 +458,8 @@ export function OperationalChannelsManager({
         </Alert>
       ) : null}
 
+      <OperationalMetaManualAccountCard workspaceId={workspaceId} />
+
       {channelsQuery.isLoading ? (
         <Card>
           <CardContent className="flex min-h-48 items-center justify-center">
@@ -574,18 +574,11 @@ export function OperationalChannelsManager({
         providersLoading={providersQuery.isLoading}
         canManageConnection={canConnectChannels}
         isPending={channelDialogPending}
-        isOnboardingPending={metaOnboardingPending}
         onOpenChange={(open) => {
           setChannelDialogOpen(open);
           if (!open) setEditingChannel(null);
         }}
         onSubmit={handleChannelSubmit}
-        onStartMetaOnboarding={() =>
-          channelMutations.startMetaOnboarding.mutateAsync()
-        }
-        onCompleteMetaOnboarding={(body) =>
-          channelMutations.completeMetaOnboarding.mutateAsync(body)
-        }
       />
 
       <OperationalRouteDialog

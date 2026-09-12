@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect } from "react";
 import {
   useForm,
   Controller,
@@ -9,17 +9,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
 import { listOperationalMetaPhoneNumbers } from "@/services/operation/listOperationalMetaPhoneNumbers";
 import {
-  launchOperationalMetaEmbeddedSignup,
-  OperationalMetaEmbeddedSignupError,
-} from "@/services/operation/launchOperationalMetaEmbeddedSignup";
-import {
-  CompleteOperationalMetaOnboardingBody,
-  CompleteOperationalMetaOnboardingData,
   OperationalChannel,
   OperationalChannelProvider,
   OperationalChannelProviderName,
   OperationalMetaPhoneNumberAvailability,
-  StartOperationalMetaOnboardingData,
 } from "@/types/operation-channels";
 import {
   OPERATIONAL_CHANNEL_PROVIDER_LABELS,
@@ -64,15 +57,6 @@ const channelFormSchema = z.object({
 
 export type OperationalChannelFormValues = z.infer<typeof channelFormSchema>;
 
-type MetaOnboardingState =
-  | { phase: "idle" }
-  | { phase: "starting" }
-  | { phase: "waiting"; data: StartOperationalMetaOnboardingData }
-  | { phase: "completing"; phoneNumberId: string }
-  | { phase: "success"; data: CompleteOperationalMetaOnboardingData }
-  | { phase: "cancelled" }
-  | { phase: "error"; message: string };
-
 type OperationalChannelDialogProps = {
   open: boolean;
   channel: OperationalChannel | null;
@@ -82,13 +66,8 @@ type OperationalChannelDialogProps = {
   providersLoading: boolean;
   canManageConnection: boolean;
   isPending: boolean;
-  isOnboardingPending: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (values: OperationalChannelFormValues) => Promise<void>;
-  onStartMetaOnboarding: () => Promise<StartOperationalMetaOnboardingData>;
-  onCompleteMetaOnboarding: (
-    body: CompleteOperationalMetaOnboardingBody,
-  ) => Promise<CompleteOperationalMetaOnboardingData>;
 };
 
 export function OperationalChannelDialog({
@@ -100,16 +79,9 @@ export function OperationalChannelDialog({
   providersLoading,
   canManageConnection,
   isPending,
-  isOnboardingPending,
   onOpenChange,
   onSubmit,
-  onStartMetaOnboarding,
-  onCompleteMetaOnboarding,
 }: OperationalChannelDialogProps) {
-  const [metaOnboarding, setMetaOnboarding] = useState<MetaOnboardingState>({
-    phase: "idle",
-  });
-  const onboardingAbortRef = useRef<AbortController | null>(null);
   const form = useForm<OperationalChannelFormValues>({
     resolver: zodResolver(channelFormSchema),
     defaultValues: getDefaultValues(channel, defaultProvider),
@@ -132,91 +104,11 @@ export function OperationalChannelDialog({
 
   useEffect(() => {
     if (!open) {
-      onboardingAbortRef.current?.abort();
-      onboardingAbortRef.current = null;
-      setMetaOnboarding({ phase: "idle" });
       return;
     }
 
     form.reset(getDefaultValues(channel, defaultProvider));
-    onboardingAbortRef.current?.abort();
-    onboardingAbortRef.current = null;
-    setMetaOnboarding({ phase: "idle" });
   }, [channel, defaultProvider, form, open]);
-
-  useEffect(() => {
-    if (selectedProvider !== "meta-cloud") {
-      onboardingAbortRef.current?.abort();
-      onboardingAbortRef.current = null;
-      setMetaOnboarding({ phase: "idle" });
-    }
-  }, [selectedProvider]);
-
-  const handleMetaOnboarding = async () => {
-    if (!canManageConnection || isOnboardingPending) return;
-
-    onboardingAbortRef.current?.abort();
-    const abortController = new AbortController();
-    onboardingAbortRef.current = abortController;
-    setMetaOnboarding({ phase: "starting" });
-
-    try {
-      const onboarding = await onStartMetaOnboarding();
-      if (abortController.signal.aborted) return;
-
-      setMetaOnboarding({ phase: "waiting", data: onboarding });
-      const signup = await launchOperationalMetaEmbeddedSignup(
-        onboarding,
-        abortController.signal,
-      );
-      if (abortController.signal.aborted) return;
-
-      setMetaOnboarding({
-        phase: "completing",
-        phoneNumberId: signup.phoneNumberId,
-      });
-      const completed = await onCompleteMetaOnboarding({
-        sessionId: onboarding.sessionId,
-        state: onboarding.state,
-        code: signup.code,
-        wabaId: signup.wabaId,
-        phoneNumberId: signup.phoneNumberId,
-      });
-      if (abortController.signal.aborted) return;
-
-      form.setValue("metaPhoneNumberId", completed.phoneNumberId, {
-        shouldDirty: true,
-        shouldTouch: true,
-        shouldValidate: true,
-      });
-      setMetaOnboarding({ phase: "success", data: completed });
-      void phoneNumbersQuery.refetch();
-    } catch (error) {
-      if (abortController.signal.aborted) return;
-
-      if (
-        error instanceof OperationalMetaEmbeddedSignupError &&
-        error.code === "CANCELLED"
-      ) {
-        setMetaOnboarding({ phase: "cancelled" });
-      } else {
-        setMetaOnboarding({
-          phase: "error",
-          message: "Não foi possível concluir a conexão com a Meta. Tente novamente.",
-        });
-      }
-    } finally {
-      if (onboardingAbortRef.current === abortController) {
-        onboardingAbortRef.current = null;
-      }
-    }
-  };
-
-  const handleCancelMetaOnboarding = () => {
-    onboardingAbortRef.current?.abort();
-    onboardingAbortRef.current = null;
-    setMetaOnboarding({ phase: "cancelled" });
-  };
 
   const handleSubmit = form.handleSubmit(async (values) => {
     if (!channel && values.provider === "z-api") {
@@ -262,17 +154,11 @@ export function OperationalChannelDialog({
     canManageConnection &&
     !phoneNumbersQuery.isError &&
     (phoneNumbersQuery.isLoading || phoneNumbers.length > 0);
-  const connectedPhoneNumber =
-    metaOnboarding.phase === "success"
-      ? phoneNumbers.find(
-          (phone) => phone.phoneNumberId === metaOnboarding.data.phoneNumberId,
-        )
-      : undefined;
-  const isMetaOnboardingActive = [
-    "starting",
-    "waiting",
-    "completing",
-  ].includes(metaOnboarding.phase);
+  const metaPhoneNumbersUnavailable =
+    !channel &&
+    selectedProvider === "meta-cloud" &&
+    !phoneNumbersQuery.isLoading &&
+    phoneNumbers.length === 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -400,34 +286,16 @@ export function OperationalChannelDialog({
 
           {selectedProvider === "meta-cloud" ? (
             <div className="space-y-4 rounded-md border bg-muted/20 p-4">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="space-y-1">
                 <div className="space-y-1">
                   <Label htmlFor="operational-channel-meta-phone-number-id">
-                    Número provisionado
+                    Número para o canal
                   </Label>
                   <p className="text-xs text-muted-foreground">
-                    Conecte o número pela Meta ou selecione um número já
-                    sincronizado com a empresa.
+                    Selecione um número já sincronizado pela conta Meta Cloud
+                    da empresa. A configuração da conta fica na seção acima.
                   </p>
                 </div>
-                {!channel && canManageConnection ? (
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={() => void handleMetaOnboarding()}
-                    disabled={
-                      isPending || isOnboardingPending || isMetaOnboardingActive
-                    }
-                  >
-                    {isOnboardingPending || isMetaOnboardingActive ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : null}
-                    {metaOnboarding.phase === "success"
-                      ? "Conectar outro número"
-                      : "Conectar com a Meta"}
-                  </Button>
-                ) : null}
               </div>
 
               {channel ? (
@@ -469,84 +337,23 @@ export function OperationalChannelDialog({
                     </Select>
                   )}
                 />
-              ) : metaOnboarding.phase !== "success" ? (
-                <Input
-                  id="operational-channel-meta-phone-number-id"
-                  placeholder="phone_number_id da Meta"
-                  disabled={isPending || isMetaOnboardingActive}
-                  {...form.register("metaPhoneNumberId")}
-                />
+              ) : !phoneNumbersQuery.isLoading && !phoneNumbersQuery.isError ? (
+                <div className="rounded-md border border-dashed bg-background p-3 text-sm">
+                  <p className="font-medium">Nenhum número disponível</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Configure e valide a conta Meta Cloud da empresa acima para
+                    sincronizar os números antes de criar este canal.
+                  </p>
+                </div>
               ) : null}
 
-              {metaOnboarding.phase === "starting" ? (
-                <p className="text-sm text-muted-foreground">
-                  Preparando a conexão segura com a Meta...
-                </p>
-              ) : null}
-              {metaOnboarding.phase === "waiting" ? (
-                <div className="space-y-2 rounded-md border border-primary/30 bg-background p-3 text-sm">
-                  <p className="font-medium">Conclua o cadastro na janela da Meta</p>
-                  <p className="text-xs text-muted-foreground">
-                    Autorize o acesso e escolha o número do ambiente
-                    operacional. Nenhum token é exibido nesta tela.
-                  </p>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    onClick={handleCancelMetaOnboarding}
-                  >
-                    Cancelar conexão
-                  </Button>
-                </div>
-              ) : null}
-              {metaOnboarding.phase === "completing" ? (
-                <p className="text-sm text-muted-foreground">
-                  Validando o número selecionado e ativando a conta Meta...
-                </p>
-              ) : null}
-              {metaOnboarding.phase === "cancelled" ? (
-                <p className="text-sm text-muted-foreground">
-                  A conexão foi cancelada. Você pode tentar novamente quando
-                  estiver pronto.
-                </p>
-              ) : null}
-              {metaOnboarding.phase === "error" ? (
-                <p className="text-sm text-destructive">
-                  {metaOnboarding.message}
-                </p>
-              ) : null}
-              {metaOnboarding.phase === "success" ? (
-                <div className="space-y-2 rounded-md border border-green-300 bg-green-50 p-3 text-sm dark:border-green-800 dark:bg-green-950/30">
-                  <p className="font-medium text-green-800 dark:text-green-200">
-                    Número conectado com sucesso
-                  </p>
-                  <div className="grid gap-2 text-xs sm:grid-cols-2">
-                    <Property label="Número" value={connectedPhoneNumber?.displayPhoneNumber || metaOnboarding.data.phoneNumberId} />
-                    <Property label="WABA" value={metaOnboarding.data.wabaId} />
-                  </div>
-                  <p className="text-xs text-green-800/80 dark:text-green-200/80">
-                    Confirme abaixo para criar a conexão deste número neste
-                    ambiente.
-                  </p>
-                </div>
-              ) : null}
               <FieldError
                 message={form.formState.errors.metaPhoneNumberId?.message}
               />
               {!channel && phoneNumbersQuery.isError ? (
                 <p className="text-xs text-muted-foreground">
-                  Não foi possível carregar os números sincronizados. Informe
-                  o ID da Meta manualmente ou conecte um novo número.
-                </p>
-              ) : null}
-              {!channel &&
-              !phoneNumbersQuery.isLoading &&
-              !phoneNumbers.length &&
-              !phoneNumbersQuery.isError ? (
-                <p className="text-xs text-muted-foreground">
-                  Nenhum número Meta sincronizado foi encontrado. Use a
-                  conexão com a Meta acima para cadastrar um número.
+                  Não foi possível carregar os números sincronizados. Atualize
+                  a tela e tente novamente.
                 </p>
               ) : null}
               {!channel && phoneNumbers.some((phone) => phone.boundWorkspaceId) ? (
@@ -571,7 +378,7 @@ export function OperationalChannelDialog({
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
-              disabled={isPending || isOnboardingPending || isMetaOnboardingActive}
+              disabled={isPending}
             >
               Cancelar
             </Button>
@@ -579,9 +386,8 @@ export function OperationalChannelDialog({
               type="submit"
               disabled={
                 isPending ||
-                isOnboardingPending ||
-                isMetaOnboardingActive ||
-                (!channel && providersLoading)
+                (!channel && providersLoading) ||
+                metaPhoneNumbersUnavailable
               }
             >
               {isPending ? (
@@ -646,15 +452,6 @@ function SecretField({
 
 function FieldError({ message }: { message?: string }) {
   return message ? <p className="text-xs text-destructive">{message}</p> : null;
-}
-
-function Property({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="min-w-0">
-      <span className="text-muted-foreground">{label}</span>
-      <p className="break-all font-medium">{value}</p>
-    </div>
-  );
 }
 
 function formatOperationalMetaPhone(

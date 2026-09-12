@@ -60,6 +60,8 @@ const STATUS_LABELS: Record<string, string> = {
   open: "Aberto",
   close: "Fechado",
   connecting: "Conectando",
+  NEEDS_REAUTHORIZATION: "Reautorização necessária",
+  ERROR: "Erro",
 };
 
 const ERROR_LABELS: Record<string, string> = {
@@ -97,6 +99,14 @@ const ERROR_LABELS: Record<string, string> = {
   EVENT_PAYLOAD_CONFLICT:
     "Já existe um evento sintético com os mesmos identificadores e outro conteúdo.",
   INVALID_CUSTOMER_PHONE: "Informe um telefone válido para o contato.",
+  META_MANUAL_ACCOUNT_NOT_FOUND:
+    "A conta Meta manual não foi encontrada para esta empresa.",
+  META_MANUAL_WEBHOOK_NOT_CONFIGURABLE:
+    "O webhook só pode ser configurado para uma conta Meta manual.",
+  META_OPERATIONAL_WEBHOOK_URL_NOT_CONFIGURED:
+    "O endereço público do webhook ainda não foi configurado no servidor.",
+  FAILED_TO_CONFIGURE_META_WEBHOOK:
+    "Não foi possível salvar a configuração do webhook. Tente novamente.",
 };
 
 export function getOperationalErrorCode(error: unknown): string | undefined {
