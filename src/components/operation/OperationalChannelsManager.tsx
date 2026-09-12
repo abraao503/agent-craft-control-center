@@ -433,7 +433,11 @@ export function OperationalChannelsManager({
             mensagens e o próximo passo de cada canal.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <OperationalMetaManualAccountCard
+            workspaceId={workspaceId}
+            presentation="trigger"
+          />
           {canConnectChannels ? (
             <Button onClick={openCreateChannel} disabled={!canOpenCreateChannel}>
               <Plus className="h-4 w-4" />
@@ -470,6 +474,11 @@ export function OperationalChannelsManager({
         </div>
       </header>
 
+      <OperationalMetaManualAccountCard
+        workspaceId={workspaceId}
+        presentation="notice"
+      />
+
       {routesQuery.isError ? (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
@@ -489,18 +498,6 @@ export function OperationalChannelsManager({
           </AlertDescription>
         </Alert>
       ) : null}
-
-      <div className="space-y-2">
-        <div className="px-1">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
-            Configuração da empresa
-          </p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Credenciais compartilhadas pelos ambientes operacionais.
-          </p>
-        </div>
-        <OperationalMetaManualAccountCard workspaceId={workspaceId} />
-      </div>
 
       <div className="space-y-3">
         <div>
