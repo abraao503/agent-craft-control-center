@@ -5,13 +5,13 @@ import {
   ChevronDown,
   Loader2,
   MoreHorizontal,
+  Pause,
   Pencil,
   Plus,
   QrCode,
   RefreshCw,
   Trash2,
   Wifi,
-  XCircle,
 } from "lucide-react";
 import {
   useOperationalChannelRouteMutations,
@@ -82,6 +82,13 @@ import {
   getOperationalErrorMessage,
   getOperationalStatusLabel,
 } from "@/components/operation/operationalChannelLabels";
+import {
+  OperationalChannelStateAction,
+  OperationalChannelStateSpec,
+  OperationalChannelStatusTone,
+  describeOperationalChannelDestination,
+  deriveOperationalChannelStateWithActivation,
+} from "@/components/operation/operationalChannelStatus";
 
 type OperationalChannelsManagerProps = {
   workspaceId?: string;
@@ -739,81 +746,14 @@ function OperationalChannelCard({
     channel.connectionStatus.toUpperCase(),
   );
   const channelReady = channel.active && routeIsValid && connectionReady;
-  const connectionDetail = !channel.active
-    ? "Conexão desativada"
-    : connectionReady
-      ? "Conectada ao provedor"
-      : channel.credentialsConfigured
-        ? "Credenciais configuradas · aguardando conexão"
-        : "Credenciais incompletas";
-  const availabilityMessage = channelReady
-    ? "Conexão pronta para tráfego"
-    : !channel.active
-      ? routeIsValid
-        ? "Conexão desativada. Ative quando estiver pronta."
-        : "Próximo passo: configure uma rota válida."
-      : routeUnavailable
-        ? "Não foi possível confirmar a rota."
-      : !routeIsValid
-        ? "Próximo passo: configure uma rota válida."
-        : `Aguardando conexão: ${getOperationalStatusLabel(channel.connectionStatus)}`;
-  const routeSummary = routeIsValid && route ? describeRoute(route) : routeStatus;
-  const channelState: {
-    icon: ReactNode;
-    label: string;
-    detail: string;
-    tone: OperationalStatusTone;
-  } = routeUnavailable
-    ? {
-        icon: <AlertCircle className="h-4 w-4" />,
-        label: "Rota indisponível",
-        detail: "Não foi possível verificar a rota. Atualize o canal para tentar novamente.",
-        tone: "danger",
-      }
-    : !routeIsValid
-      ? {
-          icon: <AlertCircle className="h-4 w-4" />,
-          label: "Rota de entrada pendente",
-          detail: canManageRoute
-            ? "Defina uma rota de entrada para liberar o canal."
-            : "A rota de entrada ainda não está pronta neste ambiente.",
-          tone: "warning",
-        }
-      : !channel.active
-        ? {
-            icon: <XCircle className="h-4 w-4" />,
-            label: "Conexão desativada",
-            detail: canManageConnection
-              ? "Ative a conexão para começar a receber mensagens."
-              : "A conexão está desativada neste ambiente.",
-            tone: "muted",
-          }
-        : !channel.credentialsConfigured
-          ? {
-              icon: <AlertCircle className="h-4 w-4" />,
-              label: "Credenciais incompletas",
-              detail: canManageConnection
-                ? "Atualize as credenciais para conectar o provedor."
-                : "As credenciais da conexão ainda não estão completas.",
-              tone: "warning",
-            }
-          : !connectionReady
-            ? {
-                icon: <AlertCircle className="h-4 w-4" />,
-                label: channel.capabilities.supportsQr
-                  ? "Aguardando conexão com o WhatsApp"
-                  : "Aguardando conexão",
-                detail: channel.capabilities.supportsQr
-                  ? "O provedor ainda não está conectado. Gere o QR Code para concluir."
-                  : "O provedor ainda está conectando. Atualize o status quando houver mudança.",
-                tone: "warning",
-              }
-            : {
-                icon: <CheckCircle2 className="h-4 w-4" />,
-                label: "Pronto para receber mensagens",
-                detail: "A entrada está liberada e a rota está definida para este ambiente.",
-                tone: "success",
-              };
+  const routeSummary = routeIsValid && route ? describeOperationalChannelDestination(route) : routeStatus;
+  const channelState = deriveOperationalChannelStateWithActivation({
+    channel,
+    route,
+    routeUnavailable,
+    canManageConnection,
+    canManageRoute,
+  });
   const canActivate =
     canManageConnection &&
     !channel.active &&
@@ -821,64 +761,23 @@ function OperationalChannelCard({
     !isRouteLoading &&
     !isActivationPending;
   const [technicalDetailsOpen, setTechnicalDetailsOpen] = useState(false);
-  const channelStateAction = routeUnavailable ? (
-    <Button
-      size="sm"
-      variant="default"
-      onClick={onRefresh}
-      disabled={isRefreshing}
-    >
-      <RefreshCw className={isRefreshing ? "h-4 w-4 animate-spin" : "h-4 w-4"} />
-      Atualizar conexão
-    </Button>
-  ) : !routeIsValid ? (
-    canManageRoute ? (
-      <Button
-        size="sm"
-        variant="default"
-        className="w-full sm:w-auto"
-        onClick={() => onConfigureRoute(channel, route)}
-        disabled={isRouteLoading || !canOpenRoute}
-      >
-        {route ? <Pencil className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-        {route ? "Editar rota" : "Configurar rota"}
-      </Button>
-    ) : null
-  ) : !channel.active ? (
-    canManageConnection ? (
-      <Button
-        size="sm"
-        variant="default"
-        onClick={() => onActivate(channel)}
-        disabled={!canActivate}
-      >
-        <CheckCircle2 className="h-4 w-4" />
-        Ativar conexão
-      </Button>
-    ) : null
-  ) : !channel.credentialsConfigured ? (
-    canManageConnection ? (
-      <Button
-        size="sm"
-        variant="default"
-        onClick={() => onEditChannel(channel)}
-      >
-        <Pencil className="h-4 w-4" />
-        Atualizar credenciais
-      </Button>
-    ) : null
-  ) : !connectionReady && channel.capabilities.supportsQr ? (
-    canManageConnection ? (
-      <Button
-        size="sm"
-        variant="default"
-        onClick={() => onRequestQrCode(channel)}
-        disabled={isQrPending}
-      >
-        <QrCode className="h-4 w-4" />
-        Gerar QR Code
-      </Button>
-    ) : null
+  const channelStateAction = channelState.primaryAction ? (
+    <StateActionButton
+      action={channelState.primaryAction.action}
+      label={channelState.primaryAction.label}
+      isRefreshing={isRefreshing}
+      isQrPending={isQrPending}
+      isActivationPending={isActivationPending}
+      isRouteLoading={isRouteLoading}
+      canOpenRoute={canOpenRoute}
+      canActivate={canActivate}
+      onRefresh={onRefresh}
+      onConfigureRoute={() => onConfigureRoute(channel, route)}
+      onEditChannel={() => onEditChannel(channel)}
+      onActivate={() => onActivate(channel)}
+      onRequestQrCode={() => onRequestQrCode(channel)}
+      onOpenDetails={() => setTechnicalDetailsOpen(true)}
+    />
   ) : null;
 
   return (
@@ -947,11 +846,7 @@ function OperationalChannelCard({
         </div>
 
         <OperationalChannelStateCard
-          icon={channelState.icon}
-          label="Status do canal"
-          status={channelState.label}
-          detail={channelState.detail}
-          tone={channelState.tone}
+          state={channelState}
           action={channelStateAction}
           routeSummary={routeSummary}
           provider={OPERATIONAL_CHANNEL_PROVIDER_LABELS[channel.provider]}
@@ -973,7 +868,18 @@ function OperationalChannelCard({
             </div>
             <div className="divide-y">
               <PropertyRow label="Status" value={channel.active ? getOperationalStatusLabel(channel.connectionStatus) : "Desativada"} />
-              <PropertyRow label="Conexão" value={connectionDetail} />
+              <PropertyRow
+                label="Conexão"
+                value={
+                  channel.active
+                    ? connectionReady
+                      ? "Conectada ao provedor"
+                      : channel.credentialsConfigured
+                        ? "Credenciais configuradas · aguardando conexão"
+                        : "Credenciais incompletas"
+                    : "Conexão desativada"
+                }
+              />
               <PropertyRow
                 label="Credenciais"
                 value={channel.credentialsConfigured ? "Configuradas" : "Incompletas"}
@@ -995,7 +901,7 @@ function OperationalChannelCard({
                   ? OPERATIONAL_CHANNEL_ENTRY_MODE_LABELS[channel.route.entryMode]
                   : "Ainda não definido"}
               />
-              <PropertyRow label="Destino" value={route ? describeRoute(route) : "Ainda não definido"} />
+              <PropertyRow label="Destino" value={route ? describeOperationalChannelDestination(route) : "Ainda não definido"} />
               {route ? (
                 <PropertyRow
                   label="Rota atualizada em"
@@ -1009,7 +915,14 @@ function OperationalChannelCard({
               <PropertyRow label="Modo de conexão" value={channel.connectionMode === "provisioned-number" ? "Número provisionado" : "Credenciais próprias"} />
               <PropertyRow label="Mídia" value={channel.capabilities.supportsMedia ? "Suportada" : "Não suportada"} />
               <PropertyRow label="QR Code" value={channel.capabilities.supportsQr ? "Suportado" : "Não suportado"} />
-              <PropertyRow label="Disponibilidade" value={availabilityMessage} />
+              <PropertyRow
+                label="Disponibilidade"
+                value={
+                  channelReady
+                    ? "Conexão pronta para tráfego"
+                    : `Estado consolidado: ${channelState.label}`
+                }
+              />
             </div>
           </div>
         </CardContent>
@@ -1018,23 +931,119 @@ function OperationalChannelCard({
   );
 }
 
-type OperationalStatusTone = "success" | "warning" | "danger" | "muted";
+type OperationalStatusTone = OperationalChannelStatusTone;
+
+function StateActionButton({
+  action,
+  label,
+  isRefreshing,
+  isQrPending,
+  isActivationPending,
+  isRouteLoading,
+  canOpenRoute,
+  canActivate,
+  onRefresh,
+  onConfigureRoute,
+  onEditChannel,
+  onActivate,
+  onRequestQrCode,
+  onOpenDetails,
+}: {
+  action: OperationalChannelStateAction;
+  label: string;
+  isRefreshing: boolean;
+  isQrPending: boolean;
+  isActivationPending: boolean;
+  isRouteLoading: boolean;
+  canOpenRoute: boolean;
+  canActivate: boolean;
+  onRefresh: () => void;
+  onConfigureRoute: () => void;
+  onEditChannel: () => void;
+  onActivate: () => void;
+  onRequestQrCode: () => void;
+  onOpenDetails: () => void;
+}) {
+  const className = "w-full sm:w-auto";
+
+  if (action === "configure-destination") {
+    return (
+      <Button
+        size="sm"
+        variant="default"
+        className={className}
+        onClick={onConfigureRoute}
+        disabled={isRouteLoading || !canOpenRoute}
+      >
+        <Pencil className="h-4 w-4" />
+        {label}
+      </Button>
+    );
+  }
+
+  if (action === "update-credentials") {
+    return (
+      <Button size="sm" variant="default" className={className} onClick={onEditChannel}>
+        <Pencil className="h-4 w-4" />
+        {label}
+      </Button>
+    );
+  }
+
+  if (action === "activate-channel") {
+    return (
+      <Button
+        size="sm"
+        variant="default"
+        className={className}
+        onClick={onActivate}
+        disabled={!canActivate}
+      >
+        <CheckCircle2 className="h-4 w-4" />
+        {label}
+      </Button>
+    );
+  }
+
+  if (action === "generate-qr") {
+    return (
+      <Button
+        size="sm"
+        variant="default"
+        className={className}
+        onClick={onRequestQrCode}
+        disabled={isQrPending}
+      >
+        <QrCode className="h-4 w-4" />
+        {label}
+      </Button>
+    );
+  }
+
+  if (action === "open-details") {
+    return (
+      <Button size="sm" variant="default" className={className} onClick={onOpenDetails}>
+        <ChevronDown className="h-4 w-4" />
+        {label}
+      </Button>
+    );
+  }
+
+  return (
+    <Button size="sm" variant="default" className={className} onClick={onRefresh} disabled={isRefreshing}>
+      <RefreshCw className={isRefreshing ? "h-4 w-4 animate-spin" : "h-4 w-4"} />
+      {label}
+    </Button>
+  );
+}
 
 function OperationalChannelStateCard({
-  icon,
-  label,
-  status,
-  detail,
-  tone,
+  state,
   action,
   routeSummary,
   provider,
 }: {
-  icon: ReactNode;
-  label: string;
-  status: string;
-  detail: string;
-  tone: OperationalStatusTone;
+  state: OperationalChannelStateSpec;
   action?: ReactNode;
   routeSummary: string;
   provider: string;
@@ -1064,7 +1073,14 @@ function OperationalChannelStateCard({
       status: "text-foreground",
     },
   };
-  const classes = toneClasses[tone];
+  const classes = toneClasses[state.tone];
+  const icon = state.tone === "success" ? (
+    <CheckCircle2 className="h-4 w-4" />
+  ) : state.key === "PAUSED" || state.key === "READY_TO_ACTIVATE" ? (
+    <Pause className="h-4 w-4" />
+  ) : (
+    <AlertCircle className="h-4 w-4" />
+  );
 
   return (
     <div className={`rounded-lg border p-4 ${classes.container}`} aria-live="polite">
@@ -1075,17 +1091,20 @@ function OperationalChannelStateCard({
           </span>
           <div className="min-w-0 flex-1">
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              {label}
+              Status do canal
             </p>
-            <p className={`mt-1 font-semibold ${classes.status}`}>{status}</p>
-            <p className="mt-1 break-words text-sm text-muted-foreground">{detail}</p>
+            <p className={`mt-1 font-semibold ${classes.status}`}>{state.label}</p>
+            <p className="mt-1 break-words text-sm text-muted-foreground">{state.description}</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Próximo passo: <span className="font-medium">{state.nextStep}</span>
+            </p>
           </div>
         </div>
         {action ? <div className="w-full sm:w-auto sm:shrink-0">{action}</div> : null}
       </div>
       <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 border-t pt-3 text-sm">
         <div className="flex min-w-0 items-baseline gap-2">
-          <span className="text-muted-foreground">Rota</span>
+          <span className="text-muted-foreground">Destino</span>
           <span className="break-words font-medium">{routeSummary}</span>
         </div>
         <div className="flex min-w-0 items-baseline gap-2">
@@ -1120,26 +1139,6 @@ function PropertyRow({
       )}
     </div>
   );
-}
-
-function describeRoute(route: OperationalChannelRoute): string {
-  if (route.entryMode === "TRIAGE") {
-    return "Triagem operacional";
-  }
-
-  if (route.entryMode === "QUEUE") {
-    return `${route.destinations.targetArea?.name || "Área indisponível"} → ${route.destinations.targetQueue?.name || "Fila indisponível"}`;
-  }
-
-  if (route.entryMode === "EXTERNAL_AGENT") {
-    const handoff = route.destinations.handoffArea?.name &&
-      route.destinations.handoffQueue?.name
-      ? ` · encaminhamento: ${route.destinations.handoffArea.name} → ${route.destinations.handoffQueue.name}`
-      : "";
-    return `Integração de triagem: ${route.destinations.triageAgent?.name || "integração indisponível"}${handoff}`;
-  }
-
-  return `${route.destinations.assistant?.name || "Agente de atendimento indisponível"} → alternativa: ${route.destinations.fallbackArea?.name || "Área indisponível"} / ${route.destinations.fallbackQueue?.name || "Fila indisponível"}`;
 }
 
 function buildRouteMenuConfiguration(
