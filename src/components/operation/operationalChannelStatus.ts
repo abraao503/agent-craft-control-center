@@ -27,12 +27,6 @@ export type OperationalChannelStateAction =
   | "refresh-status"
   | "open-details";
 
-export type OperationalChannelFilterGroup =
-  | "ALL"
-  | "NEEDS_ACTION"
-  | "READY"
-  | "PAUSED";
-
 export interface OperationalChannelStateActionSpec {
   action: OperationalChannelStateAction;
   label: string;
@@ -83,23 +77,6 @@ export const OPERATIONAL_CHANNEL_STATE_PRIORITIES: Record<
   PAUSED: 2,
   READY: 1,
 };
-
-const STATE_FILTER_GROUP: Record<OperationalChannelStateKey, OperationalChannelFilterGroup> = {
-  CONFIGURATION_REQUIRED: "NEEDS_ACTION",
-  DESTINATION_REQUIRED: "NEEDS_ACTION",
-  READY_TO_ACTIVATE: "NEEDS_ACTION",
-  AWAITING_CONNECTION: "NEEDS_ACTION",
-  NEEDS_ATTENTION: "NEEDS_ACTION",
-  UNAVAILABLE: "NEEDS_ACTION",
-  READY: "READY",
-  PAUSED: "PAUSED",
-};
-
-export function getOperationalChannelFilterGroup(
-  state: OperationalChannelStateSpec,
-): OperationalChannelFilterGroup {
-  return STATE_FILTER_GROUP[state.key];
-}
 
 function connectionIsEstablished(channel: OperationalChannel): boolean {
   return ["CONNECTED", "OPEN"].includes(channel.connectionStatus.toUpperCase());

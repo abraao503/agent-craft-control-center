@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { AlertCircle, Loader2, Plus, RefreshCw, Wifi } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { AlertCircle, Inbox, Loader2, Plus, RefreshCw } from "lucide-react";
 import {
   OperationalChannel,
   OperationalChannelRoute,
@@ -8,13 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { OperationalChannelListItem } from "@/components/operation/OperationalChannelListItem";
+import { OperationalChannelDetail } from "@/components/operation/OperationalChannelDetail";
 import {
-  OperationalChannelFilterGroup,
   OperationalChannelStateSpec,
   deriveOperationalChannelStateWithActivation,
-  getOperationalChannelFilterGroup,
 } from "@/components/operation/operationalChannelStatus";
-import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 type OperationalChannelListProps = {
   channels: OperationalChannel[];
@@ -23,9 +22,7 @@ type OperationalChannelListProps = {
   isFetching: boolean;
   isError: boolean;
   onRetryChannels: () => void;
-  routesIsLoading: boolean;
   routesIsError: boolean;
-  onRetryRoutes: () => void;
   canManageConnection: boolean;
   canManageRoute: boolean;
   isDeactivationPending: boolean;
@@ -41,7 +38,6 @@ type OperationalChannelListProps = {
   onActivate: (channel: OperationalChannel) => void;
   onRequestQrCode: (channel: OperationalChannel) => void;
   onRefresh: () => void;
-  onOpenDetails: (channel: OperationalChannel) => void;
   page: number;
   totalPages: number;
   onPageChange: (page: number) => void;
@@ -50,16 +46,6 @@ type OperationalChannelListProps = {
   onCreateChannel: () => void;
 };
 
-const FILTER_OPTIONS: Array<{
-  key: OperationalChannelFilterGroup;
-  label: string;
-}> = [
-  { key: "ALL", label: "Todos" },
-  { key: "NEEDS_ACTION", label: "Precisam de ação" },
-  { key: "READY", label: "Prontos" },
-  { key: "PAUSED", label: "Pausados" },
-];
-
 export function OperationalChannelList({
   channels,
   routesByChannelId,
@@ -67,9 +53,7 @@ export function OperationalChannelList({
   isFetching,
   isError,
   onRetryChannels,
-  routesIsLoading,
   routesIsError,
-  onRetryRoutes,
   canManageConnection,
   canManageRoute,
   isDeactivationPending,
@@ -82,7 +66,6 @@ export function OperationalChannelList({
   onActivate,
   onRequestQrCode,
   onRefresh,
-  onOpenDetails,
   page,
   totalPages,
   onPageChange,
@@ -90,7 +73,22 @@ export function OperationalChannelList({
   canOpenCreateChannel,
   onCreateChannel,
 }: OperationalChannelListProps) {
-  const [filter, setFilter] = useState<OperationalChannelFilterGroup>("ALL");
+  const isMobile = useIsMobile();
+  const [selectedChannelId, setSelectedChannelId] = useState<string | null>(
+    null,
+  );
+  const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
+
+  useEffect(() => {
+    if (!channels.length) {
+      setSelectedChannelId(null);
+      return;
+    }
+
+    if (!selectedChannelId || !channels.some((item) => item.id === selectedChannelId)) {
+      setSelectedChannelId(channels[0].id);
+    }
+  }, [channels, selectedChannelId]);
 
   const statesByChannelId = useMemo(
     () =>
@@ -101,161 +99,185 @@ export function OperationalChannelList({
             channel,
             route: routesByChannelId.get(channel.id) ?? null,
             routeUnavailable:
-              routesIsError && channel.route.configured && !routesByChannelId.get(channel.id),
+              routesIsError &&
+              channel.route.configured &&
+              !routesByChannelId.get(channel.id),
             canManageConnection,
             canManageRoute,
           }) as OperationalChannelStateSpec,
         ]),
       ),
-    [channels, routesByChannelId, routesIsError, canManageConnection, canManageRoute],
+    [
+      channels,
+      routesByChannelId,
+      routesIsError,
+      canManageConnection,
+      canManageRoute,
+    ],
   );
 
-  const counts = useMemo(() => {
-    const result: Record<OperationalChannelFilterGroup, number> = {
-      ALL: channels.length,
-      NEEDS_ACTION: 0,
-      READY: 0,
-      PAUSED: 0,
-    };
-    for (const state of statesByChannelId.values()) {
-      result[getOperationalChannelFilterGroup(state)] += 1;
-    }
-    return result;
-  }, [channels.length, statesByChannelId]);
+  const selectedChannel =
+    channels.find((channel) => channel.id === selectedChannelId) ??
+    channels[0] ??
+    null;
+  const selectedRoute = selectedChannel
+    ? routesByChannelId.get(selectedChannel.id) ?? null
+    : null;
 
-  const visibleChannels = channels.filter((channel) => {
-    const state = statesByChannelId.get(channel.id);
-    return filter === "ALL" || (state && getOperationalChannelFilterGroup(state) === filter);
-  });
+  const selectChannel = (channel: OperationalChannel) => {
+    setSelectedChannelId(channel.id);
+    if (isMobile) setMobileDetailOpen(true);
+  };
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="flex min-h-[420px] items-center justify-center">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          <span className="sr-only">Carregando canais operacionais</span>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (isError) {
+    return (
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Não foi possível carregar os canais</AlertTitle>
+        <AlertDescription className="flex flex-wrap items-center gap-3">
+          Verifique sua permissão ou tente novamente.
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={onRetryChannels}
+            disabled={isFetching}
+          >
+            <RefreshCw
+              className={isFetching ? "h-4 w-4 animate-spin" : "h-4 w-4"}
+            />
+            Tentar novamente
+          </Button>
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  if (!channels.length) {
+    return (
+      <Card>
+        <CardContent className="flex min-h-[360px] flex-col items-center justify-center px-6 text-center">
+          <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-muted">
+            <Inbox className="h-6 w-6 text-muted-foreground" />
+          </span>
+          <p className="mt-4 font-semibold">Nenhum canal configurado</p>
+          <p className="mt-1 max-w-md text-sm leading-5 text-muted-foreground">
+            {canManageConnection
+              ? "Adicione um canal para receber mensagens e encaminhá-las para a operação."
+              : "Um administrador autorizado ainda não configurou canais neste ambiente."}
+          </p>
+          {canCreateChannel ? (
+            <Button
+              className="mt-5"
+              onClick={onCreateChannel}
+              disabled={!canOpenCreateChannel}
+            >
+              <Plus className="h-4 w-4" />
+              Adicionar canal
+            </Button>
+          ) : null}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const detailProps = {
+    channel: selectedChannel,
+    route: selectedRoute,
+    isRouteError: routesIsError,
+    canManageConnection,
+    canManageRoute,
+    isDeactivationPending,
+    isActivationPending,
+    isQrPending,
+    isRefreshing: isFetching,
+    webhookUrl: selectedChannel ? webhookUrls[selectedChannel.id] : undefined,
+    onEditChannel,
+    onEditDestination: (channel: OperationalChannel) =>
+      onConfigureRoute(channel, routesByChannelId.get(channel.id) ?? null),
+    onActivate,
+    onDeactivate,
+    onRequestQrCode,
+    onRefresh,
+  };
 
   return (
-    <div className="space-y-3">
-      {isLoading ? (
-        <Card>
-          <CardContent className="flex min-h-40 items-center justify-center">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            <span className="sr-only">Carregando canais operacionais</span>
-          </CardContent>
-        </Card>
-      ) : isError ? (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Não foi possível carregar os canais</AlertTitle>
-          <AlertDescription className="flex flex-wrap items-center gap-3">
-            Verifique sua permissão ou tente novamente.
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={onRetryChannels}
-              disabled={isFetching}
-            >
-              <RefreshCw className={isFetching ? "h-4 w-4 animate-spin" : "h-4 w-4"} />
-              Tentar novamente
-            </Button>
-          </AlertDescription>
-        </Alert>
-      ) : routesIsError && !channels.length ? null : (
-        <div className="flex flex-wrap gap-1.5">
-          {FILTER_OPTIONS.map((option) => (
-            <button
-              key={option.key}
-              type="button"
-              onClick={() => setFilter(option.key)}
-              aria-pressed={filter === option.key}
-              className={cn(
-                "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
-                filter === option.key
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "border-border bg-background text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {option.label}
-              <span className="ml-1.5 opacity-70">{counts[option.key]}</span>
-            </button>
-          ))}
-        </div>
-      )}
+    <>
+      <Card className="overflow-hidden">
+        <div className="grid min-h-[560px] lg:grid-cols-[minmax(250px,320px)_minmax(0,1fr)]">
+          <aside className="border-r-0 bg-muted/10 lg:border-r">
+            <div className="flex items-center justify-between gap-3 border-b px-4 py-3">
+              <div>
+                <p className="text-sm font-semibold">Seus canais</p>
+                <p className="text-xs text-muted-foreground">
+                  {channels.length} {channels.length === 1 ? "canal" : "canais"}
+                </p>
+              </div>
+              {isFetching ? (
+                <RefreshCw className="h-4 w-4 animate-spin text-muted-foreground" />
+              ) : null}
+            </div>
 
-      {!isLoading && !isError && !channels.length ? (
-        <Card>
-          <CardContent className="py-10 text-center">
-            <Wifi className="mx-auto h-8 w-8 text-muted-foreground" />
-            <p className="mt-3 font-medium">Nenhum canal configurado ainda</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {canManageConnection
-                ? "Adicione o primeiro canal para começar a receber mensagens neste ambiente."
-                : "Um administrador autorizado ainda não configurou canais neste ambiente."}
-            </p>
-            {canCreateChannel ? (
-              <Button className="mt-4" onClick={onCreateChannel} disabled={!canOpenCreateChannel}>
-                <Plus className="h-4 w-4" />
-                Adicionar canal
-              </Button>
+            <nav aria-label="Canais deste ambiente">
+              {channels.map((channel) => (
+                <OperationalChannelListItem
+                  key={channel.id}
+                  channel={channel}
+                  route={routesByChannelId.get(channel.id) ?? null}
+                  state={statesByChannelId.get(channel.id)!}
+                  selected={selectedChannel?.id === channel.id}
+                  onSelect={() => selectChannel(channel)}
+                />
+              ))}
+            </nav>
+
+            {totalPages > 1 ? (
+              <div className="flex items-center justify-between gap-2 border-t px-3 py-3 text-xs">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => onPageChange(page - 1)}
+                  disabled={page <= 1 || isFetching}
+                >
+                  Anterior
+                </Button>
+                <span className="text-muted-foreground">
+                  {page} de {totalPages}
+                </span>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => onPageChange(page + 1)}
+                  disabled={page >= totalPages || isFetching}
+                >
+                  Próxima
+                </Button>
+              </div>
             ) : null}
-          </CardContent>
-        </Card>
-      ) : null}
+          </aside>
 
-      {!isLoading && !isError && visibleChannels.length ? (
-        <div className="space-y-3">
-          {visibleChannels.map((channel) => (
-            <OperationalChannelListItem
-              key={channel.id}
-              channel={channel}
-              route={routesByChannelId.get(channel.id) ?? null}
-              isRouteError={routesIsError}
-              canManageConnection={canManageConnection}
-              canManageRoute={canManageRoute}
-              isDeactivationPending={isDeactivationPending}
-              isActivationPending={isActivationPending}
-              isQrPending={isQrPending}
-              isRefreshing={isFetching}
-              webhookUrl={webhookUrls[channel.id]}
-              onEditChannel={onEditChannel}
-              onConfigureRoute={onConfigureRoute}
-              onDeactivate={onDeactivate}
-              onActivate={onActivate}
-              onRequestQrCode={onRequestQrCode}
-              onRefresh={onRefresh}
-              onOpenDetails={onOpenDetails}
-            />
-          ))}
-        </div>
-      ) : null}
-
-      {!isLoading && !isError && channels.length && !visibleChannels.length ? (
-        <Card>
-          <CardContent className="py-8 text-center text-sm text-muted-foreground">
-            Nenhum canal neste filtro.
-          </CardContent>
-        </Card>
-      ) : null}
-
-      {totalPages > 1 ? (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border p-3 text-sm">
-          <p className="text-muted-foreground">
-            Página {page} de {totalPages}
-          </p>
-          <div className="flex gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => onPageChange(page - 1)}
-              disabled={page <= 1 || isFetching}
-            >
-              Anterior
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => onPageChange(page + 1)}
-              disabled={page >= totalPages || isFetching}
-            >
-              Próxima
-            </Button>
+          <div className="hidden min-w-0 lg:block">
+            <OperationalChannelDetail presentation="inline" {...detailProps} />
           </div>
         </div>
-      ) : null}
-    </div>
+      </Card>
+
+      <OperationalChannelDetail
+        presentation="sheet"
+        open={mobileDetailOpen}
+        onOpenChange={setMobileDetailOpen}
+        {...detailProps}
+      />
+    </>
   );
 }
