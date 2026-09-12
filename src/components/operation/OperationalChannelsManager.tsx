@@ -16,8 +16,7 @@ import {
 } from "@/hooks/useOperationalChannels";
 import { useOperationalRouteOptions } from "@/hooks/useOperationalRouteOptions";
 import { usePermissions } from "@/hooks/usePermissions";
-import { useToast } from "@/hooks/use-toast";
-import {
+import { useToast } from "@/hooks/use-toast";import {
   CreateOperationalChannelBody,
   CreateOperationalChannelRouteBody,
   OperationalChannel,
@@ -57,6 +56,7 @@ import {
 import { OperationalChannelDialog, OperationalChannelFormValues } from "@/components/operation/OperationalChannelDialog";
 import { OperationalChannelDetail } from "@/components/operation/OperationalChannelDetail";
 import { OperationalChannelList } from "@/components/operation/OperationalChannelList";
+import { OperationalChannelOnboarding } from "@/components/operation/OperationalChannelOnboarding";
 import { OperationalMetaManualAccountCard } from "@/components/operation/OperationalMetaManualAccountCard";
 import {
   OperationalRouteDialog,
@@ -81,10 +81,11 @@ export function OperationalChannelsManager({
   workspaceId,
   workspaceName,
 }: OperationalChannelsManagerProps) {
-  const { has } = usePermissions();
+  const { has, isCompanyLevel } = usePermissions();
   const { toast } = useToast();
   const [channelsPage, setChannelsPage] = useState(1);
   const [channelDialogOpen, setChannelDialogOpen] = useState(false);
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [editingChannel, setEditingChannel] = useState<OperationalChannel | null>(
     null,
   );
@@ -105,6 +106,8 @@ export function OperationalChannelsManager({
   const canManageTriageAgents = has("manage:operation-setup");
   const canConnectChannels =
     canManageChannels && has("connect:whatsapp");
+  const canManageCompanyMeta =
+    isCompanyLevel() && has("manage:integrations") && canManageChannels;
   const channelsQuery = useOperationalChannels(workspaceId, channelsPage, true, true);
   const routesQuery = useOperationalChannelRoutes(workspaceId);
   const providersQuery = useOperationalChannelProviders(
@@ -343,8 +346,23 @@ export function OperationalChannelsManager({
   };
 
   const openCreateChannel = () => {
-    setEditingChannel(null);
-    setChannelDialogOpen(true);
+    setOnboardingOpen(true);
+  };
+
+  const handleOnboardingCreate = async (
+    body: CreateOperationalChannelBody,
+  ) => {
+    const createdChannel = await channelMutations.create.mutateAsync({
+      body,
+      idempotencyKey: crypto.randomUUID(),
+    });
+    toast({
+      title: "Canal criado",
+      description: "Defina o destino das mensagens para liberar a ativação.",
+    });
+    setEditingRoute(null);
+    setRouteChannel(createdChannel);
+    setRouteDialogOpen(true);
   };
 
   const openEditChannel = (channel: OperationalChannel) => {
@@ -501,10 +519,20 @@ export function OperationalChannelsManager({
         />
       </div>
 
+      <OperationalChannelOnboarding
+        open={onboardingOpen}
+        onOpenChange={setOnboardingOpen}
+        workspaceId={workspaceId}
+        providers={providersQuery.data ?? []}
+        providersLoading={providersQuery.isLoading}
+        canManageCompanyMeta={canManageCompanyMeta}
+        isCreating={channelMutations.create.isPending}
+        onCreateChannel={(body) => handleOnboardingCreate(body)}
+      />
+
       <OperationalChannelDialog
         open={channelDialogOpen}
-        channel={editingChannel}
-        workspaceId={workspaceId}
+        channel={editingChannel}        workspaceId={workspaceId}
         defaultProvider={defaultProvider}
         providers={providersQuery.data ?? []}
         providersLoading={providersQuery.isLoading}
