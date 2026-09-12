@@ -1,17 +1,9 @@
-import { type ReactNode, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
-  CheckCircle2,
-  ChevronDown,
-  Loader2,
   MoreHorizontal,
-  Pause,
-  Pencil,
   Plus,
-  QrCode,
   RefreshCw,
-  Trash2,
-  Wifi,
 } from "lucide-react";
 import {
   useOperationalChannelRouteMutations,
@@ -36,12 +28,6 @@ import {
   UpdateOperationalChannelRouteBody,
 } from "@/types/operation-channels";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ToastAction } from "@/components/ui/toast";
 import {
@@ -69,26 +55,16 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { OperationalChannelDialog, OperationalChannelFormValues } from "@/components/operation/OperationalChannelDialog";
+import { OperationalChannelList } from "@/components/operation/OperationalChannelList";
 import { OperationalMetaManualAccountCard } from "@/components/operation/OperationalMetaManualAccountCard";
 import {
   OperationalRouteDialog,
   OperationalRouteFormValues,
 } from "@/components/operation/OperationalRouteDialog";
 import {
-  OPERATIONAL_CHANNEL_ENTRY_MODE_LABELS,
-  OPERATIONAL_CHANNEL_PROVIDER_LABELS,
-  formatOperationalDateTime,
   getOperationalErrorCode,
   getOperationalErrorMessage,
-  getOperationalStatusLabel,
 } from "@/components/operation/operationalChannelLabels";
-import {
-  OperationalChannelStateAction,
-  OperationalChannelStateSpec,
-  OperationalChannelStatusTone,
-  describeOperationalChannelDestination,
-  deriveOperationalChannelStateWithActivation,
-} from "@/components/operation/operationalChannelStatus";
 
 type OperationalChannelsManagerProps = {
   workspaceId?: string;
@@ -399,7 +375,7 @@ export function OperationalChannelsManager({
 
   return (
     <section className="mx-auto w-full max-w-6xl space-y-6 p-6">
-      <header className="flex flex-col gap-5 border-b pb-6 sm:flex-row sm:items-end sm:justify-between">
+      <header className="flex flex-col gap-4 border-b pb-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
             Ambiente operacional
@@ -408,33 +384,44 @@ export function OperationalChannelsManager({
             Canais de entrada
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-            Configure as conexões e escolha para onde as mensagens de {workspaceName || "este ambiente"} serão direcionadas.
+            Veja os canais de {workspaceName || "este ambiente"}, o destino das
+            mensagens e o próximo passo de cada canal.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Button
-            variant="outline"
-            onClick={() => void refreshOperationalState()}
-            disabled={channelsQuery.isFetching || routesQuery.isFetching}
-          >
-            <RefreshCw
-              className={`h-4 w-4 ${
-                channelsQuery.isFetching || routesQuery.isFetching
-                  ? "animate-spin"
-                  : ""
-              }`}
-            />
-            Atualizar tudo
-          </Button>
+        <div className="flex items-center gap-2">
           {canConnectChannels ? (
-            <Button
-              onClick={openCreateChannel}
-              disabled={!canOpenCreateChannel}
-            >
+            <Button onClick={openCreateChannel} disabled={!canOpenCreateChannel}>
               <Plus className="h-4 w-4" />
-              Nova conexão
+              Adicionar canal
             </Button>
           ) : null}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9"
+                aria-label="Mais ações dos canais"
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onSelect={() => void refreshOperationalState()}
+                disabled={channelsQuery.isFetching || routesQuery.isFetching}
+              >
+                <RefreshCw
+                  className={`mr-2 h-4 w-4 ${
+                    channelsQuery.isFetching || routesQuery.isFetching
+                      ? "animate-spin"
+                      : ""
+                  }`}
+                />
+                Atualizar canais
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </header>
 
@@ -473,118 +460,43 @@ export function OperationalChannelsManager({
       <div className="space-y-3">
         <div>
           <h2 className="text-xl font-semibold tracking-tight">
-            Conexões deste ambiente
+            Canais deste ambiente
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Gerencie os canais e defina para onde as mensagens de entrada serão direcionadas.
+            Cada canal mostra o status de prontidão e o próximo passo necessário.
           </p>
         </div>
 
-        {channelsQuery.isLoading ? (
-          <Card>
-            <CardContent className="flex min-h-48 items-center justify-center">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-              <span className="sr-only">Carregando conexões operacionais</span>
-            </CardContent>
-          </Card>
-        ) : channelsQuery.isError ? (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Não foi possível carregar os canais</AlertTitle>
-            <AlertDescription className="flex flex-wrap items-center gap-3">
-              Verifique sua permissão ou tente novamente.
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => channelsQuery.refetch()}
-                disabled={channelsQuery.isFetching}
-              >
-                <RefreshCw className="h-4 w-4" />
-                Tentar novamente
-              </Button>
-            </AlertDescription>
-          </Alert>
-        ) : !channels.length ? (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <Wifi className="mx-auto h-8 w-8 text-muted-foreground" />
-              <p className="mt-3 font-medium">Nenhuma conexão ativa</p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {canConnectChannels
-                  ? "As conexões desativadas ficam fora desta lista. Crie uma nova conexão para configurar a entrada."
-                  : "Um administrador autorizado ainda não configurou uma conexão ativa neste ambiente."}
-              </p>
-              {canConnectChannels ? (
-                <Button
-                  className="mt-4"
-                  onClick={openCreateChannel}
-                  disabled={!canOpenCreateChannel}
-                >
-                  <Plus className="h-4 w-4" />
-                  Criar conexão
-                </Button>
-              ) : null}
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-4">
-            {channels.map((channel) => {
-              const route = routesByChannelId.get(channel.id) ?? null;
-              return (
-                <OperationalChannelCard
-                  key={channel.id}
-                  channel={channel}
-                  route={route}
-                  canManageRoute={canManageChannels}
-                  canManageConnection={canConnectChannels}
-                  isRouteLoading={routesQuery.isLoading}
-                  isRouteError={routesQuery.isError}
-                  isDeactivationPending={channelMutations.deactivate.isPending}
-                  isActivationPending={channelMutations.activate.isPending}
-                  isQrPending={channelMutations.requestQrCode.isPending}
-                  isRefreshing={channelsQuery.isFetching}
-                  webhookUrl={webhookUrls[channel.id]}
-                  onEditChannel={openEditChannel}
-                  onConfigureRoute={openRouteDialog}
-                  onDeactivate={setChannelToDeactivate}
-                  onActivate={(item) => void handleActivate(item)}
-                  onRequestQrCode={(item) => void handleRequestQrCode(item)}
-                  onRefresh={() => void refreshOperationalState()}
-                />
-              );
-            })}
-          </div>
-        )}
+        <OperationalChannelList
+          channels={channels}
+          routesByChannelId={routesByChannelId}
+          isLoading={channelsQuery.isLoading}
+          isFetching={channelsQuery.isFetching}
+          isError={channelsQuery.isError}
+          onRetryChannels={() => channelsQuery.refetch()}
+          routesIsLoading={routesQuery.isLoading}
+          routesIsError={routesQuery.isError}
+          onRetryRoutes={() => routesQuery.refetch()}
+          canManageConnection={canConnectChannels}
+          canManageRoute={canManageChannels}
+          isDeactivationPending={channelMutations.deactivate.isPending}
+          isActivationPending={channelMutations.activate.isPending}
+          isQrPending={channelMutations.requestQrCode.isPending}
+          webhookUrls={webhookUrls}
+          onEditChannel={openEditChannel}
+          onConfigureRoute={openRouteDialog}
+          onDeactivate={setChannelToDeactivate}
+          onActivate={(item) => void handleActivate(item)}
+          onRequestQrCode={(item) => void handleRequestQrCode(item)}
+          onRefresh={() => void refreshOperationalState()}
+          page={channelsQuery.data?.page ?? channelsPage}
+          totalPages={channelsQuery.data?.totalPages ?? 1}
+          onPageChange={setChannelsPage}
+          canCreateChannel={canConnectChannels}
+          canOpenCreateChannel={canOpenCreateChannel}
+          onCreateChannel={openCreateChannel}
+        />
       </div>
-
-      {channelsQuery.data && channelsQuery.data.totalPages > 1 ? (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border p-3 text-sm">
-          <p className="text-muted-foreground">
-            Página {channelsQuery.data.page} de {channelsQuery.data.totalPages}
-          </p>
-          <div className="flex gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setChannelsPage((page) => page - 1)}
-              disabled={channelsPage <= 1 || channelsQuery.isFetching}
-            >
-              Anterior
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setChannelsPage((page) => page + 1)}
-              disabled={
-                channelsPage >= channelsQuery.data.totalPages ||
-                channelsQuery.isFetching
-              }
-            >
-              Próxima
-            </Button>
-          </div>
-        </div>
-      ) : null}
 
       <OperationalChannelDialog
         open={channelDialogOpen}
@@ -685,459 +597,6 @@ export function OperationalChannelsManager({
         </DialogContent>
       </Dialog>
     </section>
-  );
-}
-
-function OperationalChannelCard({
-  channel,
-  route,
-  canManageRoute,
-  canManageConnection,
-  isRouteLoading,
-  isRouteError,
-  isDeactivationPending,
-  isActivationPending,
-  isQrPending,
-  isRefreshing,
-  webhookUrl,
-  onEditChannel,
-  onConfigureRoute,
-  onDeactivate,
-  onActivate,
-  onRequestQrCode,
-  onRefresh,
-}: {
-  channel: OperationalChannel;
-  route: OperationalChannelRoute | null;
-  canManageRoute: boolean;
-  canManageConnection: boolean;
-  isRouteLoading: boolean;
-  isRouteError: boolean;
-  isDeactivationPending: boolean;
-  isActivationPending: boolean;
-  isQrPending: boolean;
-  isRefreshing: boolean;
-  webhookUrl?: string;
-  onEditChannel: (channel: OperationalChannel) => void;
-  onConfigureRoute: (
-    channel: OperationalChannel,
-    route: OperationalChannelRoute | null,
-  ) => void;
-  onDeactivate: (channel: OperationalChannel) => void;
-  onActivate: (channel: OperationalChannel) => void;
-  onRequestQrCode: (channel: OperationalChannel) => void;
-  onRefresh: () => void;
-}) {
-  const routeUnavailable = isRouteError && channel.route.configured && !route;
-  const routeIsValid =
-    !routeUnavailable &&
-    channel.route.configured &&
-    channel.route.configurationStatus === "VALID";
-  const routeStatus = routeUnavailable
-    ? "Indisponível"
-    : routeIsValid
-      ? "Configurada"
-      : channel.route.configured
-        ? "Incompleta"
-        : "Não configurada";
-  const channelName = channel.displayName || channel.providerAlias;
-  const canOpenRoute = !channel.route.configured || Boolean(route);
-  const connectionReady = ["CONNECTED", "OPEN"].includes(
-    channel.connectionStatus.toUpperCase(),
-  );
-  const channelReady = channel.active && routeIsValid && connectionReady;
-  const routeSummary = routeIsValid && route ? describeOperationalChannelDestination(route) : routeStatus;
-  const channelState = deriveOperationalChannelStateWithActivation({
-    channel,
-    route,
-    routeUnavailable,
-    canManageConnection,
-    canManageRoute,
-  });
-  const canActivate =
-    canManageConnection &&
-    !channel.active &&
-    routeIsValid &&
-    !isRouteLoading &&
-    !isActivationPending;
-  const [technicalDetailsOpen, setTechnicalDetailsOpen] = useState(false);
-  const channelStateAction = channelState.primaryAction ? (
-    <StateActionButton
-      action={channelState.primaryAction.action}
-      label={channelState.primaryAction.label}
-      isRefreshing={isRefreshing}
-      isQrPending={isQrPending}
-      isActivationPending={isActivationPending}
-      isRouteLoading={isRouteLoading}
-      canOpenRoute={canOpenRoute}
-      canActivate={canActivate}
-      onRefresh={onRefresh}
-      onConfigureRoute={() => onConfigureRoute(channel, route)}
-      onEditChannel={() => onEditChannel(channel)}
-      onActivate={() => onActivate(channel)}
-      onRequestQrCode={() => onRequestQrCode(channel)}
-      onOpenDetails={() => setTechnicalDetailsOpen(true)}
-    />
-  ) : null;
-
-  return (
-    <Card className="overflow-hidden">
-      <CardHeader className="p-4 sm:p-5">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <CardTitle className="truncate text-lg">{channelName}</CardTitle>
-            </div>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {OPERATIONAL_CHANNEL_PROVIDER_LABELS[channel.provider]}
-            </p>
-          </div>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-9 w-9"
-                aria-label={`Mais ações para ${channelName}`}
-              >
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                onSelect={onRefresh}
-                disabled={isRefreshing}
-              >
-                <RefreshCw
-                  className={`mr-2 h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
-                />
-                Atualizar conexão
-              </DropdownMenuItem>
-              {canManageConnection ? (
-                <DropdownMenuItem onSelect={() => onEditChannel(channel)}>
-                  <Pencil className="mr-2 h-4 w-4" />
-                  Editar conexão
-                </DropdownMenuItem>
-              ) : null}
-              <DropdownMenuItem
-                onSelect={() => setTechnicalDetailsOpen((open) => !open)}
-              >
-                <ChevronDown className="mr-2 h-4 w-4" />
-                {technicalDetailsOpen
-                  ? "Ocultar detalhes técnicos"
-                  : "Ver detalhes técnicos"}
-              </DropdownMenuItem>
-              {canManageConnection && channel.active ? (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    className="text-destructive focus:text-destructive"
-                    onSelect={() => onDeactivate(channel)}
-                    disabled={isDeactivationPending}
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Desativar conexão
-                  </DropdownMenuItem>
-                </>
-              ) : null}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-
-        <OperationalChannelStateCard
-          state={channelState}
-          action={channelStateAction}
-          routeSummary={routeSummary}
-          provider={OPERATIONAL_CHANNEL_PROVIDER_LABELS[channel.provider]}
-        />
-      </CardHeader>
-
-      {technicalDetailsOpen ? (
-        <CardContent className="border-t p-4 sm:p-5">
-          <div className="rounded-lg border bg-muted/30 px-3">
-            <div className="flex items-center justify-between border-b py-2">
-              <p className="text-sm font-medium">Detalhes técnicos</p>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => setTechnicalDetailsOpen(false)}
-              >
-                Ocultar
-              </Button>
-            </div>
-            <div className="divide-y">
-              <PropertyRow label="Status" value={channel.active ? getOperationalStatusLabel(channel.connectionStatus) : "Desativada"} />
-              <PropertyRow
-                label="Conexão"
-                value={
-                  channel.active
-                    ? connectionReady
-                      ? "Conectada ao provedor"
-                      : channel.credentialsConfigured
-                        ? "Credenciais configuradas · aguardando conexão"
-                        : "Credenciais incompletas"
-                    : "Conexão desativada"
-                }
-              />
-              <PropertyRow
-                label="Credenciais"
-                value={channel.credentialsConfigured ? "Configuradas" : "Incompletas"}
-                attention={!channel.credentialsConfigured}
-              />
-              {channel.metaDisplayPhoneNumber || channel.metaPhoneNumberId ? (
-                <PropertyRow
-                  label="Número"
-                  value={channel.metaDisplayPhoneNumber || channel.metaPhoneNumberId || "—"}
-                />
-              ) : null}
-              {webhookUrl ? (
-                <PropertyRow label="Webhook operacional" value={webhookUrl} code />
-              ) : null}
-              <PropertyRow label="Rota" value={routeStatus} attention={!routeIsValid} />
-              <PropertyRow
-                label="Modo de entrada"
-                value={channel.route.entryMode
-                  ? OPERATIONAL_CHANNEL_ENTRY_MODE_LABELS[channel.route.entryMode]
-                  : "Ainda não definido"}
-              />
-              <PropertyRow label="Destino" value={route ? describeOperationalChannelDestination(route) : "Ainda não definido"} />
-              {route ? (
-                <PropertyRow
-                  label="Rota atualizada em"
-                  value={formatOperationalDateTime(route.updatedAt)}
-                />
-              ) : null}
-              <PropertyRow label="Provedor" value={`${channel.providerAlias} · ${getOperationalStatusLabel(channel.status)}`} />
-              <PropertyRow label="Versão" value={`v${channel.version}`} />
-              <PropertyRow label="Diagnóstico" value={channel.route.diagnostic.code} code />
-              <PropertyRow label="Mensagem do diagnóstico" value={channel.route.diagnostic.message} />
-              <PropertyRow label="Modo de conexão" value={channel.connectionMode === "provisioned-number" ? "Número provisionado" : "Credenciais próprias"} />
-              <PropertyRow label="Mídia" value={channel.capabilities.supportsMedia ? "Suportada" : "Não suportada"} />
-              <PropertyRow label="QR Code" value={channel.capabilities.supportsQr ? "Suportado" : "Não suportado"} />
-              <PropertyRow
-                label="Disponibilidade"
-                value={
-                  channelReady
-                    ? "Conexão pronta para tráfego"
-                    : `Estado consolidado: ${channelState.label}`
-                }
-              />
-            </div>
-          </div>
-        </CardContent>
-      ) : null}
-    </Card>
-  );
-}
-
-type OperationalStatusTone = OperationalChannelStatusTone;
-
-function StateActionButton({
-  action,
-  label,
-  isRefreshing,
-  isQrPending,
-  isActivationPending,
-  isRouteLoading,
-  canOpenRoute,
-  canActivate,
-  onRefresh,
-  onConfigureRoute,
-  onEditChannel,
-  onActivate,
-  onRequestQrCode,
-  onOpenDetails,
-}: {
-  action: OperationalChannelStateAction;
-  label: string;
-  isRefreshing: boolean;
-  isQrPending: boolean;
-  isActivationPending: boolean;
-  isRouteLoading: boolean;
-  canOpenRoute: boolean;
-  canActivate: boolean;
-  onRefresh: () => void;
-  onConfigureRoute: () => void;
-  onEditChannel: () => void;
-  onActivate: () => void;
-  onRequestQrCode: () => void;
-  onOpenDetails: () => void;
-}) {
-  const className = "w-full sm:w-auto";
-
-  if (action === "configure-destination") {
-    return (
-      <Button
-        size="sm"
-        variant="default"
-        className={className}
-        onClick={onConfigureRoute}
-        disabled={isRouteLoading || !canOpenRoute}
-      >
-        <Pencil className="h-4 w-4" />
-        {label}
-      </Button>
-    );
-  }
-
-  if (action === "update-credentials") {
-    return (
-      <Button size="sm" variant="default" className={className} onClick={onEditChannel}>
-        <Pencil className="h-4 w-4" />
-        {label}
-      </Button>
-    );
-  }
-
-  if (action === "activate-channel") {
-    return (
-      <Button
-        size="sm"
-        variant="default"
-        className={className}
-        onClick={onActivate}
-        disabled={!canActivate}
-      >
-        <CheckCircle2 className="h-4 w-4" />
-        {label}
-      </Button>
-    );
-  }
-
-  if (action === "generate-qr") {
-    return (
-      <Button
-        size="sm"
-        variant="default"
-        className={className}
-        onClick={onRequestQrCode}
-        disabled={isQrPending}
-      >
-        <QrCode className="h-4 w-4" />
-        {label}
-      </Button>
-    );
-  }
-
-  if (action === "open-details") {
-    return (
-      <Button size="sm" variant="default" className={className} onClick={onOpenDetails}>
-        <ChevronDown className="h-4 w-4" />
-        {label}
-      </Button>
-    );
-  }
-
-  return (
-    <Button size="sm" variant="default" className={className} onClick={onRefresh} disabled={isRefreshing}>
-      <RefreshCw className={isRefreshing ? "h-4 w-4 animate-spin" : "h-4 w-4"} />
-      {label}
-    </Button>
-  );
-}
-
-function OperationalChannelStateCard({
-  state,
-  action,
-  routeSummary,
-  provider,
-}: {
-  state: OperationalChannelStateSpec;
-  action?: ReactNode;
-  routeSummary: string;
-  provider: string;
-}) {
-  const toneClasses: Record<
-    OperationalStatusTone,
-    { container: string; icon: string; status: string }
-  > = {
-    success: {
-      container: "border-emerald-200/80 bg-emerald-50/30 dark:border-emerald-900 dark:bg-emerald-950/20",
-      icon: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300",
-      status: "text-emerald-800 dark:text-emerald-200",
-    },
-    warning: {
-      container: "border-amber-200/80 bg-amber-50/30 dark:border-amber-900 dark:bg-amber-950/20",
-      icon: "bg-amber-100 text-amber-700 dark:bg-amber-900/60 dark:text-amber-300",
-      status: "text-amber-800 dark:text-amber-200",
-    },
-    danger: {
-      container: "border-destructive/30 bg-destructive/5",
-      icon: "bg-destructive/10 text-destructive",
-      status: "text-destructive",
-    },
-    muted: {
-      container: "border-border bg-muted/10",
-      icon: "bg-muted text-muted-foreground",
-      status: "text-foreground",
-    },
-  };
-  const classes = toneClasses[state.tone];
-  const icon = state.tone === "success" ? (
-    <CheckCircle2 className="h-4 w-4" />
-  ) : state.key === "PAUSED" || state.key === "READY_TO_ACTIVATE" ? (
-    <Pause className="h-4 w-4" />
-  ) : (
-    <AlertCircle className="h-4 w-4" />
-  );
-
-  return (
-    <div className={`rounded-lg border p-4 ${classes.container}`} aria-live="polite">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex min-w-0 items-start gap-3">
-          <span className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${classes.icon}`}>
-            {icon}
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Status do canal
-            </p>
-            <p className={`mt-1 font-semibold ${classes.status}`}>{state.label}</p>
-            <p className="mt-1 break-words text-sm text-muted-foreground">{state.description}</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Próximo passo: <span className="font-medium">{state.nextStep}</span>
-            </p>
-          </div>
-        </div>
-        {action ? <div className="w-full sm:w-auto sm:shrink-0">{action}</div> : null}
-      </div>
-      <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 border-t pt-3 text-sm">
-        <div className="flex min-w-0 items-baseline gap-2">
-          <span className="text-muted-foreground">Destino</span>
-          <span className="break-words font-medium">{routeSummary}</span>
-        </div>
-        <div className="flex min-w-0 items-baseline gap-2">
-          <span className="text-muted-foreground">Provedor</span>
-          <span className="break-words font-medium">{provider}</span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function PropertyRow({
-  label,
-  value,
-  attention = false,
-  code = false,
-}: {
-  label: string;
-  value: string;
-  attention?: boolean;
-  code?: boolean;
-}) {
-  return (
-    <div className="flex flex-col gap-1 py-2.5 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-      <span className="text-muted-foreground">{label}</span>
-      {code ? (
-        <code className="break-all rounded bg-background px-2 py-1 text-xs font-medium sm:max-w-[70%] sm:text-right">
-          {value}
-        </code>
-      ) : (
-        <span className={attention ? "font-medium text-amber-700 dark:text-amber-300" : "font-medium"}>{value}</span>
-      )}
-    </div>
   );
 }
 
