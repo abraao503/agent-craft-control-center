@@ -55,6 +55,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { OperationalChannelDialog, OperationalChannelFormValues } from "@/components/operation/OperationalChannelDialog";
+import { OperationalChannelDetail } from "@/components/operation/OperationalChannelDetail";
 import { OperationalChannelList } from "@/components/operation/OperationalChannelList";
 import { OperationalMetaManualAccountCard } from "@/components/operation/OperationalMetaManualAccountCard";
 import {
@@ -96,6 +97,7 @@ export function OperationalChannelsManager({
   );
   const [channelToDeactivate, setChannelToDeactivate] =
     useState<OperationalChannel | null>(null);
+  const [detailChannelId, setDetailChannelId] = useState<string | null>(null);
   const [qrCode, setQrCode] = useState<QrCodeState | null>(null);
   const [webhookUrls, setWebhookUrls] = useState<Record<string, string>>({});
 
@@ -489,6 +491,7 @@ export function OperationalChannelsManager({
           onActivate={(item) => void handleActivate(item)}
           onRequestQrCode={(item) => void handleRequestQrCode(item)}
           onRefresh={() => void refreshOperationalState()}
+          onOpenDetails={(item) => setDetailChannelId(item.id)}
           page={channelsQuery.data?.page ?? channelsPage}
           totalPages={channelsQuery.data?.totalPages ?? 1}
           onPageChange={setChannelsPage}
@@ -512,6 +515,43 @@ export function OperationalChannelsManager({
           if (!open) setEditingChannel(null);
         }}
         onSubmit={handleChannelSubmit}
+      />
+
+      <OperationalChannelDetail
+        open={Boolean(detailChannelId)}
+        channel={
+          channels.find((item) => item.id === detailChannelId) ?? null
+        }
+        route={
+          detailChannelId
+            ? routesByChannelId.get(detailChannelId) ?? null
+            : null
+        }
+        isRouteError={routesQuery.isError}
+        canManageConnection={canConnectChannels}
+        canManageRoute={canManageChannels}
+        isDeactivationPending={channelMutations.deactivate.isPending}
+        isActivationPending={channelMutations.activate.isPending}
+        isQrPending={channelMutations.requestQrCode.isPending}
+        isRefreshing={channelsQuery.isFetching || routesQuery.isFetching}
+        webhookUrl={
+          detailChannelId ? webhookUrls[detailChannelId] : undefined
+        }
+        onOpenChange={(open) => {
+          if (!open) setDetailChannelId(null);
+        }}
+        onEditChannel={(item) => {
+          setDetailChannelId(null);
+          openEditChannel(item);
+        }}
+        onEditDestination={(item) => {
+          setDetailChannelId(null);
+          openRouteDialog(item, routesByChannelId.get(item.id) ?? null);
+        }}
+        onActivate={(item) => void handleActivate(item)}
+        onDeactivate={(item) => setChannelToDeactivate(item)}
+        onRequestQrCode={(item) => void handleRequestQrCode(item)}
+        onRefresh={() => void refreshOperationalState()}
       />
 
       <OperationalRouteDialog

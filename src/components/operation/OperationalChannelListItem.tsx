@@ -55,6 +55,7 @@ type OperationalChannelListItemProps = {
   onActivate: (channel: OperationalChannel) => void;
   onRequestQrCode: (channel: OperationalChannel) => void;
   onRefresh: () => void;
+  onOpenDetails: (channel: OperationalChannel) => void;
 };
 
 export function OperationalChannelListItem({
@@ -74,6 +75,7 @@ export function OperationalChannelListItem({
   onActivate,
   onRequestQrCode,
   onRefresh,
+  onOpenDetails,
 }: OperationalChannelListItemProps) {
   const [technicalDetailsOpen, setTechnicalDetailsOpen] = useState(false);
   const routeUnavailable = isRouteError && channel.route.configured && !route;
@@ -113,24 +115,33 @@ export function OperationalChannelListItem({
     <Card className="overflow-hidden">
       <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-start sm:justify-between sm:gap-4 sm:p-5">
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="truncate text-base font-semibold">{channelName}</p>
-            <OperationalChannelStateBadge state={state} />
-          </div>
-          <p className="mt-1 truncate text-sm text-muted-foreground">
-            {OPERATIONAL_CHANNEL_PROVIDER_LABELS[channel.provider]}
-          </p>
-          <div className="mt-2 flex flex-wrap items-baseline gap-x-4 gap-y-1 text-sm">
-            <span className="flex min-w-0 items-baseline gap-1.5">
-              <span className="shrink-0 text-muted-foreground">Destino:</span>
-              <span className="break-words font-medium">{routeSummary}</span>
-            </span>
-            {route ? (
-              <span className="shrink-0 text-xs text-muted-foreground">
-                Atualizado em {formatOperationalDateTime(route.updatedAt)}
+          <button
+            type="button"
+            onClick={() => onOpenDetails(channel)}
+            aria-label={`Abrir detalhes do canal ${channelName}`}
+            className="group block w-full rounded-md text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="truncate text-base font-semibold group-hover:underline">
+                {channelName}
+              </p>
+              <OperationalChannelStateBadge state={state} />
+            </div>
+            <p className="mt-1 truncate text-sm text-muted-foreground">
+              {OPERATIONAL_CHANNEL_PROVIDER_LABELS[channel.provider]}
+            </p>
+            <div className="mt-2 flex flex-wrap items-baseline gap-x-4 gap-y-1 text-sm">
+              <span className="flex min-w-0 items-baseline gap-1.5">
+                <span className="shrink-0 text-muted-foreground">Destino:</span>
+                <span className="break-words font-medium">{routeSummary}</span>
               </span>
-            ) : null}
-          </div>
+              {route ? (
+                <span className="shrink-0 text-xs text-muted-foreground">
+                  Atualizado em {formatOperationalDateTime(route.updatedAt)}
+                </span>
+              ) : null}
+            </div>
+          </button>
         </div>
 
         <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 sm:justify-end">
