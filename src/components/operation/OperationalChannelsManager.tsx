@@ -746,6 +746,18 @@ function OperationalChannelCard({
     channel.connectionStatus.toUpperCase(),
   );
   const channelReady = channel.active && routeIsValid && connectionReady;
+  const channelStateLabel = channelReady
+    ? "Pronta"
+    : channel.active
+      ? "Habilitada"
+      : "Desativada";
+  const connectionDetail = !channel.active
+    ? "Conexão desativada"
+    : connectionReady
+      ? "Conectada ao provedor"
+      : channel.credentialsConfigured
+        ? "Credenciais configuradas · aguardando conexão"
+        : "Credenciais incompletas";
   const availabilityMessage = channelReady
     ? "Conexão pronta para tráfego"
     : !channel.active
@@ -754,9 +766,27 @@ function OperationalChannelCard({
         : "Próximo passo: configure uma rota válida."
       : routeUnavailable
         ? "Não foi possível confirmar a rota."
-        : !routeIsValid
-          ? "Próximo passo: configure uma rota válida."
-          : `Aguardando conexão: ${getOperationalStatusLabel(channel.connectionStatus)}`;
+          : !routeIsValid
+            ? "Próximo passo: configure uma rota válida."
+            : `Aguardando conexão: ${getOperationalStatusLabel(channel.connectionStatus)}`;
+  const nextStepTitle = channelReady
+    ? "Canal pronto"
+    : !routeIsValid
+      ? "Configure a rota de entrada"
+      : !channel.active
+        ? "Ative a conexão"
+        : channel.capabilities.supportsQr
+          ? "Conecte o provedor"
+          : "Aguarde a conexão";
+  const nextStepDescription = channelReady
+    ? "A entrada pode receber mensagens neste ambiente."
+    : !routeIsValid
+      ? "Defina uma rota de entrada válida antes de ativar o canal."
+      : !channel.active
+        ? "Ative a conexão para liberar o recebimento de mensagens."
+        : channel.capabilities.supportsQr
+          ? "Gere o QR Code e escaneie no WhatsApp para concluir a conexão."
+          : "A conexão ainda não está pronta para receber mensagens.";
   const routeDetail = routeUnavailable
     ? "Tente novamente para consultar o destino."
     : route
@@ -782,12 +812,12 @@ function OperationalChannelCard({
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
               <CardTitle className="truncate text-lg">{channelName}</CardTitle>
-              <Badge variant={channel.active ? "secondary" : "outline"}>
-                {channel.active ? "Ativa" : "Desativada"}
+              <Badge variant={channelReady ? "secondary" : "outline"}>
+                {channelStateLabel}
               </Badge>
             </div>
             <p className="mt-1 text-sm text-muted-foreground">
-              {OPERATIONAL_CHANNEL_PROVIDER_LABELS[channel.provider]} · {getOperationalStatusLabel(channel.connectionStatus)}
+              {OPERATIONAL_CHANNEL_PROVIDER_LABELS[channel.provider]}
             </p>
           </div>
 
@@ -854,7 +884,7 @@ function OperationalChannelCard({
             }
             label="Conexão"
             status={channel.active ? getOperationalStatusLabel(channel.connectionStatus) : "Desativada"}
-            detail={channel.credentialsConfigured ? "Credenciais configuradas" : "Credenciais incompletas"}
+            detail={connectionDetail}
             tone={!channel.active ? "muted" : connectionReady ? "success" : "warning"}
           />
           <OperationalStatusCard
@@ -892,36 +922,17 @@ function OperationalChannelCard({
             }
           />
         </div>
-
-        <div
-          className="mt-4 flex items-start gap-2 rounded-lg border bg-muted/20 p-3 text-sm"
-          aria-live="polite"
-        >
-          {channelReady ? (
-            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-green-600" />
-          ) : channel.active ? (
-            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
-          ) : (
-            <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-          )}
-          <span className="font-medium">{availabilityMessage}</span>
-        </div>
       </CardHeader>
 
-      <CardContent className="space-y-5 border-t p-4 sm:p-5">
-        <div className="flex flex-col gap-4 rounded-lg border bg-background p-4 sm:flex-row sm:items-center sm:justify-between">
+      <CardContent className="space-y-4 border-t p-4 sm:p-5">
+        <div
+          className="flex flex-col gap-4 rounded-lg border bg-muted/20 p-4 sm:flex-row sm:items-center sm:justify-between"
+          aria-live="polite"
+        >
           <div>
-            <p className="text-sm font-semibold">
-              {channelReady ? "Canal pronto" : "Próximo passo"}
-            </p>
+            <p className="text-sm font-semibold">{nextStepTitle}</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              {channelReady
-                ? "A entrada pode receber mensagens neste ambiente."
-                : !routeIsValid
-                  ? "Configure uma rota de entrada válida antes de ativar o canal."
-                  : !channel.active
-                    ? "Ative a conexão para liberar o recebimento de mensagens."
-                    : "A conexão ainda não está pronta para receber mensagens."}
+              {nextStepDescription}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2 sm:justify-end">
@@ -945,15 +956,18 @@ function OperationalChannelCard({
                 Ativar conexão
               </Button>
             ) : null}
-            {canManageConnection && channel.capabilities.supportsQr ? (
+            {canManageConnection &&
+            channel.active &&
+            !connectionReady &&
+            channel.capabilities.supportsQr ? (
               <Button
                 size="sm"
-                variant="outline"
+                variant="default"
                 onClick={() => onRequestQrCode(channel)}
-                disabled={!channel.active || isQrPending}
+                disabled={isQrPending}
               >
                 <QrCode className="h-4 w-4" />
-                Solicitar QR Code
+                Gerar QR Code
               </Button>
             ) : null}
           </div>
