@@ -198,32 +198,6 @@ export interface OperationalMetaPhoneNumberAvailability {
   boundWorkspaceType: "COMMERCIAL" | "OPERATION" | null;
 }
 
-export interface StartOperationalMetaOnboardingData {
-  sessionId: string;
-  state: string;
-  appId: string;
-  configId: string;
-  graphVersion: string;
-  expiresAt: string;
-}
-
-export interface CompleteOperationalMetaOnboardingBody {
-  sessionId: string;
-  state: string;
-  code: string;
-  wabaId: string;
-  phoneNumberId: string;
-}
-
-export interface CompleteOperationalMetaOnboardingData {
-  accountId: string;
-  wabaId: string;
-  businessId: string | null;
-  phoneNumberId: string;
-  grantedScopes: string[];
-  tokenExpiresAt: string | null;
-}
-
 export interface OperationalChannelListParams {
   page?: number;
   limit?: number;

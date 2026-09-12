@@ -7,7 +7,10 @@ import {
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
-import { listOperationalMetaPhoneNumbers } from "@/services/operation/listOperationalMetaPhoneNumbers";
+import {
+  listOperationalMetaPhoneNumbers,
+  selectFreeOperationalMetaPhoneNumbers,
+} from "@/services/operation/listOperationalMetaPhoneNumbers";
 import {
   OperationalChannel,
   OperationalChannelProvider,
@@ -147,7 +150,9 @@ export function OperationalChannelDialog({
   const selectedProviderDetails = providers.find(
     (provider) => provider.name === selectedProvider,
   );
-  const phoneNumbers = phoneNumbersQuery.data ?? [];
+  const phoneNumbers = selectFreeOperationalMetaPhoneNumbers(
+    phoneNumbersQuery.data ?? [],
+  );
   const showPhoneNumberSelect =
     !channel &&
     selectedProvider === "meta-cloud" &&
@@ -328,7 +333,6 @@ export function OperationalChannelDialog({
                           <SelectItem
                             key={phone.phoneNumberId}
                             value={phone.phoneNumberId}
-                            disabled={Boolean(phone.boundWorkspaceId)}
                           >
                             {formatOperationalMetaPhone(phone)}
                           </SelectItem>
@@ -339,10 +343,12 @@ export function OperationalChannelDialog({
                 />
               ) : !phoneNumbersQuery.isLoading && !phoneNumbersQuery.isError ? (
                 <div className="rounded-md border border-dashed bg-background p-3 text-sm">
-                  <p className="font-medium">Nenhum número disponível</p>
+                  <p className="font-medium">Nenhum número livre disponível</p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Configure e valide a conta Meta Cloud da empresa acima para
-                    sincronizar os números antes de criar este canal.
+                    A conta Meta Cloud da empresa ainda não foi configurada ou
+                    todos os números sincronizados já estão em uso. Conclua a
+                    configuração da conta acima ou libere um número antes de
+                    criar este canal.
                   </p>
                 </div>
               ) : null}
@@ -354,12 +360,6 @@ export function OperationalChannelDialog({
                 <p className="text-xs text-muted-foreground">
                   Não foi possível carregar os números sincronizados. Atualize
                   a tela e tente novamente.
-                </p>
-              ) : null}
-              {!channel && phoneNumbers.some((phone) => phone.boundWorkspaceId) ? (
-                <p className="text-xs text-muted-foreground">
-                  Números já utilizados em outro ambiente ficam bloqueados
-                  para evitar conexões duplicadas.
                 </p>
               ) : null}
             </div>
@@ -457,7 +457,6 @@ function FieldError({ message }: { message?: string }) {
 function formatOperationalMetaPhone(
   phone: OperationalMetaPhoneNumberAvailability,
 ): string {
-  const owner = phone.boundWorkspaceId ? " · Já utilizado" : "";
   const verifiedName = phone.verifiedName ? ` · ${phone.verifiedName}` : "";
-  return `${phone.displayPhoneNumber} · ${phone.phoneNumberId}${verifiedName}${owner}`;
+  return `${phone.displayPhoneNumber} · ${phone.phoneNumberId}${verifiedName}`;
 }

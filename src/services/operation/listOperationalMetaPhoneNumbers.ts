@@ -12,3 +12,11 @@ export async function listOperationalMetaPhoneNumbers(
 
   return data;
 }
+
+export function selectFreeOperationalMetaPhoneNumbers(
+  phoneNumbers: OperationalMetaPhoneNumberAvailability[],
+): OperationalMetaPhoneNumberAvailability[] {
+  return phoneNumbers.filter(
+    (phone) => phone.boundWorkspaceId === null,
+  );
+}
