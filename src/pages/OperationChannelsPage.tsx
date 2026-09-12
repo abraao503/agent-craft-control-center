@@ -5,7 +5,6 @@ import { OperationalChannelsManager } from "@/components/operation/OperationalCh
 import { OperationalSyntheticConsole } from "@/components/operation/OperationalSyntheticConsole";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -13,11 +12,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { FlaskConical } from "lucide-react";
 
 export default function OperationChannelsPage() {
   const { currentWorkspace } = useWorkspaceContext();
   const { has } = usePermissions();
+  const [testToolsOpen, setTestToolsOpen] = useState(false);
   const isLocalEnvironment =
     import.meta.env.DEV && import.meta.env.VITE_APP_ENV === "development";
   const canOpenTestTools =
@@ -38,39 +37,29 @@ export default function OperationChannelsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <>
       <OperationalChannelsManager
         workspaceId={currentWorkspace.id}
         workspaceName={currentWorkspace.name}
+        onOpenTestTools={
+          canOpenTestTools ? () => setTestToolsOpen(true) : undefined
+        }
       />
-      {canOpenTestTools ? (
-        <TestToolsSection workspaceId={currentWorkspace.id} />
-      ) : null}
-    </div>
-  );
-}
-
-function TestToolsSection({ workspaceId }: { workspaceId: string }) {
-  const [open, setOpen] = useState(false);
-
-  return (
-    <div className="mx-auto w-full max-w-6xl px-6 pb-8">
-      <Button variant="ghost" size="sm" onClick={() => setOpen(true)}>
-        <FlaskConical className="h-4 w-4" />
-        Ferramentas de teste
-      </Button>
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={testToolsOpen} onOpenChange={setTestToolsOpen}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[640px]">
           <DialogHeader>
-            <DialogTitle>Ferramentas de teste</DialogTitle>
+            <DialogTitle>Simular mensagem de entrada</DialogTitle>
             <DialogDescription>
-              Console sintético restrito ao desenvolvimento local; não faz parte
-              da configuração de canais.
+              Ferramenta exclusiva do ambiente de desenvolvimento. A simulação
+              não envia mensagens a um provedor real.
             </DialogDescription>
           </DialogHeader>
-          <OperationalSyntheticConsole workspaceId={workspaceId} />
+          <OperationalSyntheticConsole
+            workspaceId={currentWorkspace.id}
+            embedded
+          />
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 }

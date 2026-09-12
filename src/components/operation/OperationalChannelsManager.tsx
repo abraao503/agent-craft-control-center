@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
+  FlaskConical,
   MoreHorizontal,
   Plus,
   RefreshCw,
@@ -70,6 +71,7 @@ import {
 type OperationalChannelsManagerProps = {
   workspaceId?: string;
   workspaceName?: string;
+  onOpenTestTools?: () => void;
 };
 
 type QrCodeState = {
@@ -80,6 +82,7 @@ type QrCodeState = {
 export function OperationalChannelsManager({
   workspaceId,
   workspaceName,
+  onOpenTestTools,
 }: OperationalChannelsManagerProps) {
   const { has, isCompanyLevel } = usePermissions();
   const { toast } = useToast();
@@ -434,21 +437,18 @@ export function OperationalChannelsManager({
   }
 
   return (
-    <section className="mx-auto w-full max-w-6xl space-y-6 p-6">
-      <header className="flex flex-col gap-4 border-b pb-6 sm:flex-row sm:items-end sm:justify-between">
+    <section className="mx-auto w-full max-w-6xl space-y-5 px-4 py-5 sm:px-6 sm:py-6">
+      <header className="flex flex-col gap-4 border-b pb-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
-            Ambiente operacional
-          </p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight">
-            Canais de entrada
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+            Canais
           </h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-            Veja os canais de {workspaceName || "este ambiente"}, o destino das
-            mensagens e o próximo passo de cada canal.
+          <p className="mt-1.5 max-w-2xl text-sm leading-6 text-muted-foreground">
+            Gerencie as entradas de {workspaceName || "este ambiente"} e o
+            destino de cada mensagem.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
           <OperationalMetaManualAccountCard
             workspaceId={workspaceId}
             presentation="trigger"
@@ -484,6 +484,15 @@ export function OperationalChannelsManager({
                 />
                 Atualizar canais
               </DropdownMenuItem>
+              {onOpenTestTools ? (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onSelect={onOpenTestTools}>
+                    <FlaskConical className="mr-2 h-4 w-4" />
+                    Simular mensagem
+                  </DropdownMenuItem>
+                </>
+              ) : null}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -514,17 +523,7 @@ export function OperationalChannelsManager({
         </Alert>
       ) : null}
 
-      <div className="space-y-3">
-        <div>
-          <h2 className="text-xl font-semibold tracking-tight">
-            Canais deste ambiente
-          </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Cada canal mostra o status de prontidão e o próximo passo necessário.
-          </p>
-        </div>
-
-        <OperationalChannelList
+      <OperationalChannelList
           channels={channels}
           routesByChannelId={routesByChannelId}
           isLoading={channelsQuery.isLoading}
@@ -550,8 +549,7 @@ export function OperationalChannelsManager({
           canCreateChannel={canConnectChannels}
           canOpenCreateChannel={canOpenCreateChannel}
           onCreateChannel={openCreateChannel}
-        />
-      </div>
+      />
 
       <OperationalChannelOnboarding
         open={onboardingOpen}

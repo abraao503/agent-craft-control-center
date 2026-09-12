@@ -35,8 +35,10 @@ import { useToast } from "@/hooks/use-toast";
 
 export function OperationalSyntheticConsole({
   workspaceId,
+  embedded = false,
 }: {
   workspaceId: string;
+  embedded?: boolean;
 }) {
   const { has } = usePermissions();
   const { toast } = useToast();
@@ -114,19 +116,20 @@ export function OperationalSyntheticConsole({
   if (!canRunHarness) return null;
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <FlaskConical className="h-5 w-5 text-primary" />
-          Console sintético
-        </CardTitle>
-        <CardDescription>
-          Ferramenta de desenvolvimento local: crie uma mensagem controlada no
-          canal selecionado para validar a rota de agente externo e abrir o
-          atendimento sem enviar nada a um provedor real.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+    <Card className={embedded ? "border-0 shadow-none" : undefined}>
+      {!embedded ? (
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FlaskConical className="h-5 w-5 text-primary" />
+            Simular mensagem de entrada
+          </CardTitle>
+          <CardDescription>
+            Crie uma mensagem controlada para validar o destino e abrir um
+            atendimento sem acionar o provedor real.
+          </CardDescription>
+        </CardHeader>
+      ) : null}
+      <CardContent className={embedded ? "p-0" : undefined}>
         {channelsQuery.isLoading ? (
           <div className="flex min-h-20 items-center justify-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" />
