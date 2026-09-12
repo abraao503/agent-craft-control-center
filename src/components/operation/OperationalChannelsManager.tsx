@@ -182,7 +182,7 @@ export function OperationalChannelsManager({
           idempotencyKey: crypto.randomUUID(),
         });
         toast({
-          title: "Conexão atualizada",
+          title: "Canal atualizado",
           description: "A lista e o diagnóstico foram atualizados.",
         });
       } else {
@@ -192,8 +192,8 @@ export function OperationalChannelsManager({
           idempotencyKey: crypto.randomUUID(),
         });
         toast({
-          title: "Conexão criada",
-          description: "Agora configure a rota de entrada desta conexão.",
+          title: "Canal criado",
+          description: "Defina o destino das mensagens para liberar a ativação.",
         });
         setEditingRoute(null);
         setRouteChannel(createdChannel);
@@ -204,7 +204,7 @@ export function OperationalChannelsManager({
       setEditingChannel(null);
     } catch (error) {
       toast({
-        title: "Não foi possível salvar a conexão",
+        title: "Não foi possível salvar o canal",
         description: getChannelActionErrorMessage(
           error,
           "Verifique os dados e tente novamente.",
@@ -240,8 +240,8 @@ export function OperationalChannelsManager({
           idempotencyKey: crypto.randomUUID(),
         });
         toast({
-          title: "Rota atualizada",
-          description: "A conexão e o setup foram sincronizados.",
+          title: "Destino atualizado",
+          description: "O canal e o setup foram sincronizados.",
         });
       } else {
         await routeMutations.create.mutateAsync({
@@ -252,8 +252,8 @@ export function OperationalChannelsManager({
           idempotencyKey: crypto.randomUUID(),
         });
         toast({
-          title: "Rota criada",
-          description: "O diagnóstico da rota já está disponível na lista.",
+          title: "Destino definido",
+          description: "O diagnóstico do destino já está disponível na lista.",
         });
       }
 
@@ -262,7 +262,7 @@ export function OperationalChannelsManager({
       setRouteChannel(null);
     } catch (error) {
       toast({
-        title: "Não foi possível salvar a rota",
+        title: "Não foi possível salvar o destino",
         description: getOperationalErrorMessage(
           error,
           "Verifique os destinos e tente novamente.",
@@ -283,17 +283,17 @@ export function OperationalChannelsManager({
         idempotencyKey: crypto.randomUUID(),
       });
       toast({
-        title: "Conexão desativada",
+        title: "Canal pausado",
         description:
-          "O histórico foi preservado e a conexão saiu da lista de canais ativos.",
+          "O histórico foi preservado e o canal saiu do tráfego de mensagens.",
       });
       setChannelToDeactivate(null);
     } catch (error) {
       toast({
-        title: "Não foi possível desativar a conexão",
+        title: "Não foi possível pausar o canal",
         description: getOperationalErrorMessage(
           error,
-          "A conexão pode ter sido alterada por outra pessoa.",
+          "O canal pode ter sido alterado por outra pessoa.",
         ),
         action: staleVersionAction(error),
         variant: "destructive",
@@ -312,7 +312,7 @@ export function OperationalChannelsManager({
         [channel.id]: response.webhookUrl,
       }));
       toast({
-        title: "Conexão ativada",
+        title: "Canal ativado",
         description: "O webhook operacional foi configurado pelo provedor.",
       });
     } catch (error) {
@@ -320,7 +320,7 @@ export function OperationalChannelsManager({
         title: "Ativação bloqueada",
         description: getChannelActivationErrorMessage(
           error,
-          "Não foi possível ativar este provedor. Verifique a rota e tente novamente.",
+          "Não foi possível ativar este canal. Verifique o destino e tente novamente.",
         ),
         variant: "destructive",
       });
@@ -474,10 +474,10 @@ export function OperationalChannelsManager({
       {routesQuery.isError ? (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Não foi possível carregar as rotas completas</AlertTitle>
+          <AlertTitle>Não foi possível carregar os destinos completos</AlertTitle>
           <AlertDescription className="flex flex-wrap items-center gap-3">
-            Os resumos ainda podem aparecer nas conexões; tente novamente para
-            editar uma rota existente.
+            Os destinos ainda podem aparecer nos canais; tente novamente para
+            editar um destino existente.
             <Button
               size="sm"
               variant="outline"
@@ -675,9 +675,9 @@ export function OperationalChannelsManager({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Desativar conexão?</AlertDialogTitle>
+            <AlertDialogTitle>Pausar canal?</AlertDialogTitle>
             <AlertDialogDescription>
-              A conexão “{channelToDeactivate?.displayName || channelToDeactivate?.providerAlias}”
+              O canal “{channelToDeactivate?.displayName || channelToDeactivate?.providerAlias}”
               ficará fora do tráfego. O histórico e a configuração serão
               preservados para diagnóstico posterior.
             </AlertDialogDescription>
@@ -694,8 +694,8 @@ export function OperationalChannelsManager({
               disabled={channelMutations.deactivate.isPending}
             >
               {channelMutations.deactivate.isPending
-                ? "Desativando..."
-                : "Desativar"}
+                ? "Pausando..."
+                : "Pausar"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -807,7 +807,7 @@ function buildUpdateChannelBody(
 function getChannelActionErrorMessage(error: unknown, fallback: string): string {
   const code = getOperationalErrorCode(error);
   if (code === "PROVIDER_CREDENTIALS_INCOMPLETE") {
-    return "Complete as credenciais e a URL de postback antes de ativar a conexão.";
+    return "Complete as credenciais e a URL de postback antes de ativar o canal.";
   }
   if (code === "META_PHONE_NUMBER_IN_USE") {
     return "Este número já está vinculado a outro canal operacional.";
@@ -823,7 +823,7 @@ function getChannelActivationErrorMessage(
   fallback: string,
 ): string {
   if (getOperationalErrorCode(error) === "ROUTE_INCOMPLETE") {
-    return "Configure uma rota válida antes de ativar a conexão.";
+    return "Defina um destino válido antes de ativar o canal.";
   }
 
   return getChannelActionErrorMessage(error, fallback);

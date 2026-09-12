@@ -18,8 +18,8 @@ export const OPERATIONAL_CHANNEL_ENTRY_MODE_LABELS: Record<
   OperationalChannelEntryMode,
   string
 > = {
-  TRIAGE: "Triagem",
-  QUEUE: "Fila",
+  TRIAGE: "Triagem operacional",
+  QUEUE: "Área e fila",
   ASSISTANT: "Agente de atendimento",
   EXTERNAL_AGENT: "Integração de triagem",
 };
@@ -85,7 +85,7 @@ const ERROR_LABELS: Record<string, string> = {
   PROVIDER_QR_UNSUPPORTED: "Este provedor não oferece QR Code.",
   PROVIDER_UNAVAILABLE: "Este provedor está indisponível no momento.",
   ROUTE_ALREADY_EXISTS: "Este canal já possui uma rota configurada.",
-  ROUTE_INCOMPLETE: "Complete uma rota válida antes de solicitar o QR Code.",
+  ROUTE_INCOMPLETE: "Defina um destino válido antes de solicitar o QR Code.",
   STALE_VERSION:
     "O recurso foi alterado por outra pessoa. Atualize a lista e tente novamente.",
   ASSISTANT_NOT_FOUND:
