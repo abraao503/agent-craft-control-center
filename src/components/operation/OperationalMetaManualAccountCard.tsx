@@ -38,9 +38,6 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import {
   Dialog,
@@ -122,6 +119,29 @@ export function OperationalMetaManualAccountCard({
     has("manage:integrations") &&
     has("manage:operation-channels");
   const accounts = accountsQuery.data ?? [];
+  const totalPhoneNumbers = accounts.reduce(
+    (total, account) => total + account.phoneNumbers.length,
+    0,
+  );
+  const accountNeedsAttention = accounts.some((account) =>
+    ["ERROR", "NEEDS_REAUTHORIZATION"].includes(account.status),
+  );
+  const accountStatusLabel = accountsQuery.isError
+    ? "Indisponível"
+    : accountNeedsAttention
+      ? "Requer atenção"
+      : accounts.length
+        ? "Configurada"
+        : "Pendente";
+  const accountSummary = accountsQuery.isLoading
+    ? "Consultando a configuração compartilhada pela empresa."
+    : accountsQuery.isError
+      ? "Não foi possível consultar a conta Meta agora."
+      : accounts.length
+        ? `${accounts.length} ${accounts.length === 1 ? "conta configurada" : "contas configuradas"} · ${totalPhoneNumbers} ${totalPhoneNumbers === 1 ? "número sincronizado" : "números sincronizados"}`
+        : canManageManualAccount
+          ? "Configure a conta para liberar números nos canais deste ambiente."
+          : "A conta ainda não foi configurada pela empresa.";
   const dialogAccount =
     dialog?.step === "webhook"
       ? accounts.find((account) => account.wabaId === dialog.account.wabaId) ??
@@ -292,37 +312,48 @@ export function OperationalMetaManualAccountCard({
   };
 
   return (
-    <Card>
-      <CardHeader className="gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-1">
-          <CardTitle className="flex items-center gap-2 text-xl">
-            <ShieldCheck className="h-5 w-5 text-primary" />
-            Conta Meta Cloud da empresa
-          </CardTitle>
-          <CardDescription className="max-w-2xl leading-5">
-            Configure as credenciais da empresa uma vez e reutilize os números
-            sincronizados nos ambientes operacionais.
-          </CardDescription>
+    <Card className="shadow-none">
+      <CardContent className="p-4 sm:p-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <ShieldCheck className="h-4 w-4 shrink-0 text-primary" />
+              <p className="font-semibold">Conta Meta da empresa</p>
+              <Badge
+                variant={
+                  accountsQuery.isError || accountNeedsAttention
+                    ? "destructive"
+                    : accounts.length
+                      ? "secondary"
+                      : "outline"
+                }
+              >
+                {accountStatusLabel}
+              </Badge>
+            </div>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {accountSummary}
+            </p>
+          </div>
+          {canManageManualAccount ? (
+            <Button
+              variant={accounts.length ? "outline" : "default"}
+              onClick={() => openCredentialsDialog(null)}
+            >
+              {accounts.length ? (
+                <Plus className="h-4 w-4" />
+              ) : (
+                <KeyRound className="h-4 w-4" />
+              )}
+              {accounts.length ? "Adicionar conta" : "Configurar conta"}
+            </Button>
+          ) : null}
         </div>
-        {canManageManualAccount ? (
-          <Button
-            variant={accounts.length ? "outline" : "default"}
-            onClick={() => openCredentialsDialog(null)}
-          >
-            {accounts.length ? (
-              <Plus className="h-4 w-4" />
-            ) : (
-              <KeyRound className="h-4 w-4" />
-            )}
-            {accounts.length ? "Adicionar conta" : "Configurar conta"}
-          </Button>
-        ) : null}
-      </CardHeader>
-      <CardContent className="space-y-4">
+
         {accountsQuery.isLoading ? (
-          <div className="flex min-h-24 items-center justify-center rounded-lg border bg-muted/20">
+          <div className="flex items-center gap-2 border-t pt-3 text-sm text-muted-foreground">
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-            <span className="sr-only">Carregando contas Meta</span>
+            <span>Carregando detalhes da conta Meta</span>
           </div>
         ) : accountsQuery.isError ? (
           <Alert variant="destructive">
@@ -342,7 +373,7 @@ export function OperationalMetaManualAccountCard({
             </AlertDescription>
           </Alert>
         ) : !accounts.length ? (
-          <div className="rounded-lg border border-dashed bg-muted/10 p-5">
+          <div className="border-t pt-3">
             <p className="font-medium">
               {canManageManualAccount
                 ? "Nenhuma conta Meta configurada"
@@ -353,19 +384,9 @@ export function OperationalMetaManualAccountCard({
                 ? "Informe os dados do app da Meta para validar a conta e liberar seus números para os canais."
                 : "Peça ao administrador da empresa para concluir a configuração. O administrador do workspace não precisa informar credenciais."}
             </p>
-            {canManageManualAccount ? (
-              <Button
-                className="mt-4"
-                variant="outline"
-                onClick={() => openCredentialsDialog(null)}
-              >
-                <KeyRound className="h-4 w-4" />
-                Começar configuração
-              </Button>
-            ) : null}
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="mt-3 divide-y border-t">
             {accounts.map((account) => (
               <ManualAccountRow
                 key={account.id}
@@ -392,14 +413,13 @@ export function OperationalMetaManualAccountCard({
         )}
 
         {!canManageManualAccount && accounts.length > 0 ? (
-          <div className="rounded-lg border border-blue-200 bg-blue-50/60 p-3 text-sm text-blue-950 dark:border-blue-900 dark:bg-blue-950/20 dark:text-blue-100">
-            <p className="font-medium">Configuração feita pela empresa</p>
-            <p className="mt-1 text-blue-900/80 dark:text-blue-100/80">
-              Você pode selecionar números livres ao criar uma conexão neste
-              workspace. Os dados sensíveis ficam restritos aos administradores
-              da empresa.
-            </p>
-          </div>
+          <p className="mt-3 border-t pt-3 text-sm text-muted-foreground">
+            <span className="font-medium text-foreground">
+              Configuração gerenciada pela empresa.
+            </span>{" "}
+            Os números livres podem ser selecionados ao criar uma conexão; os
+            dados sensíveis ficam restritos aos administradores.
+          </p>
         ) : null}
       </CardContent>
 
@@ -641,8 +661,8 @@ function ManualAccountRow({
       : "Webhook ainda não verificado";
 
   return (
-    <div className="rounded-lg border p-4">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+    <div className="py-3 first:pt-0 last:pb-0">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0 space-y-2">
           <div className="flex flex-wrap items-center gap-2">
             <p className="font-semibold">Conta WhatsApp Business</p>
