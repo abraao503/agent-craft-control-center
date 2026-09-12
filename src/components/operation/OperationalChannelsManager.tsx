@@ -62,14 +62,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { OperationalChannelDialog, OperationalChannelFormValues } from "@/components/operation/OperationalChannelDialog";
@@ -824,6 +820,7 @@ function OperationalChannelCard({
     routeIsValid &&
     !isRouteLoading &&
     !isActivationPending;
+  const [technicalDetailsOpen, setTechnicalDetailsOpen] = useState(false);
   const channelStateAction = routeUnavailable ? (
     <Button
       size="sm"
@@ -897,42 +894,44 @@ function OperationalChannelCard({
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={onRefresh}
-              disabled={isRefreshing}
-              title="Atualizar status da conexão"
-            >
-              <RefreshCw
-                className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
-              />
-              <span className="sr-only sm:not-sr-only">Atualizar conexão</span>
-            </Button>
-            {canManageConnection ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
               <Button
-                size="sm"
-                variant="outline"
-                onClick={() => onEditChannel(channel)}
+                size="icon"
+                variant="ghost"
+                className="h-9 w-9"
+                aria-label={`Mais ações para ${channelName}`}
               >
-                <Pencil className="h-4 w-4" />
-                Editar conexão
+                <MoreHorizontal className="h-4 w-4" />
               </Button>
-            ) : null}
-            {canManageConnection && channel.active ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-9 w-9"
-                    aria-label={`Mais ações para ${channelName}`}
-                  >
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onSelect={onRefresh}
+                disabled={isRefreshing}
+              >
+                <RefreshCw
+                  className={`mr-2 h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
+                />
+                Atualizar conexão
+              </DropdownMenuItem>
+              {canManageConnection ? (
+                <DropdownMenuItem onSelect={() => onEditChannel(channel)}>
+                  <Pencil className="mr-2 h-4 w-4" />
+                  Editar conexão
+                </DropdownMenuItem>
+              ) : null}
+              <DropdownMenuItem
+                onSelect={() => setTechnicalDetailsOpen((open) => !open)}
+              >
+                <ChevronDown className="mr-2 h-4 w-4" />
+                {technicalDetailsOpen
+                  ? "Ocultar detalhes técnicos"
+                  : "Ver detalhes técnicos"}
+              </DropdownMenuItem>
+              {canManageConnection && channel.active ? (
+                <>
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem
                     className="text-destructive focus:text-destructive"
                     onSelect={() => onDeactivate(channel)}
@@ -941,10 +940,10 @@ function OperationalChannelCard({
                     <Trash2 className="mr-2 h-4 w-4" />
                     Desativar conexão
                   </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : null}
-          </div>
+                </>
+              ) : null}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         <OperationalChannelStateCard
@@ -959,13 +958,19 @@ function OperationalChannelCard({
         />
       </CardHeader>
 
-      <CardContent className="border-t p-4 sm:p-5">
-        <Collapsible className="rounded-lg border bg-muted/30 px-3">
-          <CollapsibleTrigger className="flex w-full items-center justify-between py-3 text-left text-sm font-medium [&[data-state=open]>svg]:rotate-180">
-            Ver detalhes técnicos
-            <ChevronDown className="h-4 w-4 transition-transform" />
-          </CollapsibleTrigger>
-          <CollapsibleContent className="border-t pb-3">
+      {technicalDetailsOpen ? (
+        <CardContent className="border-t p-4 sm:p-5">
+          <div className="rounded-lg border bg-muted/30 px-3">
+            <div className="flex items-center justify-between border-b py-2">
+              <p className="text-sm font-medium">Detalhes técnicos</p>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setTechnicalDetailsOpen(false)}
+              >
+                Ocultar
+              </Button>
+            </div>
             <div className="divide-y">
               <PropertyRow label="Status" value={channel.active ? getOperationalStatusLabel(channel.connectionStatus) : "Desativada"} />
               <PropertyRow label="Conexão" value={connectionDetail} />
@@ -1006,9 +1011,9 @@ function OperationalChannelCard({
               <PropertyRow label="QR Code" value={channel.capabilities.supportsQr ? "Suportado" : "Não suportado"} />
               <PropertyRow label="Disponibilidade" value={availabilityMessage} />
             </div>
-          </CollapsibleContent>
-        </Collapsible>
-      </CardContent>
+          </div>
+        </CardContent>
+      ) : null}
     </Card>
   );
 }

@@ -11,6 +11,7 @@ import {
   EyeOff,
   KeyRound,
   Loader2,
+  MoreHorizontal,
   Pencil,
   Plus,
   RefreshCw,
@@ -54,6 +55,12 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const manualAccountFormSchema = z.object({
   wabaId: z.string().trim().min(1, "Informe o WABA ID").max(100),
@@ -659,6 +666,11 @@ function ManualAccountRow({
     : webhookSetup
       ? "Aguardando verificação"
       : "Webhook ainda não verificado";
+  const primaryAction = needsAttention || !account.lastValidatedAt
+    ? "credentials"
+    : !account.webhookConfigured
+      ? "webhook"
+      : null;
 
   return (
     <div className="py-3 first:pt-0 last:pb-0">
@@ -679,25 +691,60 @@ function ManualAccountRow({
         </div>
         {canManage ? (
           <div className="flex shrink-0 flex-wrap gap-2">
-            <Button size="sm" variant="outline" onClick={onEdit}>
-              <Pencil className="h-4 w-4" />
-              Atualizar credenciais
-            </Button>
-            <Button
-              size="sm"
-              variant={account.webhookConfigured ? "outline" : "default"}
-              onClick={onConfigureWebhook}
-              disabled={isWebhookPending}
-            >
-              {isWebhookPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Webhook className="h-4 w-4" />
-              )}
-              {account.webhookConfigured
-                ? "Regenerar webhook"
-                : "Configurar webhook"}
-            </Button>
+            {primaryAction === "credentials" ? (
+              <Button size="sm" onClick={onEdit}>
+                <Pencil className="h-4 w-4" />
+                Atualizar credenciais
+              </Button>
+            ) : primaryAction === "webhook" ? (
+              <Button
+                size="sm"
+                onClick={onConfigureWebhook}
+                disabled={isWebhookPending}
+              >
+                {isWebhookPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Webhook className="h-4 w-4" />
+                )}
+                Configurar webhook
+              </Button>
+            ) : null}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-9 w-9"
+                  aria-label="Mais ações da conta Meta"
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {primaryAction !== "credentials" ? (
+                  <DropdownMenuItem onSelect={onEdit}>
+                    <Pencil className="mr-2 h-4 w-4" />
+                    Atualizar credenciais
+                  </DropdownMenuItem>
+                ) : null}
+                {primaryAction !== "webhook" ? (
+                  <DropdownMenuItem
+                    onSelect={onConfigureWebhook}
+                    disabled={isWebhookPending}
+                  >
+                    {isWebhookPending ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Webhook className="mr-2 h-4 w-4" />
+                    )}
+                    {account.webhookConfigured
+                      ? "Regenerar webhook"
+                      : "Configurar webhook"}
+                  </DropdownMenuItem>
+                ) : null}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         ) : null}
       </div>
