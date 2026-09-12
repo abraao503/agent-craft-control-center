@@ -424,7 +424,7 @@ export function OperationalChannelsManager({
                   : ""
               }`}
             />
-            Atualizar status
+            Atualizar tudo
           </Button>
           {canConnectChannels ? (
             <Button
@@ -832,7 +832,7 @@ function OperationalChannelCard({
               <RefreshCw
                 className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
               />
-              <span className="sr-only sm:not-sr-only">Atualizar</span>
+              <span className="sr-only sm:not-sr-only">Atualizar conexão</span>
             </Button>
             {canManageConnection ? (
               <Button
@@ -871,7 +871,7 @@ function OperationalChannelCard({
           </div>
         </div>
 
-        <div className="mt-5 grid gap-3 md:grid-cols-2">
+        <div className="mt-4 grid gap-3 md:grid-cols-2">
           <OperationalStatusCard
             icon={
               channelReady ? (
@@ -1047,12 +1047,12 @@ function OperationalStatusCard({
     { container: string; icon: string; status: string }
   > = {
     success: {
-      container: "border-emerald-200 bg-emerald-50/60 dark:border-emerald-900 dark:bg-emerald-950/20",
+      container: "border-emerald-200/80 bg-emerald-50/30 dark:border-emerald-900 dark:bg-emerald-950/20",
       icon: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300",
       status: "text-emerald-800 dark:text-emerald-200",
     },
     warning: {
-      container: "border-amber-200 bg-amber-50/60 dark:border-amber-900 dark:bg-amber-950/20",
+      container: "border-amber-200/80 bg-amber-50/30 dark:border-amber-900 dark:bg-amber-950/20",
       icon: "bg-amber-100 text-amber-700 dark:bg-amber-900/60 dark:text-amber-300",
       status: "text-amber-800 dark:text-amber-200",
     },
@@ -1062,7 +1062,7 @@ function OperationalStatusCard({
       status: "text-destructive",
     },
     muted: {
-      container: "border-border bg-muted/20",
+      container: "border-border bg-muted/10",
       icon: "bg-muted text-muted-foreground",
       status: "text-foreground",
     },

@@ -305,7 +305,10 @@ export function OperationalMetaManualAccountCard({
           </CardDescription>
         </div>
         {canManageManualAccount ? (
-          <Button onClick={() => openCredentialsDialog(null)}>
+          <Button
+            variant={accounts.length ? "outline" : "default"}
+            onClick={() => openCredentialsDialog(null)}
+          >
             {accounts.length ? (
               <Plus className="h-4 w-4" />
             ) : (
@@ -662,6 +665,7 @@ function ManualAccountRow({
             </Button>
             <Button
               size="sm"
+              variant={account.webhookConfigured ? "outline" : "default"}
               onClick={onConfigureWebhook}
               disabled={isWebhookPending}
             >
