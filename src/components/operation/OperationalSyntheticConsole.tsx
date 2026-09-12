@@ -121,9 +121,9 @@ export function OperationalSyntheticConsole({
           Console sintético
         </CardTitle>
         <CardDescription>
-          Crie uma mensagem controlada no canal selecionado para validar a rota
-          de agente externo e abrir o atendimento sem enviar nada a um provedor
-          real.
+          Ferramenta de desenvolvimento local: crie uma mensagem controlada no
+          canal selecionado para validar a rota de agente externo e abrir o
+          atendimento sem enviar nada a um provedor real.
         </CardDescription>
       </CardHeader>
       <CardContent>
