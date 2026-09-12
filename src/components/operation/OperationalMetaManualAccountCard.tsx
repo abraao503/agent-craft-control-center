@@ -5,12 +5,14 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Check,
   CheckCircle2,
+  ChevronDown,
   Copy,
   Eye,
   EyeOff,
   KeyRound,
   Loader2,
   Pencil,
+  Plus,
   RefreshCw,
   ShieldCheck,
   TriangleAlert,
@@ -50,6 +52,11 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 const manualAccountFormSchema = z.object({
   wabaId: z.string().trim().min(1, "Informe o WABA ID").max(100),
@@ -99,6 +106,9 @@ export function OperationalMetaManualAccountCard({
   const [webhookErrors, setWebhookErrors] = useState<Record<string, string>>(
     {},
   );
+  const [expandedAccounts, setExpandedAccounts] = useState<
+    Record<string, boolean>
+  >({});
   const [showVerifyToken, setShowVerifyToken] = useState(false);
   const [copiedTarget, setCopiedTarget] = useState<string | null>(null);
   const form = useForm<ManualAccountFormValues>({
@@ -290,14 +300,18 @@ export function OperationalMetaManualAccountCard({
             Conta Meta Cloud da empresa
           </CardTitle>
           <CardDescription className="max-w-2xl leading-5">
-            Configure a conta Meta uma vez. Depois, os ambientes operacionais
-            podem usar os números sincronizados sem repetir credenciais.
+            Configure as credenciais da empresa uma vez e reutilize os números
+            sincronizados nos ambientes operacionais.
           </CardDescription>
         </div>
         {canManageManualAccount ? (
           <Button onClick={() => openCredentialsDialog(null)}>
-            <KeyRound className="h-4 w-4" />
-            Configurar conta
+            {accounts.length ? (
+              <Plus className="h-4 w-4" />
+            ) : (
+              <KeyRound className="h-4 w-4" />
+            )}
+            {accounts.length ? "Adicionar conta" : "Configurar conta"}
           </Button>
         ) : null}
       </CardHeader>
@@ -359,6 +373,13 @@ export function OperationalMetaManualAccountCard({
                   isGeneratingWebhook &&
                   dialog?.step === "webhook" &&
                   dialog.account.wabaId === account.wabaId
+                }
+                detailsOpen={Boolean(expandedAccounts[account.id])}
+                onDetailsOpenChange={(open) =>
+                  setExpandedAccounts((current) => ({
+                    ...current,
+                    [account.id]: open,
+                  }))
                 }
                 onEdit={() => openCredentialsDialog(account)}
                 onConfigureWebhook={() => openWebhookDialog(account)}
@@ -571,7 +592,7 @@ export function OperationalMetaManualAccountCard({
                 onClick={closeDialog}
                 disabled={isGeneratingWebhook}
               >
-                Concluir depois
+                {dialogAccount.webhookConfigured ? "Concluir" : "Concluir depois"}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -586,6 +607,8 @@ function ManualAccountRow({
   canManage,
   webhookSetup,
   isWebhookPending,
+  detailsOpen,
+  onDetailsOpenChange,
   onEdit,
   onConfigureWebhook,
 }: {
@@ -593,6 +616,8 @@ function ManualAccountRow({
   canManage: boolean;
   webhookSetup?: WebhookSetup;
   isWebhookPending: boolean;
+  detailsOpen: boolean;
+  onDetailsOpenChange: (open: boolean) => void;
   onEdit: () => void;
   onConfigureWebhook: () => void;
 }) {
@@ -622,24 +647,12 @@ function ManualAccountRow({
               {validationLabel}
             </Badge>
           </div>
-          <div className="grid gap-2 text-sm sm:grid-cols-2">
-            <SummaryItem label="WABA ID" value={account.wabaId} code />
-            <SummaryItem
-              label="App ID"
-              value={account.appId || "Não informado"}
-              code
-            />
-            <SummaryItem
-              label="Estado da conta"
-              value={getOperationalStatusLabel(account.status)}
-            />
-            <SummaryItem label="Webhook" value={webhookLabel} />
-          </div>
-          {account.lastValidatedAt ? (
-            <p className="text-xs text-muted-foreground">
-              Última validação: {formatOperationalDateTime(account.lastValidatedAt)}
-            </p>
-          ) : null}
+          <p className="text-sm text-muted-foreground">
+            {webhookLabel} · {account.phoneNumbers.length}{" "}
+            {account.phoneNumbers.length === 1
+              ? "número sincronizado"
+              : "números sincronizados"}
+          </p>
         </div>
         {canManage ? (
           <div className="flex shrink-0 flex-wrap gap-2">
@@ -664,28 +677,58 @@ function ManualAccountRow({
           </div>
         ) : null}
       </div>
-      <div className="mt-4 border-t pt-3">
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          Números sincronizados
-        </p>
-        {account.phoneNumbers.length ? (
-          <div className="mt-2 flex flex-wrap gap-2">
-            {account.phoneNumbers.map((phone) => (
-              <span
-                key={phone.id}
-                className="rounded-md border bg-muted/20 px-2.5 py-1.5 text-sm"
-              >
-                {phone.displayPhoneNumber}
-                {phone.boundIntegrationId ? " · já usado em um canal" : ""}
-              </span>
-            ))}
+      <Collapsible
+        open={detailsOpen}
+        onOpenChange={onDetailsOpenChange}
+        className="mt-4 border-t"
+      >
+        <CollapsibleTrigger className="flex w-full items-center justify-between py-3 text-left text-sm font-medium [&[data-state=open]>svg]:rotate-180">
+          Ver detalhes da conta
+          <ChevronDown className="h-4 w-4 transition-transform" />
+        </CollapsibleTrigger>
+        <CollapsibleContent className="border-t pt-3">
+          <div className="grid gap-2 text-sm sm:grid-cols-2">
+            <SummaryItem label="WABA ID" value={account.wabaId} code />
+            <SummaryItem
+              label="App ID"
+              value={account.appId || "Não informado"}
+              code
+            />
+            <SummaryItem
+              label="Estado da conta"
+              value={getOperationalStatusLabel(account.status)}
+            />
+            <SummaryItem label="Webhook" value={webhookLabel} />
           </div>
-        ) : (
-          <p className="mt-1 text-sm text-muted-foreground">
-            Nenhum número foi retornado pela Meta para esta conta.
-          </p>
-        )}
-      </div>
+          {account.lastValidatedAt ? (
+            <p className="mt-3 text-xs text-muted-foreground">
+              Última validação: {formatOperationalDateTime(account.lastValidatedAt)}
+            </p>
+          ) : null}
+          <div className="mt-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Números sincronizados
+            </p>
+            {account.phoneNumbers.length ? (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {account.phoneNumbers.map((phone) => (
+                  <span
+                    key={phone.id}
+                    className="rounded-md border bg-muted/20 px-2.5 py-1.5 text-sm"
+                  >
+                    {phone.displayPhoneNumber}
+                    {phone.boundIntegrationId ? " · já usado em um canal" : ""}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-1 text-sm text-muted-foreground">
+                Nenhum número foi retornado pela Meta para esta conta.
+              </p>
+            )}
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
     </div>
   );
 }

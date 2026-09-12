@@ -458,83 +458,104 @@ export function OperationalChannelsManager({
         </Alert>
       ) : null}
 
-      <OperationalMetaManualAccountCard workspaceId={workspaceId} />
-
-      {channelsQuery.isLoading ? (
-        <Card>
-          <CardContent className="flex min-h-48 items-center justify-center">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            <span className="sr-only">Carregando conexões operacionais</span>
-          </CardContent>
-        </Card>
-      ) : channelsQuery.isError ? (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Não foi possível carregar os canais</AlertTitle>
-          <AlertDescription className="flex flex-wrap items-center gap-3">
-            Verifique sua permissão ou tente novamente.
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => channelsQuery.refetch()}
-              disabled={channelsQuery.isFetching}
-            >
-              <RefreshCw className="h-4 w-4" />
-              Tentar novamente
-            </Button>
-          </AlertDescription>
-        </Alert>
-      ) : !channels.length ? (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <Wifi className="mx-auto h-8 w-8 text-muted-foreground" />
-            <p className="mt-3 font-medium">Nenhuma conexão ativa</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {canConnectChannels
-                ? "As conexões desativadas ficam fora desta lista. Crie uma nova conexão para configurar a entrada."
-                : "Um administrador autorizado ainda não configurou uma conexão ativa neste ambiente."}
-            </p>
-            {canConnectChannels ? (
-              <Button
-                className="mt-4"
-                onClick={openCreateChannel}
-                disabled={!canOpenCreateChannel}
-              >
-                <Plus className="h-4 w-4" />
-                Criar conexão
-              </Button>
-            ) : null}
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-4">
-          {channels.map((channel) => {
-            const route = routesByChannelId.get(channel.id) ?? null;
-            return (
-              <OperationalChannelCard
-                key={channel.id}
-                channel={channel}
-                route={route}
-                canManageRoute={canManageChannels}
-                canManageConnection={canConnectChannels}
-                isRouteLoading={routesQuery.isLoading}
-                isRouteError={routesQuery.isError}
-                isDeactivationPending={channelMutations.deactivate.isPending}
-                isActivationPending={channelMutations.activate.isPending}
-        isQrPending={channelMutations.requestQrCode.isPending}
-        isRefreshing={channelsQuery.isFetching}
-        webhookUrl={webhookUrls[channel.id]}
-        onEditChannel={openEditChannel}
-        onConfigureRoute={openRouteDialog}
-        onDeactivate={setChannelToDeactivate}
-        onActivate={(item) => void handleActivate(item)}
-        onRequestQrCode={(item) => void handleRequestQrCode(item)}
-        onRefresh={() => void refreshOperationalState()}
-      />
-            );
-          })}
+      <div className="space-y-2">
+        <div className="px-1">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
+            Configuração da empresa
+          </p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Credenciais compartilhadas pelos ambientes operacionais.
+          </p>
         </div>
-      )}
+        <OperationalMetaManualAccountCard workspaceId={workspaceId} />
+      </div>
+
+      <div className="space-y-3">
+        <div>
+          <h2 className="text-xl font-semibold tracking-tight">
+            Conexões deste ambiente
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Gerencie os canais e defina para onde as mensagens de entrada serão direcionadas.
+          </p>
+        </div>
+
+        {channelsQuery.isLoading ? (
+          <Card>
+            <CardContent className="flex min-h-48 items-center justify-center">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              <span className="sr-only">Carregando conexões operacionais</span>
+            </CardContent>
+          </Card>
+        ) : channelsQuery.isError ? (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Não foi possível carregar os canais</AlertTitle>
+            <AlertDescription className="flex flex-wrap items-center gap-3">
+              Verifique sua permissão ou tente novamente.
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => channelsQuery.refetch()}
+                disabled={channelsQuery.isFetching}
+              >
+                <RefreshCw className="h-4 w-4" />
+                Tentar novamente
+              </Button>
+            </AlertDescription>
+          </Alert>
+        ) : !channels.length ? (
+          <Card>
+            <CardContent className="py-12 text-center">
+              <Wifi className="mx-auto h-8 w-8 text-muted-foreground" />
+              <p className="mt-3 font-medium">Nenhuma conexão ativa</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {canConnectChannels
+                  ? "As conexões desativadas ficam fora desta lista. Crie uma nova conexão para configurar a entrada."
+                  : "Um administrador autorizado ainda não configurou uma conexão ativa neste ambiente."}
+              </p>
+              {canConnectChannels ? (
+                <Button
+                  className="mt-4"
+                  onClick={openCreateChannel}
+                  disabled={!canOpenCreateChannel}
+                >
+                  <Plus className="h-4 w-4" />
+                  Criar conexão
+                </Button>
+              ) : null}
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-4">
+            {channels.map((channel) => {
+              const route = routesByChannelId.get(channel.id) ?? null;
+              return (
+                <OperationalChannelCard
+                  key={channel.id}
+                  channel={channel}
+                  route={route}
+                  canManageRoute={canManageChannels}
+                  canManageConnection={canConnectChannels}
+                  isRouteLoading={routesQuery.isLoading}
+                  isRouteError={routesQuery.isError}
+                  isDeactivationPending={channelMutations.deactivate.isPending}
+                  isActivationPending={channelMutations.activate.isPending}
+                  isQrPending={channelMutations.requestQrCode.isPending}
+                  isRefreshing={channelsQuery.isFetching}
+                  webhookUrl={webhookUrls[channel.id]}
+                  onEditChannel={openEditChannel}
+                  onConfigureRoute={openRouteDialog}
+                  onDeactivate={setChannelToDeactivate}
+                  onActivate={(item) => void handleActivate(item)}
+                  onRequestQrCode={(item) => void handleRequestQrCode(item)}
+                  onRefresh={() => void refreshOperationalState()}
+                />
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       {channelsQuery.data && channelsQuery.data.totalPages > 1 ? (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border p-3 text-sm">
