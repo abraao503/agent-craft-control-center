@@ -36,6 +36,9 @@ export function OperationalMetaManualAccountCard({
   const needsAttention = accounts.some((account) =>
     ["ERROR", "NEEDS_REAUTHORIZATION"].includes(account.status),
   );
+  const syncing = accounts.some(
+    (account) => account.status.toUpperCase() === "CONNECTING",
+  );
   const webhookPending = accounts.some(
     (account) => !account.webhookConfigured || !account.lastValidatedAt,
   );
@@ -57,7 +60,7 @@ export function OperationalMetaManualAccountCard({
           <ShieldCheck className="h-4 w-4 shrink-0 text-primary" />
           <p className="text-sm font-medium">Credenciais da empresa</p>
           {isHealthy ? (
-            <Badge variant="secondary">Em dia</Badge>
+            <Badge variant="secondary">{syncing ? "Sincronizando" : "Em dia"}</Badge>
           ) : isUnavailable ? (
             <Badge variant="destructive">Indisponível</Badge>
           ) : needsAttention || webhookPending ? (
