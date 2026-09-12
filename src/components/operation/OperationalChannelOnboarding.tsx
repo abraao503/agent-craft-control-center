@@ -3,10 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
-  Building2,
   CheckCircle2,
-  Globe,
-  Landmark,
   Loader2,
   QrCode,
   Wifi,
@@ -40,6 +37,11 @@ import {
   routeFormSchema,
 } from "@/components/operation/OperationalRouteFields";
 import { OperationalMetaManualAccountCard } from "@/components/operation/OperationalMetaManualAccountCard";
+import {
+  OnboardingProgress,
+  OnboardingStage,
+} from "@/components/operation/channel-onboarding/OnboardingProgress";
+import { ProviderChoice } from "@/components/operation/channel-onboarding/ProviderChoice";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -57,7 +59,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { cn } from "@/lib/utils";
 
 type OnboardingStep = "provider" | "configure" | "destination" | "connect" | "done";
 
@@ -125,6 +126,7 @@ export type OperationalChannelOnboardingProps = {
   ) => Promise<void>;
   onActivateChannel: (channelId: string) => Promise<void>;
   onRequestQrCode: (channelId: string) => Promise<string>;
+  onRefreshStatus: () => Promise<void> | void;
 };
 
 export function OperationalChannelOnboarding({
@@ -142,6 +144,7 @@ export function OperationalChannelOnboarding({
   onSaveDestination,
   onActivateChannel,
   onRequestQrCode,
+  onRefreshStatus,
 }: OperationalChannelOnboardingProps) {
   const navigate = useNavigate();
   const [step, setStep] = useState<OnboardingStep>("provider");
@@ -234,11 +237,37 @@ export function OperationalChannelOnboarding({
   }, [destinationForm.watch(), routeOptions]);
 
   useEffect(() => {
+    if (!open || !channel || createdChannelId === channel.id) return;
+
+    setCreatedChannelId(channel.id);
+    setDraft((current) => ({
+      ...current,
+      provider: channel.provider,
+      displayName: channel.displayName ?? "",
+      metaPhoneNumberId: channel.metaPhoneNumberId ?? "",
+    }));
+    destinationForm.setValue("channelId", channel.id);
+    setStep(
+      !channel.route.configured
+        ? "destination"
+        : channel.active &&
+            ["CONNECTED", "OPEN"].includes(
+              channel.connectionStatus.toUpperCase(),
+            )
+          ? "done"
+          : "connect",
+    );
+    // Inicializa apenas ao retomar outro canal; atualizações de status não
+    // devem devolver o usuário para uma etapa anterior.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, channel?.id]);
+
+  useEffect(() => {
     if (step !== "connect" || connectionReady) return;
     if (!createdChannel) return;
 
     const interval = window.setInterval(() => {
-      routeOptions.refetch();
+      void onRefreshStatus();
     }, 5000);
 
     return () => window.clearInterval(interval);
@@ -373,6 +402,9 @@ export function OperationalChannelOnboarding({
   };
 
   const supportsQr = Boolean(createdChannel?.capabilities.supportsQr);
+  const selectedProvider = providers.find(
+    (provider) => provider.name === draft.provider,
+  );
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -380,20 +412,22 @@ export function OperationalChannelOnboarding({
         <DialogHeader>
           <DialogTitle>
             {step === "provider"
-              ? "Adicionar canal"
+              ? "Novo canal"
               : step === "configure"
-                ? "Configurar o provedor"
+                ? draft.provider
+                  ? `Configurar ${OPERATIONAL_CHANNEL_PROVIDER_LABELS[draft.provider]}`
+                  : "Configurar canal"
                 : step === "destination"
                   ? "Destino das mensagens"
                   : step === "connect"
-                    ? "Conectar e ativar"
+                    ? "Concluir conexão"
                     : "Canal pronto"}
           </DialogTitle>
           <DialogDescription>
             {step === "provider"
-              ? "Escolha a tecnologia que receberá as mensagens deste ambiente."
+              ? "Dê um nome ao canal e escolha como as mensagens chegarão."
               : step === "configure"
-                ? "Conclua a configuração do provedor escolhido."
+                ? "Informe somente os dados exigidos por este provedor."
                 : step === "destination"
                   ? "Escolha para onde as mensagens deste canal serão direcionadas."
                   : step === "connect"
@@ -402,68 +436,24 @@ export function OperationalChannelOnboarding({
           </DialogDescription>
         </DialogHeader>
 
-        <StepIndicator step={step} />
+        <OnboardingProgress stage={getOnboardingStage(step)} />
 
         {step === "provider" ? (
-          <div className="space-y-4">
-            {providersLoading ? (
-              <div className="flex min-h-24 items-center justify-center text-sm text-muted-foreground">
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Carregando provedores...
-              </div>
-            ) : (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="operational-channel-display-name">
-                    Nome do canal (opcional)
-                  </Label>
-                  <Input
-                    id="operational-channel-display-name"
-                    placeholder="Ex.: WhatsApp recepção"
-                    maxLength={160}
-                    value={draft.displayName}
-                    onChange={(event) =>
-                      setDraft((current) => ({
-                        ...current,
-                        displayName: event.target.value,
-                      }))
-                    }
-                  />
-                </div>
-                <div className="grid gap-2 sm:grid-cols-3">
-                  {providers.map((provider) => (
-                    <button
-                      key={provider.id}
-                      type="button"
-                      onClick={() => {
-                        setDraft((current) => ({
-                          ...current,
-                          provider: provider.name,
-                        }));
-                        setStep("configure");
-                      }}
-                      className="flex flex-col gap-1 rounded-lg border p-3 text-left transition-colors hover:border-primary hover:bg-primary/5"
-                    >
-                      <span className="flex items-center gap-1.5 text-sm font-semibold">
-                        {provider.name === "meta-cloud" ? (
-                          <Building2 className="h-4 w-4" />
-                        ) : provider.name === "evolux" ? (
-                          <Landmark className="h-4 w-4" />
-                        ) : (
-                          <Globe className="h-4 w-4" />
-                        )}
-                        {OPERATIONAL_CHANNEL_PROVIDER_LABELS[provider.name] ??
-                          provider.alias}
-                      </span>
-                      <span className="text-xs leading-4 text-muted-foreground">
-                        {describeProviderConnection(provider)}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
+          <ProviderChoice
+            providers={providers}
+            loading={providersLoading}
+            displayName={draft.displayName}
+            onDisplayNameChange={(displayName) =>
+              setDraft((current) => ({ ...current, displayName }))
+            }
+            onSelect={(provider) => {
+              setDraft((current) => ({
+                ...current,
+                provider: provider.name,
+              }));
+              setStep("configure");
+            }}
+          />
         ) : null}
 
         {step === "configure" ? (
@@ -505,9 +495,13 @@ export function OperationalChannelOnboarding({
             ) : null}
 
             {draft.provider === "evolux" ? (
-              <div className="rounded-lg border p-4 text-sm text-muted-foreground">
-                A instância é provisionada automaticamente pela API. A conexão é
-                concluída na etapa de conexão, com o QR Code do provedor.
+              <div className="rounded-lg border bg-muted/20 p-4 text-sm">
+                <p className="font-medium">Nenhum dado adicional agora</p>
+                <p className="mt-1 text-muted-foreground">
+                  {selectedProvider?.capabilities.supportsQr
+                    ? "Depois de definir o destino, você ativará o canal e conectará o WhatsApp com um QR Code."
+                    : "Depois de definir o destino, você poderá ativar e acompanhar a conexão deste canal."}
+                </p>
               </div>
             ) : null}
 
@@ -574,7 +568,7 @@ export function OperationalChannelOnboarding({
               <Button
                 className="w-full sm:w-auto"
                 onClick={() => void handleActivate()}
-                disabled={isActivating || !connectionReady}
+                disabled={isActivating}
               >
                 {isActivating ? (
                   <>
@@ -709,6 +703,26 @@ export function OperationalChannelOnboarding({
                 </Button>
               </>
             ) : null}
+            {step === "connect" ? (
+              <>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => handleClose(false)}
+                  disabled={isActivating || isRequestingQr}
+                >
+                  Concluir depois
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => void onRefreshStatus()}
+                  disabled={isActivating || isRequestingQr}
+                >
+                  Atualizar status
+                </Button>
+              </>
+            ) : null}
             {step === "done" ? (
               <>
                 <Button
@@ -730,40 +744,10 @@ export function OperationalChannelOnboarding({
   );
 }
 
-function StepIndicator({ step }: { step: OnboardingStep }) {
-  const steps: Array<{ key: OnboardingStep; label: string }> = [
-    { key: "provider", label: "Canal" },
-    { key: "configure", label: "Provedor" },
-    { key: "destination", label: "Destino" },
-    { key: "connect", label: "Conexão" },
-    { key: "done", label: "Conclusão" },
-  ];
-  const currentIndex = steps_findIndex(steps, step);
-
-  return (
-    <ol className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-      {steps.map((item, index) => (
-        <li key={item.key} className="flex items-center gap-2">
-          <span
-            className={cn(
-              "rounded-full border px-2 py-0.5",
-              index < currentIndex && "border-emerald-300 text-emerald-700 dark:border-emerald-800 dark:text-emerald-300",
-              index === currentIndex && "border-primary bg-primary/10 font-medium text-primary",
-            )}
-          >
-            {index + 1}. {item.label}
-          </span>
-        </li>
-      ))}
-    </ol>
-  );
-}
-
-function steps_findIndex(
-  steps: Array<{ key: OnboardingStep; label: string }>,
-  step: OnboardingStep,
-): number {
-  return steps.findIndex((item) => item.key === step);
+function getOnboardingStage(step: OnboardingStep): OnboardingStage {
+  if (step === "destination") return "destination";
+  if (step === "connect" || step === "done") return "connection";
+  return "channel";
 }
 
 function getOnboardingSubmitErrorMessage(
@@ -898,7 +882,10 @@ function MetaCloudConfiguration({
             Conclua o pré-requisito abaixo; este onboarding retoma o ponto atual
             automaticamente quando a conta ficar pronta.
           </p>
-          <OperationalMetaManualAccountCard workspaceId={workspaceId} />
+          <OperationalMetaManualAccountCard
+            workspaceId={workspaceId}
+            presentation="trigger"
+          />
         </>
       ) : (
         <p className="text-xs text-muted-foreground">
@@ -1020,14 +1007,4 @@ function buildCreateChannelBody(draft: DraftChannel): CreateOperationalChannelBo
   }
 
   return { provider: "evolux", ...(displayName ? { displayName } : {}) };
-}
-
-function describeProviderConnection(provider: OperationalChannelProvider): string {
-  if (provider.capabilities.connectionMode === "provisioned-number") {
-    return "Usa a conta Meta da empresa para escolher um número livre; não exige QR Code.";
-  }
-
-  return provider.capabilities.supportsQr
-    ? "A instância é provisionada pela API; a conexão é concluída com o QR Code na etapa de conexão."
-    : "Conexão por credenciais do provedor.";
 }

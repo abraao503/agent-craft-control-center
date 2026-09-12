@@ -89,6 +89,8 @@ export function OperationalChannelsManager({
   const [onboardingChannelId, setOnboardingChannelId] = useState<string | null>(
     null,
   );
+  const [onboardingChannelSnapshot, setOnboardingChannelSnapshot] =
+    useState<OperationalChannel | null>(null);
   const [editingChannel, setEditingChannel] = useState<OperationalChannel | null>(
     null,
   );
@@ -300,15 +302,15 @@ export function OperationalChannelsManager({
     }
   };
 
-  const handleActivate = async (channel: OperationalChannel) => {
+  const handleActivateById = async (channelId: string) => {
     try {
       const response = await channelMutations.activate.mutateAsync({
-        channelId: channel.id,
+        channelId,
         idempotencyKey: crypto.randomUUID(),
       });
       setWebhookUrls((current) => ({
         ...current,
-        [channel.id]: response.webhookUrl,
+        [channelId]: response.webhookUrl,
       }));
       toast({
         title: "Canal ativado",
@@ -325,6 +327,9 @@ export function OperationalChannelsManager({
       });
     }
   };
+
+  const handleActivate = async (channel: OperationalChannel) =>
+    handleActivateById(channel.id);
 
   const handleRequestQrCode = async (channel: OperationalChannel) => {
     try {
@@ -348,6 +353,8 @@ export function OperationalChannelsManager({
   };
 
   const openCreateChannel = () => {
+    setOnboardingChannelId(null);
+    setOnboardingChannelSnapshot(null);
     setOnboardingOpen(true);
   };
 
@@ -358,6 +365,7 @@ export function OperationalChannelsManager({
       body,
       idempotencyKey: crypto.randomUUID(),
     });
+    setOnboardingChannelSnapshot(createdChannel);
     toast({
       title: "Canal criado",
       description: "Defina o destino das mensagens para liberar a ativação.",
@@ -399,6 +407,13 @@ export function OperationalChannelsManager({
     channel: OperationalChannel,
     route: OperationalChannelRoute | null,
   ) => {
+    if (!route && !channel.route.configured) {
+      setOnboardingChannelId(channel.id);
+      setOnboardingChannelSnapshot(channel);
+      setOnboardingOpen(true);
+      return;
+    }
+
     setEditingRoute(route);
     setRouteChannel(channel);
     setRouteDialogOpen(true);
@@ -540,14 +555,21 @@ export function OperationalChannelsManager({
 
       <OperationalChannelOnboarding
         open={onboardingOpen}
-        onOpenChange={setOnboardingOpen}
+        onOpenChange={(open) => {
+          setOnboardingOpen(open);
+          if (!open) {
+            setOnboardingChannelId(null);
+            setOnboardingChannelSnapshot(null);
+          }
+        }}
         workspaceId={workspaceId}
         providers={providersQuery.data ?? []}
         providersLoading={providersQuery.isLoading}
         canManageCompanyMeta={canManageCompanyMeta}
         isCreating={channelMutations.create.isPending}
         channel={
-          channels.find((item) => item.id === onboardingChannelId) ?? null
+          channels.find((item) => item.id === onboardingChannelId) ??
+          onboardingChannelSnapshot
         }
         routeOptions={{
           areas: routeOptions.areas,
@@ -568,9 +590,8 @@ export function OperationalChannelsManager({
           handleOnboardingSaveDestination(channelId, values)
         }
         onActivateChannel={async (channelId) => {
-          const target = channels.find((item) => item.id === channelId);
-          if (!target) return;
-          await handleActivate(target);
+          await handleActivateById(channelId);
+          await refreshOperationalState();
         }}
         onRequestQrCode={async (channelId) => {
           const target = channels.find((item) => item.id === channelId);
@@ -578,8 +599,10 @@ export function OperationalChannelsManager({
           const response = await channelMutations.requestQrCode.mutateAsync({
             channelId,
           });
+          await refreshOperationalState();
           return response.qrCode;
         }}
+        onRefreshStatus={refreshOperationalState}
       />
 
       <OperationalChannelDialog
