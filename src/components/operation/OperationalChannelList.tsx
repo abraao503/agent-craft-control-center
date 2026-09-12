@@ -41,6 +41,7 @@ type OperationalChannelListProps = {
   onActivate: (channel: OperationalChannel) => void;
   onRequestQrCode: (channel: OperationalChannel) => void;
   onRefresh: () => void;
+  onOpenDetails: (channel: OperationalChannel) => void;
   page: number;
   totalPages: number;
   onPageChange: (page: number) => void;
@@ -81,6 +82,7 @@ export function OperationalChannelList({
   onActivate,
   onRequestQrCode,
   onRefresh,
+  onOpenDetails,
   page,
   totalPages,
   onPageChange,
@@ -215,6 +217,7 @@ export function OperationalChannelList({
               onActivate={onActivate}
               onRequestQrCode={onRequestQrCode}
               onRefresh={onRefresh}
+              onOpenDetails={onOpenDetails}
             />
           ))}
         </div>
