@@ -86,6 +86,9 @@ export function OperationalChannelsManager({
   const [channelsPage, setChannelsPage] = useState(1);
   const [channelDialogOpen, setChannelDialogOpen] = useState(false);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
+  const [onboardingChannelId, setOnboardingChannelId] = useState<string | null>(
+    null,
+  );
   const [editingChannel, setEditingChannel] = useState<OperationalChannel | null>(
     null,
   );
@@ -351,7 +354,7 @@ export function OperationalChannelsManager({
 
   const handleOnboardingCreate = async (
     body: CreateOperationalChannelBody,
-  ) => {
+  ): Promise<OperationalChannel> => {
     const createdChannel = await channelMutations.create.mutateAsync({
       body,
       idempotencyKey: crypto.randomUUID(),
@@ -360,9 +363,32 @@ export function OperationalChannelsManager({
       title: "Canal criado",
       description: "Defina o destino das mensagens para liberar a ativação.",
     });
-    setEditingRoute(null);
-    setRouteChannel(createdChannel);
-    setRouteDialogOpen(true);
+    return createdChannel;
+  };
+
+  const handleOnboardingSaveDestination = async (
+    _channelId: string,
+    values: OperationalRouteFormValues,
+  ) => {
+    const channelId = _channelId ?? values.channelId;
+    const configuration = {
+      entryMode: values.entryMode,
+      triageAgentId: values.triageAgentId,
+      assistantId: values.assistantId,
+      targetAreaId: values.targetAreaId,
+      targetQueueId: values.targetQueueId,
+      fallbackAreaId: values.fallbackAreaId,
+      fallbackQueueId: values.fallbackQueueId,
+      ...buildRouteMenuConfiguration(values),
+    };
+    await routeMutations.create.mutateAsync({
+      body: { ...configuration, channelId },
+      idempotencyKey: crypto.randomUUID(),
+    });
+    toast({
+      title: "Destino definido",
+      description: "A conexão do canal pode ser concluída agora.",
+    });
   };
 
   const openEditChannel = (channel: OperationalChannel) => {
@@ -527,7 +553,40 @@ export function OperationalChannelsManager({
         providersLoading={providersQuery.isLoading}
         canManageCompanyMeta={canManageCompanyMeta}
         isCreating={channelMutations.create.isPending}
-        onCreateChannel={(body) => handleOnboardingCreate(body)}
+        channel={
+          channels.find((item) => item.id === onboardingChannelId) ?? null
+        }
+        routeOptions={{
+          areas: routeOptions.areas,
+          queues: routeOptions.queues,
+          assistants: routeOptions.assistants,
+          triageAgents: routeOptions.triageAgents,
+          isLoading: routeOptions.isLoading,
+          isError: routeOptions.isError,
+          refetch: routeOptions.refetch,
+        }}
+        allowExternalAgent={canManageTriageAgents}
+        onCreateChannel={async (body) => {
+          const created = await handleOnboardingCreate(body);
+          setOnboardingChannelId(created.id);
+          return created;
+        }}
+        onSaveDestination={(channelId, values) =>
+          handleOnboardingSaveDestination(channelId, values)
+        }
+        onActivateChannel={async (channelId) => {
+          const target = channels.find((item) => item.id === channelId);
+          if (!target) return;
+          await handleActivate(target);
+        }}
+        onRequestQrCode={async (channelId) => {
+          const target = channels.find((item) => item.id === channelId);
+          if (!target) throw new Error("CHANNEL_NOT_FOUND");
+          const response = await channelMutations.requestQrCode.mutateAsync({
+            channelId,
+          });
+          return response.qrCode;
+        }}
       />
 
       <OperationalChannelDialog
