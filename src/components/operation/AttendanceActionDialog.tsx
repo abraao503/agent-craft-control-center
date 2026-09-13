@@ -201,13 +201,25 @@ export function AttendanceActionDialog({
 
     const areaUserIds = new Set(
       areaMembershipsQuery.data?.items
-        .filter((membership) => membership.active && !membership.deletedAt)
+        .filter(
+          (membership) =>
+            membership.active &&
+            !membership.deletedAt &&
+            membership.role === "OPERATOR",
+        )
         .map((membership) => membership.userId),
     );
+    const activeQueueMemberships =
+      queueMembershipsQuery.data?.items.filter(
+        (membership) => membership.active && !membership.deletedAt,
+      ) ?? [];
+
+    if (activeQueueMemberships.length === 0) {
+      return areaUserIds;
+    }
+
     const queueUserIds = new Set(
-      queueMembershipsQuery.data?.items
-        .filter((membership) => membership.active && !membership.deletedAt)
-        .map((membership) => membership.userId),
+      activeQueueMemberships.map((membership) => membership.userId),
     );
 
     return new Set(
@@ -429,7 +441,7 @@ export function AttendanceActionDialog({
                       </SelectContent>
                     </Select>
                     <FormDescription>
-                      O responsável precisa ser membro ativo da área ou fila de destino.
+                      O responsável precisa ser operador ativo da área; filas restritas exigem vínculo ativo.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -478,7 +490,7 @@ export function AttendanceActionDialog({
                       </SelectContent>
                     </Select>
                     <FormDescription>
-                      O responsável precisa ser membro ativo da área ou fila selecionada.
+                      O responsável precisa ser operador ativo da área; filas restritas exigem vínculo ativo.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
