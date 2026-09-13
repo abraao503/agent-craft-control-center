@@ -6,6 +6,7 @@ const MESSAGE_STATUS_LABELS: Record<string, string> = {
   PROCESSING: "Processando",
   QUEUED: "Na fila",
   READ: "Lida",
+  RECEIVED: "Recebida",
   SENT: "Enviada",
 };
 

@@ -50,6 +50,7 @@ import {
 import { AttendanceFollowUpsCard } from "@/components/operation/AttendanceFollowUpsCard";
 import { OperationalTriageAgentHistory } from "@/components/operation/OperationalTriageAgentHistory";
 import { AttendanceComposer } from "@/components/operation/AttendanceComposer";
+import { OperationalContactNameField } from "@/components/operation/OperationalContactNameField";
 import { OperationalRealtimeStatus } from "@/components/operation/OperationalRealtimeStatus";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -135,6 +136,7 @@ export default function OperationAttendanceDetailPage({
     currentWorkspace?.type === "OPERATION" ? currentWorkspace.id : undefined;
   const canViewAttendances = has("view:operation-attendances");
   const canOperateAttendances = has("operate:operation-attendances");
+  const canEditCustomerName = has("view:chat");
   const { toast } = useToast();
   const optionsQuery = useOperationalAttendanceOptions(
     workspaceId,
@@ -780,7 +782,14 @@ export default function OperationAttendanceDetailPage({
                   Contato
                 </p>
                 <div className="divide-y">
-                  <DetailField label="Nome" value={customerName} />
+                  <OperationalContactNameField
+                    customerId={attendance.customer?.id}
+                    name={attendance.customer?.name}
+                    canEdit={canEditCustomerName}
+                    onUpdated={() => {
+                      void detailQuery.refetch();
+                    }}
+                  />
                   <DetailField
                     label="Telefone"
                     value={attendance.customer?.phone || "Não informado"}
@@ -1033,6 +1042,9 @@ function ConversationMessage({ message }: { message: AttendanceMessageItem }) {
         : "Agente";
   const content = message.content?.trim();
   const hasMedia = message.type.toLowerCase() !== "text";
+  const messageStatuses = [message.dispatchStatus, message.deliveryStatus]
+    .filter((status): status is string => Boolean(status))
+    .map((status) => formatOperationalMessageStatus(status));
 
   return (
     <article className={`flex ${isCustomer ? "justify-start" : "justify-end"}`}>
@@ -1056,12 +1068,9 @@ function ConversationMessage({ message }: { message: AttendanceMessageItem }) {
           <p className="mb-1 font-medium">Template: {message.templateName}</p>
         ) : null}
         {content ? <p className="whitespace-pre-wrap break-words">{content}</p> : null}
-        {message.dispatchStatus || message.deliveryStatus ? (
+        {messageStatuses.length > 0 ? (
           <p className="mt-2 text-xs opacity-75">
-            {formatOperationalMessageStatus(message.dispatchStatus)}
-            {message.deliveryStatus
-              ? ` · ${formatOperationalMessageStatus(message.deliveryStatus)}`
-              : ""}
+            {messageStatuses.join(" · ")}
           </p>
         ) : null}
       </div>
