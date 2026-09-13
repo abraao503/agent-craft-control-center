@@ -115,7 +115,7 @@ export function OperationalChannelsManager({
     canManageChannels && has("connect:whatsapp");
   const canManageCompanyMeta =
     isCompanyLevel() && has("manage:integrations") && canManageChannels;
-  const channelsQuery = useOperationalChannels(workspaceId, channelsPage, true, true);
+  const channelsQuery = useOperationalChannels(workspaceId, channelsPage);
   const routesQuery = useOperationalChannelRoutes(workspaceId);
   const providersQuery = useOperationalChannelProviders(
     workspaceId,
@@ -279,6 +279,9 @@ export function OperationalChannelsManager({
 
   const handleDeactivate = async () => {
     if (!channelToDeactivate) return;
+    const releasingMetaReservation = isHistoricalMetaReservation(
+      channelToDeactivate,
+    );
 
     try {
       await channelMutations.deactivate.mutateAsync({
@@ -287,14 +290,19 @@ export function OperationalChannelsManager({
         idempotencyKey: crypto.randomUUID(),
       });
       toast({
-        title: "Canal pausado",
-        description:
-          "O histórico foi preservado e o canal saiu do tráfego de mensagens.",
-      });
+        title: releasingMetaReservation
+          ? "Vínculo Meta liberado"
+          : "Canal pausado",
+        description: releasingMetaReservation
+          ? "O registro foi preservado para histórico e o número pode ser usado em outro canal."
+          : "O histórico foi preservado e o canal saiu do tráfego de mensagens.",
+        });
       setChannelToDeactivate(null);
     } catch (error) {
       toast({
-        title: "Não foi possível pausar o canal",
+        title: releasingMetaReservation
+          ? "Não foi possível liberar o vínculo Meta"
+          : "Não foi possível pausar o canal",
         description: getOperationalErrorMessage(
           error,
           "O canal pode ter sido alterado por outra pessoa.",
@@ -653,11 +661,29 @@ export function OperationalChannelsManager({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Pausar canal?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {isHistoricalMetaReservation(channelToDeactivate)
+                ? "Liberar vínculo Meta?"
+                : "Pausar canal?"}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              O canal “{channelToDeactivate?.displayName || channelToDeactivate?.providerAlias}”
-              ficará fora do tráfego. O histórico e a configuração serão
-              preservados para diagnóstico posterior.
+              {isHistoricalMetaReservation(channelToDeactivate) ? (
+                <>
+                  O registro “
+                  {channelToDeactivate?.displayName ||
+                    channelToDeactivate?.providerAlias}
+                  ” será mantido para histórico e o número Meta será liberado
+                  para outro canal.
+                </>
+              ) : (
+                <>
+                  O canal “
+                  {channelToDeactivate?.displayName ||
+                    channelToDeactivate?.providerAlias}
+                  ” ficará fora do tráfego. O histórico e a configuração serão
+                  preservados para diagnóstico posterior.
+                </>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -672,8 +698,12 @@ export function OperationalChannelsManager({
               disabled={channelMutations.deactivate.isPending}
             >
               {channelMutations.deactivate.isPending
-                ? "Pausando..."
-                : "Pausar"}
+                ? isHistoricalMetaReservation(channelToDeactivate)
+                  ? "Liberando..."
+                  : "Pausando..."
+                : isHistoricalMetaReservation(channelToDeactivate)
+                  ? "Liberar número"
+                  : "Pausar"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -727,6 +757,15 @@ function buildRouteMenuConfiguration(
       targetQueueId: option.action === "ROUTE" ? option.targetQueueId : null,
     })),
   };
+}
+
+function isHistoricalMetaReservation(channel: OperationalChannel | null): boolean {
+  return Boolean(
+    channel &&
+      !channel.active &&
+      channel.provider === "meta-cloud" &&
+      channel.metaPhoneNumberId,
+  );
 }
 
 function buildCreateChannelBody(
@@ -788,7 +827,7 @@ function getChannelActionErrorMessage(error: unknown, fallback: string): string 
     return "Complete as credenciais e a URL de postback antes de ativar o canal.";
   }
   if (code === "META_PHONE_NUMBER_IN_USE") {
-    return "Este número já está vinculado a outro canal operacional.";
+    return "Este número já está reservado por outro canal. Atualize a lista para retomar o canal histórico ou libere o vínculo antes de criar outro.";
   }
   if (code === "PROVIDER_UNAVAILABLE") {
     return "O provedor não respondeu. Aguarde alguns instantes e tente novamente.";

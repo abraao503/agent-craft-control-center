@@ -756,7 +756,7 @@ function getOnboardingSubmitErrorMessage(
 ): string {
   const code = getOperationalErrorCode(error);
   if (code === "META_PHONE_NUMBER_IN_USE") {
-    return "Este número já está vinculado a outro canal operacional. Escolha outro número livre.";
+    return "Este número já está reservado por outro canal. Atualize a lista para retomar o canal histórico ou libere o vínculo antes de escolher outro número.";
   }
   if (code === "PROVIDER_CREDENTIALS_INCOMPLETE") {
     return "Complete as credenciais e a URL de postback antes de criar o canal.";

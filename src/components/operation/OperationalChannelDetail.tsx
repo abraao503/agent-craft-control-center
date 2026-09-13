@@ -134,6 +134,11 @@ function ChannelDetailContent({
     : channel.route.configured
       ? "Destino indisponível"
       : "Ainda não definido";
+  const canReleaseMetaBinding =
+    canManageConnection &&
+    !channel.active &&
+    channel.provider === "meta-cloud" &&
+    Boolean(channel.metaPhoneNumberId);
 
   return (
     <article className={cn("flex min-h-full flex-col", compact && "pt-2")}>
@@ -190,7 +195,7 @@ function ChannelDetailContent({
                 Editar destino
               </DropdownMenuItem>
             ) : null}
-            {canManageConnection && channel.active ? (
+            {canManageConnection && (channel.active || canReleaseMetaBinding) ? (
               <>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
@@ -198,7 +203,7 @@ function ChannelDetailContent({
                   onSelect={() => onDeactivate(channel)}
                   disabled={isDeactivationPending}
                 >
-                  Pausar canal
+                  {channel.active ? "Pausar canal" : "Liberar número e arquivar"}
                 </DropdownMenuItem>
               </>
             ) : null}
@@ -250,7 +255,10 @@ function ChannelDetailContent({
                 value={
                   channel.active
                     ? getOperationalStatusLabel(channel.connectionStatus)
-                    : "Pausado"
+                    : channel.provider === "meta-cloud" &&
+                        channel.metaPhoneNumberId
+                      ? "Pausado · número reservado"
+                      : "Pausado"
                 }
               />
               <DetailRow

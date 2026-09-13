@@ -32,7 +32,7 @@ export function OperationalMetaManualAccountCard({
     has("manage:operation-channels");
   const accounts = accountsQuery.data ?? [];
   const accountWithError = accounts.find((account) =>
-    ["ERROR", "NEEDS_REAUTHORIZATION"].includes(account.status),
+    ["CONNECTING", "ERROR", "NEEDS_REAUTHORIZATION"].includes(account.status),
   );
   const accountWithPendingWebhook = accounts.find(
     (account) => !account.lastValidatedAt || !account.webhookConfigured,
@@ -109,6 +109,8 @@ export function OperationalMetaManualAccountCard({
             description:
               accountWithError.status === "NEEDS_REAUTHORIZATION"
                 ? "Atualize as credenciais da empresa para voltar a usar seus números Meta."
+                : accountWithError.status === "CONNECTING"
+                  ? "A conta Meta ainda está conectando. Confirme o webhook e atualize o status antes de ativar novos canais."
                 : "A última validação da conta Meta encontrou um problema.",
             destructive: true,
           }

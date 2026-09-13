@@ -131,7 +131,7 @@ export function OperationalMetaAccountManager({
     0,
   );
   const accountNeedsAttention = accounts.some((account) =>
-    ["ERROR", "NEEDS_REAUTHORIZATION"].includes(account.status),
+    ["CONNECTING", "ERROR", "NEEDS_REAUTHORIZATION"].includes(account.status),
   );
   const webhookPending = accounts.some(
     (account) => !account.webhookConfigured || !account.lastValidatedAt,
@@ -161,7 +161,9 @@ export function OperationalMetaAccountManager({
     : accountsQuery.isError
       ? "Não foi possível consultar a conta Meta agora."
       : accounts.length
-        ? `${accounts.length} ${accounts.length === 1 ? "conta configurada" : "contas configuradas"} · ${totalPhoneNumbers} ${totalPhoneNumbers === 1 ? "número sincronizado" : "números sincronizados"}`
+        ? accountNeedsAttention
+          ? "A conta Meta ainda está concluindo a conexão. Verifique o webhook e atualize o status antes de ativar novos canais."
+          : `${accounts.length} ${accounts.length === 1 ? "conta configurada" : "contas configuradas"} · ${totalPhoneNumbers} ${totalPhoneNumbers === 1 ? "número sincronizado" : "números sincronizados"}`
         : canManageManualAccount
           ? "Configure a conta para liberar números nos canais deste ambiente."
           : "A conta ainda não foi configurada pela empresa.";
@@ -678,13 +680,17 @@ function ManualAccountRow({
   onEdit: () => void;
   onConfigureWebhook: () => void;
 }) {
-  const needsAttention = ["ERROR", "NEEDS_REAUTHORIZATION"].includes(
-    account.status,
-  );
+  const needsAttention = [
+    "CONNECTING",
+    "ERROR",
+    "NEEDS_REAUTHORIZATION",
+  ].includes(account.status);
   const validationLabel = needsAttention
     ? account.status === "NEEDS_REAUTHORIZATION"
       ? "Reautorização necessária"
-      : "Validação com problema"
+      : account.status === "CONNECTING"
+        ? "Aguardando conexão"
+        : "Validação com problema"
     : account.lastValidatedAt
       ? "Credenciais validadas"
       : "Validação pendente";

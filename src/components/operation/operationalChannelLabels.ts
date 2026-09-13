@@ -65,7 +65,8 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const ERROR_LABELS: Record<string, string> = {
-  CHANNEL_ALREADY_EXISTS: "Já existe uma conexão deste provedor neste ambiente.",
+  CHANNEL_ALREADY_EXISTS:
+    "Este canal já possui um cadastro. Atualize a lista e retome a conexão existente.",
   CHANNEL_NOT_FOUND: "A conexão não existe mais neste ambiente.",
   DESTINATION_NOT_FOUND: "Um dos destinos não existe mais ou está inativo.",
   DESTINATION_WORKSPACE_MISMATCH:
@@ -80,6 +81,8 @@ const ERROR_LABELS: Record<string, string> = {
     "A combinação de destinos não é compatível com o modo da rota.",
   META_PHONE_NUMBER_NOT_FOUND:
     "O número Meta não está sincronizado ou não pertence à empresa.",
+  META_PHONE_NUMBER_IN_USE:
+    "Este número já está reservado por outro canal. Retome o canal histórico ou libere o vínculo antes de criar outro.",
   OPERATIONAL_RUNTIME_NOT_READY:
     "O recebimento de mensagens ainda não está disponível. A ativação permanece bloqueada por enquanto.",
   PROVIDER_QR_UNSUPPORTED: "Este provedor não oferece QR Code.",
