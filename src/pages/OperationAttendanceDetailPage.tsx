@@ -42,6 +42,7 @@ import {
   AttendanceReplyCapabilities,
   AttendanceStatus,
   MessageDeliveryCheckSummary,
+  MessageDeliveryChecksQueryState,
 } from "@/types/operation-attendance";
 import {
   AttendanceAction,
@@ -176,12 +177,13 @@ export default function OperationAttendanceDetailPage({
         .map((item) => item.id),
     [timelineQuery.data],
   );
-  const { checksByMessageId } = useMessageDeliveryChecks({
-    workspaceId,
-    attendanceId,
-    messageIds: outboundMessageIds,
-    enabled: canViewAttendances,
-  });
+  const { checksByMessageId, state: deliveryChecksState } =
+    useMessageDeliveryChecks({
+      workspaceId,
+      attendanceId,
+      messageIds: outboundMessageIds,
+      enabled: canViewAttendances,
+    });
   const markReadMutation = useMarkOperationalAttendanceRead(
     workspaceId,
     attendanceId,
@@ -697,6 +699,7 @@ export default function OperationAttendanceDetailPage({
                             key={`message:${item.id}`}
                             message={item}
                             deliveryChecks={checksByMessageId.get(item.id)}
+                            deliveryChecksState={deliveryChecksState}
                           />
                         ) : (
                           <TimelineEvent
@@ -1056,9 +1059,11 @@ function DetailField({ label, value }: { label: string; value: string }) {
 function ConversationMessage({
   message,
   deliveryChecks,
+  deliveryChecksState,
 }: {
   message: AttendanceMessageItem;
   deliveryChecks?: MessageDeliveryCheckSummary;
+  deliveryChecksState: MessageDeliveryChecksQueryState;
 }) {
   const isCustomer = message.sender === "CUSTOMER";
   const senderLabel =
@@ -1069,7 +1074,8 @@ function ConversationMessage({
         : "Agente";
   const content = message.content?.trim();
   const hasMedia = message.type.toLowerCase() !== "text";
-  const hasDeliveryChecks = !isCustomer && Boolean(deliveryChecks);
+  const hasDeliveryChecks =
+    !isCustomer && deliveryChecksState !== "disabled";
   const messageStatuses = [message.dispatchStatus, message.deliveryStatus]
     .filter((status): status is string => Boolean(status))
     .map((status) => formatOperationalMessageStatus(status));
@@ -1097,7 +1103,10 @@ function ConversationMessage({
         ) : null}
         {content ? <p className="whitespace-pre-wrap break-words">{content}</p> : null}
         {hasDeliveryChecks ? (
-          <MessageDeliveryChecks summary={deliveryChecks} />
+          <MessageDeliveryChecks
+            summary={deliveryChecks}
+            state={deliveryChecksState}
+          />
         ) : messageStatuses.length > 0 ? (
           <p className="mt-2 text-xs opacity-75">
             {messageStatuses.join(" · ")}

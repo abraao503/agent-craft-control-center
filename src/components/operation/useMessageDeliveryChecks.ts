@@ -1,7 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { listMessageDeliveryChecks } from "@/services/operation/listMessageDeliveryChecks";
-import type { MessageDeliveryCheckSummary } from "@/types/operation-attendance";
+import type {
+  MessageDeliveryCheckSummary,
+  MessageDeliveryChecksQueryState,
+} from "@/types/operation-attendance";
 
 const DELIVERY_CHECKS_MAX_MESSAGES = 100;
 
@@ -18,6 +21,8 @@ export function useMessageDeliveryChecks({
   messageIds,
   enabled = true,
 }: UseMessageDeliveryChecksParams) {
+  const queryEnabled =
+    enabled && Boolean(workspaceId && attendanceId && messageIds.length > 0);
   const checksQuery = useQuery({
     queryKey: [
       "operation",
@@ -32,8 +37,7 @@ export function useMessageDeliveryChecks({
         attendanceId: attendanceId as string,
         messageIds: messageIds.slice(0, DELIVERY_CHECKS_MAX_MESSAGES),
       }),
-    enabled:
-      enabled && Boolean(workspaceId && attendanceId && messageIds.length > 0),
+    enabled: queryEnabled,
   });
 
   const checksByMessageId = new Map<string, MessageDeliveryCheckSummary>();
@@ -42,5 +46,13 @@ export function useMessageDeliveryChecks({
     checksByMessageId.set(summary.messageId, summary);
   }
 
-  return { checksQuery, checksByMessageId };
+  const state: MessageDeliveryChecksQueryState = !queryEnabled
+    ? "disabled"
+    : checksQuery.isError
+      ? "error"
+      : checksQuery.isPending
+        ? "loading"
+        : "ready";
+
+  return { checksQuery, checksByMessageId, state };
 }

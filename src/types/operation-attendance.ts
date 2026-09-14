@@ -495,6 +495,12 @@ export interface MessageDeliveryChecksPage {
   items: MessageDeliveryCheckSummary[];
 }
 
+export type MessageDeliveryChecksQueryState =
+  | "disabled"
+  | "loading"
+  | "error"
+  | "ready";
+
 export interface AttendanceEventsPage {
   items: AttendanceEvent[];
   total: number;
