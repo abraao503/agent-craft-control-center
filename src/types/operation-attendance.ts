@@ -449,6 +449,52 @@ export interface AttendanceMessagesPage {
   hasMore: boolean;
 }
 
+export type MessageDeliveryCheckStatus =
+  | "ACCEPTED"
+  | "SENT"
+  | "DELIVERED"
+  | "READ"
+  | "PLAYED"
+  | "FAILED"
+  | "UNKNOWN";
+
+export type MessageDeliveryCheckOrigin = "PROVIDER_WEBHOOK" | "SEND_RESPONSE";
+
+export interface MessageDeliveryCheck {
+  status: MessageDeliveryCheckStatus;
+  rawStatus: string | null;
+  origin: MessageDeliveryCheckOrigin;
+  observedAt: string;
+}
+
+export type OperationalWhatsappProvider =
+  | "meta-cloud"
+  | "z-api"
+  | "evolux";
+
+export interface WhatsappProviderCapabilities {
+  connectionMode: "credentials" | "provisioned-number";
+  supportsQr: boolean;
+  supportsTemplates: boolean;
+  supportsStatuses: boolean;
+  supports24HourWindow: boolean;
+  supportsMedia: boolean;
+}
+
+export interface MessageDeliveryCheckSummary {
+  messageId: string;
+  provider: OperationalWhatsappProvider | null;
+  capabilities: WhatsappProviderCapabilities | null;
+  statusTrackingSupported: boolean;
+  deliveryStatus: string | null;
+  deliveryUpdatedAt: string | null;
+  checks: MessageDeliveryCheck[];
+}
+
+export interface MessageDeliveryChecksPage {
+  items: MessageDeliveryCheckSummary[];
+}
+
 export interface AttendanceEventsPage {
   items: AttendanceEvent[];
   total: number;

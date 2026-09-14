@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   AlertCircle,
@@ -41,6 +41,7 @@ import {
   AttendanceMessageItem,
   AttendanceReplyCapabilities,
   AttendanceStatus,
+  MessageDeliveryCheckSummary,
 } from "@/types/operation-attendance";
 import {
   AttendanceAction,
@@ -48,6 +49,8 @@ import {
   AttendanceActionFormValues,
 } from "@/components/operation/AttendanceActionDialog";
 import { AttendanceFollowUpsCard } from "@/components/operation/AttendanceFollowUpsCard";
+import { MessageDeliveryChecks } from "@/components/operation/MessageDeliveryChecks";
+import { useMessageDeliveryChecks } from "@/components/operation/useMessageDeliveryChecks";
 import { OperationalTriageAgentHistory } from "@/components/operation/OperationalTriageAgentHistory";
 import { AttendanceComposer } from "@/components/operation/AttendanceComposer";
 import { OperationalContactNameField } from "@/components/operation/OperationalContactNameField";
@@ -163,6 +166,22 @@ export default function OperationAttendanceDetailPage({
     { limit: 50 },
     canViewAttendances,
   );
+  const outboundMessageIds = useMemo(
+    () =>
+      (timelineQuery.data?.pages ?? [])
+        .flatMap((page) => page.items)
+        .filter(
+          (item) => item.kind === "message" && item.sender !== "CUSTOMER",
+        )
+        .map((item) => item.id),
+    [timelineQuery.data],
+  );
+  const { checksByMessageId } = useMessageDeliveryChecks({
+    workspaceId,
+    attendanceId,
+    messageIds: outboundMessageIds,
+    enabled: canViewAttendances,
+  });
   const markReadMutation = useMarkOperationalAttendanceRead(
     workspaceId,
     attendanceId,
@@ -677,6 +696,7 @@ export default function OperationAttendanceDetailPage({
                           <ConversationMessage
                             key={`message:${item.id}`}
                             message={item}
+                            deliveryChecks={checksByMessageId.get(item.id)}
                           />
                         ) : (
                           <TimelineEvent
@@ -1033,7 +1053,13 @@ function DetailField({ label, value }: { label: string; value: string }) {
   );
 }
 
-function ConversationMessage({ message }: { message: AttendanceMessageItem }) {
+function ConversationMessage({
+  message,
+  deliveryChecks,
+}: {
+  message: AttendanceMessageItem;
+  deliveryChecks?: MessageDeliveryCheckSummary;
+}) {
   const isCustomer = message.sender === "CUSTOMER";
   const senderLabel =
     message.sender === "CUSTOMER"
@@ -1043,6 +1069,7 @@ function ConversationMessage({ message }: { message: AttendanceMessageItem }) {
         : "Agente";
   const content = message.content?.trim();
   const hasMedia = message.type.toLowerCase() !== "text";
+  const hasDeliveryChecks = !isCustomer && Boolean(deliveryChecks);
   const messageStatuses = [message.dispatchStatus, message.deliveryStatus]
     .filter((status): status is string => Boolean(status))
     .map((status) => formatOperationalMessageStatus(status));
@@ -1069,7 +1096,9 @@ function ConversationMessage({ message }: { message: AttendanceMessageItem }) {
           <p className="mb-1 font-medium">Template: {message.templateName}</p>
         ) : null}
         {content ? <p className="whitespace-pre-wrap break-words">{content}</p> : null}
-        {messageStatuses.length > 0 ? (
+        {hasDeliveryChecks ? (
+          <MessageDeliveryChecks summary={deliveryChecks} />
+        ) : messageStatuses.length > 0 ? (
           <p className="mt-2 text-xs opacity-75">
             {messageStatuses.join(" · ")}
           </p>

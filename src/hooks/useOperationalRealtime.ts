@@ -188,6 +188,14 @@ export function useOperationalRealtime({
         queryKey: ["operation", "attendance-timeline", workspaceId, targetAttendanceId],
       });
       void queryClient.invalidateQueries({
+        queryKey: [
+          "operation",
+          "attendance-delivery-checks",
+          workspaceId,
+          targetAttendanceId,
+        ],
+      });
+      void queryClient.invalidateQueries({
         queryKey: ["operation", "attendance-commands", workspaceId, targetAttendanceId],
       });
       void queryClient.invalidateQueries({
