@@ -20,6 +20,16 @@ export interface OperationalPublicEvent {
   occurredAt: string;
 }
 
+export interface LegacyWhatsappMessageStatusEvent {
+  messageId: string;
+  chatId: string;
+  externalMessageId?: string | null;
+  deliveryStatus: string;
+  deliveryUpdatedAt: string | Date;
+  errorCode?: string | null;
+  errorMessage?: string | null;
+}
+
 export type OperationalRealtimeStatus =
   | "disabled"
   | "connecting"

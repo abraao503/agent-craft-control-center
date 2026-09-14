@@ -4,6 +4,7 @@ import { connectSocket } from "@/lib/socket";
 import { replaceAttendanceInKanban } from "@/utils/operationalKanbanCache";
 import {
   OPERATIONAL_PUBLIC_EVENTS,
+  LegacyWhatsappMessageStatusEvent,
   OperationalPublicEvent,
   OperationalPublicEventName,
   OperationalRealtimeStatus,
@@ -70,6 +71,32 @@ function isOperationalPublicEvent(value: unknown): value is OperationalPublicEve
   );
 }
 
+function isLegacyWhatsappMessageStatusEvent(
+  value: unknown,
+): value is LegacyWhatsappMessageStatusEvent {
+  if (!isRecord(value)) return false;
+
+  const deliveryUpdatedAt = value.deliveryUpdatedAt;
+  const hasValidTimestamp =
+    (typeof deliveryUpdatedAt === "string" &&
+      !Number.isNaN(Date.parse(deliveryUpdatedAt))) ||
+    deliveryUpdatedAt instanceof Date;
+
+  return (
+    typeof value.messageId === "string" &&
+    value.messageId.length > 0 &&
+    typeof value.chatId === "string" &&
+    value.chatId.length > 0 &&
+    typeof value.deliveryStatus === "string" &&
+    value.deliveryStatus.length > 0 &&
+    hasValidTimestamp
+  );
+}
+
+function normalizeLegacyTimestamp(value: string | Date): string {
+  return value instanceof Date ? value.toISOString() : value;
+}
+
 function remember(set: Set<string>, value: string) {
   set.add(value);
   if (set.size <= MAX_REMEMBERED_EVENTS) return;
@@ -88,7 +115,6 @@ export function useOperationalRealtime({
   const queryClient = useQueryClient();
   const currentVersionRef = useRef<number | undefined>(currentAttendanceVersion);
   const processedEventIdsRef = useRef<Set<string>>(new Set());
-  const processedMessageKeysRef = useRef<Set<string>>(new Set());
   const [status, setStatus] = useState<OperationalRealtimeStatus>("disabled");
   const [joinedWorkspace, setJoinedWorkspace] = useState(false);
   const [lastEventAt, setLastEventAt] = useState<string | null>(null);
@@ -272,21 +298,7 @@ export function useOperationalRealtime({
       if (rawEvent.workspaceId !== workspaceId) return;
       if (processedEventIdsRef.current.has(rawEvent.eventId)) return;
 
-      const isMessageEvent =
-        Boolean(rawEvent.messageId) &&
-        (rawEvent.kind === "CREATED" || rawEvent.kind === "STATUS");
-      const messageKey = isMessageEvent
-        ? `${rawEvent.kind}:${rawEvent.messageId}`
-        : null;
-      if (messageKey && processedMessageKeysRef.current.has(messageKey)) {
-        remember(processedEventIdsRef.current, rawEvent.eventId);
-        return;
-      }
-
       remember(processedEventIdsRef.current, rawEvent.eventId);
-      if (messageKey) {
-        remember(processedMessageKeysRef.current, messageKey);
-      }
 
       const isCurrentAttendance = rawEvent.attendanceId === targetAttendanceId;
       const isKnownStaleEvent =
@@ -302,6 +314,24 @@ export function useOperationalRealtime({
       invalidateWorkspace(rawEvent.attendanceId, rawEvent.chatId);
     };
 
+    const handleLegacyWhatsappMessageStatus = (rawEvent: unknown) => {
+      if (
+        !mounted ||
+        !isLegacyWhatsappMessageStatusEvent(rawEvent) ||
+        rawEvent.chatId !== targetChatId
+      ) {
+        return;
+      }
+
+      const occurredAt = normalizeLegacyTimestamp(rawEvent.deliveryUpdatedAt);
+      const eventKey = `legacy:status:${rawEvent.messageId}:${rawEvent.deliveryStatus}:${occurredAt}`;
+      if (processedEventIdsRef.current.has(eventKey)) return;
+      remember(processedEventIdsRef.current, eventKey);
+
+      setLastEventAt(occurredAt);
+      invalidateWorkspace(undefined, rawEvent.chatId);
+    };
+
     socket.on("connect", handleConnect);
     socket.on("disconnect", handleDisconnect);
     socket.on("connect_error", handleConnectError);
@@ -311,6 +341,7 @@ export function useOperationalRealtime({
     for (const eventName of EVENT_NAMES) {
       socket.on(eventName, handleOperationalEvent);
     }
+    socket.on("message:status", handleLegacyWhatsappMessageStatus);
     socket.io.on("reconnect_attempt", handleReconnectAttempt);
     socket.io.on("reconnect_failed", handleReconnectFailed);
 
@@ -338,6 +369,7 @@ export function useOperationalRealtime({
       for (const eventName of EVENT_NAMES) {
         socket.off(eventName, handleOperationalEvent);
       }
+      socket.off("message:status", handleLegacyWhatsappMessageStatus);
       socket.io.off("reconnect_attempt", handleReconnectAttempt);
       socket.io.off("reconnect_failed", handleReconnectFailed);
       window.removeEventListener("focus", handleFocus);
