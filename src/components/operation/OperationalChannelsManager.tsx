@@ -13,6 +13,7 @@ import {
 import {
   useOperationalChannelMutations,
   useOperationalChannelProviders,
+  useOperationalChannelRealtime,
   useOperationalChannels,
 } from "@/hooks/useOperationalChannels";
 import { useOperationalRouteOptions } from "@/hooks/useOperationalRouteOptions";
@@ -111,6 +112,7 @@ export function OperationalChannelsManager({
 
   const canManageChannels = has("manage:operation-channels");
   const canManageTriageAgents = has("manage:operation-setup");
+  useOperationalChannelRealtime(workspaceId, canManageChannels);
   const canConnectChannels =
     canManageChannels && has("connect:whatsapp");
   const canManageCompanyMeta =

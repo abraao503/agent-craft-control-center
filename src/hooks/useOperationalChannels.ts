@@ -1,5 +1,7 @@
+import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useWorkspaceContext } from "@/contexts/workspace/WorkspaceContext";
+import { connectSocket } from "@/lib/socket";
 import { createOperationalChannel } from "@/services/operation/createOperationalChannel";
 import { deactivateOperationalChannel } from "@/services/operation/deactivateOperationalChannel";
 import { activateOperationalChannel } from "@/services/operation/activateOperationalChannel";
@@ -14,6 +16,32 @@ import {
   RequestOperationalChannelQrCodeParams,
   UpdateOperationalChannelParams,
 } from "@/types/operation-channels";
+import type { InstanceStatusEvent } from "@/types/websocket";
+
+const INSTANCE_STATUS_VALUES = new Set<InstanceStatusEvent["status"]>([
+  "connected",
+  "disconnected",
+  "connecting",
+  "error",
+  "open",
+  "close",
+]);
+
+function isInstanceStatusEvent(value: unknown): value is InstanceStatusEvent {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return false;
+  }
+
+  const event = value as Record<string, unknown>;
+  return (
+    typeof event.workspaceId === "string" &&
+    event.workspaceId.length > 0 &&
+    typeof event.companyWhatsappIntegrationId === "string" &&
+    event.companyWhatsappIntegrationId.length > 0 &&
+    typeof event.status === "string" &&
+    INSTANCE_STATUS_VALUES.has(event.status as InstanceStatusEvent["status"])
+  );
+}
 
 export function useOperationalChannels(
   workspaceId?: string,
@@ -36,6 +64,59 @@ export function useOperationalChannels(
     },
     enabled: Boolean(workspaceId && enabled),
   });
+}
+
+export function useOperationalChannelRealtime(
+  workspaceId?: string,
+  enabled = true,
+) {
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (!enabled || !workspaceId) return;
+
+    const token = localStorage.getItem("token") ?? "";
+    if (!token) return;
+
+    const socket = connectSocket(token);
+    let mounted = true;
+
+    const handleConnect = () => {
+      if (!mounted) return;
+      socket.emit("join:workspace", { workspaceId });
+    };
+
+    const handleInstanceStatus = (rawEvent: unknown) => {
+      if (
+        !mounted ||
+        !isInstanceStatusEvent(rawEvent) ||
+        rawEvent.workspaceId !== workspaceId
+      ) {
+        return;
+      }
+
+      void queryClient.invalidateQueries({
+        queryKey: ["operation-channels", workspaceId],
+        refetchType: "active",
+      });
+    };
+
+    socket.on("connect", handleConnect);
+    socket.on("instance:status", handleInstanceStatus);
+
+    if (socket.connected) {
+      handleConnect();
+    }
+
+    return () => {
+      mounted = false;
+      socket.off("connect", handleConnect);
+      socket.off("instance:status", handleInstanceStatus);
+      if (socket.connected) {
+        socket.emit("leave:workspace", { workspaceId });
+      }
+    };
+  }, [enabled, queryClient, workspaceId]);
 }
 
 export function useOperationalChannelProviders(
