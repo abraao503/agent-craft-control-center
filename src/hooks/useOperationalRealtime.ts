@@ -32,6 +32,7 @@ function isAttendanceWithDetails(
 interface UseOperationalRealtimeOptions {
   workspaceId?: string;
   attendanceId?: string;
+  chatId?: string;
   currentAttendanceVersion?: number;
   enabled?: boolean;
 }
@@ -57,6 +58,7 @@ function isOperationalPublicEvent(value: unknown): value is OperationalPublicEve
     value.workspaceId.length > 0 &&
     typeof value.attendanceId === "string" &&
     value.attendanceId.length > 0 &&
+    (value.chatId === null || typeof value.chatId === "string") &&
     (value.aggregateVersion === null ||
       (typeof value.aggregateVersion === "number" &&
         Number.isInteger(value.aggregateVersion) &&
@@ -79,6 +81,7 @@ function remember(set: Set<string>, value: string) {
 export function useOperationalRealtime({
   workspaceId,
   attendanceId,
+  chatId,
   currentAttendanceVersion,
   enabled = true,
 }: UseOperationalRealtimeOptions): UseOperationalRealtimeResult {
@@ -111,6 +114,7 @@ export function useOperationalRealtime({
     const socket = connectSocket(token);
     let mounted = true;
     const targetAttendanceId = attendanceId;
+    const targetChatId = chatId;
 
     const patchKanbanCache = (event: OperationalPublicEvent): boolean => {
       if (event.aggregateVersion === null) return false;
@@ -149,9 +153,15 @@ export function useOperationalRealtime({
       return patched;
     };
 
-    const invalidateWorkspace = (eventAttendanceId?: string) => {
+    const invalidateWorkspace = (
+      eventAttendanceId?: string,
+      eventChatId?: string | null,
+    ) => {
       void queryClient.invalidateQueries({
         queryKey: ["operation", "attendances", workspaceId],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: ["operation", "conversations", workspaceId],
       });
       void queryClient.invalidateQueries({
         queryKey: ["operation", "attendance-kanban", workspaceId],
@@ -160,32 +170,35 @@ export function useOperationalRealtime({
         queryKey: ["operation", "attendance-summary", workspaceId],
       });
 
-      if (!eventAttendanceId || eventAttendanceId !== targetAttendanceId) return;
+      const isCurrentConversation =
+        Boolean(targetChatId && eventChatId && eventChatId === targetChatId) ||
+        Boolean(eventAttendanceId && eventAttendanceId === targetAttendanceId);
+      if (!isCurrentConversation || !targetAttendanceId) return;
 
       void queryClient.invalidateQueries({
-        queryKey: ["operation", "attendance", workspaceId, eventAttendanceId],
+        queryKey: ["operation", "attendance", workspaceId, targetAttendanceId],
       });
       void queryClient.invalidateQueries({
-        queryKey: ["operation", "attendance-messages", workspaceId, eventAttendanceId],
+        queryKey: ["operation", "attendance-messages", workspaceId, targetAttendanceId],
       });
       void queryClient.invalidateQueries({
-        queryKey: ["operation", "attendance-events", workspaceId, eventAttendanceId],
+        queryKey: ["operation", "attendance-events", workspaceId, targetAttendanceId],
       });
       void queryClient.invalidateQueries({
-        queryKey: ["operation", "attendance-timeline", workspaceId, eventAttendanceId],
+        queryKey: ["operation", "attendance-timeline", workspaceId, targetAttendanceId],
       });
       void queryClient.invalidateQueries({
-        queryKey: ["operation", "attendance-commands", workspaceId, eventAttendanceId],
+        queryKey: ["operation", "attendance-commands", workspaceId, targetAttendanceId],
       });
       void queryClient.invalidateQueries({
-        queryKey: ["operation", "attendance-follow-ups", workspaceId, eventAttendanceId],
+        queryKey: ["operation", "attendance-follow-ups", workspaceId, targetAttendanceId],
       });
       void queryClient.invalidateQueries({
         queryKey: [
           "operation",
           "attendance-follow-up-occurrences",
           workspaceId,
-          eventAttendanceId,
+          targetAttendanceId,
         ],
       });
     };
@@ -197,7 +210,7 @@ export function useOperationalRealtime({
       });
     };
 
-    const reconcile = () => invalidateWorkspace(targetAttendanceId);
+    const reconcile = () => invalidateWorkspace(targetAttendanceId, targetChatId);
     const handleConnect = () => {
       if (!mounted) return;
       setStatus("connected");
@@ -277,37 +290,8 @@ export function useOperationalRealtime({
 
       setLastEventAt(rawEvent.occurredAt);
 
-      const patched = patchKanbanCache(rawEvent);
-      if (!patched) {
-        invalidateWorkspace(rawEvent.attendanceId);
-      } else if (isCurrentAttendance) {
-        void queryClient.invalidateQueries({
-          queryKey: ["operation", "attendance", workspaceId, rawEvent.attendanceId],
-        });
-        void queryClient.invalidateQueries({
-          queryKey: ["operation", "attendance-messages", workspaceId, rawEvent.attendanceId],
-        });
-        void queryClient.invalidateQueries({
-          queryKey: ["operation", "attendance-events", workspaceId, rawEvent.attendanceId],
-        });
-        void queryClient.invalidateQueries({
-          queryKey: ["operation", "attendance-timeline", workspaceId, rawEvent.attendanceId],
-        });
-        void queryClient.invalidateQueries({
-          queryKey: ["operation", "attendance-commands", workspaceId, rawEvent.attendanceId],
-        });
-        void queryClient.invalidateQueries({
-          queryKey: ["operation", "attendance-follow-ups", workspaceId, rawEvent.attendanceId],
-        });
-        void queryClient.invalidateQueries({
-          queryKey: [
-            "operation",
-            "attendance-follow-up-occurrences",
-            workspaceId,
-            rawEvent.attendanceId,
-          ],
-        });
-      }
+      patchKanbanCache(rawEvent);
+      invalidateWorkspace(rawEvent.attendanceId, rawEvent.chatId);
     };
 
     socket.on("connect", handleConnect);
@@ -354,7 +338,7 @@ export function useOperationalRealtime({
         socket.emit("leave:workspace", { workspaceId });
       }
     };
-  }, [attendanceId, enabled, queryClient, workspaceId]);
+  }, [attendanceId, chatId, enabled, queryClient, workspaceId]);
 
   return { status, joinedWorkspace, lastEventAt };
 }

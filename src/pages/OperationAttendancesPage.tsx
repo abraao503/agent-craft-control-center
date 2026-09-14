@@ -15,10 +15,10 @@ import {
 } from "lucide-react";
 import { useWorkspaceContext } from "@/contexts/workspace/WorkspaceContext";
 import {
-  useOperationalAttendances,
   useOperationalAttendanceOptions,
   useOperationalAttendanceSummary,
 } from "@/hooks/useOperationalAttendances";
+import { useOperationalConversations } from "@/hooks/useOperationalConversations";
 import { useOperationalRealtime } from "@/hooks/useOperationalRealtime";
 import { usePermissions } from "@/hooks/usePermissions";
 import { getOperationalAttendanceErrorMessage } from "@/utils/operationalAttendanceErrors";
@@ -34,6 +34,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { OperationalRealtimeStatus } from "@/components/operation/OperationalRealtimeStatus";
+import { OperationalConversationCard } from "@/components/operation/OperationalConversationCard";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -78,12 +79,6 @@ const SECONDARY_STATUSES: AttendanceStatus[] = [
   "PENDING",
   "CLOSED",
 ];
-
-const MESSAGE_SENDER_LABELS = {
-  CUSTOMER: "Cliente",
-  HUMAN: "Operador",
-  ASSISTANT: "Agente",
-} as const;
 
 type FilterDraft = {
   search: string;
@@ -158,7 +153,7 @@ export default function OperationAttendancesPage({
     workspaceId,
     canViewAttendances,
   );
-  const attendancesQuery = useOperationalAttendances(
+  const conversationsQuery = useOperationalConversations(
     workspaceId,
     filters,
     canViewAttendances,
@@ -203,9 +198,9 @@ export default function OperationAttendancesPage({
   }
 
   const hasQueryError =
-    attendancesQuery.isError || summaryQuery.isError || optionsQuery.isError;
-  const currentPage = attendancesQuery.data?.page ?? filters.page ?? 1;
-  const totalPages = attendancesQuery.data?.totalPages ?? 0;
+    conversationsQuery.isError || summaryQuery.isError || optionsQuery.isError;
+  const currentPage = conversationsQuery.data?.page ?? filters.page ?? 1;
+  const totalPages = conversationsQuery.data?.totalPages ?? 0;
   const hasActiveFilters =
     Boolean(filters.search) ||
     Boolean(filters.status) ||
@@ -252,7 +247,7 @@ export default function OperationAttendancesPage({
   };
 
   const retryQueries = () => {
-    void attendancesQuery.refetch();
+    void conversationsQuery.refetch();
     void summaryQuery.refetch();
     void optionsQuery.refetch();
   };
@@ -318,7 +313,7 @@ export default function OperationAttendancesPage({
           <AlertTitle>Não foi possível carregar a caixa de entrada</AlertTitle>
           <AlertDescription className="flex flex-wrap items-center gap-3">
             {getOperationalAttendanceErrorMessage(
-              attendancesQuery.error || summaryQuery.error || optionsQuery.error,
+              conversationsQuery.error || summaryQuery.error || optionsQuery.error,
               "Atualize para consultar novamente o escopo operacional.",
             )}
             <Button
@@ -326,7 +321,7 @@ export default function OperationAttendancesPage({
               size="sm"
               onClick={retryQueries}
               disabled={
-                attendancesQuery.isFetching ||
+                conversationsQuery.isFetching ||
                 summaryQuery.isFetching ||
                 optionsQuery.isFetching
               }
@@ -416,10 +411,10 @@ export default function OperationAttendancesPage({
                     size="icon"
                     variant="ghost"
                     className="absolute right-1 top-1 h-7 w-7"
-                    disabled={attendancesQuery.isFetching}
+                    disabled={conversationsQuery.isFetching}
                     aria-label="Buscar atendimentos"
                   >
-                    {attendancesQuery.isFetching ? (
+                    {conversationsQuery.isFetching ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
                       <Search className="h-4 w-4" />
@@ -576,7 +571,7 @@ export default function OperationAttendancesPage({
                         <Button type="button" variant="ghost" size="sm" onClick={clearFilters}>
                           Limpar
                         </Button>
-                        <Button type="submit" size="sm" disabled={attendancesQuery.isFetching}>
+                        <Button type="submit" size="sm" disabled={conversationsQuery.isFetching}>
                           Aplicar
                         </Button>
                       </div>
@@ -631,10 +626,10 @@ export default function OperationAttendancesPage({
                   {embedded ? "Conversas" : "Caixa de entrada operacional"}
                 </h2>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {attendancesQuery.data?.total ?? 0} atendimento(s) no filtro atual
+                  {conversationsQuery.data?.total ?? 0} conversa(s) no filtro atual
                 </p>
               </div>
-              {attendancesQuery.isFetching ? (
+              {conversationsQuery.isFetching ? (
                 <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
               ) : null}
             </div>
@@ -646,19 +641,19 @@ export default function OperationAttendancesPage({
                   : "divide-y"
               }
             >
-              {attendancesQuery.isLoading ? (
+              {conversationsQuery.isLoading ? (
                 <AttendanceListLoading />
-              ) : attendancesQuery.isError && !attendancesQuery.data ? (
+              ) : conversationsQuery.isError && !conversationsQuery.data ? (
                 <AttendanceListError
-                  onRetry={() => void attendancesQuery.refetch()}
-                  isFetching={attendancesQuery.isFetching}
+                  onRetry={() => void conversationsQuery.refetch()}
+                  isFetching={conversationsQuery.isFetching}
                 />
-              ) : attendancesQuery.data?.items.length ? (
-                attendancesQuery.data.items.map((attendance) => (
-                  <AttendanceCard
-                    key={attendance.id}
-                    attendance={attendance}
-                    selected={attendance.id === attendanceId}
+              ) : conversationsQuery.data?.items.length ? (
+                conversationsQuery.data.items.map((conversation) => (
+                  <OperationalConversationCard
+                    key={conversation.chatId}
+                    conversation={conversation}
+                    selected={conversation.attendance.id === attendanceId}
                     compact={embedded}
                   />
                 ))
@@ -682,7 +677,7 @@ export default function OperationAttendancesPage({
                   <Button
                     variant="outline"
                     size="sm"
-                    disabled={currentPage <= 1 || attendancesQuery.isFetching}
+                    disabled={currentPage <= 1 || conversationsQuery.isFetching}
                     onClick={() =>
                       setFilters((current) => ({
                         ...current,
@@ -696,7 +691,7 @@ export default function OperationAttendancesPage({
                   <Button
                     variant="outline"
                     size="sm"
-                    disabled={currentPage >= totalPages || attendancesQuery.isFetching}
+                    disabled={currentPage >= totalPages || conversationsQuery.isFetching}
                     onClick={() =>
                       setFilters((current) => ({
                         ...current,
@@ -922,117 +917,6 @@ function BucketCount({
   );
 }
 
-function AttendanceCard({
-  attendance,
-  selected = false,
-  compact = false,
-}: {
-  attendance: {
-    id: string;
-    status: AttendanceStatus;
-    lastActivityAt: string;
-    customer?: {
-      name: string;
-      phoneMasked?: string | null;
-    };
-    destination?: {
-      areaName: string | null;
-      queueName: string | null;
-    };
-    assignee?: {
-      type: "USER" | "ASSISTANT";
-      name: string;
-    } | null;
-    lastMessage?: {
-      sender: "CUSTOMER" | "HUMAN" | "ASSISTANT";
-      preview: string;
-      createdAt: string;
-    } | null;
-    unreadCount?: number;
-  };
-  selected?: boolean;
-  compact?: boolean;
-}) {
-  const customerName = attendance.customer?.name || "Contato sem nome";
-  const lastMessage = attendance.lastMessage;
-  const destination = [
-    attendance.destination?.areaName,
-    attendance.destination?.queueName,
-  ]
-    .filter(Boolean)
-    .join(" · ");
-
-  const activityAt = lastMessage?.createdAt || attendance.lastActivityAt;
-  const assignee = attendance.assignee?.name || "Sem responsável";
-  const operationalContext = [destination || "Destino não definido", assignee]
-    .filter(Boolean)
-    .join(" · ");
-
-  return (
-    <article
-      className={`border-l-2 transition-colors hover:bg-muted/40 ${
-        selected ? "border-l-primary bg-primary/[0.04]" : "border-l-transparent"
-      }`}
-    >
-      <Link
-        to={`/operation/attendances/${attendance.id}`}
-        aria-current={selected ? "page" : undefined}
-        className={`block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring ${compact ? "px-3 py-2.5" : "p-4"}`}
-      >
-        <div className={compact ? "flex gap-2.5" : "flex gap-3"}>
-          <div
-            className={`flex shrink-0 items-center justify-center rounded-full bg-primary/10 font-semibold text-primary ${compact ? "h-8 w-8 text-xs" : "h-9 w-9 text-sm"}`}
-          >
-            {customerName.slice(0, 1).toUpperCase()}
-          </div>
-          <div className={`min-w-0 flex-1 ${compact ? "space-y-1.5" : "space-y-2"}`}>
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex min-w-0 items-center gap-2">
-                <h3 className={`${compact ? "text-sm" : ""} truncate font-semibold`}>
-                  {customerName}
-                </h3>
-                {attendance.unreadCount ? (
-                  <Badge
-                    className="min-w-5 justify-center bg-primary px-1.5 text-[10px] text-primary-foreground hover:bg-primary"
-                    aria-label={`${attendance.unreadCount} mensagens novas`}
-                  >
-                    {attendance.unreadCount}
-                  </Badge>
-                ) : null}
-              </div>
-              <time
-                dateTime={activityAt}
-                title={formatDateTime(activityAt)}
-                className="shrink-0 text-[11px] text-muted-foreground"
-              >
-                {formatListTimestamp(activityAt)}
-              </time>
-            </div>
-
-            <p className={`${compact ? "text-xs" : "text-sm"} truncate text-muted-foreground`}>
-              {lastMessage
-                ? <><span className="font-medium text-foreground">{MESSAGE_SENDER_LABELS[lastMessage.sender]}:</span>{" "}{lastMessage.preview}</>
-                : "Nenhuma mensagem disponível."}
-            </p>
-
-            <div className="flex items-center justify-between gap-2">
-              <p className="min-w-0 truncate text-[11px] text-muted-foreground">
-                {operationalContext}
-              </p>
-              <Badge
-                variant={getStatusVariant(attendance.status)}
-                className={`${getStatusClassName(attendance.status)} h-5 shrink-0 px-1.5 text-[10px]`}
-              >
-                {STATUS_LABELS[attendance.status]}
-              </Badge>
-            </div>
-          </div>
-        </div>
-      </Link>
-    </article>
-  );
-}
-
 function EmptyAttendanceList({ hasFilters }: { hasFilters: boolean }) {
   return (
     <div className="flex min-h-64 flex-col items-center justify-center gap-2 px-6 py-12 text-center">
@@ -1146,66 +1030,4 @@ function flattenQueueOptions(options?: AttendanceOptions) {
       areaName: area.name,
     })),
   );
-}
-
-function getStatusVariant(
-  status: AttendanceStatus,
-): "default" | "secondary" | "destructive" | "outline" {
-  if (status === "IN_PROGRESS") return "default";
-  if (status === "CLOSED") return "outline";
-  if (status === "PENDING") return "secondary";
-  return "outline";
-}
-
-function getStatusClassName(status: AttendanceStatus) {
-  if (status === "TRIAGE") {
-    return "border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-50";
-  }
-  if (status === "WAITING_QUEUE") {
-    return "border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-50";
-  }
-  if (status === "IN_PROGRESS") {
-    return "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-50";
-  }
-  if (status === "PENDING") {
-    return "border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-50";
-  }
-  return "border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-50";
-}
-
-function formatDateTime(value: string) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Data indisponível";
-  return new Intl.DateTimeFormat("pt-BR", {
-    dateStyle: "short",
-    timeStyle: "short",
-  }).format(date);
-}
-
-function formatListTimestamp(value: string) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
-
-  const now = new Date();
-  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const startOfDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  const dayDifference = Math.round(
-    (startOfToday.getTime() - startOfDate.getTime()) / 86_400_000,
-  );
-
-  if (dayDifference === 0) {
-    const elapsedMinutes = Math.max(
-      0,
-      Math.floor((now.getTime() - date.getTime()) / 60_000),
-    );
-    if (elapsedMinutes < 1) return "agora";
-    if (elapsedMinutes < 60) return `${elapsedMinutes} min`;
-    return `${Math.floor(elapsedMinutes / 60)} h`;
-  }
-  if (dayDifference === 1) return "Ontem";
-
-  return new Intl.DateTimeFormat("pt-BR", {
-    day: "2-digit",
-    month: "short",
-  }).format(date);
 }

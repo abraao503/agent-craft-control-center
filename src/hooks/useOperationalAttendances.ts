@@ -164,6 +164,9 @@ export function useMarkOperationalAttendanceRead(
           queryKey: ["operation", "attendances", workspaceId],
         }),
         queryClient.invalidateQueries({
+          queryKey: ["operation", "conversations", workspaceId],
+        }),
+        queryClient.invalidateQueries({
           queryKey: ["operation", "attendance-kanban", workspaceId],
         }),
         queryClient.invalidateQueries({

@@ -224,6 +224,7 @@ export interface AttendanceEvent {
   companyId: string;
   workspaceId: string;
   attendanceId: string;
+  cycleNumber?: number;
   action: AttendanceCommandAction;
   previousStatus: AttendanceStatus | null;
   newStatus: AttendanceStatus;
@@ -401,6 +402,25 @@ export interface OperationalFollowUpOccurrence {
 
 export interface AttendancesPage {
   items: AttendanceWithDetails[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface OperationalConversation {
+  id: string;
+  chatId: string;
+  companyId: string;
+  workspaceId: string;
+  attendance: AttendanceWithDetails;
+  attendanceCount: number;
+  lastActivityAt: string;
+  unreadCount: number;
+}
+
+export interface OperationalConversationsPage {
+  items: OperationalConversation[];
   total: number;
   page: number;
   limit: number;

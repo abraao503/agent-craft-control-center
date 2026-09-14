@@ -13,6 +13,7 @@ export interface OperationalPublicEvent {
   schemaVersion: 1;
   workspaceId: string;
   attendanceId: string;
+  chatId: string | null;
   aggregateVersion: number | null;
   messageId: string | null;
   kind: string;

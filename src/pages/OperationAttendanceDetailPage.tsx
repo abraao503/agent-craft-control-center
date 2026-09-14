@@ -153,6 +153,7 @@ export default function OperationAttendanceDetailPage({
   const realtime = useOperationalRealtime({
     workspaceId,
     attendanceId,
+    chatId: detailQuery.data?.chatId,
     currentAttendanceVersion: detailQuery.data?.version,
     enabled: canViewAttendances && realtimeEnabled,
   });
@@ -600,7 +601,7 @@ export default function OperationAttendanceDetailPage({
                   Conversa
                 </CardTitle>
                 <CardDescription>
-                  Mensagens e alterações do ciclo, em ordem cronológica.
+                  Mensagens e alterações de todos os ciclos, em ordem cronológica.
                 </CardDescription>
               </CardHeader>
             )}
@@ -1092,6 +1093,7 @@ function TimelineEvent({ event }: { event: AttendanceEvent }) {
     .join(" · ");
   const accessibleLabel = [
     label,
+    event.cycleNumber ? `Ciclo ${event.cycleNumber}` : null,
     formatDateTime(event.createdAt),
     formatActor(event.actorType),
     `Versão ${event.aggregateVersion}`,
@@ -1114,6 +1116,9 @@ function TimelineEvent({ event }: { event: AttendanceEvent }) {
       <span className="min-w-0 truncate font-medium text-foreground">
         {label}
       </span>
+      {event.cycleNumber ? (
+        <span className="shrink-0">· C{event.cycleNumber}</span>
+      ) : null}
       <span className="shrink-0">· {formatActor(event.actorType)}</span>
       <span className="shrink-0">· V{event.aggregateVersion}</span>
       <span className="shrink-0">· {formatCompactDateTime(event.createdAt)}</span>
