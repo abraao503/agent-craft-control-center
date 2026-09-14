@@ -94,17 +94,17 @@ export function MessageDeliveryChecks({
 }) {
   if (state === "loading") {
     return (
-      <p className="mt-2 text-xs opacity-75" role="status" aria-live="polite">
+      <span className="text-xs opacity-75" role="status" aria-live="polite">
         Carregando confirmações de entrega...
-      </p>
+      </span>
     );
   }
 
   if (state === "error") {
     return (
-      <p className="mt-2 text-xs text-destructive" role="alert">
+      <span className="text-xs text-destructive" role="alert">
         Não foi possível carregar as confirmações de entrega.
-      </p>
+      </span>
     );
   }
 
@@ -117,14 +117,9 @@ export function MessageDeliveryChecks({
   if (!status) return null;
 
   const observedAt = summary.deliveryUpdatedAt || latestCheck?.observedAt;
-  const observedTime = formatDeliveryCheckTime(observedAt);
 
   return (
-    <span
-      className="mt-2 inline-flex items-center gap-1 text-xs opacity-75"
-      aria-label="Status da mensagem"
-    >
-      {observedTime ? <span>{observedTime}</span> : null}
+    <span className="inline-flex items-center" aria-label="Status da mensagem">
       <DeliveryStatusIcon status={status} observedAt={observedAt} />
     </span>
   );

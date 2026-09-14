@@ -1091,7 +1091,6 @@ function ConversationMessage({
       >
         <div className="mb-1 flex flex-wrap items-center gap-2 text-xs opacity-75">
           <span className="font-semibold">{senderLabel}</span>
-          <span>{formatDateTime(message.createdAt)}</span>
         </div>
         {hasMedia ? (
           <p className="mb-1 font-medium">
@@ -1102,16 +1101,17 @@ function ConversationMessage({
           <p className="mb-1 font-medium">Template: {message.templateName}</p>
         ) : null}
         {content ? <p className="whitespace-pre-wrap break-words">{content}</p> : null}
-        {hasDeliveryChecks ? (
-          <MessageDeliveryChecks
-            summary={deliveryChecks}
-            state={deliveryChecksState}
-          />
-        ) : messageStatuses.length > 0 ? (
-          <p className="mt-2 text-xs opacity-75">
-            {messageStatuses.join(" · ")}
-          </p>
-        ) : null}
+        <div className="mt-2 flex flex-wrap items-center justify-end gap-1 text-xs opacity-75">
+          <span>{formatDateTime(message.createdAt)}</span>
+          {hasDeliveryChecks ? (
+            <MessageDeliveryChecks
+              summary={deliveryChecks}
+              state={deliveryChecksState}
+            />
+          ) : messageStatuses.length > 0 ? (
+            <span>{messageStatuses.join(" · ")}</span>
+          ) : null}
+        </div>
       </div>
     </article>
   );
