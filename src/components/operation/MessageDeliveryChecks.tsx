@@ -1,6 +1,5 @@
 import {
   formatOperationalMessageStatus,
-  OPERATIONAL_PROVIDER_LABELS,
 } from "@/utils/operationalMessageStatus";
 import type {
   MessageDeliveryCheckSummary,
@@ -44,19 +43,7 @@ export function MessageDeliveryChecks({
 
   if (!summary) return null;
 
-  if (!summary.statusTrackingSupported) {
-    const providerLabel = summary.provider
-      ? OPERATIONAL_PROVIDER_LABELS[summary.provider]
-      : undefined;
-
-    return (
-      <p className="mt-2 text-xs opacity-75">
-        {providerLabel
-          ? `Confirmações de entrega indisponíveis no canal ${providerLabel}.`
-          : "Confirmações de entrega indisponíveis neste canal."}
-      </p>
-    );
-  }
+  if (!summary.statusTrackingSupported) return null;
 
   if (summary.checks.length === 0) {
     if (!summary.deliveryStatus) return null;
