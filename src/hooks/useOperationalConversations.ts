@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { listOperationalConversations } from "@/services/operation/listOperationalConversations";
 import { ListAttendancesFilters } from "@/types/operation-attendance";
 
@@ -7,15 +7,22 @@ export function useOperationalConversations(
   filters: ListAttendancesFilters = {},
   enabled = true,
 ) {
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: ["operation", "conversations", workspaceId, filters],
-    queryFn: () => {
+    queryFn: ({ pageParam }) => {
       if (!workspaceId) {
         throw new Error("Workspace operacional não selecionado");
       }
 
-      return listOperationalConversations({ workspaceId, ...filters });
+      return listOperationalConversations({
+        workspaceId,
+        ...filters,
+        page: pageParam,
+      });
     },
+    initialPageParam: filters.page ?? 1,
+    getNextPageParam: (lastPage) =>
+      lastPage.page < lastPage.totalPages ? lastPage.page + 1 : undefined,
     enabled: Boolean(workspaceId && enabled),
     placeholderData: (previousData) => previousData,
   });

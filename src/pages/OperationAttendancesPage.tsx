@@ -1,11 +1,16 @@
-import { type FormEvent, type ReactNode, useEffect, useMemo, useState } from "react";
+import {
+  type FormEvent,
+  type ReactNode,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   AlertCircle,
   ArrowLeft,
   ChevronDown,
-  ChevronLeft,
-  ChevronRight,
   Inbox,
   Loader2,
   RefreshCw,
@@ -123,6 +128,8 @@ export default function OperationAttendancesPage({
     page: 1,
     limit: PAGE_SIZE,
   });
+  const conversationsListRef = useRef<HTMLDivElement>(null);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setDraft(createFilterDraft());
@@ -158,6 +165,11 @@ export default function OperationAttendancesPage({
     filters,
     canViewAttendances,
   );
+  const {
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = conversationsQuery;
   const realtime = useOperationalRealtime({
     workspaceId,
     enabled: canViewAttendances && realtimeEnabled,
@@ -167,6 +179,33 @@ export default function OperationAttendancesPage({
     () => flattenQueueOptions(optionsQuery.data),
     [optionsQuery.data],
   );
+  const conversations = useMemo(
+    () => conversationsQuery.data?.pages.flatMap((page) => page.items) ?? [],
+    [conversationsQuery.data],
+  );
+
+  useEffect(() => {
+    const root = embedded ? conversationsListRef.current : null;
+    const target = loadMoreRef.current;
+    if ((embedded && !root) || !target || !hasNextPage) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !isFetchingNextPage) {
+          void fetchNextPage();
+        }
+      },
+      { root, rootMargin: "200px" },
+    );
+    observer.observe(target);
+
+    return () => observer.disconnect();
+  }, [
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    embedded,
+  ]);
 
   if (currentWorkspace?.type !== "OPERATION") {
     return (
@@ -199,8 +238,6 @@ export default function OperationAttendancesPage({
 
   const hasQueryError =
     conversationsQuery.isError || summaryQuery.isError || optionsQuery.isError;
-  const currentPage = conversationsQuery.data?.page ?? filters.page ?? 1;
-  const totalPages = conversationsQuery.data?.totalPages ?? 0;
   const hasActiveFilters =
     Boolean(filters.search) ||
     Boolean(filters.status) ||
@@ -626,7 +663,8 @@ export default function OperationAttendancesPage({
                   {embedded ? "Conversas" : "Caixa de entrada operacional"}
                 </h2>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {conversationsQuery.data?.total ?? 0} conversa(s) no filtro atual
+                  {conversationsQuery.data?.pages[0]?.total ?? 0} conversa(s) no
+                  filtro atual
                 </p>
               </div>
               {conversationsQuery.isFetching ? (
@@ -635,6 +673,7 @@ export default function OperationAttendancesPage({
             </div>
 
             <div
+              ref={conversationsListRef}
               className={
                 embedded
                   ? "min-h-0 flex-1 overflow-y-auto divide-y"
@@ -648,8 +687,8 @@ export default function OperationAttendancesPage({
                   onRetry={() => void conversationsQuery.refetch()}
                   isFetching={conversationsQuery.isFetching}
                 />
-              ) : conversationsQuery.data?.items.length ? (
-                conversationsQuery.data.items.map((conversation) => (
+              ) : conversations.length ? (
+                conversations.map((conversation) => (
                   <OperationalConversationCard
                     key={conversation.chatId}
                     conversation={conversation}
@@ -660,51 +699,23 @@ export default function OperationAttendancesPage({
               ) : (
                 <EmptyAttendanceList hasFilters={hasActiveFilters} />
               )}
-            </div>
-
-            {totalPages > 1 ? (
-              <div
-                className={
-                  embedded
-                    ? "flex shrink-0 items-center justify-between gap-2 border-t px-3 py-3"
-                    : "flex flex-col gap-3 border-t px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6"
-                }
-              >
-                <p className="text-sm text-muted-foreground">
-                  Página {currentPage} de {totalPages}
-                </p>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={currentPage <= 1 || conversationsQuery.isFetching}
-                    onClick={() =>
-                      setFilters((current) => ({
-                        ...current,
-                        page: Math.max(1, currentPage - 1),
-                      }))
-                    }
-                  >
-                    <ChevronLeft className="mr-1 h-4 w-4" />
-                    Anterior
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={currentPage >= totalPages || conversationsQuery.isFetching}
-                    onClick={() =>
-                      setFilters((current) => ({
-                        ...current,
-                        page: currentPage + 1,
-                      }))
-                    }
-                  >
-                    Próxima
-                    <ChevronRight className="ml-1 h-4 w-4" />
-                  </Button>
+              {hasNextPage || isFetchingNextPage ? (
+                <div
+                  ref={loadMoreRef}
+                  className="flex items-center justify-center gap-2 p-3 text-xs text-muted-foreground"
+                  aria-live="polite"
+                >
+                  {isFetchingNextPage ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Carregando mais conversas...
+                    </>
+                  ) : (
+                    "Role para carregar mais conversas"
+                  )}
                 </div>
-              </div>
-            ) : null}
+              ) : null}
+            </div>
           </CardContent>
         </Card>
 
