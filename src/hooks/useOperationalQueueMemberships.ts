@@ -12,17 +12,33 @@ export function useOperationalQueueMemberships(
   workspaceId?: string,
   areaId?: string,
   queueId?: string,
+  page = 1,
+  limit = 100,
 ) {
   return useQuery({
-    queryKey: ["operation-queue-memberships", workspaceId, areaId, queueId],
+    queryKey: [
+      "operation-queue-memberships",
+      workspaceId,
+      areaId,
+      queueId,
+      page,
+      limit,
+    ],
     queryFn: () => {
       if (!workspaceId || !areaId || !queueId) {
         throw new Error("Fila operacional não selecionada");
       }
 
-      return listOperationalQueueMemberships(workspaceId, areaId, queueId);
+      return listOperationalQueueMemberships(
+        workspaceId,
+        areaId,
+        queueId,
+        page,
+        limit,
+      );
     },
     enabled: Boolean(workspaceId && areaId && queueId),
+    placeholderData: (previousData) => previousData,
   });
 }
 
@@ -45,6 +61,12 @@ export function useOperationalQueueMembershipMutations(
         areaId,
         queueId,
       ],
+    });
+    void queryClient.invalidateQueries({
+      queryKey: ["operation-area-memberships", resolvedWorkspaceId, areaId],
+    });
+    void queryClient.invalidateQueries({
+      queryKey: ["operation-queue", resolvedWorkspaceId, areaId, queueId],
     });
   };
 

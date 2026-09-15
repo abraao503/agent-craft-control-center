@@ -65,6 +65,7 @@ import OperationChannelsPage from "./pages/OperationChannelsPage";
 import OperationDistributionPage from "./pages/OperationDistributionPage";
 import OperationStructurePage from "./pages/OperationStructurePage";
 import OperationAreaPage from "./pages/OperationAreaPage";
+import OperationQueuePage from "./pages/OperationQueuePage";
 import OperationAssistantsPage from "./pages/OperationAssistantsPage";
 import OperationTriageAgentsPage from "./pages/OperationTriageAgentsPage";
 import OperationAttendanceStationPage from "./pages/OperationAttendanceStationPage";
@@ -401,6 +402,15 @@ const App = () => (
                         <ProtectedRoute
                           requiredPermission="view:operation-setup"
                           component={OperationAreaPage}
+                        />
+                      }
+                    />
+                    <Route
+                      path="/operation/areas/:areaId/queues/:queueId"
+                      element={
+                        <ProtectedRoute
+                          requiredPermission="view:operation-setup"
+                          component={OperationQueuePage}
                         />
                       }
                     />

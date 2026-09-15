@@ -131,14 +131,18 @@ export function OperationalQueueMemberships({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-xs font-medium">
-            {membershipsQuery.data?.items.length
-              ? "Operadores restritos"
-              : "Operadores"}
+            {!membershipsQuery.isSuccess
+              ? "Consultando operadores…"
+              : membershipsQuery.data?.total
+                ? "Operadores restritos"
+                : "Operadores"}
           </p>
           <p className="text-xs text-muted-foreground">
-            {membershipsQuery.data?.items.length
-              ? "Somente os operadores listados podem atuar nesta fila."
-              : "Todos os operadores desta área podem atuar nesta fila."}
+            {!membershipsQuery.isSuccess
+              ? "Avaliando as restrições atuais desta fila."
+              : membershipsQuery.data?.total
+                ? "Somente os operadores listados podem atuar nesta fila."
+                : "Todos os operadores desta área podem atuar nesta fila."}
           </p>
         </div>
         {canManage ? (
@@ -152,7 +156,7 @@ export function OperationalQueueMemberships({
             <Plus className="mr-2 h-4 w-4" />
             {isManaging
               ? "Fechar"
-              : membershipsQuery.data?.items.length
+              : membershipsQuery.data?.total
                 ? "Gerenciar"
                 : "Restringir operadores"}
           </Button>
