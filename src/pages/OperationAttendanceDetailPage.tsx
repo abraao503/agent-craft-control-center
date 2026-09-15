@@ -6,6 +6,7 @@ import {
   ArrowRight,
   ArrowRightLeft,
   CheckCircle2,
+  ChevronDown,
   Loader2,
   MessageSquare,
   MoreHorizontal,
@@ -780,83 +781,116 @@ export default function OperationAttendanceDetailPage({
                 : "space-y-6"
             }
           >
-            <Card className="shadow-none">
-              <CardHeader className="p-3 pb-2">
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <UserRound className="h-5 w-5 text-primary" />
-                  Atendimento
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="px-3 pb-3 text-sm">
-                <div className="divide-y">
-                <DetailField
-                  label="Destino"
-                  value={destination || "Não definido"}
-                />
-                <DetailField
-                  label="Responsável"
-                  value={attendance.assignee?.name || "Sem responsável"}
-                />
-                <DetailField
-                  label="Canal"
-                  value={attendance.channel?.displayName || "Não informado"}
-                />
-                </div>
-                <p className="mt-3 border-t pt-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                  Contato
-                </p>
-                <div className="divide-y">
-                  <OperationalContactNameField
-                    customerId={attendance.customer?.id}
-                    name={attendance.customer?.name}
-                    canEdit={canEditCustomerName}
-                    onUpdated={() => {
-                      void detailQuery.refetch();
-                    }}
-                  />
-                  <DetailField
-                    label="Telefone"
-                    value={attendance.customer?.phone || "Não informado"}
-                  />
-                  <DetailField
-                    label="E-mail"
-                    value={attendance.customer?.email || "Não informado"}
-                  />
-                </div>
-              </CardContent>
-            </Card>
+            <Collapsible defaultOpen={false}>
+              <Card className="shadow-none">
+                <CardHeader className="p-3 pb-2">
+                  <CollapsibleTrigger asChild>
+                    <button
+                      type="button"
+                      className="group flex w-full items-start justify-between gap-3 text-left"
+                    >
+                      <span className="min-w-0">
+                        <span className="flex items-center gap-2 text-base font-semibold">
+                          <UserRound className="h-5 w-5 shrink-0 text-primary" />
+                          Atendimento
+                        </span>
+                        <span className="mt-1 block text-sm font-normal leading-5 text-muted-foreground">
+                          Destino, responsável, canal e contato deste atendimento.
+                        </span>
+                      </span>
+                      <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+                    </button>
+                  </CollapsibleTrigger>
+                </CardHeader>
+                <CollapsibleContent>
+                  <CardContent className="px-3 pb-3 text-sm">
+                    <div className="divide-y">
+                      <DetailField
+                        label="Destino"
+                        value={destination || "Não definido"}
+                      />
+                      <DetailField
+                        label="Responsável"
+                        value={attendance.assignee?.name || "Sem responsável"}
+                      />
+                      <DetailField
+                        label="Canal"
+                        value={attendance.channel?.displayName || "Não informado"}
+                      />
+                    </div>
+                    <p className="mt-3 border-t pt-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                      Contato
+                    </p>
+                    <div className="divide-y">
+                      <OperationalContactNameField
+                        customerId={attendance.customer?.id}
+                        name={attendance.customer?.name}
+                        canEdit={canEditCustomerName}
+                        onUpdated={() => {
+                          void detailQuery.refetch();
+                        }}
+                      />
+                      <DetailField
+                        label="Telefone"
+                        value={attendance.customer?.phone || "Não informado"}
+                      />
+                      <DetailField
+                        label="E-mail"
+                        value={attendance.customer?.email || "Não informado"}
+                      />
+                    </div>
+                  </CardContent>
+                </CollapsibleContent>
+              </Card>
+            </Collapsible>
 
             {!embedded ? (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Ações do atendimento</CardTitle>
-                  <CardDescription>
-                    Comandos disponíveis para o estado e a permissão atuais.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {optionsQuery.isError ? (
-                    <Alert variant="destructive">
-                      <AlertCircle className="h-4 w-4" />
-                      <AlertTitle>Opções de operação indisponíveis</AlertTitle>
-                      <AlertDescription>
-                        Não foi possível carregar as opções dos comandos.
-                      </AlertDescription>
-                    </Alert>
-                  ) : null}
-                  <AttendanceActionControls
-                    status={attendance.status}
-                    hasAssignee={Boolean(attendance.assignee)}
-                    canOperate={canOperateAttendances}
-                    canManageAssignments={canManageAssignments}
-                    canTransfer={canTransfer}
-                    optionsAvailable={Boolean(options)}
-                    pending={isActionPending}
-                    onQuickAction={(action) => void runQuickAction(action)}
-                    onAction={setActiveAction}
-                  />
-                </CardContent>
-              </Card>
+              <Collapsible defaultOpen={false}>
+                <Card>
+                  <CardHeader className="p-3 pb-2">
+                    <CollapsibleTrigger asChild>
+                      <button
+                        type="button"
+                        className="group flex w-full items-start justify-between gap-3 text-left"
+                      >
+                        <span className="min-w-0">
+                          <span className="block text-base font-semibold">
+                            Ações do atendimento
+                          </span>
+                          <span className="mt-1 block text-sm font-normal leading-5 text-muted-foreground">
+                            Comandos disponíveis para o estado e a permissão atuais.
+                          </span>
+                        </span>
+                        <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+                      </button>
+                    </CollapsibleTrigger>
+                  </CardHeader>
+                  <CollapsibleContent>
+                    <CardContent className="space-y-3">
+                      {optionsQuery.isError ? (
+                        <Alert variant="destructive">
+                          <AlertCircle className="h-4 w-4" />
+                          <AlertTitle>Opções de operação indisponíveis</AlertTitle>
+                          <AlertDescription>
+                            Não foi possível carregar as opções dos comandos.
+                          </AlertDescription>
+                        </Alert>
+                      ) : null}
+                      <AttendanceActionControls
+                        status={attendance.status}
+                        hasAssignee={Boolean(attendance.assignee)}
+                        canOperate={canOperateAttendances}
+                        canManageAssignments={canManageAssignments}
+                        canTransfer={canTransfer}
+                        optionsAvailable={Boolean(options)}
+                        pending={isActionPending}
+                        onQuickAction={(action) => void runQuickAction(action)}
+                        onAction={setActiveAction}
+                      />
+                    </CardContent>
+                  </CollapsibleContent>
+                </Card>
+              </Collapsible>
             ) : null}
 
             <AttendanceFollowUpsCard
@@ -876,19 +910,44 @@ export default function OperationAttendanceDetailPage({
               enabled={canViewAttendances}
             />
 
-            <Card className="shadow-none">
-              <CardHeader className="p-3 pb-2">
-                <CardTitle className="text-base">Canal e resposta</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2 px-3 pb-3 text-sm">
-                <Badge variant={getReplyStatusVariant(attendance.replyCapabilities.status)}>
-                  {REPLY_STATUS_LABELS[attendance.replyCapabilities.status]}
-                </Badge>
-                <p className="text-xs leading-5 text-muted-foreground">
-                  {formatReplyModes(attendance.replyCapabilities)}
-                </p>
-              </CardContent>
-            </Card>
+            <Collapsible defaultOpen={false}>
+              <Card className="shadow-none">
+                <CardHeader className="p-3 pb-2">
+                  <CollapsibleTrigger asChild>
+                    <button
+                      type="button"
+                      className="group flex w-full items-start justify-between gap-3 text-left"
+                    >
+                      <span className="min-w-0">
+                        <span className="block text-base font-semibold">
+                          Canal e resposta
+                        </span>
+                        <span className="mt-1 block text-sm font-normal leading-5 text-muted-foreground">
+                          Formatos disponíveis para responder este atendimento.
+                        </span>
+                      </span>
+                      <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+                    </button>
+                  </CollapsibleTrigger>
+                </CardHeader>
+                <CollapsibleContent>
+                  <CardContent className="space-y-2 px-3 pb-3 text-sm">
+                    <Badge variant={getReplyStatusVariant(attendance.replyCapabilities.status)}>
+                      {getReplyStatusLabel(
+                        attendance.replyCapabilities.status,
+                        Boolean(attendance.assignee),
+                      )}
+                    </Badge>
+                    <p className="text-xs leading-5 text-muted-foreground">
+                      {formatReplyModes(
+                        attendance.replyCapabilities,
+                        Boolean(attendance.assignee),
+                      )}
+                    </p>
+                  </CardContent>
+                </CollapsibleContent>
+              </Card>
+            </Collapsible>
 
           </CollapsibleContent>
         </Collapsible>
@@ -1243,6 +1302,17 @@ function getReplyStatusVariant(
   return "secondary";
 }
 
+function getReplyStatusLabel(
+  status: keyof typeof REPLY_STATUS_LABELS,
+  hasAssignee: boolean,
+) {
+  if (status === "NOT_ASSIGNEE") {
+    return hasAssignee ? "Outro responsável" : "Sem responsável";
+  }
+
+  return REPLY_STATUS_LABELS[status];
+}
+
 function formatActor(actorType: AttendanceEvent["actorType"]) {
   if (actorType === "USER") return "operador";
   if (actorType === "ASSISTANT") return "agente";
@@ -1257,7 +1327,16 @@ function formatMetadataKey(key: string) {
     .replace(/^./, (character) => character.toUpperCase());
 }
 
-function formatReplyModes(capabilities: AttendanceReplyCapabilities) {
+function formatReplyModes(
+  capabilities: AttendanceReplyCapabilities,
+  hasAssignee: boolean,
+) {
+  if (capabilities.status === "NOT_ASSIGNEE") {
+    return hasAssignee
+      ? "Este atendimento está atribuído a outro responsável. Somente o responsável atual pode responder."
+      : "Este atendimento não tem responsável definido. Atribua um responsável para habilitar a resposta.";
+  }
+
   const modes = [
     capabilities.supportsText ? "mensagens" : null,
     capabilities.supportsMedia ? "anexos" : null,

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CalendarClock, Loader2, Plus, RefreshCw, X } from "lucide-react";
+import { CalendarClock, ChevronDown, Loader2, Plus, RefreshCw, X } from "lucide-react";
 import {
   useOperationalFollowUps,
 } from "@/hooks/useOperationalAttendances";
@@ -19,10 +19,13 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
   Dialog,
   DialogContent,
@@ -169,59 +172,91 @@ export function AttendanceFollowUpsCard({
 
   return (
     <>
-      <Card>
-        <CardHeader>
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <CardTitle className="flex items-center gap-2 text-base">
-                <CalendarClock className="h-4 w-4 text-primary" />
-                Follow-ups
-              </CardTitle>
-              <CardDescription>Agendamentos vinculados ao ciclo atual.</CardDescription>
-            </div>
-            <Button size="sm" onClick={openCreate} disabled={!canManage || status !== "PENDING"}>
-              <Plus className="mr-2 h-4 w-4" />
-              Novo
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {followUpsQuery.isError ? (
-            <Alert variant="destructive">
-              <AlertTitle>Não foi possível carregar os follow-ups</AlertTitle>
-              <AlertDescription className="flex flex-wrap items-center gap-3">
-                {getOperationalAttendanceErrorMessage(followUpsQuery.error, "Tente atualizar a lista.")}
-                <Button variant="outline" size="sm" onClick={() => void followUpsQuery.refetch()}>
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                  Atualizar
-                </Button>
-              </AlertDescription>
-            </Alert>
-          ) : followUpsQuery.isLoading ? (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Carregando follow-ups…
-            </div>
-          ) : followUpsQuery.data?.items.length ? (
-            <div className="space-y-3">
-              {followUpsQuery.data.items.map((followUp) => (
-                <FollowUpRow
-                  key={followUp.id}
-                  followUp={followUp}
-                  canManage={canManage && status === "PENDING"}
-                  onEdit={() => openEdit(followUp)}
-                  onCancel={() => {
-                    cancelForm.reset({ reason: "" });
-                    setCancelTarget(followUp);
-                  }}
-                />
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">Nenhum follow-up agendado para este ciclo.</p>
-          )}
-        </CardContent>
-      </Card>
+      <Collapsible defaultOpen={false}>
+        <Card>
+          <CardHeader>
+            <CollapsibleTrigger asChild>
+              <button
+                type="button"
+                className="group flex w-full min-w-0 items-start justify-between gap-3 text-left"
+              >
+                <span className="min-w-0">
+                  <span className="flex items-center gap-2 text-base font-semibold">
+                    <CalendarClock className="h-4 w-4 shrink-0 text-primary" />
+                    <span className="whitespace-nowrap">Follow-ups</span>
+                  </span>
+                  <span className="mt-1 block text-sm font-normal leading-5 text-muted-foreground">
+                    Agendamentos vinculados ao ciclo atual.
+                  </span>
+                </span>
+                <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+              </button>
+            </CollapsibleTrigger>
+          </CardHeader>
+          <CollapsibleContent>
+            <CardContent>
+              {followUpsQuery.isError ? (
+                <Alert variant="destructive">
+                  <AlertTitle>Não foi possível carregar os follow-ups</AlertTitle>
+                  <AlertDescription className="flex flex-wrap items-center gap-3">
+                    {getOperationalAttendanceErrorMessage(followUpsQuery.error, "Tente atualizar a lista.")}
+                    <Button variant="outline" size="sm" onClick={() => void followUpsQuery.refetch()}>
+                      <RefreshCw className="mr-2 h-4 w-4" />
+                      Atualizar
+                    </Button>
+                  </AlertDescription>
+                </Alert>
+              ) : followUpsQuery.isLoading ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Carregando follow-ups…
+                </div>
+              ) : followUpsQuery.data?.items.length ? (
+                <div className="space-y-3">
+                  <div className="flex justify-end">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground"
+                      onClick={openCreate}
+                      disabled={!canManage || status !== "PENDING"}
+                    >
+                      <Plus className="mr-1.5 h-3.5 w-3.5" />
+                      Novo
+                    </Button>
+                  </div>
+                  {followUpsQuery.data.items.map((followUp) => (
+                    <FollowUpRow
+                      key={followUp.id}
+                      followUp={followUp}
+                      canManage={canManage && status === "PENDING"}
+                      onEdit={() => openEdit(followUp)}
+                      onCancel={() => {
+                        cancelForm.reset({ reason: "" });
+                        setCancelTarget(followUp);
+                      }}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center gap-3 py-2 text-center">
+                  <p className="text-sm text-muted-foreground">
+                    Nenhum follow-up agendado para este ciclo.
+                  </p>
+                  <Button
+                    size="sm"
+                    onClick={openCreate}
+                    disabled={!canManage || status !== "PENDING"}
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Agendar follow-up
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-[520px]">

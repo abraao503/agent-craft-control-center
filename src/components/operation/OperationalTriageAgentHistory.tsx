@@ -2,6 +2,7 @@ import {
   AlertCircle,
   CheckCircle2,
   Clock3,
+  ChevronDown,
   Loader2,
   Route,
   XCircle,
@@ -15,10 +16,13 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import type { AttendanceDestinationSnapshot, AttendanceStatus } from "@/types/operation-attendance";
 import type {
   OperationalTriageAgentExecutionView,
@@ -211,73 +215,87 @@ export function OperationalTriageAgentHistory({
   const currentStagePresentation = STAGE_PRESENTATIONS[currentStage];
 
   return (
-    <Card className="shadow-none">
-      <CardHeader className="p-3 pb-2">
-        <CardTitle className="flex items-center gap-2 text-base">
-          <Route className="h-5 w-5 text-primary" />
-          Agente externo
-        </CardTitle>
-        <CardDescription>
-          Etapa atual e histórico das execuções do agente externo neste atendimento.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="px-3 pb-3">
-        <div className="mb-3 rounded-md border bg-muted/20 p-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-              Etapa atual
-            </span>
-            <Badge variant="outline">{currentStagePresentation.label}</Badge>
-          </div>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {currentStagePresentation.description}
-          </p>
-          {destinationLabel ? (
-            <p className="mt-2 text-xs text-muted-foreground">
-              Fila configurada: <span className="font-medium text-foreground">{destinationLabel}</span>
-            </p>
-          ) : null}
-        </div>
-        {query.isLoading ? (
-          <div className="flex min-h-16 items-center justify-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Consultando histórico do agente externo...
-          </div>
-        ) : query.isError ? (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Histórico indisponível</AlertTitle>
-            <AlertDescription className="space-y-2">
-              <p>
-                {getOperationalTriageAgentErrorMessage(
-                  query.error,
-                  "Não foi possível consultar o histórico da triagem.",
-                )}
+    <Collapsible defaultOpen={false}>
+      <Card className="shadow-none">
+        <CardHeader className="p-3 pb-2">
+          <CollapsibleTrigger asChild>
+            <button
+              type="button"
+              className="group flex w-full items-start justify-between gap-3 text-left"
+            >
+              <span className="min-w-0">
+                <span className="flex items-center gap-2 text-base font-semibold">
+                  <Route className="h-5 w-5 shrink-0 text-primary" />
+                  Agente externo
+                </span>
+                <span className="mt-1 block text-sm font-normal leading-5 text-muted-foreground">
+                  Etapa atual e histórico das execuções do agente externo neste atendimento.
+                </span>
+              </span>
+              <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+            </button>
+          </CollapsibleTrigger>
+        </CardHeader>
+        <CollapsibleContent>
+          <CardContent className="px-3 pb-3">
+            <div className="mb-3 rounded-md border bg-muted/20 p-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                  Etapa atual
+                </span>
+                <Badge variant="outline">{currentStagePresentation.label}</Badge>
+              </div>
+              <p className="mt-2 text-sm text-muted-foreground">
+                {currentStagePresentation.description}
               </p>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => void query.refetch()}
-                disabled={query.isFetching}
-              >
-                Tentar novamente
-              </Button>
-            </AlertDescription>
-          </Alert>
-        ) : query.data?.items.length ? (
-          <div className="space-y-3">
-            {query.data.items.map((execution) => (
-              <ExecutionRow key={execution.id} execution={execution} />
-            ))}
-          </div>
-        ) : (
-          <p className="rounded-md border border-dashed p-4 text-center text-sm text-muted-foreground">
-            Nenhuma execução do agente externo registrada neste atendimento.
-            {currentStage === "MENU" ? " O atendimento permanece no MENU de entrada." : ""}
-          </p>
-        )}
-      </CardContent>
-    </Card>
+              {destinationLabel ? (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Fila configurada: <span className="font-medium text-foreground">{destinationLabel}</span>
+                </p>
+              ) : null}
+            </div>
+            {query.isLoading ? (
+              <div className="flex min-h-16 items-center justify-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Consultando histórico do agente externo...
+              </div>
+            ) : query.isError ? (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Histórico indisponível</AlertTitle>
+                <AlertDescription className="space-y-2">
+                  <p>
+                    {getOperationalTriageAgentErrorMessage(
+                      query.error,
+                      "Não foi possível consultar o histórico da triagem.",
+                    )}
+                  </p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => void query.refetch()}
+                    disabled={query.isFetching}
+                  >
+                    Tentar novamente
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            ) : query.data?.items.length ? (
+              <div className="space-y-3">
+                {query.data.items.map((execution) => (
+                  <ExecutionRow key={execution.id} execution={execution} />
+                ))}
+              </div>
+            ) : (
+              <p className="rounded-md border border-dashed p-4 text-center text-sm text-muted-foreground">
+                Nenhuma execução do agente externo registrada neste atendimento.
+                {currentStage === "MENU" ? " O atendimento permanece no MENU de entrada." : ""}
+              </p>
+            )}
+          </CardContent>
+        </CollapsibleContent>
+      </Card>
+    </Collapsible>
   );
 }
 
