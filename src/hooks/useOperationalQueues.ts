@@ -13,17 +13,20 @@ import {
 export function useOperationalQueues(
   workspaceId?: string,
   areaId?: string,
+  page = 1,
+  limit = 20,
 ) {
   return useQuery({
-    queryKey: ["operation-queues", workspaceId, areaId],
+    queryKey: ["operation-queues", workspaceId, areaId, page, limit],
     queryFn: () => {
       if (!workspaceId || !areaId) {
         throw new Error("Área operacional não selecionada");
       }
 
-      return listOperationalQueues(workspaceId, areaId);
+      return listOperationalQueues(workspaceId, areaId, page, limit);
     },
     enabled: Boolean(workspaceId && areaId),
+    placeholderData: (previousData) => previousData,
   });
 }
 

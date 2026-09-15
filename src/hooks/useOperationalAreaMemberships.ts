@@ -12,17 +12,20 @@ import {
 export function useOperationalAreaMemberships(
   workspaceId?: string,
   areaId?: string,
+  page = 1,
+  limit = 100,
 ) {
   return useQuery({
-    queryKey: ["operation-area-memberships", workspaceId, areaId],
+    queryKey: ["operation-area-memberships", workspaceId, areaId, page, limit],
     queryFn: () => {
       if (!workspaceId || !areaId) {
         throw new Error("Área operacional não selecionada");
       }
 
-      return listOperationalAreaMemberships(workspaceId, areaId);
+      return listOperationalAreaMemberships(workspaceId, areaId, page, limit);
     },
     enabled: Boolean(workspaceId && areaId),
+    placeholderData: (previousData) => previousData,
   });
 }
 
