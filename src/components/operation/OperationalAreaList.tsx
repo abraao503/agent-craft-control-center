@@ -1,8 +1,14 @@
-import { ArrowRight, Pencil, Trash2 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { MoreVertical, Pencil, Trash2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { ServiceArea } from "@/types/operation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 type OperationalAreaListProps = {
   areas: ServiceArea[];
@@ -17,63 +23,74 @@ export function OperationalAreaList({
   onEdit,
   onDeactivate,
 }: OperationalAreaListProps) {
+  const navigate = useNavigate();
+
   return (
     <div className="divide-y overflow-hidden rounded-lg border">
-      {areas.map((area) => (
-        <div
-          key={area.id}
-          className="flex flex-wrap items-center gap-3 p-4 sm:flex-nowrap sm:gap-4"
-        >
-          <Link
-            to={`/operation/areas/${area.id}`}
-            className="group min-w-0 flex-1 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-          >
-            <div className="flex min-w-0 flex-wrap items-center gap-2">
-              <span className="truncate font-medium group-hover:text-primary">
-                {area.name}
-              </span>
-              <Badge variant="secondary">Ativa</Badge>
-            </div>
-            <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
-              {area.description || "Sem descrição cadastrada."}
-            </p>
-          </Link>
+      {areas.map((area) => {
+        const openArea = () => navigate(`/operation/areas/${area.id}`);
 
-          <div className="flex w-full shrink-0 items-center justify-end gap-1 sm:w-auto">
+        return (
+          <div
+            key={area.id}
+            role="link"
+            tabIndex={0}
+            aria-label={`Abrir ${area.name}`}
+            onClick={openArea}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                openArea();
+              }
+            }}
+            className="group flex cursor-pointer flex-wrap items-center gap-3 p-4 transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:flex-nowrap sm:gap-4"
+          >
+            <div className="min-w-0 flex-1">
+              <div className="flex min-w-0 flex-wrap items-center gap-2">
+                <span className="truncate font-medium group-hover:text-primary">
+                  {area.name}
+                </span>
+                <Badge variant="secondary">Ativa</Badge>
+              </div>
+              <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+                {area.description || "Sem descrição cadastrada."}
+              </p>
+            </div>
+
             {canManage ? (
-              <>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  aria-label={`Editar ${area.name}`}
-                  onClick={() => onEdit(area)}
-                >
-                  <Pencil className="h-4 w-4" />
-                  <span className="hidden sm:inline">Editar</span>
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  className="text-destructive hover:text-destructive"
-                  aria-label={`Desativar ${area.name}`}
-                  onClick={() => onDeactivate(area)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                  <span className="hidden sm:inline">Desativar</span>
-                </Button>
-              </>
+              <div className="flex shrink-0 items-center justify-end gap-1">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      className="h-9 w-9"
+                      aria-label={`Mais ações para ${area.name}`}
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onSelect={() => onEdit(area)}>
+                      <Pencil className="mr-2 h-4 w-4" />
+                      Editar
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="text-destructive focus:text-destructive"
+                      onSelect={() => onDeactivate(area)}
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Desativar
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             ) : null}
-            <Button asChild size="sm" variant="outline">
-              <Link to={`/operation/areas/${area.id}`}>
-                <span className="hidden sm:inline">Abrir</span>
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            </Button>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
