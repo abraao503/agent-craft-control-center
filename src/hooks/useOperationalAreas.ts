@@ -10,17 +10,22 @@ import {
   UpdateOperationalAreaParams,
 } from "@/types/operation";
 
-export function useOperationalAreas(workspaceId?: string) {
+export function useOperationalAreas(
+  workspaceId?: string,
+  page = 1,
+  limit = 20,
+) {
   return useQuery({
-    queryKey: ["operation-areas", workspaceId],
+    queryKey: ["operation-areas", workspaceId, page, limit],
     queryFn: () => {
       if (!workspaceId) {
         throw new Error("Workspace operacional não selecionado");
       }
 
-      return listOperationalAreas(workspaceId);
+      return listOperationalAreas(workspaceId, page, limit);
     },
     enabled: Boolean(workspaceId),
+    placeholderData: (previousData) => previousData,
   });
 }
 

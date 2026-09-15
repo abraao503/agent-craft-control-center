@@ -63,6 +63,7 @@ import OperationLandingPage from "./pages/OperationLandingPage";
 import OperationAgentsPage from "./pages/OperationAgentsPage";
 import OperationChannelsPage from "./pages/OperationChannelsPage";
 import OperationDistributionPage from "./pages/OperationDistributionPage";
+import OperationStructurePage from "./pages/OperationStructurePage";
 import OperationAssistantsPage from "./pages/OperationAssistantsPage";
 import OperationTriageAgentsPage from "./pages/OperationTriageAgentsPage";
 import OperationAttendanceStationPage from "./pages/OperationAttendanceStationPage";
@@ -383,6 +384,15 @@ const App = () => (
                     <Route
                       path="/operation"
                       element={<OperationEntryRoute />}
+                    />
+                    <Route
+                      path="/operation/structure"
+                      element={
+                        <ProtectedRoute
+                          requiredPermission="view:operation-setup"
+                          component={OperationStructurePage}
+                        />
+                      }
                     />
                     <Route
                       path="/operation/attendances"

@@ -12,11 +12,11 @@ import { useWorkspaceContext } from "@/contexts/workspace/WorkspaceContext";
 import { useOperationalSetup } from "@/hooks/useOperationalSetup";
 import { useOperationalChannels } from "@/hooks/useOperationalChannels";
 import { usePermissions } from "@/hooks/usePermissions";
-import { OperationalAreasCard } from "@/components/operation/OperationalAreasCard";
 import {
   AlertCircle,
   ArrowRight,
   Bot,
+  Building2,
   CheckCircle2,
   Inbox,
   Loader2,
@@ -194,7 +194,9 @@ export default function OperationLandingPage() {
               ) : null}
             </CardContent>
           </Card>
-          <OperationalAreasCard workspaceId={currentWorkspace?.id} />
+          <OperationalStructureEntryCard
+            canManage={has("manage:operation-setup")}
+          />
           {canViewChannels ? (
             <OperationalChannelsEntryCard
               channelsQuery={channelsQuery}
@@ -213,6 +215,39 @@ export default function OperationLandingPage() {
         </Alert>
       )}
     </section>
+  );
+}
+
+function OperationalStructureEntryCard({ canManage }: { canManage: boolean }) {
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2 text-xl">
+              <Building2 className="h-5 w-5 text-primary" />
+              Estrutura de atendimento
+            </CardTitle>
+            <CardDescription>
+              Áreas, filas e equipe ficam organizadas em páginas próprias.
+            </CardDescription>
+          </div>
+          <Link
+            to="/operation/structure"
+            className={buttonVariants({ variant: "outline", size: "sm" })}
+          >
+            {canManage ? "Administrar estrutura" : "Ver estrutura"}
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <p className="text-sm text-muted-foreground">
+          Acesse uma área para administrar suas filas e a equipe responsável
+          pelo atendimento.
+        </p>
+      </CardContent>
+    </Card>
   );
 }
 
