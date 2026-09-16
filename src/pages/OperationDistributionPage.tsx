@@ -182,10 +182,6 @@ export default function OperationDistributionPage() {
             operadores devem ficar fora da atribuição automática.
           </p>
         </div>
-        <Badge variant="outline" className="w-fit gap-2 px-3 py-2">
-          <Settings2 className="h-4 w-4" />
-          Ambiente: {currentWorkspace.name}
-        </Badge>
       </header>
 
       <Alert>
