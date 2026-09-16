@@ -1194,10 +1194,7 @@ function TimelineEvent({ event }: { event: AttendanceEvent }) {
     .join(" · ");
   const accessibleLabel = [
     label,
-    event.cycleNumber ? `Ciclo ${event.cycleNumber}` : null,
     formatDateTime(event.createdAt),
-    formatActor(event.actorType),
-    `Versão ${event.aggregateVersion}`,
     details,
   ]
     .filter(Boolean)
@@ -1217,11 +1214,6 @@ function TimelineEvent({ event }: { event: AttendanceEvent }) {
       <span className="min-w-0 truncate font-medium text-foreground">
         {label}
       </span>
-      {event.cycleNumber ? (
-        <span className="shrink-0">· C{event.cycleNumber}</span>
-      ) : null}
-      <span className="shrink-0">· {formatActor(event.actorType)}</span>
-      <span className="shrink-0">· V{event.aggregateVersion}</span>
       <span className="shrink-0">· {formatCompactDateTime(event.createdAt)}</span>
     </article>
   );
@@ -1315,13 +1307,6 @@ function getReplyStatusLabel(
   }
 
   return REPLY_STATUS_LABELS[status];
-}
-
-function formatActor(actorType: AttendanceEvent["actorType"]) {
-  if (actorType === "USER") return "operador";
-  if (actorType === "ASSISTANT") return "agente";
-  if (actorType === "INTEGRATION") return "agente externo";
-  return "sistema";
 }
 
 function formatMetadataKey(key: string) {
