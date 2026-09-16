@@ -6,6 +6,7 @@ import { enUS, es, ptBR } from "date-fns/locale";
 import { Building2, Edit2, Ellipsis, Plus } from "lucide-react";
 import { listCompanies } from "@/services/company/listCompanies";
 import { usePermissions } from "@/hooks/usePermissions";
+import { ProfileLoadError } from "@/components/auth/ProfileLoadError";
 import { CreateCompanyDialog } from "@/components/admin/CreateCompanyDialog";
 import { EditCompanyDialog } from "@/components/admin/EditCompanyDialog";
 import { AdministrationBreadcrumb } from "@/components/admin/AdministrationBreadcrumb";
@@ -34,7 +35,7 @@ import { useAppLocale } from "@/i18n/LocaleProvider";
 
 export default function AdminCompaniesPage() {
   const navigate = useNavigate();
-  const { has } = usePermissions();
+  const { has, profileError } = usePermissions();
   const { t } = useTranslation();
   const { locale } = useAppLocale();
   const dateLocale = locale === "es-ES" ? es : locale === "en-US" ? enUS : ptBR;
@@ -70,6 +71,10 @@ export default function AdminCompaniesPage() {
   }, [search]);
 
   useEffect(() => setCurrentPage(1), [debouncedSearch]);
+
+  if (profileError) {
+    return <ProfileLoadError />;
+  }
 
   if (!has("view:all-companies")) {
     return (

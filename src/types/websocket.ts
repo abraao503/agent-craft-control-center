@@ -37,6 +37,7 @@ export interface WhatsappMessageBlockedEvent {
 
 export interface InstanceStatusEvent {
   companyWhatsappIntegrationId: string;
+  workspaceId: string;
   status: 'connected' | 'disconnected' | 'connecting' | 'error' | 'open' | 'close';
 }
 

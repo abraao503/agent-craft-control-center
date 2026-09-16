@@ -45,5 +45,6 @@ export type InstanceQrCodeEvent = {
 
 export type InstanceStatusEvent = {
   companyWhatsappIntegrationId: string;
+  workspaceId: string;
   status: "close" | "open" | "connecting";
 };

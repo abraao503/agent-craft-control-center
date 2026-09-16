@@ -1,0 +1,140 @@
+import {
+  OperationalChannelEntryMode,
+  OperationalChannelMenuOptionAction,
+  OperationalChannelProviderName,
+  OperationalChannelRouteMissing,
+} from "@/types/operation-channels";
+
+export const OPERATIONAL_CHANNEL_PROVIDER_LABELS: Record<
+  OperationalChannelProviderName,
+  string
+> = {
+  "z-api": "Z-API",
+  evolux: "Evolux",
+  "meta-cloud": "Meta Cloud",
+};
+
+export const OPERATIONAL_CHANNEL_ENTRY_MODE_LABELS: Record<
+  OperationalChannelEntryMode,
+  string
+> = {
+  TRIAGE: "Triagem operacional",
+  QUEUE: "Área e fila",
+  ASSISTANT: "Agente de atendimento",
+  EXTERNAL_AGENT: "Integração de triagem",
+};
+
+export const OPERATIONAL_CHANNEL_MENU_ACTION_LABELS: Record<
+  OperationalChannelMenuOptionAction,
+  string
+> = {
+  START_EXTERNAL_AGENT: "Iniciar integração de triagem",
+  ROUTE: "Encaminhar para área e fila",
+  CLOSE: "Finalizar atendimento",
+};
+
+export const OPERATIONAL_CHANNEL_ROUTE_MISSING_LABELS: Record<
+  OperationalChannelRouteMissing,
+  string
+> = {
+  route: "rota",
+  TRIAGE_AGENT: "integração de triagem",
+  ASSISTANT: "agente de atendimento ativo",
+  TARGET_AREA: "área de entrada",
+  TARGET_QUEUE: "fila de entrada",
+  FALLBACK_AREA: "área alternativa",
+  FALLBACK_QUEUE: "fila alternativa",
+  MENU_GREETING: "saudação do menu",
+  INVALID_MENU_MESSAGE: "mensagem de opção inválida",
+  HANDOFF_AREA: "área de encaminhamento humano",
+  HANDOFF_QUEUE: "fila de encaminhamento humano",
+  MENU_OPTIONS: "opções do menu",
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  CONNECTED: "Conectado",
+  DISCONNECTED: "Desconectado",
+  CONNECTING: "Conectando",
+  OPEN: "Aberto",
+  CLOSE: "Fechado",
+  open: "Aberto",
+  close: "Fechado",
+  connecting: "Conectando",
+  NEEDS_REAUTHORIZATION: "Reautorização necessária",
+  ERROR: "Erro",
+};
+
+const ERROR_LABELS: Record<string, string> = {
+  CHANNEL_ALREADY_EXISTS:
+    "Este canal já possui um cadastro. Atualize a lista e retome a conexão existente.",
+  CHANNEL_NOT_FOUND: "A conexão não existe mais neste ambiente.",
+  DESTINATION_NOT_FOUND: "Um dos destinos não existe mais ou está inativo.",
+  DESTINATION_WORKSPACE_MISMATCH:
+    "A fila selecionada não pertence à área informada.",
+  IDEMPOTENCY_IN_PROGRESS:
+    "Esta alteração ainda está sendo processada. Aguarde e atualize a lista.",
+  IDEMPOTENCY_PAYLOAD_CONFLICT:
+    "A chave de idempotência já foi usada com outro conteúdo.",
+  INVALID_PROVIDER_CONFIGURATION:
+    "As credenciais não são compatíveis com este provedor.",
+  INVALID_ROUTE_CONFIGURATION:
+    "A combinação de destinos não é compatível com o modo da rota.",
+  META_PHONE_NUMBER_NOT_FOUND:
+    "O número Meta não está sincronizado ou não pertence à empresa.",
+  META_PHONE_NUMBER_IN_USE:
+    "Este número já está reservado por outro canal. Retome o canal histórico ou libere o vínculo antes de criar outro.",
+  OPERATIONAL_RUNTIME_NOT_READY:
+    "O recebimento de mensagens ainda não está disponível. A ativação permanece bloqueada por enquanto.",
+  PROVIDER_QR_UNSUPPORTED: "Este provedor não oferece QR Code.",
+  PROVIDER_UNAVAILABLE: "Este provedor está indisponível no momento.",
+  ROUTE_ALREADY_EXISTS: "Este canal já possui uma rota configurada.",
+  ROUTE_INCOMPLETE: "Defina um destino válido antes de solicitar o QR Code.",
+  STALE_VERSION:
+    "O recurso foi alterado por outra pessoa. Atualize a lista e tente novamente.",
+  ASSISTANT_NOT_FOUND:
+    "O agente de atendimento não está ativo neste ambiente.",
+  TRIAGE_AGENT_NOT_FOUND:
+    "A integração de triagem não está ativa neste ambiente.",
+  HARNESS_DISABLED:
+    "O console sintético está desabilitado neste ambiente de execução.",
+  EVENT_PROCESSING:
+    "O evento foi recebido, mas não pôde ser processado pela operação.",
+  EVENT_PAYLOAD_CONFLICT:
+    "Já existe um evento sintético com os mesmos identificadores e outro conteúdo.",
+  INVALID_CUSTOMER_PHONE: "Informe um telefone válido para o contato.",
+  META_MANUAL_ACCOUNT_NOT_FOUND:
+    "A conta Meta manual não foi encontrada para esta empresa.",
+  META_MANUAL_WEBHOOK_NOT_CONFIGURABLE:
+    "O webhook só pode ser configurado para uma conta Meta manual.",
+  META_OPERATIONAL_WEBHOOK_URL_NOT_CONFIGURED:
+    "O endereço público do webhook ainda não foi configurado no servidor.",
+  FAILED_TO_CONFIGURE_META_WEBHOOK:
+    "Não foi possível salvar a configuração do webhook. Tente novamente.",
+};
+
+export function getOperationalErrorCode(error: unknown): string | undefined {
+  const responseMessage = (
+    error as { response?: { data?: { message?: unknown } } }
+  )?.response?.data?.message;
+
+  return typeof responseMessage === "string" ? responseMessage : undefined;
+}
+
+export function getOperationalErrorMessage(
+  error: unknown,
+  fallback: string,
+): string {
+  const code = getOperationalErrorCode(error);
+  return (code && ERROR_LABELS[code]) || fallback;
+}
+
+export function getOperationalStatusLabel(status: string): string {
+  return STATUS_LABELS[status] || "Desconhecido";
+}
+
+export function formatOperationalDateTime(value: string): string {
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(new Date(value));
+}

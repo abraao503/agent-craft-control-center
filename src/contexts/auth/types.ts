@@ -14,6 +14,7 @@ export interface AuthContextType {
   user: User | null;
   userProfile: UserProfile | null;
   isLoading: boolean;
+  profileError: boolean;
   login: (email: string, password: string) => Promise<void>;
   impersonateUser: (userId: string, reason: string) => Promise<void>;
   stopImpersonation: () => Promise<void>;

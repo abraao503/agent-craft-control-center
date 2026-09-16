@@ -20,6 +20,10 @@ import {
   Megaphone,
   Calendar as CalendarIcon,
   Tag,
+  Radio,
+  Inbox,
+  SlidersHorizontal,
+  List,
 } from "lucide-react";
 import { useAuth } from "@/contexts/auth/hooks";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -58,7 +62,7 @@ import {
   createWorkspace,
   CreateWorkspaceParams,
 } from "@/services/workspace/createWorkspace";
-import { Workspace } from "@/types/workspace";
+import { Workspace, WorkspaceType } from "@/types/workspace";
 import { useToast } from "@/hooks/use-toast";
 import { useWorkspaceContext } from "@/contexts/workspace/WorkspaceContext";
 import { AxiosError } from "axios";
@@ -75,8 +79,9 @@ const useWorkspace = () => {
     isLoading,
     error,
   } = useQuery({
-    queryKey: ["workspaces"],
+    queryKey: ["workspaces", user?.companyId],
     queryFn: listWorkspaces,
+    enabled: Boolean(user?.companyId),
     // Refetch quando a janela recebe foco para garantir dados atualizados
     refetchOnWindowFocus: true,
   });
@@ -165,7 +170,9 @@ interface WorkspaceDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   workspaceName: string;
+  workspaceType: WorkspaceType;
   onWorkspaceNameChange: (name: string) => void;
+  onWorkspaceTypeChange: (type: WorkspaceType) => void;
   onCreateWorkspace: () => void;
   isCreating: boolean;
 }
@@ -174,7 +181,9 @@ const WorkspaceDialog = ({
   isOpen,
   onOpenChange,
   workspaceName,
+  workspaceType,
   onWorkspaceNameChange,
+  onWorkspaceTypeChange,
   onCreateWorkspace,
   isCreating,
 }: WorkspaceDialogProps) => {
@@ -195,6 +204,24 @@ const WorkspaceDialog = ({
             className="mt-2"
             autoFocus
           />
+          <Label htmlFor="workspace-type" className="mt-4 block">
+            Tipo do workspace
+          </Label>
+          <Select
+            value={workspaceType}
+            onValueChange={(value) => onWorkspaceTypeChange(value as WorkspaceType)}
+          >
+            <SelectTrigger id="workspace-type" className="mt-2">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="COMMERCIAL">Comercial</SelectItem>
+              <SelectItem value="OPERATION">Operação</SelectItem>
+            </SelectContent>
+          </Select>
+          <p className="mt-2 text-xs text-muted-foreground">
+            O tipo define os módulos e não pode ser alterado depois.
+          </p>
         </div>
         <DialogFooter>
           <Button
@@ -228,11 +255,14 @@ const WorkspaceSelector = ({ isCollapsed }: { isCollapsed: boolean }) => {
   } = useWorkspace();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newWorkspaceName, setNewWorkspaceName] = useState("");
+  const [newWorkspaceType, setNewWorkspaceType] = useState<WorkspaceType>("COMMERCIAL");
   const { toast } = useToast();
   const { userProfile } = useAuth();
+  const { has } = usePermissions();
   const { t } = useTranslation();
 
   const isSalesRep = userProfile?.role === "SALES_REP";
+  const canCreateWorkspace = has("create:workspace");
 
   const handleCreateWorkspace = async () => {
     if (!newWorkspaceName.trim()) return;
@@ -241,6 +271,7 @@ const WorkspaceSelector = ({ isCollapsed }: { isCollapsed: boolean }) => {
       // Criar o novo workspace e obter o resultado
       const newWorkspace = await addWorkspace({
         name: newWorkspaceName.trim(),
+        type: newWorkspaceType,
       });
 
       // Selecionar o novo workspace
@@ -257,6 +288,7 @@ const WorkspaceSelector = ({ isCollapsed }: { isCollapsed: boolean }) => {
 
       // Limpar o formulário e fechar o diálogo
       setNewWorkspaceName("");
+      setNewWorkspaceType("COMMERCIAL");
       setIsDialogOpen(false);
     } catch (error: unknown) {
       console.error("Erro ao criar workspace:", error);
@@ -298,13 +330,14 @@ const WorkspaceSelector = ({ isCollapsed }: { isCollapsed: boolean }) => {
             {selectedWorkspace?.name || t("common.loading")}
           </TooltipContent>
         </Tooltip>
-        {!isSalesRep && (
+        {canCreateWorkspace && !isSalesRep && (
           <Tooltip delayDuration={0}>
             <TooltipTrigger asChild>
               <Button
                 variant="ghost"
                 size="icon"
                 className="w-full h-8 flex justify-center"
+                aria-label={t("legacy.Criar novo workspace")}
                 onClick={() => setIsDialogOpen(true)}
               >
                 <Plus className="h-4 w-4 text-muted-foreground" />
@@ -320,7 +353,9 @@ const WorkspaceSelector = ({ isCollapsed }: { isCollapsed: boolean }) => {
           isOpen={isDialogOpen}
           onOpenChange={setIsDialogOpen}
           workspaceName={newWorkspaceName}
+          workspaceType={newWorkspaceType}
           onWorkspaceNameChange={setNewWorkspaceName}
+          onWorkspaceTypeChange={setNewWorkspaceType}
           onCreateWorkspace={handleCreateWorkspace}
           isCreating={isCreating}
         />
@@ -357,6 +392,7 @@ const WorkspaceSelector = ({ isCollapsed }: { isCollapsed: boolean }) => {
             {workspaces.map((workspace) => (
               <SelectItem key={workspace.id} value={workspace.id}>
                 {workspace.name}
+                {workspace.type === "OPERATION" ? " · Operação" : " · Comercial"}
               </SelectItem>
             ))}
           </SelectContent>
@@ -367,7 +403,9 @@ const WorkspaceSelector = ({ isCollapsed }: { isCollapsed: boolean }) => {
         isOpen={isDialogOpen}
         onOpenChange={setIsDialogOpen}
         workspaceName={newWorkspaceName}
+        workspaceType={newWorkspaceType}
         onWorkspaceNameChange={setNewWorkspaceName}
+        onWorkspaceTypeChange={setNewWorkspaceType}
         onCreateWorkspace={handleCreateWorkspace}
         isCreating={isCreating}
       />
@@ -381,7 +419,8 @@ const SidebarMenuContent = () => {
   const { user, logout } = useAuth();
   const { state } = useSidebar();
   const { requestNavigation } = useUnsavedChanges();
-  const { has, role } = usePermissions();
+  const { has, hasAny, role } = usePermissions();
+  const { currentWorkspace } = useWorkspaceContext();
   const isCollapsed = state === "collapsed";
   const { isLoading: isWorkspaceLoading } = useWorkspace();
   const queryClient = useQueryClient();
@@ -395,8 +434,8 @@ const SidebarMenuContent = () => {
   };
 
   const isActive = (path: string) => {
-    if (path === "/dashboard") {
-      return location.pathname === "/dashboard";
+    if (path === "/dashboard" || path === "/operation") {
+      return location.pathname === path;
     }
     return location.pathname.startsWith(path);
   };
@@ -406,9 +445,49 @@ const SidebarMenuContent = () => {
     label: string;
     icon: JSX.Element;
     requiredPermission?: Permission;
+    requiredPermissions?: Permission[];
   }
 
-  const allMenuItems: MenuItem[] = [
+  const allMenuItems: MenuItem[] = currentWorkspace?.type === "OPERATION"
+    ? [
+        {
+          path: "/operation/attendances",
+          label: "Atendimentos",
+          icon: <Inbox className="h-5 w-5" />,
+          requiredPermission: "view:operation-attendances",
+        },
+        {
+          path: "/operation",
+          label: "Operação",
+          icon: <Building2 className="h-5 w-5" />,
+          requiredPermission: "view:operation-setup",
+        },
+        {
+          path: "/operation/structure",
+          label: "Estrutura",
+          icon: <List className="h-5 w-5" />,
+          requiredPermission: "view:operation-setup",
+        },
+        {
+          path: "/operation/channels",
+          label: "Canais",
+          icon: <Radio className="h-5 w-5" />,
+          requiredPermission: "view:operation-channels",
+        },
+        {
+          path: "/operation/agents",
+          label: "Agentes",
+          icon: <Bot className="h-5 w-5" />,
+          requiredPermissions: ["view:assistant", "manage:operation-setup"],
+        },
+        {
+          path: "/operation/distribution",
+          label: "Distribuição",
+          icon: <SlidersHorizontal className="h-5 w-5" />,
+          requiredPermission: "manage:operation-setup",
+        },
+      ]
+    : [
     {
       path: "/dashboard",
       label: t("navigation.dashboard"),
@@ -503,8 +582,20 @@ const SidebarMenuContent = () => {
     if (item.requiredPermission) {
       return has(item.requiredPermission);
     }
+    if (item.requiredPermissions) {
+      return hasAny(item.requiredPermissions);
+    }
     return true;
   });
+
+  const operationHomePath =
+    currentWorkspace?.type === "OPERATION"
+      ? has("view:operation-setup")
+        ? "/operation"
+        : has("view:operation-attendances")
+          ? "/operation/attendances"
+          : "/operation"
+      : "/dashboard";
 
   const renderMenuItem = (item: {
     path: string;
@@ -584,10 +675,12 @@ const SidebarMenuContent = () => {
         )}
       >
         <Link
-          to="/dashboard"
+          to={operationHomePath}
           onClick={(event) => {
             event.preventDefault();
-            requestNavigation(() => navigate("/dashboard"));
+            requestNavigation(() =>
+              navigate(operationHomePath),
+            );
           }}
           className={cn(
             "flex items-center space-x-2",
@@ -652,7 +745,9 @@ const SidebarMenuContent = () => {
 
 const ToggleButton = () => {
   const { toggleSidebar, state } = useSidebar();
+  const { t } = useTranslation();
   const isCollapsed = state === "collapsed";
+  const label = t("navigation.toggleSidebar");
 
   return (
     <Button
@@ -660,6 +755,8 @@ const ToggleButton = () => {
       size="icon"
       className="absolute right-[-12px] top-4 h-6 w-6 rounded-full border bg-background shadow-sm z-10"
       onClick={toggleSidebar}
+      aria-label={label}
+      title={label}
     >
       {isCollapsed ? (
         <ChevronRight className="h-3 w-3" />
@@ -674,21 +771,21 @@ const Sidebar = () => {
   const { user } = useAuth();
   const [mounted, setMounted] = useState(false);
   const location = useLocation();
-  const { state, setOpen } = useSidebar();
-  const isCollapsed = state === "collapsed";
+  const { isMobile, setOpenMobile } = useSidebar();
+  const isOperationStation =
+    location.pathname === "/operation/attendances" ||
+    location.pathname.startsWith("/operation/attendances/");
 
-  // Efeito simplificado para manter o estado da sidebar durante navegação
+  // Fechar a navegação ao entrar na estação; não reagir ao toggle do usuário.
   useEffect(() => {
-    // O efeito aqui é mínimo apenas para garantir que o estado seja preservado
-    if (isCollapsed) {
-      // Aplicar o estado colapsado sem setTimeout para evitar o flash
-      setOpen(false);
+    if (isMobile && isOperationStation) {
+      setOpenMobile(false);
     }
 
     if (!mounted) {
       setMounted(true);
     }
-  }, [location.pathname, isCollapsed, setOpen, mounted]);
+  }, [location.pathname, isMobile, isOperationStation, setOpenMobile, mounted]);
 
   if (!user) {
     return null;

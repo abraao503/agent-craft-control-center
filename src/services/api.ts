@@ -1,6 +1,11 @@
 import axios, { InternalAxiosRequestConfig } from "axios";
 import { trackApiError } from "./errorTracking";
 import { HighlightService } from "@/lib/highlight";
+import {
+  getSafeObservabilityCode,
+  sanitizeObservabilityText,
+  sanitizeObservabilityUrl,
+} from "@/services/observability/sanitizeObservability";
 
 // Extend the axios request config type to include our custom property
 interface CustomRequestConfig extends InternalAxiosRequestConfig {
@@ -36,7 +41,7 @@ api.interceptors.request.use((config) => {
 
     // Track the API request
     HighlightService.trackEvent("api_request_start", {
-      url: config.url || "unknown",
+      url: sanitizeObservabilityUrl(config.url),
       method: config.method?.toUpperCase() || "unknown",
       requestId,
       timestamp: new Date().toISOString(),
@@ -58,7 +63,7 @@ api.interceptors.response.use(
       const requestId = response.config.headers["X-Request-ID"];
 
       HighlightService.trackEvent("api_request_success", {
-        url: response.config.url || "unknown",
+        url: sanitizeObservabilityUrl(response.config.url),
         method: response.config.method?.toUpperCase() || "unknown",
         status: response.status,
         requestId,
@@ -72,9 +77,14 @@ api.interceptors.response.use(
   (error) => {
     if (error.response) {
       const status = error.response.status;
-      const errorMessage = error.response.data?.message || "Erro desconhecido";
+      const errorMessage =
+        getSafeObservabilityCode(error.response.data) || `HTTP_${status}`;
+      const isExpectedOperationalConflict =
+        status === 409 && error.config?.url?.includes("/operation/");
 
-      console.error(`Erro da API (${status}):`, errorMessage);
+      if (!isExpectedOperationalConflict) {
+        console.error(`Erro da API (${status}):`, errorMessage);
+      }
 
       // Only logout for 401 Unauthorized errors on protected routes
       // Do NOT logout for login/register endpoints or 500 errors
@@ -91,9 +101,9 @@ api.interceptors.response.use(
 
       // Track the API error with Highlight
       if (import.meta.env.VITE_HIGHLIGHT_ENABLED === "true") {
-        const context = `${error.config.method?.toUpperCase() || "unknown"} ${
-          error.config.url || "unknown"
-        }`;
+        const context = `${error.config?.method?.toUpperCase() || "unknown"} ${sanitizeObservabilityUrl(
+          error.config?.url,
+        )}`;
         trackApiError(error, context);
       }
     } else if (error.request) {
@@ -105,18 +115,22 @@ api.interceptors.response.use(
           "Network error: No response from server"
         );
         HighlightService.reportError(networkError, "API network error", {
-          url: error.config?.url || "unknown",
+          url: sanitizeObservabilityUrl(error.config?.url),
           method: error.config?.method?.toUpperCase() || "unknown",
         });
       }
     } else {
-      console.error("Erro desconhecido", error.message);
+      const safeMessage =
+        sanitizeObservabilityText(error.message) || "Unexpected API error";
+      console.error("Erro desconhecido", safeMessage);
 
       // Track unexpected errors
       if (import.meta.env.VITE_HIGHLIGHT_ENABLED === "true") {
-        HighlightService.reportError(error, "Unexpected API error", {
-          message: error.message,
-        });
+        HighlightService.reportError(
+          new Error(safeMessage),
+          "Unexpected API error",
+          { message: safeMessage },
+        );
       }
     }
 

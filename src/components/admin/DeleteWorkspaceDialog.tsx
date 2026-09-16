@@ -65,6 +65,7 @@ export function DeleteWorkspaceDialog({
         // Busca o workspace padrão
         const workspaces = queryClient.getQueryData<Workspace[]>([
           "workspaces",
+          user?.companyId,
         ]);
         const defaultWorkspace = workspaces?.find((w) => w.isDefault);
 

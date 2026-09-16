@@ -1,5 +1,6 @@
 import { Permission } from "@/types/auth";
 import { usePermissions } from "@/hooks/usePermissions";
+import { ProfileLoadError } from "./ProfileLoadError";
 
 interface ProtectedRouteProps {
   requiredPermission?: Permission;
@@ -32,7 +33,11 @@ export function ProtectedRoute({
   component: Component,
   fallback: Fallback = AccessDenied,
 }: ProtectedRouteProps) {
-  const { has, hasAny, hasAll } = usePermissions();
+  const { has, hasAny, hasAll, profileError } = usePermissions();
+
+  if (profileError) {
+    return <ProfileLoadError />;
+  }
 
   let hasAccess = true;
 

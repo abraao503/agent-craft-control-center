@@ -1,23 +1,10 @@
 import { api } from "@/services/api";
-
-export interface Workspace {
-  id: string;
-  name: string;
-  isDefault: boolean;
-}
-
-export interface GetCompanyByIdResponse {
-  id: string;
-  name: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-  workspaces: Workspace[];
-}
+import { CompanyDetails } from "@/types/company";
 
 export async function getCompanyById(
   companyId: string
-): Promise<GetCompanyByIdResponse> {
-  const { data } = await api.get<GetCompanyByIdResponse>(
+): Promise<CompanyDetails> {
+  const { data } = await api.get<CompanyDetails>(
     `/company/${companyId}`
   );
   return data;

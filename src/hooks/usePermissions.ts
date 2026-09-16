@@ -9,12 +9,13 @@ import {
 import { useAuth } from "@/contexts/auth/hooks";
 
 export function usePermissions() {
-  const { userProfile } = useAuth();
+  const { userProfile, profileError } = useAuth();
 
   const permissions = userProfile?.permissions ?? [];
   const role = userProfile?.role;
 
   return {
+    profileError,
     has: (permission: Permission): boolean =>
       hasPermission(permissions, permission),
 

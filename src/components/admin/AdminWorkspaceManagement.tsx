@@ -46,6 +46,7 @@ const roleLabels: Record<string, string> = {
   WORKSPACE_OWNER: "Dono do workspace",
   WORKSPACE_ADMIN: "Admin do workspace",
   WORKSPACE_MANAGER: "Gerente",
+  WORKSPACE_MEMBER: "Membro operacional",
   SALES_REP: "Vendedor",
 };
 
@@ -62,6 +63,7 @@ interface AdminWorkspaceManagementProps {
   companyId: string;
   workspaceId: string;
   workspaceName: string;
+  workspaceType?: "COMMERCIAL" | "OPERATION";
   companyName?: string | null;
   isDefault?: boolean;
   breadcrumbItems: AdministrationBreadcrumbItem[];
@@ -71,6 +73,7 @@ export function AdminWorkspaceManagement({
   companyId,
   workspaceId,
   workspaceName,
+  workspaceType = "COMMERCIAL",
   companyName,
   isDefault = false,
   breadcrumbItems,
@@ -81,8 +84,9 @@ export function AdminWorkspaceManagement({
   const { locale } = useAppLocale();
   const dateLocale = locale === "es-ES" ? es : locale === "en-US" ? enUS : ptBR;
   const canManageDistribution =
-    has("manage:deal-distribution") ||
-    Boolean(role && distributionRoles.has(role));
+    workspaceType !== "OPERATION" &&
+    (has("manage:deal-distribution") ||
+      Boolean(role && distributionRoles.has(role)));
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab =
     searchParams.get("tab") === "distribution" &&
@@ -132,7 +136,8 @@ export function AdminWorkspaceManagement({
       WORKSPACE_OWNER: 4,
       WORKSPACE_ADMIN: 5,
       WORKSPACE_MANAGER: 6,
-      SALES_REP: 7,
+      WORKSPACE_MEMBER: 7,
+      SALES_REP: 8,
     };
 
     return Boolean(
@@ -152,7 +157,14 @@ export function AdminWorkspaceManagement({
             ? t("administration.workspaceCompany", { name: companyName })
             : t("administration.workspaceAdministration")
         }
-        action={isDefault ? <Badge variant="secondary">Padrão</Badge> : undefined}
+        action={
+          <div className="flex flex-wrap gap-2">
+            <Badge variant="outline">
+              {workspaceType === "OPERATION" ? "Operação" : "Comercial"}
+            </Badge>
+            {isDefault && <Badge variant="secondary">Padrão</Badge>}
+          </div>
+        }
       />
 
       <Tabs
@@ -298,6 +310,7 @@ export function AdminWorkspaceManagement({
         onOpenChange={setCreateOpen}
         companyId={companyId}
         workspaceId={workspaceId}
+        workspaceType={workspaceType}
       />
       <EditWorkspaceUserDialog
         open={Boolean(editUser)}

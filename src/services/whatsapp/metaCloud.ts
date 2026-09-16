@@ -81,7 +81,23 @@ export type MetaCloudConsent = {
 };
 
 export async function getMetaCloudDiagnostic() {
-  const response = await api.get<MetaCloudDiagnostic>("/meta-cloud/diagnostic");
+  const response = await api.get<MetaCloudDiagnostic>("/meta-cloud/diagnostic", {
+    // O G5 representa o recurso desativado como 409. Isso é um estado
+    // esperado do diagnóstico, não uma falha de transporte para o usuário.
+    validateStatus: (status) => status === 200 || status === 409,
+  });
+
+  if (response.status === 409) {
+    return {
+      enabled: false,
+      companyFlag: false,
+      environmentFlag: false,
+      configured: false,
+      graphVersion: "",
+      integrations: [],
+    } satisfies MetaCloudDiagnostic;
+  }
+
   return response.data;
 }
 

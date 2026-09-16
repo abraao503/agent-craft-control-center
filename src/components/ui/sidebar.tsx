@@ -67,7 +67,7 @@ const SidebarProvider = React.forwardRef<
     ref
   ) => {
     const isMobile = useIsMobile();
-    const [openMobile, setOpenMobile] = React.useState(true);
+    const [openMobile, setOpenMobile] = React.useState(defaultOpen);
 
     // This is the internal state of the sidebar.
     // We use openProp and setOpenProp for control from outside the component.
@@ -177,6 +177,7 @@ const Sidebar = React.forwardRef<
     ref
   ) => {
     const { isMobile, state, openMobile, setOpenMobile } = useSidebar();
+    const { t } = useTranslation();
 
     if (collapsible === "none") {
       return (
@@ -198,28 +199,40 @@ const Sidebar = React.forwardRef<
       // Sidebar fixa por cima da página principal com fundo totalmente opaco
       // Usamos as variáveis CSS específicas para garantir que não haja transparência
       return (
-        <div
-          ref={ref}
-          className={cn(
-            "fixed inset-y-0 left-0 z-30 flex h-svh flex-col transition-transform duration-200 shadow-xl border-r",
-            state === "collapsed" ? "translate-x-[-80%]" : "translate-x-0",
-            className
+        <>
+          {state === "expanded" && (
+            <button
+              type="button"
+              aria-label={t("navigation.toggleSidebar")}
+              data-sidebar="mobile-overlay"
+              className="fixed inset-0 z-20 bg-black/40"
+              onClick={() => setOpenMobile(false)}
+            />
           )}
-          style={
-            {
-              "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
-              width: SIDEBAR_WIDTH_MOBILE,
-              backgroundColor: "var(--sidebar-solid-bg)",
-              color: "var(--sidebar-solid-text)",
-              backgroundImage: "none",
-              backdropFilter: "none",
-              opacity: 1,
-              isolation: "isolate",
-              borderColor: "var(--sidebar-solid-border)",
-            } as React.CSSProperties
-          }
-          {...props}
-        >
+          <div
+            ref={ref}
+            className={cn(
+              "fixed inset-y-0 left-0 z-30 flex h-svh flex-col transition-transform duration-200 shadow-xl border-r",
+              state === "collapsed"
+                ? "invisible pointer-events-none translate-x-[-100%]"
+                : "visible pointer-events-auto translate-x-0",
+              className
+            )}
+            style={
+              {
+                "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
+                width: SIDEBAR_WIDTH_MOBILE,
+                backgroundColor: "var(--sidebar-solid-bg)",
+                color: "var(--sidebar-solid-text)",
+                backgroundImage: "none",
+                backdropFilter: "none",
+                opacity: 1,
+                isolation: "isolate",
+                borderColor: "var(--sidebar-solid-border)",
+              } as React.CSSProperties
+            }
+            {...props}
+          >
           <div
             className="flex h-full w-full flex-col"
             data-sidebar="mobile-container"
@@ -243,7 +256,8 @@ const Sidebar = React.forwardRef<
               {children}
             </div>
           </div>
-        </div>
+          </div>
+        </>
       );
     }
 

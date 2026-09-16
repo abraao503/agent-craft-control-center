@@ -1,4 +1,9 @@
 import { H } from "highlight.run";
+import {
+  sanitizeHighlightMetadata,
+  sanitizeHighlightStringMetadata,
+  sanitizeObservabilityText,
+} from "@/services/observability/sanitizeObservability";
 
 /**
  * HighlightService provides helper functions for working with Highlight.run
@@ -14,7 +19,7 @@ export const HighlightService = {
     metadata?: Record<string, string | number | boolean>
   ) => {
     if (import.meta.env.VITE_HIGHLIGHT_ENABLED === "true") {
-      H.track(eventName, metadata);
+      H.track(eventName, sanitizeHighlightMetadata(metadata || {}));
     }
   },
 
@@ -25,7 +30,10 @@ export const HighlightService = {
    */
   identifyUser: (userId: string, metadata?: Record<string, string>) => {
     if (import.meta.env.VITE_HIGHLIGHT_ENABLED === "true") {
-      H.identify(userId, metadata);
+      H.identify(
+        userId,
+        sanitizeHighlightStringMetadata(metadata || {}),
+      );
     }
   },
 
@@ -41,7 +49,15 @@ export const HighlightService = {
     metadata?: Record<string, string>
   ) => {
     if (import.meta.env.VITE_HIGHLIGHT_ENABLED === "true") {
-      H.consumeError(error, message, metadata);
+      const safeError = new Error(
+        sanitizeObservabilityText(error.message) || "Unexpected error",
+      );
+      safeError.name = sanitizeObservabilityText(error.name) || "Error";
+      H.consumeError(
+        safeError,
+        sanitizeObservabilityText(message) || undefined,
+        sanitizeHighlightStringMetadata(metadata || {}),
+      );
     }
   },
 
@@ -59,33 +75,41 @@ export const HighlightService = {
     formContext?: Record<string, string>
   ) => {
     if (import.meta.env.VITE_HIGHLIGHT_ENABLED === "true") {
-      const errorFields = Object.keys(errors);
+      const safeFormId = sanitizeObservabilityText(formId);
+      const safeFormName = sanitizeObservabilityText(formName);
+      const safeErrors = Object.fromEntries(
+        Object.entries(errors).map(([field, fieldError]) => [
+          sanitizeObservabilityText(field) || "field",
+          {
+            message:
+              sanitizeObservabilityText(fieldError?.message) || "Invalid",
+          },
+        ]),
+      );
+      const safeContext = sanitizeHighlightStringMetadata(formContext || {});
+      const errorFields = Object.keys(safeErrors);
       
-      // Extract error messages
-      const errorMessages = errorFields.map(field => {
-        return `${field}: ${errors[field]?.message || "Invalid"}`;
-      }).join("; ");
+      const errorMessages = errorFields
+        .map((field) => `${field}: ${safeErrors[field]?.message || "Invalid"}`)
+        .join("; ");
       
-      // Create custom error for reporting
-      const error = new Error(`Form validation error in ${formName}`);
+      const error = new Error(`Form validation error in ${safeFormName}`);
       
-      // Track both as error and event for different visualization options
-      H.consumeError(error, `Form validation error: ${formName}`, {
-        formId,
-        formName,
+      H.consumeError(error, `Form validation error: ${safeFormName}`, {
+        formId: safeFormId,
+        formName: safeFormName,
         errorCount: String(errorFields.length),
         errorFields: errorFields.join(", "),
         errorMessages,
-        ...formContext
+        ...safeContext,
       });
       
-      // Also track as event for custom metrics
       H.track(`form_validation_error`, {
-        formId,
-        formName,
+        formId: safeFormId,
+        formName: safeFormName,
         errorCount: errorFields.length,
         errorFields: errorFields.join(", "),
-        ...formContext
+        ...safeContext,
       });
     }
   },

@@ -59,8 +59,19 @@ import TermsOfServicePage from "./pages/TermsOfServicePage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import TagsPage from "./pages/TagsPage";
+import OperationLandingPage from "./pages/OperationLandingPage";
+import OperationAgentsPage from "./pages/OperationAgentsPage";
+import OperationChannelsPage from "./pages/OperationChannelsPage";
+import OperationDistributionPage from "./pages/OperationDistributionPage";
+import OperationStructurePage from "./pages/OperationStructurePage";
+import OperationAreaPage from "./pages/OperationAreaPage";
+import OperationQueuePage from "./pages/OperationQueuePage";
+import OperationAssistantsPage from "./pages/OperationAssistantsPage";
+import OperationTriageAgentsPage from "./pages/OperationTriageAgentsPage";
+import OperationAttendanceStationPage from "./pages/OperationAttendanceStationPage";
 import Sidebar from "./components/layout/Sidebar";
 import Header from "./components/layout/Header";
+import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { ImpersonationBanner } from "./components/layout/ImpersonationBanner";
 import { SidebarProvider } from "./components/ui/sidebar";
 import { cn } from "./lib/utils";
@@ -70,6 +81,8 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { WorkspaceProvider } from "./contexts/workspace/WorkspaceContext";
 import { Loader2 } from "lucide-react";
 import { LegacyTextBridge } from "./components/i18n/LegacyTextBridge";
+import { useWorkspaceContext } from "./contexts/workspace/WorkspaceContext";
+import { usePermissions } from "./hooks/usePermissions";
 
 const queryClient = new QueryClient();
 
@@ -94,6 +107,9 @@ const AppLayout = () => {
   const { user, isLoading } = useAuth();
   const isMobile = useIsMobile();
   const location = useLocation();
+  const isOperationStation =
+    location.pathname === "/operation/attendances" ||
+    location.pathname.startsWith("/operation/attendances/");
   const initialState = getInitialSidebarState();
   const [pageTransitioning, setPageTransitioning] = useState(false);
   const mainContainerRef = useRef<HTMLDivElement>(null);
@@ -195,7 +211,7 @@ const AppLayout = () => {
   }
 
   return (
-    <SidebarProvider defaultOpen={initialState}>
+    <SidebarProvider defaultOpen={isOperationStation ? false : initialState}>
       <MainContainerRefContext.Provider value={mainContainerRef}>
         <PageViewTracker />
         <div
@@ -213,12 +229,13 @@ const AppLayout = () => {
                 ref={mainContainerRef}
                 className={cn(
                   "flex-1 overflow-y-auto bg-background dark:text-gray-200 transition-opacity",
-                  location.pathname !== "/chats" && "p-6",
+                  location.pathname !== "/chats" && !isOperationStation && "p-6",
+                  isOperationStation && "overflow-hidden p-0",
                   pageTransitioning ? "opacity-95" : "opacity-100",
-                  isMobile ? "pl-[60px]" : "",
+                  isMobile && !isOperationStation ? "pl-[60px]" : "",
                 )}
               >
-                <Outlet />
+                <WorkspaceRouteBoundary />
               </main>
             </div>
           </div>
@@ -266,6 +283,74 @@ const CustomerImportDetailViewPage = () => <CustomerImportDetailPage />;
 const TagsPageView = () => <TagsPage />;
 const NotFoundPage = () => <NotFound />;
 
+const COMMERCIAL_ROUTE_PREFIXES = [
+  "/dashboard",
+  "/agents",
+  "/integrations",
+  "/calendar",
+  "/contents",
+  "/chats",
+  "/customers",
+  "/deals",
+  "/follow-ups",
+  "/webhooks",
+  "/broadcasts",
+  "/customer-imports",
+  "/tags",
+];
+
+function isCommercialRoute(pathname: string): boolean {
+  return COMMERCIAL_ROUTE_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
+}
+
+const WorkspaceRouteBoundary = () => {
+  const { currentWorkspace } = useWorkspaceContext();
+  const location = useLocation();
+
+  if (
+    currentWorkspace?.type === "OPERATION" &&
+    isCommercialRoute(location.pathname)
+  ) {
+    return (
+      <Navigate
+        to="/operation"
+        replace
+        state={{ from: `${location.pathname}${location.search}` }}
+      />
+    );
+  }
+
+  if (
+    currentWorkspace?.type === "COMMERCIAL" &&
+    (location.pathname === "/operation" ||
+      location.pathname.startsWith("/operation/"))
+  ) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return <Outlet />;
+};
+
+const OperationEntryRoute = () => {
+  const { has } = usePermissions();
+
+  if (
+    !has("view:operation-setup") &&
+    has("view:operation-attendances")
+  ) {
+    return <Navigate to="/operation/attendances" replace />;
+  }
+
+  return (
+    <ProtectedRoute
+      requiredPermission="view:operation-setup"
+      component={OperationLandingPage}
+    />
+  );
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <LegacyTextBridge />
@@ -298,6 +383,103 @@ const App = () => (
 
                   {/* Rotas autenticadas com layout persistente */}
                   <Route element={<AppLayout />}>
+                    <Route
+                      path="/operation"
+                      element={<OperationEntryRoute />}
+                    />
+                    <Route
+                      path="/operation/structure"
+                      element={
+                        <ProtectedRoute
+                          requiredPermission="view:operation-setup"
+                          component={OperationStructurePage}
+                        />
+                      }
+                    />
+                    <Route
+                      path="/operation/areas/:areaId"
+                      element={
+                        <ProtectedRoute
+                          requiredPermission="view:operation-setup"
+                          component={OperationAreaPage}
+                        />
+                      }
+                    />
+                    <Route
+                      path="/operation/areas/:areaId/queues/:queueId"
+                      element={
+                        <ProtectedRoute
+                          requiredPermission="view:operation-setup"
+                          component={OperationQueuePage}
+                        />
+                      }
+                    />
+                    <Route
+                      path="/operation/attendances"
+                      element={
+                        <ProtectedRoute
+                          requiredPermission="view:operation-attendances"
+                          component={OperationAttendanceStationPage}
+                        />
+                      }
+                    />
+                    <Route
+                      path="/operation/attendances/:attendanceId"
+                      element={
+                        <ProtectedRoute
+                          requiredPermission="view:operation-attendances"
+                          component={OperationAttendanceStationPage}
+                        />
+                      }
+                    />
+                    <Route
+                      path="/operation/channels"
+                      element={
+                        <ProtectedRoute
+                          requiredPermission="view:operation-channels"
+                          component={OperationChannelsPage}
+                        />
+                      }
+                    />
+                    <Route
+                      path="/operation/agents"
+                      element={
+                        <ProtectedRoute
+                          requiredPermissions={[
+                            "view:assistant",
+                            "manage:operation-setup",
+                          ]}
+                          component={OperationAgentsPage}
+                        />
+                      }
+                    />
+                    <Route
+                      path="/operation/agents/assistants"
+                      element={
+                        <ProtectedRoute
+                          requiredPermission="view:assistant"
+                          component={OperationAssistantsPage}
+                        />
+                      }
+                    />
+                    <Route
+                      path="/operation/agents/triage"
+                      element={
+                        <ProtectedRoute
+                          requiredPermission="manage:operation-setup"
+                          component={OperationTriageAgentsPage}
+                        />
+                      }
+                    />
+                    <Route
+                      path="/operation/distribution"
+                      element={
+                        <ProtectedRoute
+                          requiredPermission="manage:operation-setup"
+                          component={OperationDistributionPage}
+                        />
+                      }
+                    />
                     <Route
                       path="/dashboard"
                       element={<DashboardV2PageView />}
@@ -421,7 +603,12 @@ const App = () => (
                     />
                     <Route
                       path="/workspace/settings"
-                      element={<WorkspaceSettingsViewPage />}
+                      element={
+                        <ProtectedRoute
+                          requiredPermission="list:users"
+                          component={WorkspaceSettingsViewPage}
+                        />
+                      }
                     />
                     <Route path="*" element={<NotFoundPage />} />
                   </Route>

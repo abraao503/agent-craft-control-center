@@ -28,6 +28,8 @@ interface MultiSelectProps {
   options: Option[];
   selected: string[];
   onChange: (values: string[]) => void;
+  id?: string;
+  "aria-label"?: string;
   placeholder?: string;
   className?: string;
   renderOption?: (option: Option) => React.ReactNode;
@@ -41,6 +43,8 @@ export function MultiSelect({
   options,
   selected,
   onChange,
+  id,
+  "aria-label": ariaLabel,
   placeholder = "Selecione opções...",
   className,
   renderOption,
@@ -90,6 +94,8 @@ export function MultiSelect({
       <PopoverTrigger asChild>
         <Button
           ref={buttonRef}
+          id={id}
+          aria-label={ariaLabel}
           variant="outline"
           role="combobox"
           aria-expanded={open}

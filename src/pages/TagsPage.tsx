@@ -9,7 +9,7 @@ export default function TagsPage() {
 
   if (!currentWorkspace?.id) {
     return (
-      <div className="flex h-[calc(100vh-4rem)] items-center justify-center">
+      <div className="flex h-full items-center justify-center">
         <p className="text-muted-foreground">
           {t("tags.selectWorkspace")}
         </p>
