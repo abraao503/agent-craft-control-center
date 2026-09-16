@@ -393,6 +393,16 @@ export function useOperationalAttendanceMutations(workspaceId?: string) {
     },
     onSuccess: (_data, variables) => {
       invalidateAttendanceScope(variables.attendanceId);
+      if (resolvedWorkspaceId) {
+        void queryClient.invalidateQueries({
+          queryKey: [
+            "operation",
+            "attendance-delivery-checks",
+            resolvedWorkspaceId,
+            variables.attendanceId,
+          ],
+        });
+      }
     },
     onError: (error, variables) => {
       handleMutationError(error, variables.attendanceId);
