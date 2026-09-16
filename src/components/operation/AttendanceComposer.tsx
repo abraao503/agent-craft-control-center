@@ -278,15 +278,6 @@ export function AttendanceComposer({
     });
   };
 
-  const showSendResult = (duplicate: boolean) => {
-    toast({
-      title: duplicate ? "Mensagem já processada" : "Mensagem enviada",
-      description: duplicate
-        ? "O servidor reconheceu uma tentativa anterior com a mesma chave."
-        : "O envio foi registrado e acompanharemos o status do provedor.",
-    });
-  };
-
   const handleSendAudio = async (audioBlob: Blob) => {
     if (
       !canCompose ||
@@ -302,7 +293,7 @@ export function AttendanceComposer({
     });
 
     try {
-      const response = await mutations.sendMessage.mutateAsync({
+      await mutations.sendMessage.mutateAsync({
         attendanceId: attendance.id,
         body: {
           kind: "MEDIA",
@@ -311,7 +302,6 @@ export function AttendanceComposer({
         },
         file: audioFile,
       });
-      showSendResult(response.duplicate);
     } catch (error) {
       toast({
         title: "Não foi possível enviar o áudio",
@@ -397,7 +387,7 @@ export function AttendanceComposer({
     }
 
     try {
-      const response = await mutations.sendMessage.mutateAsync({
+      await mutations.sendMessage.mutateAsync({
         attendanceId: attendance.id,
         body,
         file,
@@ -405,7 +395,6 @@ export function AttendanceComposer({
       form.reset({ text: "", caption: "" });
       setSelectedFile(null);
       if (mode !== "TEXT" && !isTemplateRequired) setMode("TEXT");
-      showSendResult(response.duplicate);
     } catch (error) {
       toast({
         title: "Não foi possível enviar a mensagem",
