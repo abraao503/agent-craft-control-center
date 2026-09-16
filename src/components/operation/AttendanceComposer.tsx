@@ -159,13 +159,8 @@ export function AttendanceComposer({
     canCompose,
     isTemplateRequired,
   ]);
-  const visibleModes = useMemo(
-    () =>
-      (["TEXT", "MEDIA", "TEMPLATE"] as ComposerMode[]).filter((option) =>
-        supportedModes.includes(option),
-      ),
-    [supportedModes],
-  );
+  const canUseOptionalTemplate =
+    supportedModes.includes("TEMPLATE") && !isTemplateRequired;
 
   const [mode, setMode] = useState<ComposerMode>(
     isTemplateRequired ? "TEMPLATE" : "TEXT",
@@ -415,6 +410,7 @@ export function AttendanceComposer({
       });
       form.reset({ text: "", caption: "" });
       setSelectedFile(null);
+      if (mode !== "TEXT" && !isTemplateRequired) setMode("TEXT");
       showSendResult(response);
     } catch (error) {
       toast({
@@ -512,27 +508,6 @@ export function AttendanceComposer({
             onSubmit={form.handleSubmit(submit)}
             className={embedded ? "space-y-2" : "space-y-4"}
           >
-            {visibleModes.length > 1 ? (
-              <div className="flex flex-wrap gap-2">
-                {visibleModes.map((option) => (
-                  <Button
-                    key={option}
-                    type="button"
-                    size="sm"
-                    variant={mode === option ? "default" : "outline"}
-                    disabled={mutations.sendMessage.isPending}
-                    onClick={() => setMode(option)}
-                  >
-                    {option === "TEXT"
-                      ? "Mensagem"
-                      : option === "MEDIA"
-                        ? "Anexo"
-                        : "Template"}
-                  </Button>
-                ))}
-              </div>
-            ) : null}
-
             {mode === "TEXT" ? (
               <FormField
                 control={form.control}
@@ -541,6 +516,19 @@ export function AttendanceComposer({
                   <FormItem className="space-y-2">
                     <FormLabel className="sr-only">Mensagem</FormLabel>
                     <div className="flex items-center gap-2">
+                      {canUseOptionalTemplate ? (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="shrink-0"
+                          onClick={() => setMode("TEMPLATE")}
+                          disabled={mutations.sendMessage.isPending}
+                          aria-label="Usar template"
+                        >
+                          <FileText className="h-5 w-5" />
+                        </Button>
+                      ) : null}
                       {supportedModes.includes("MEDIA") ? (
                         <>
                           <input
@@ -638,6 +626,7 @@ export function AttendanceComposer({
                         setMediaType(nextType);
                         if (selectedFile && !isAllowedMediaType(selectedFile, nextType)) {
                           setSelectedFile(null);
+                          setMode("TEXT");
                         }
                       }}
                       disabled={mutations.sendMessage.isPending}
@@ -689,7 +678,10 @@ export function AttendanceComposer({
                       type="button"
                       variant="ghost"
                       size="icon"
-                      onClick={() => setSelectedFile(null)}
+                      onClick={() => {
+                        setSelectedFile(null);
+                        setMode("TEXT");
+                      }}
                       disabled={mutations.sendMessage.isPending}
                       aria-label="Remover arquivo"
                     >
@@ -720,6 +712,18 @@ export function AttendanceComposer({
 
             {mode === "TEMPLATE" ? (
               <div className="space-y-4 rounded-md border bg-muted/10 p-4">
+                {!isTemplateRequired ? (
+                  <div className="flex justify-end">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setMode("TEXT")}
+                    >
+                      Voltar para mensagem
+                    </Button>
+                  </div>
+                ) : null}
                 {templatesQuery.isError ? (
                   <Alert variant="destructive">
                     <AlertTitle>Catálogo de templates indisponível</AlertTitle>
@@ -828,16 +832,18 @@ export function AttendanceComposer({
               </div>
             ) : null}
 
-            <div className="flex justify-end gap-3">
-              <Button type="submit" disabled={mutations.sendMessage.isPending}>
-                {mutations.sendMessage.isPending ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Send className="mr-2 h-4 w-4" />
-                )}
-                {mutations.sendMessage.isPending ? "Enviando..." : "Enviar"}
-              </Button>
-            </div>
+            {mode !== "TEXT" ? (
+              <div className="flex justify-end gap-3">
+                <Button type="submit" disabled={mutations.sendMessage.isPending}>
+                  {mutations.sendMessage.isPending ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="mr-2 h-4 w-4" />
+                  )}
+                  {mutations.sendMessage.isPending ? "Enviando..." : "Enviar"}
+                </Button>
+              </div>
+            ) : null}
           </form>
         </Form>
       )}
