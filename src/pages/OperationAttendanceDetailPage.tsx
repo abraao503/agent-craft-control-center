@@ -516,9 +516,6 @@ export default function OperationAttendanceDetailPage({
                 {attendance.customer?.phone || "Telefone não informado"}
                 {destination ? ` · ${destination}` : ""}
               </p>
-              <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                {getNextStepGuidance(attendance.status, Boolean(attendance.assignee))}
-              </p>
             </div>
           </div>
           <div className="flex shrink-0 flex-wrap items-center gap-2 pl-12 sm:pl-0">
