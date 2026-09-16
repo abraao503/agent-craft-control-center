@@ -1,8 +1,16 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { CheckCircle2, FileText, Loader2, Paperclip, Send, X } from "lucide-react";
+import {
+  CheckCircle2,
+  FileText,
+  Loader2,
+  Mic,
+  Paperclip,
+  Send,
+  X,
+} from "lucide-react";
 import { useOperationalAttendanceMutations } from "@/hooks/useOperationalAttendanceMutations";
 import {
   useOperationalAttendanceTemplates,
@@ -24,6 +32,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { AudioRecorder } from "@/components/chats/AudioRecorder";
 
 const MAX_MEDIA_SIZE = 50 * 1024 * 1024;
 
@@ -99,6 +108,14 @@ function isAllowedMediaType(file: File, mediaType: "image" | "audio" | "document
   return !file.type.startsWith("image/") && !file.type.startsWith("audio/");
 }
 
+function getMediaTypeFromFile(file: File): "image" | "audio" | "document" {
+  if (file.type.startsWith("image/")) return "image";
+  if (file.type.startsWith("audio/") || file.type === "application/ogg") {
+    return "audio";
+  }
+  return "document";
+}
+
 function formatFileSize(size: number) {
   if (size < 1024 * 1024) return `${Math.max(1, Math.round(size / 1024))} KB`;
   return `${(size / (1024 * 1024)).toFixed(1)} MB`;
@@ -161,8 +178,10 @@ export function AttendanceComposer({
   const [templateBindings, setTemplateBindings] = useState<
     Record<string, OperationalTemplateBinding>
   >({});
+  const [isRecordingAudio, setIsRecordingAudio] = useState(false);
   const [lastSent, setLastSent] =
     useState<SendOperationalAttendanceMessageResponse | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const form = useForm<ComposerFormValues>({
     resolver: zodResolver(composerSchema),
     defaultValues: { text: "", caption: "" },
@@ -211,7 +230,11 @@ export function AttendanceComposer({
     });
   }, [templateSlots]);
 
-  const handleFileChange = (file: File | undefined) => {
+  const handleFileChange = (
+    file: File | undefined,
+    nextMediaType = mediaType,
+    switchToMedia = false,
+  ) => {
     if (!file) return;
     if (file.size > MAX_MEDIA_SIZE) {
       toast({
@@ -221,15 +244,17 @@ export function AttendanceComposer({
       });
       return;
     }
-    if (!isAllowedMediaType(file, mediaType)) {
+    if (!isAllowedMediaType(file, nextMediaType)) {
       toast({
         title: "Tipo de mídia incompatível",
-        description: `Selecione um arquivo compatível com ${mediaType}.`,
+        description: `Selecione um arquivo compatível com ${nextMediaType}.`,
         variant: "destructive",
       });
       return;
     }
+    setMediaType(nextMediaType);
     setSelectedFile(file);
+    if (switchToMedia) setMode("MEDIA");
   };
 
   const updateBinding = (slot: string, value: string) => {
@@ -261,6 +286,53 @@ export function AttendanceComposer({
       }
       return { ...current, [slot]: { source: "owner", field: "name" } };
     });
+  };
+
+  const showSendResult = (response: SendOperationalAttendanceMessageResponse) => {
+    setLastSent(response);
+    toast({
+      title: response.duplicate ? "Mensagem já processada" : "Mensagem enviada",
+      description: response.duplicate
+        ? "O servidor reconheceu uma tentativa anterior com a mesma chave."
+        : "O envio foi registrado e acompanharemos o status do provedor.",
+    });
+  };
+
+  const handleSendAudio = async (audioBlob: Blob) => {
+    if (
+      !canCompose ||
+      !supportedModes.includes("MEDIA") ||
+      mutations.sendMessage.isPending
+    ) {
+      return;
+    }
+
+    setIsRecordingAudio(false);
+    const audioFile = new File([audioBlob], `audio-${Date.now()}.ogg`, {
+      type: "audio/ogg; codecs=opus",
+    });
+
+    try {
+      const response = await mutations.sendMessage.mutateAsync({
+        attendanceId: attendance.id,
+        body: {
+          kind: "MEDIA",
+          expectedVersion: attendance.version,
+          mediaType: "audio",
+        },
+        file: audioFile,
+      });
+      showSendResult(response);
+    } catch (error) {
+      toast({
+        title: "Não foi possível enviar o áudio",
+        description: getOperationalAttendanceErrorMessage(
+          error,
+          "Atualize o atendimento e tente novamente.",
+        ),
+        variant: "destructive",
+      });
+    }
   };
 
   const submit = async (values: ComposerFormValues) => {
@@ -341,15 +413,9 @@ export function AttendanceComposer({
         body,
         file,
       });
-      setLastSent(response);
       form.reset({ text: "", caption: "" });
       setSelectedFile(null);
-      toast({
-        title: response.duplicate ? "Mensagem já processada" : "Mensagem enviada",
-        description: response.duplicate
-          ? "O servidor reconheceu uma tentativa anterior com a mesma chave."
-          : "O envio foi registrado e acompanharemos o status do provedor.",
-      });
+      showSendResult(response);
     } catch (error) {
       toast({
         title: "Não foi possível enviar a mensagem",
@@ -435,6 +501,11 @@ export function AttendanceComposer({
             O canal não informou suporte a texto, mídia ou template para este atendimento.
           </AlertDescription>
         </Alert>
+      ) : isRecordingAudio && mode === "TEXT" ? (
+        <AudioRecorder
+          onSend={(audioBlob) => void handleSendAudio(audioBlob)}
+          onCancel={() => setIsRecordingAudio(false)}
+        />
       ) : (
         <Form {...form}>
           <form
@@ -467,20 +538,87 @@ export function AttendanceComposer({
                 control={form.control}
                 name="text"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className={embedded ? "sr-only" : undefined}>
-                      Mensagem
-                    </FormLabel>
-                    <FormControl>
-                      <Textarea
-                        {...field}
-                        value={field.value ?? ""}
-                        placeholder="Digite a resposta para o contato..."
-                        disabled={mutations.sendMessage.isPending}
-                        rows={embedded ? 2 : 4}
-                        className={embedded ? "min-h-[44px] resize-none" : undefined}
-                      />
-                    </FormControl>
+                  <FormItem className="space-y-2">
+                    <FormLabel className="sr-only">Mensagem</FormLabel>
+                    <div className="flex items-center gap-2">
+                      {supportedModes.includes("MEDIA") ? (
+                        <>
+                          <input
+                            ref={fileInputRef}
+                            id="operational-media-file-compact"
+                            type="file"
+                            className="sr-only"
+                            accept="image/*,audio/*,application/ogg,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv,.zip,.rar"
+                            onChange={(event) => {
+                              const file = event.target.files?.[0];
+                              if (file) {
+                                handleFileChange(
+                                  file,
+                                  getMediaTypeFromFile(file),
+                                  true,
+                                );
+                              }
+                              event.currentTarget.value = "";
+                            }}
+                            disabled={mutations.sendMessage.isPending}
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="shrink-0"
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={mutations.sendMessage.isPending}
+                            aria-label="Adicionar anexo"
+                          >
+                            <Paperclip className="h-5 w-5" />
+                          </Button>
+                        </>
+                      ) : null}
+                      <FormControl>
+                        <Textarea
+                          {...field}
+                          value={field.value ?? ""}
+                          placeholder="Digite uma mensagem"
+                          disabled={mutations.sendMessage.isPending}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter" && !event.shiftKey) {
+                              event.preventDefault();
+                              void form.handleSubmit(submit)();
+                            }
+                          }}
+                          className="min-h-[40px] max-h-[120px] flex-1 resize-none"
+                          rows={1}
+                        />
+                      </FormControl>
+                      {field.value.trim() ? (
+                        <Button
+                          type="submit"
+                          size="icon"
+                          className="shrink-0"
+                          disabled={mutations.sendMessage.isPending}
+                          aria-label="Enviar mensagem"
+                        >
+                          {mutations.sendMessage.isPending ? (
+                            <Loader2 className="h-5 w-5 animate-spin" />
+                          ) : (
+                            <Send className="h-5 w-5" />
+                          )}
+                        </Button>
+                      ) : supportedModes.includes("MEDIA") ? (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="shrink-0"
+                          onClick={() => setIsRecordingAudio(true)}
+                          disabled={mutations.sendMessage.isPending}
+                          aria-label="Gravar áudio"
+                        >
+                          <Mic className="h-5 w-5" />
+                        </Button>
+                      ) : null}
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
