@@ -526,12 +526,13 @@ export default function OperationAttendanceDetailPage({
               status={realtime.status}
               joinedWorkspace={realtime.joinedWorkspace}
             />
-            <AttendanceActionControls
-              status={attendance.status}
-              hasAssignee={Boolean(attendance.assignee)}
-              canOperate={canOperateAttendances}
-              canManageAssignments={canManageAssignments}
-              canTransfer={canTransfer}
+          <AttendanceActionControls
+            status={attendance.status}
+            hasAssignee={Boolean(attendance.assignee)}
+            canResume={attendance.actionCapabilities?.canResume === true}
+            canOperate={canOperateAttendances}
+            canManageAssignments={canManageAssignments}
+            canTransfer={canTransfer}
               optionsAvailable={Boolean(options)}
               pending={isActionPending}
               onQuickAction={(action) => void runQuickAction(action)}
@@ -876,12 +877,13 @@ export default function OperationAttendanceDetailPage({
                           </AlertDescription>
                         </Alert>
                       ) : null}
-                      <AttendanceActionControls
-                        status={attendance.status}
-                        hasAssignee={Boolean(attendance.assignee)}
-                        canOperate={canOperateAttendances}
-                        canManageAssignments={canManageAssignments}
-                        canTransfer={canTransfer}
+        <AttendanceActionControls
+          status={attendance.status}
+          hasAssignee={Boolean(attendance.assignee)}
+          canResume={attendance.actionCapabilities?.canResume === true}
+          canOperate={canOperateAttendances}
+          canManageAssignments={canManageAssignments}
+          canTransfer={canTransfer}
                         optionsAvailable={Boolean(options)}
                         pending={isActionPending}
                         onQuickAction={(action) => void runQuickAction(action)}
@@ -969,6 +971,7 @@ export default function OperationAttendanceDetailPage({
 function AttendanceActionControls({
   status,
   hasAssignee,
+  canResume,
   canOperate,
   canManageAssignments,
   canTransfer,
@@ -979,6 +982,7 @@ function AttendanceActionControls({
 }: {
   status: AttendanceStatus;
   hasAssignee: boolean;
+  canResume: boolean;
   canOperate: boolean;
   canManageAssignments: boolean;
   canTransfer: boolean;
@@ -1018,7 +1022,7 @@ function AttendanceActionControls({
           Encaminhar
         </Button>
       ) : null}
-      {status === "PENDING" ? (
+      {status === "PENDING" && canResume ? (
         <Button size="sm" className="h-8" onClick={() => onQuickAction("RESUME")} disabled={pending}>
           <PlayCircle className="mr-1.5 h-4 w-4" />
           Retomar

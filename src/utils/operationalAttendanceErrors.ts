@@ -37,6 +37,8 @@ export const OPERATIONAL_ATTENDANCE_ERROR_MESSAGES: Record<string, string> = {
   INVALID_CONTENT: "O conteúdo da mensagem não é válido.",
   INVALID_PHONE: "O telefone do contato não está apto para receber mensagens.",
   RATE_LIMITED: "O envio foi temporariamente limitado. Aguarde e tente novamente.",
+  PROVIDER_REJECTED:
+    "O provedor recusou a mensagem. Revise o destinatário ou o template.",
   PROVIDER_UNAVAILABLE:
     "O provedor do canal está indisponível. Tente novamente em instantes.",
   OPERATIONAL_RUNTIME_NOT_READY:
@@ -130,8 +132,14 @@ export function getOperationalAttendanceErrorMessage(
   fallback = "Ocorreu um erro ao processar a operação de atendimento."
 ): string {
   const code = extractOperationalErrorCode(error);
+  const providerDetails = extractOperationalProviderError(error);
+  const providerSuffix = providerDetails
+    ? `Código Meta: ${providerDetails.code}`
+    : null;
+
   if (code && OPERATIONAL_ATTENDANCE_ERROR_MESSAGES[code]) {
-    return OPERATIONAL_ATTENDANCE_ERROR_MESSAGES[code];
+    const message = OPERATIONAL_ATTENDANCE_ERROR_MESSAGES[code];
+    return providerSuffix ? `${message} ${providerSuffix}` : message;
   }
 
   if (axios.isAxiosError(error)) {
@@ -146,10 +154,12 @@ export function getOperationalAttendanceErrorMessage(
       return "Conflito ao atualizar atendimento. Tente novamente.";
     }
     if (status && status >= 500) {
-      return "Erro interno no servidor ao processar atendimento.";
+      return providerSuffix
+        ? `Erro interno no servidor ao processar atendimento. ${providerSuffix}`
+        : "Erro interno no servidor ao processar atendimento.";
     }
     if (code) {
-      return code;
+      return providerSuffix ? `${code}. ${providerSuffix}` : code;
     }
   }
 
@@ -158,6 +168,34 @@ export function getOperationalAttendanceErrorMessage(
   }
 
   return fallback;
+}
+
+function extractOperationalProviderError(error: unknown): {
+  code: string;
+  details?: string;
+} | null {
+  if (!axios.isAxiosError(error)) return null;
+
+  const data = error.response?.data;
+  if (typeof data !== "object" || data === null) return null;
+
+  const providerError = (data as { providerError?: unknown }).providerError;
+  if (typeof providerError !== "object" || providerError === null) return null;
+
+  const code = (providerError as { code?: unknown }).code;
+  if (typeof code !== "string" || !code) return null;
+
+  const details =
+    typeof (providerError as { details?: unknown }).details === "string"
+      ? (providerError as { details: string }).details
+      : typeof (providerError as { message?: unknown }).message === "string"
+        ? (providerError as { message: string }).message
+        : undefined;
+
+  return {
+    code,
+    ...(details ? { details: details.slice(0, 300) } : {}),
+  };
 }
 
 export function isStaleVersionError(error: unknown): boolean {

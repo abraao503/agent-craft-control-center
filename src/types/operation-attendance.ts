@@ -124,6 +124,10 @@ export type AttendanceReplyCapabilityStatus =
   | "NOT_ASSIGNEE"
   | "ATTENDANCE_NOT_ACTIVE";
 
+export interface AttendanceActionCapabilities {
+  canResume: boolean;
+}
+
 export interface AttendanceReplyCapabilities {
   status: AttendanceReplyCapabilityStatus;
   supportsText: boolean;
@@ -154,6 +158,7 @@ export type AttendanceDetail = Omit<AttendanceWithDetails, "customer"> & {
   customer?: AttendanceCustomerDetail;
   channel?: AttendanceChannelDetail | null;
   replyCapabilities: AttendanceReplyCapabilities;
+  actionCapabilities: AttendanceActionCapabilities;
 };
 
 export type AttendanceMessageSender = "CUSTOMER" | "HUMAN" | "ASSISTANT";

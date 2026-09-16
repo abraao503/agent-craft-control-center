@@ -254,7 +254,7 @@ export default function OperationTriageAgentsPage() {
         <KeyRound className="h-4 w-4" />
         <AlertTitle>Credenciais protegidas</AlertTitle>
         <AlertDescription>
-          O segredo é somente para gravação (não pode ser lido depois). A API valida a empresa, o host permitido e a
+          O segredo é somente para gravação (não pode ser lido depois). A API valida a empresa, a configuração e a
           versão do registro antes de persistir qualquer alteração.
         </AlertDescription>
       </Alert>

@@ -8,8 +8,6 @@ const TRIAGE_AGENT_ERROR_MESSAGES: Record<string, string> = {
   AGENT_NAME_CONFLICT: "Já existe um agente com este nome neste ambiente.",
   INVALID_TRIAGE_AGENT_CONFIG:
     "Revise a URL, o timeout e o número de tentativas do agente.",
-  TRIAGE_AGENT_HOST_NOT_ALLOWED:
-    "O host informado não está permitido pela política deste ambiente.",
   TRIAGE_AGENT_CREDENTIAL_ENCRYPTION_NOT_CONFIGURED:
     "A credencial não pode ser salva neste ambiente.",
   TRIAGE_AGENT_CREDENTIAL_INVALID: "A credencial do agente foi rejeitada.",

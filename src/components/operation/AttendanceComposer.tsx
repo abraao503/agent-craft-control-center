@@ -388,28 +388,18 @@ export function AttendanceComposer({
           : "mt-6 border-t pt-6"
       }
     >
-      <div
-        className={
-          embedded
-            ? "mb-2 flex flex-wrap items-center justify-between gap-2"
-            : "mb-4 flex flex-wrap items-start justify-between gap-3"
-        }
-      >
-        <div>
-          <h3 className="flex items-center gap-2 text-base font-semibold">
-            <Send className="h-4 w-4 text-primary" />
-            Responder
-          </h3>
-          {!embedded ? (
-            <p className="mt-1 text-sm text-muted-foreground">
-              O envio usa a capacidade e a versão atuais deste ciclo.
-            </p>
-          ) : null}
-        </div>
-        {attendance.replyCapabilities.latestInboundMessageId ? (
-          <Badge variant="outline">Conversa atual</Badge>
-        ) : null}
-      </div>
+      {isTemplateRequired ? (
+        <p
+          className={
+            embedded
+              ? "mb-3 text-xs text-muted-foreground"
+              : "mb-4 text-sm text-muted-foreground"
+          }
+        >
+          A janela de 24 horas foi encerrada. Para iniciar uma nova conversa,
+          envie um template aprovado.
+        </p>
+      ) : null}
 
       {!canCompose ? (
         <Alert className="bg-muted/20">
@@ -451,24 +441,26 @@ export function AttendanceComposer({
             onSubmit={form.handleSubmit(submit)}
             className={embedded ? "space-y-2" : "space-y-4"}
           >
-            <div className="flex flex-wrap gap-2">
-              {visibleModes.map((option) => (
-                <Button
-                  key={option}
-                  type="button"
-                  size="sm"
-                  variant={mode === option ? "default" : "outline"}
-                  disabled={mutations.sendMessage.isPending}
-                  onClick={() => setMode(option)}
-                >
-                  {option === "TEXT"
-                    ? "Mensagem"
-                    : option === "MEDIA"
-                      ? "Anexo"
-                      : "Template"}
-                </Button>
-              ))}
-            </div>
+            {visibleModes.length > 1 ? (
+              <div className="flex flex-wrap gap-2">
+                {visibleModes.map((option) => (
+                  <Button
+                    key={option}
+                    type="button"
+                    size="sm"
+                    variant={mode === option ? "default" : "outline"}
+                    disabled={mutations.sendMessage.isPending}
+                    onClick={() => setMode(option)}
+                  >
+                    {option === "TEXT"
+                      ? "Mensagem"
+                      : option === "MEDIA"
+                        ? "Anexo"
+                        : "Template"}
+                  </Button>
+                ))}
+              </div>
+            ) : null}
 
             {mode === "TEXT" ? (
               <FormField
@@ -637,9 +629,6 @@ export function AttendanceComposer({
                           </option>
                         ))}
                       </select>
-                      <p className="text-xs text-muted-foreground">
-                        Os valores dinâmicos serão resolvidos pelo backend no momento do envio.
-                      </p>
                     </div>
 
                     {templateSlots.length ? (
@@ -701,16 +690,7 @@ export function AttendanceComposer({
               </div>
             ) : null}
 
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <p
-                className={
-                  embedded
-                    ? "hidden text-xs text-muted-foreground md:block"
-                    : "text-xs text-muted-foreground"
-                }
-              >
-                A conversa será atualizada automaticamente se houver mudanças.
-              </p>
+            <div className="flex justify-end gap-3">
               <Button type="submit" disabled={mutations.sendMessage.isPending}>
                 {mutations.sendMessage.isPending ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
