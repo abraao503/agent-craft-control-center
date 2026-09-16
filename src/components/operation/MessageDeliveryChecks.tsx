@@ -30,14 +30,17 @@ function DeliveryStatusIcon({
   const isDelivered = ["DELIVERED", "DELIVERY_ACK", "RECEIVED"].includes(
     normalizedStatus,
   );
-  const isFailure = ["FAILED", "ERROR", "UNKNOWN"].includes(normalizedStatus);
+  const isPending = ["PENDING", "PROCESSING", "QUEUED", "UNKNOWN"].includes(
+    normalizedStatus,
+  );
+  const isFailure = ["FAILED", "ERROR"].includes(normalizedStatus);
   const label = isRead
     ? "Mensagem lida"
     : isDelivered
       ? "Mensagem entregue"
       : isFailure
         ? "Falha no envio"
-        : normalizedStatus === "PENDING"
+        : isPending
           ? "Mensagem pendente"
           : "Mensagem enviada";
   const title = observedTime ? `${label} · ${observedTime}` : label;
@@ -48,7 +51,7 @@ function DeliveryStatusIcon({
     </span>
   );
 
-  if (normalizedStatus === "PENDING") {
+  if (isPending) {
     return renderIcon(
       <Clock
         className={`${iconClassName} text-slate-300`}
