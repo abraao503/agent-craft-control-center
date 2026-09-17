@@ -31,6 +31,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { AudioRecorder } from "@/components/chats/AudioRecorder";
+import { WhisperIcon } from "@/components/operation/WhisperIcon";
 
 const MAX_MEDIA_SIZE = 50 * 1024 * 1024;
 
@@ -501,7 +502,7 @@ export function AttendanceComposer({
                   onClick={() => setIsInternalNoteMode(true)}
                   aria-label="Ativar modo sussurro"
                 >
-                  <LockKeyhole className="h-4 w-4" />
+                  <WhisperIcon className="h-4 w-4" />
                   Modo sussurro
                 </Button>
               ) : null}
@@ -588,7 +589,7 @@ export function AttendanceComposer({
                               : "Ativar modo sussurro"
                           }
                         >
-                          <LockKeyhole className="h-5 w-5" />
+                          <WhisperIcon className="h-5 w-5" />
                         </Button>
                       ) : null}
                       {!isInternalNoteMode && canUseOptionalTemplate ? (
