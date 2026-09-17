@@ -502,7 +502,7 @@ export function AttendanceComposer({
                   onClick={() => setIsInternalNoteMode(true)}
                   aria-label="Ativar modo sussurro"
                 >
-                  <WhisperIcon className="h-4 w-4" />
+                  <WhisperIcon className="!h-5 !w-5" />
                   Modo sussurro
                 </Button>
               ) : null}
@@ -544,8 +544,8 @@ export function AttendanceComposer({
             className={embedded ? "space-y-2" : "space-y-4"}
           >
             {isInternalNoteMode ? (
-              <Alert className="border-fuchsia-200 bg-fuchsia-50/70 dark:border-fuchsia-900 dark:bg-fuchsia-950/20">
-                <LockKeyhole className="h-4 w-4 text-fuchsia-700 dark:text-fuchsia-300" />
+              <Alert className="border-primary/25 bg-primary/5">
+                <LockKeyhole className="h-4 w-4 text-primary" />
                 <AlertTitle>Modo sussurro ativo</AlertTitle>
                 <AlertDescription>
                   Esta nota fica visível somente para a equipe interna.
@@ -569,7 +569,7 @@ export function AttendanceComposer({
                           size="icon"
                           className={
                             isInternalNoteMode
-                              ? "shrink-0 bg-fuchsia-100 text-fuchsia-800 hover:bg-fuchsia-200 dark:bg-fuchsia-950/50 dark:text-fuchsia-200"
+                              ? "shrink-0 bg-primary/10 text-primary hover:bg-primary/20"
                               : "shrink-0"
                           }
                           onClick={() => setIsInternalNoteMode((current) => !current)}
@@ -589,7 +589,7 @@ export function AttendanceComposer({
                               : "Ativar modo sussurro"
                           }
                         >
-                          <WhisperIcon className="h-5 w-5" />
+                          <WhisperIcon className="!h-6 !w-6" />
                         </Button>
                       ) : null}
                       {!isInternalNoteMode && canUseOptionalTemplate ? (
