@@ -274,6 +274,7 @@ export type AttendanceTimelineEventItem = AttendanceEvent & {
 export type AttendanceTimelineInternalNoteItem = AttendanceInternalNote & {
   kind: "internal_note";
   isPrivate: true;
+  authorName: string | null;
 };
 
 export type AttendanceTimelineItem =
