@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import {
   CheckCircle2,
   FileText,
+  LockKeyhole,
   Loader2,
   Mic,
   Paperclip,
@@ -30,6 +31,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { AudioRecorder } from "@/components/chats/AudioRecorder";
+import { WhisperIcon } from "@/components/operation/WhisperIcon";
 
 const MAX_MEDIA_SIZE = 50 * 1024 * 1024;
 
@@ -138,6 +140,7 @@ export function AttendanceComposer({
     ["SERVICE_ALLOWED", "TEMPLATE_REQUIRED"].includes(
       attendance.replyCapabilities.status,
     );
+  const canUseInternalNote = canOperate;
 
   const supportedModes = useMemo<ComposerMode[]>(() => {
     if (!canCompose) return [];
@@ -162,6 +165,7 @@ export function AttendanceComposer({
   const [mode, setMode] = useState<ComposerMode>(
     isTemplateRequired ? "TEMPLATE" : "TEXT",
   );
+  const [isInternalNoteMode, setIsInternalNoteMode] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [mediaType, setMediaType] = useState<"image" | "audio" | "document">(
     "image",
@@ -195,6 +199,12 @@ export function AttendanceComposer({
       setMode(supportedModes[0] ?? "TEXT");
     }
   }, [mode, supportedModes]);
+
+  useEffect(() => {
+    if (!canUseInternalNote) {
+      setIsInternalNoteMode(false);
+    }
+  }, [canUseInternalNote]);
 
   useEffect(() => {
     if (!templates.length) {
@@ -315,6 +325,33 @@ export function AttendanceComposer({
   };
 
   const submit = async (values: ComposerFormValues) => {
+    if (isInternalNoteMode) {
+      const content = values.text.trim();
+      if (!content) {
+        form.setError("text", { message: "Informe uma nota interna." });
+        return;
+      }
+      if (mutations.createInternalNote.isPending) return;
+
+      try {
+        await mutations.createInternalNote.mutateAsync({
+          attendanceId: attendance.id,
+          content,
+        });
+        form.reset({ text: "", caption: "" });
+      } catch (error) {
+        toast({
+          title: "Não foi possível salvar a nota interna",
+          description: getOperationalAttendanceErrorMessage(
+            error,
+            "Atualize o atendimento e tente novamente.",
+          ),
+          variant: "destructive",
+        });
+      }
+      return;
+    }
+
     if (!supportedModes.includes(mode)) return;
 
     let body: SendOperationalAttendanceMessageBody;
@@ -446,7 +483,7 @@ export function AttendanceComposer({
         </p>
       ) : null}
 
-      {!canCompose ? (
+      {!canCompose && !isInternalNoteMode ? (
         <Alert className="bg-muted/20">
           <AlertTitle>
             {attendance.status === "WAITING_QUEUE" && onClaim
@@ -455,32 +492,47 @@ export function AttendanceComposer({
           </AlertTitle>
           <AlertDescription className="mt-1 flex flex-wrap items-center justify-between gap-3">
             <span>{disabledReason}</span>
-            {attendance.status === "WAITING_QUEUE" && onClaim ? (
-              <Button
-                type="button"
-                size="sm"
-                className="gap-1.5"
-                disabled={claimPending}
-                onClick={onClaim}
-              >
-                {claimPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <CheckCircle2 className="h-4 w-4" />
-                )}
-                {claimPending ? "Assumindo..." : "Atender"}
-              </Button>
-            ) : null}
+            <div className="flex flex-wrap items-center gap-2">
+              {canUseInternalNote ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="gap-1.5"
+                  onClick={() => setIsInternalNoteMode(true)}
+                  aria-label="Ativar modo sussurro"
+                >
+                  <WhisperIcon className="!h-5 !w-5" />
+                  Modo sussurro
+                </Button>
+              ) : null}
+              {attendance.status === "WAITING_QUEUE" && onClaim ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  className="gap-1.5"
+                  disabled={claimPending}
+                  onClick={onClaim}
+                >
+                  {claimPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <CheckCircle2 className="h-4 w-4" />
+                  )}
+                  {claimPending ? "Assumindo..." : "Atender"}
+                </Button>
+              ) : null}
+            </div>
           </AlertDescription>
         </Alert>
-      ) : supportedModes.length === 0 ? (
+      ) : supportedModes.length === 0 && !isInternalNoteMode ? (
         <Alert>
           <AlertTitle>Nenhum modo compatível</AlertTitle>
           <AlertDescription>
             O canal não informou suporte a texto, mídia ou template para este atendimento.
           </AlertDescription>
         </Alert>
-      ) : isRecordingAudio && mode === "TEXT" ? (
+      ) : isRecordingAudio && mode === "TEXT" && !isInternalNoteMode ? (
         <AudioRecorder
           onSend={(audioBlob) => void handleSendAudio(audioBlob)}
           onCancel={() => setIsRecordingAudio(false)}
@@ -491,15 +543,56 @@ export function AttendanceComposer({
             onSubmit={form.handleSubmit(submit)}
             className={embedded ? "space-y-2" : "space-y-4"}
           >
+            {isInternalNoteMode ? (
+              <Alert className="border-primary/25 bg-primary/5">
+                <LockKeyhole className="h-4 w-4 text-primary" />
+                <AlertTitle>Modo sussurro ativo</AlertTitle>
+                <AlertDescription>
+                  Esta nota fica visível somente para a equipe interna.
+                </AlertDescription>
+              </Alert>
+            ) : null}
             {mode === "TEXT" ? (
               <FormField
                 control={form.control}
                 name="text"
                 render={({ field }) => (
                   <FormItem className="space-y-2">
-                    <FormLabel className="sr-only">Mensagem</FormLabel>
+                    <FormLabel className="sr-only">
+                      {isInternalNoteMode ? "Nota interna" : "Mensagem"}
+                    </FormLabel>
                     <div className="flex items-center gap-2">
-                      {canUseOptionalTemplate ? (
+                      {canUseInternalNote ? (
+                        <Button
+                          type="button"
+                          variant={isInternalNoteMode ? "secondary" : "ghost"}
+                          size="icon"
+                          className={
+                            isInternalNoteMode
+                              ? "shrink-0 bg-primary/10 text-primary hover:bg-primary/20"
+                              : "shrink-0"
+                          }
+                          onClick={() => setIsInternalNoteMode((current) => !current)}
+                          disabled={
+                            mutations.sendMessage.isPending ||
+                            mutations.createInternalNote.isPending
+                          }
+                          aria-label={
+                            isInternalNoteMode
+                              ? "Desativar modo sussurro"
+                              : "Ativar modo sussurro"
+                          }
+                          aria-pressed={isInternalNoteMode}
+                          title={
+                            isInternalNoteMode
+                              ? "Desativar modo sussurro"
+                              : "Ativar modo sussurro"
+                          }
+                        >
+                          <WhisperIcon className="!h-6 !w-6" />
+                        </Button>
+                      ) : null}
+                      {!isInternalNoteMode && canUseOptionalTemplate ? (
                         <Button
                           type="button"
                           variant="ghost"
@@ -512,7 +605,7 @@ export function AttendanceComposer({
                           <FileText className="h-5 w-5" />
                         </Button>
                       ) : null}
-                      {supportedModes.includes("MEDIA") ? (
+                      {!isInternalNoteMode && supportedModes.includes("MEDIA") ? (
                         <>
                           <input
                             ref={fileInputRef}
@@ -531,7 +624,10 @@ export function AttendanceComposer({
                               }
                               event.currentTarget.value = "";
                             }}
-                            disabled={mutations.sendMessage.isPending}
+                            disabled={
+                              mutations.sendMessage.isPending ||
+                              mutations.createInternalNote.isPending
+                            }
                           />
                           <Button
                             type="button"
@@ -539,7 +635,10 @@ export function AttendanceComposer({
                             size="icon"
                             className="shrink-0"
                             onClick={() => fileInputRef.current?.click()}
-                            disabled={mutations.sendMessage.isPending}
+                            disabled={
+                              mutations.sendMessage.isPending ||
+                              mutations.createInternalNote.isPending
+                            }
                             aria-label="Adicionar anexo"
                           >
                             <Paperclip className="h-5 w-5" />
@@ -550,8 +649,15 @@ export function AttendanceComposer({
                         <Textarea
                           {...field}
                           value={field.value ?? ""}
-                          placeholder="Digite uma mensagem"
-                          disabled={mutations.sendMessage.isPending}
+                          placeholder={
+                            isInternalNoteMode
+                              ? "Digite uma nota visível somente para a equipe"
+                              : "Digite uma mensagem"
+                          }
+                          disabled={
+                            mutations.sendMessage.isPending ||
+                            mutations.createInternalNote.isPending
+                          }
                           onKeyDown={(event) => {
                             if (event.key === "Enter" && !event.shiftKey) {
                               event.preventDefault();
@@ -562,21 +668,30 @@ export function AttendanceComposer({
                           rows={1}
                         />
                       </FormControl>
-                      {field.value.trim() ? (
+                      {isInternalNoteMode || field.value.trim() ? (
                         <Button
                           type="submit"
                           size="icon"
                           className="shrink-0"
-                          disabled={mutations.sendMessage.isPending}
-                          aria-label="Enviar mensagem"
+                          disabled={
+                            mutations.sendMessage.isPending ||
+                            mutations.createInternalNote.isPending ||
+                            (isInternalNoteMode && !field.value.trim())
+                          }
+                          aria-label={
+                            isInternalNoteMode
+                              ? "Salvar nota interna"
+                              : "Enviar mensagem"
+                          }
                         >
-                          {mutations.sendMessage.isPending ? (
+                          {mutations.sendMessage.isPending ||
+                          mutations.createInternalNote.isPending ? (
                             <Loader2 className="h-5 w-5 animate-spin" />
                           ) : (
                             <Send className="h-5 w-5" />
                           )}
                         </Button>
-                      ) : supportedModes.includes("MEDIA") ? (
+                      ) : !isInternalNoteMode && supportedModes.includes("MEDIA") ? (
                         <Button
                           type="button"
                           variant="ghost"

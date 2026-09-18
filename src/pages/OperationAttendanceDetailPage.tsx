@@ -51,6 +51,7 @@ import {
   AttendanceActionFormValues,
 } from "@/components/operation/AttendanceActionDialog";
 import { AttendanceFollowUpsCard } from "@/components/operation/AttendanceFollowUpsCard";
+import { AttendanceInternalNote } from "@/components/operation/AttendanceInternalNote";
 import { MessageDeliveryChecks } from "@/components/operation/MessageDeliveryChecks";
 import { useMessageDeliveryChecks } from "@/components/operation/useMessageDeliveryChecks";
 import { OperationalTriageAgentHistory } from "@/components/operation/OperationalTriageAgentHistory";
@@ -699,6 +700,11 @@ export default function OperationAttendanceDetailPage({
                             message={item}
                             deliveryChecks={checksByMessageId.get(item.id)}
                             deliveryChecksState={deliveryChecksState}
+                          />
+                        ) : item.kind === "internal_note" ? (
+                          <AttendanceInternalNote
+                            key={`internal-note:${item.id}`}
+                            note={item}
                           />
                         ) : (
                           <TimelineEvent

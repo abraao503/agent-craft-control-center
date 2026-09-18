@@ -4,6 +4,7 @@ import { assignAttendance } from "@/services/operation/assignAttendance";
 import { cancelOperationalFollowUp } from "@/services/operation/cancelOperationalFollowUp";
 import { claimAttendance } from "@/services/operation/claimAttendance";
 import { closeAttendance } from "@/services/operation/closeAttendance";
+import { createAttendanceInternalNote } from "@/services/operation/createAttendanceInternalNote";
 import { createOperationalFollowUp } from "@/services/operation/createOperationalFollowUp";
 import { pendingAttendance } from "@/services/operation/pendingAttendance";
 import { resumeAttendance } from "@/services/operation/resumeAttendance";
@@ -17,6 +18,7 @@ import {
   CancelOperationalFollowUpParams,
   ClaimAttendanceParams,
   CloseAttendanceParams,
+  CreateAttendanceInternalNoteParams,
   CreateOperationalFollowUpParams,
   PendingAttendanceParams,
   ResumeAttendanceParams,
@@ -409,6 +411,35 @@ export function useOperationalAttendanceMutations(workspaceId?: string) {
     },
   });
 
+  const createInternalNote = useMutation({
+    mutationFn: (
+      params: Omit<CreateAttendanceInternalNoteParams, "workspaceId"> & {
+        workspaceId?: string;
+      },
+    ) => {
+      const targetWorkspaceId = params.workspaceId ?? resolvedWorkspaceId;
+      if (!targetWorkspaceId) {
+        throw new Error("Workspace operacional não selecionado");
+      }
+      return createAttendanceInternalNote({
+        ...params,
+        workspaceId: targetWorkspaceId,
+      });
+    },
+    onSuccess: async (_data, variables) => {
+      if (!resolvedWorkspaceId) return;
+
+      await queryClient.invalidateQueries({
+        queryKey: [
+          "operation",
+          "attendance-timeline",
+          resolvedWorkspaceId,
+          variables.attendanceId,
+        ],
+      });
+    },
+  });
+
   return {
     route,
     claim,
@@ -422,6 +453,7 @@ export function useOperationalAttendanceMutations(workspaceId?: string) {
     updateFollowUp,
     cancelFollowUp,
     sendMessage,
+    createInternalNote,
     invalidateAttendanceScope,
   };
 }

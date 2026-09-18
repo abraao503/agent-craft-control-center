@@ -252,6 +252,17 @@ export interface AttendanceEvent {
   createdAt: string;
 }
 
+export interface AttendanceInternalNote {
+  id: string;
+  companyId: string;
+  workspaceId: string;
+  attendanceId: string;
+  content: string;
+  authorUserId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export type AttendanceTimelineMessageItem = AttendanceMessageItem & {
   kind: "message";
 };
@@ -260,9 +271,16 @@ export type AttendanceTimelineEventItem = AttendanceEvent & {
   kind: "event";
 };
 
+export type AttendanceTimelineInternalNoteItem = AttendanceInternalNote & {
+  kind: "internal_note";
+  isPrivate: true;
+  authorName: string | null;
+};
+
 export type AttendanceTimelineItem =
   | AttendanceTimelineMessageItem
-  | AttendanceTimelineEventItem;
+  | AttendanceTimelineEventItem
+  | AttendanceTimelineInternalNoteItem;
 
 export interface AttendanceTimelinePage {
   items: AttendanceTimelineItem[];
@@ -670,6 +688,18 @@ export interface SendOperationalAttendanceMessageResponse {
     createdAt: string;
   };
   outboundRequestId: string;
+  duplicate: boolean;
+}
+
+export interface CreateAttendanceInternalNoteParams {
+  workspaceId: string;
+  attendanceId: string;
+  content: string;
+  idempotencyKey?: string;
+}
+
+export interface CreateAttendanceInternalNoteResponse {
+  note: AttendanceInternalNote;
   duplicate: boolean;
 }
 
