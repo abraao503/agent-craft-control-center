@@ -188,7 +188,12 @@ export function AttendanceChecklistPanel({
                 checklist={checklistQuery.data}
                 canOperate={canOperate}
                 isRefreshing={checklistQuery.isFetching}
+                activeTemplates={activeTemplates}
+                templatesQueryIsError={templatesQuery.isError}
+                templatesQueryError={templatesQuery.error}
+                templatesQueryIsLoading={templatesQuery.isLoading}
                 onRefresh={() => checklistQuery.refetch()}
+                onRetryTemplates={() => void templatesQuery.refetch()}
               />
             ) : (
               <EmptyChecklistContent
@@ -220,12 +225,22 @@ function AppliedChecklistContent({
   checklist,
   canOperate,
   isRefreshing,
+  activeTemplates,
+  templatesQueryIsError,
+  templatesQueryError,
+  templatesQueryIsLoading,
   onRefresh,
+  onRetryTemplates,
 }: {
   checklist: OperationalAttendanceChecklistView;
   canOperate: boolean;
   isRefreshing: boolean;
+  activeTemplates: OperationalChecklistTemplate[];
+  templatesQueryIsError: boolean;
+  templatesQueryError: unknown;
+  templatesQueryIsLoading: boolean;
   onRefresh: () => Promise<unknown>;
+  onRetryTemplates: () => void;
 }) {
   const { toast } = useToast();
   const checklistMutations = useOperationalAttendanceChecklistMutations(
@@ -235,7 +250,7 @@ function AppliedChecklistContent({
   const [draftItems, setDraftItems] = useState<ChecklistDraftItem[]>(() =>
     toDraftItems(checklist.items),
   );
-  const [conflictDetected, setConflictDetected] = useState(false);
+  const [conflictDetected, setConflictDetected] = useState<"items" | "replace" | null>(null);
   const [itemEditorOpen, setItemEditorOpen] = useState(false);
   const [editingItemClientId, setEditingItemClientId] = useState<string | null>(
     null,
@@ -243,11 +258,19 @@ function AppliedChecklistContent({
   const [itemDraftLabel, setItemDraftLabel] = useState("");
   const [itemToRemove, setItemToRemove] =
     useState<ChecklistDraftItem | null>(null);
+  const [replaceDialogOpen, setReplaceDialogOpen] = useState(false);
+  const [replacementTemplateId, setReplacementTemplateId] = useState("");
   const isUpdating = checklistMutations.update.isPending;
+  const isReplacing = checklistMutations.replace.isPending;
+  const isBusy = isUpdating || isReplacing;
+  const replacementTemplates = useMemo(
+    () => activeTemplates.filter((template) => template.id !== checklist.templateId),
+    [activeTemplates, checklist.templateId],
+  );
 
   useEffect(() => {
     setDraftItems(toDraftItems(checklist.items));
-  }, [checklist.id, checklist.updatedAt, checklist.version]);
+  }, [checklist.id, checklist.items, checklist.updatedAt, checklist.version]);
 
   const progress = canOperate
     ? {
@@ -265,6 +288,7 @@ function AppliedChecklistContent({
     nextItems: ChecklistDraftItem[],
     successMessage?: string,
   ) => {
+    if (isBusy) return false;
     setDraftItems(nextItems);
 
     try {
@@ -280,7 +304,7 @@ function AppliedChecklistContent({
           completed: item.completed,
         })),
       });
-      setConflictDetected(false);
+      setConflictDetected(null);
       if (successMessage) {
         toast({
           title: "Checklist atualizada",
@@ -290,7 +314,7 @@ function AppliedChecklistContent({
       return true;
     } catch (error) {
       if (isChecklistVersionConflict(error)) {
-        setConflictDetected(true);
+        setConflictDetected("items");
         await onRefresh();
         toast({
           title: "Checklist atualizada por outra pessoa",
@@ -315,7 +339,7 @@ function AppliedChecklistContent({
   };
 
   const toggleItem = (clientId: string) => {
-    if (isUpdating) return;
+    if (isBusy) return;
 
     const nextItems = draftItems.map((item) =>
       item.clientId === clientId
@@ -326,7 +350,7 @@ function AppliedChecklistContent({
   };
 
   const openAddItem = () => {
-    if (isUpdating) return;
+    if (isBusy) return;
     setEditingItemClientId(null);
     setItemDraftLabel("");
     setItemEditorOpen(true);
@@ -334,7 +358,7 @@ function AppliedChecklistContent({
 
   const openEditItem = (clientId: string) => {
     const item = draftItems.find((candidate) => candidate.clientId === clientId);
-    if (!item || isUpdating) return;
+    if (!item || isBusy) return;
 
     setEditingItemClientId(clientId);
     setItemDraftLabel(item.label);
@@ -417,17 +441,73 @@ function AppliedChecklistContent({
     }
   };
 
+  const openReplaceDialog = () => {
+    setReplacementTemplateId(replacementTemplates[0]?.id ?? "");
+    setReplaceDialogOpen(true);
+  };
+
+  const replaceChecklist = async () => {
+    if (!replacementTemplateId || isBusy) return;
+
+    const replacementTemplate = replacementTemplates.find(
+      (template) => template.id === replacementTemplateId,
+    );
+    if (!replacementTemplate) return;
+
+    try {
+      await checklistMutations.replace.mutateAsync({
+        templateId: replacementTemplate.id,
+        expectedVersion: checklist.version,
+      });
+      setReplaceDialogOpen(false);
+      setConflictDetected(null);
+      toast({
+        title: "Checklist substituída",
+        description: "O novo modelo foi aplicado sem etapas concluídas.",
+      });
+    } catch (error) {
+      if (isChecklistVersionConflict(error)) {
+        setReplaceDialogOpen(false);
+        setConflictDetected("replace");
+        await onRefresh();
+        toast({
+          title: "A checklist mudou durante a troca",
+          description:
+            "Carregamos a versão mais recente. Confira o atendimento antes de escolher outro modelo.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      await onRefresh();
+      toast({
+        title: "Não foi possível trocar a checklist",
+        description: getOperationalAttendanceErrorMessage(
+          error,
+          "Atualize os dados e tente novamente.",
+        ),
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="space-y-4">
       {conflictDetected ? (
         <Alert variant="destructive">
-          <AlertTitle>Os dados foram atualizados durante a edição</AlertTitle>
+          <AlertTitle>
+            {conflictDetected === "replace"
+              ? "A checklist mudou durante a troca"
+              : "Os dados foram atualizados durante a edição"}
+          </AlertTitle>
           <AlertDescription className="flex flex-wrap items-center gap-3">
-            A cópia atual já foi recarregada. Faça uma nova revisão antes de salvar.
+            {conflictDetected === "replace"
+              ? "A cópia mais recente foi carregada. Revise o atendimento antes de escolher outro modelo."
+              : "A cópia atual já foi recarregada. Faça uma nova revisão antes de salvar."}
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setConflictDetected(false)}
+              onClick={() => setConflictDetected(null)}
             >
               Entendi
             </Button>
@@ -435,11 +515,37 @@ function AppliedChecklistContent({
         </Alert>
       ) : null}
       <div className="space-y-3">
-        <div className="min-w-0">
-          <p className="truncate text-sm font-semibold">{checklist.name}</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {progress.completed} de {progress.total} concluídas
-          </p>
+        <div className="flex min-w-0 items-start justify-between gap-2">
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold">{checklist.name}</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {progress.completed} de {progress.total} concluídas
+            </p>
+          </div>
+          {canOperate ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="-mr-1 -mt-1 h-8 w-8 shrink-0 text-muted-foreground"
+                  disabled={isBusy}
+                  aria-label="Ações da checklist"
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-52">
+                <DropdownMenuItem
+                  disabled={isBusy}
+                  onSelect={openReplaceDialog}
+                >
+                  Trocar checklist
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : null}
         </div>
         <div className="flex items-center justify-between gap-2 text-xs">
           <span className="font-medium text-muted-foreground">
@@ -472,7 +578,7 @@ function AppliedChecklistContent({
             item={item}
             index={index}
             canOperate={canOperate}
-            isUpdating={isUpdating}
+            isUpdating={isBusy}
             canRemove={draftItems.length > 1}
             onToggle={toggleItem}
             onEdit={openEditItem}
@@ -488,7 +594,7 @@ function AppliedChecklistContent({
             size="sm"
             className="w-full"
             onClick={openAddItem}
-            disabled={draftItems.length >= 50 || isUpdating}
+            disabled={draftItems.length >= 50 || isBusy}
           >
             <Plus className="mr-2 h-4 w-4" />
             Adicionar etapa
@@ -502,6 +608,107 @@ function AppliedChecklistContent({
           Atualizando dados…
         </p>
       ) : null}
+
+      <Dialog
+        open={replaceDialogOpen}
+        onOpenChange={(open) => {
+          if (!isReplacing) setReplaceDialogOpen(open);
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Trocar checklist</DialogTitle>
+            <DialogDescription>
+              Escolha outro modelo para este atendimento. A troca substituirá a cópia atual.
+            </DialogDescription>
+          </DialogHeader>
+
+          {templatesQueryIsError ? (
+            <Alert variant="destructive">
+              <AlertTitle>Não foi possível carregar os modelos</AlertTitle>
+              <AlertDescription className="flex flex-wrap items-center gap-3">
+                {getOperationalAttendanceErrorMessage(
+                  templatesQueryError,
+                  "Tente atualizar os modelos de checklist.",
+                )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={onRetryTemplates}
+                >
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Atualizar
+                </Button>
+              </AlertDescription>
+            </Alert>
+          ) : templatesQueryIsLoading ? (
+            <div className="flex items-center gap-2 py-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Carregando modelos disponíveis…
+            </div>
+          ) : replacementTemplates.length ? (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <p className="text-sm font-medium">Novo modelo</p>
+                <Select
+                  value={replacementTemplateId}
+                  onValueChange={setReplacementTemplateId}
+                  disabled={isBusy}
+                >
+                  <SelectTrigger aria-label="Novo modelo de checklist">
+                    <SelectValue placeholder="Selecione um modelo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {replacementTemplates.map((template) => (
+                      <SelectItem key={template.id} value={template.id}>
+                        {template.name} · {template.visibility === "OFFICIAL" ? "Oficial" : "Pessoal"}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Alert>
+                <AlertTitle>O progresso será reiniciado</AlertTitle>
+                <AlertDescription>
+                  As etapas e conclusões atuais serão substituídas. O novo modelo começa com todas as etapas pendentes.
+                </AlertDescription>
+              </Alert>
+            </div>
+          ) : (
+            <p className="rounded-md border bg-muted/40 p-3 text-sm text-muted-foreground">
+              Não há outro modelo ativo disponível para este atendimento.
+            </p>
+          )}
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setReplaceDialogOpen(false)}
+              disabled={isReplacing}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              onClick={() => void replaceChecklist()}
+              disabled={
+                isBusy ||
+                templatesQueryIsLoading ||
+                templatesQueryIsError ||
+                !replacementTemplateId ||
+                !replacementTemplates.some(
+                  (template) => template.id === replacementTemplateId,
+                )
+              }
+            >
+              {isReplacing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              {isReplacing ? "Trocando…" : "Trocar e reiniciar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog
         open={itemEditorOpen}
@@ -534,14 +741,14 @@ function AppliedChecklistContent({
               type="button"
               variant="outline"
               onClick={() => setItemEditorOpen(false)}
-              disabled={isUpdating}
+              disabled={isBusy}
             >
               Cancelar
             </Button>
             <Button
               type="button"
               onClick={() => void saveItem()}
-              disabled={isUpdating}
+              disabled={isBusy}
             >
               {isUpdating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               {isUpdating ? "Salvando…" : "Salvar etapa"}
@@ -553,7 +760,7 @@ function AppliedChecklistContent({
       <AlertDialog
         open={Boolean(itemToRemove)}
         onOpenChange={(open) => {
-          if (!open && !isUpdating) setItemToRemove(null);
+          if (!open && !isBusy) setItemToRemove(null);
         }}
       >
         <AlertDialogContent>
@@ -564,9 +771,9 @@ function AppliedChecklistContent({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isUpdating}>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel disabled={isBusy}>Cancelar</AlertDialogCancel>
             <AlertDialogAction
-              disabled={isUpdating}
+              disabled={isBusy}
               onClick={(event) => {
                 event.preventDefault();
                 void confirmRemoveItem();

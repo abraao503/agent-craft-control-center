@@ -2,9 +2,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useWorkspaceContext } from "@/contexts/workspace/WorkspaceContext";
 import { applyOperationalAttendanceChecklist } from "@/services/operation/applyOperationalAttendanceChecklist";
 import { getOperationalAttendanceChecklist } from "@/services/operation/getOperationalAttendanceChecklist";
+import { replaceOperationalAttendanceChecklist } from "@/services/operation/replaceOperationalAttendanceChecklist";
 import { updateOperationalAttendanceChecklist } from "@/services/operation/updateOperationalAttendanceChecklist";
 import {
   ApplyOperationalAttendanceChecklistParams,
+  ReplaceOperationalAttendanceChecklistParams,
   UpdateOperationalAttendanceChecklistParams,
 } from "@/types/operational-checklist";
 
@@ -92,7 +94,36 @@ export function useOperationalAttendanceChecklistMutations(
     },
   });
 
-  return { apply, update };
+  const replace = useMutation({
+    mutationFn: (
+      params: Omit<
+        ReplaceOperationalAttendanceChecklistParams,
+        "workspaceId" | "attendanceId"
+      >,
+    ) => {
+      if (!resolvedWorkspaceId) {
+        throw new Error("Workspace operacional não selecionado");
+      }
+      if (!attendanceId) {
+        throw new Error("ID do atendimento não informado");
+      }
+
+      return replaceOperationalAttendanceChecklist({
+        ...params,
+        workspaceId: resolvedWorkspaceId,
+        attendanceId,
+      });
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData(
+        checklistQueryKey(resolvedWorkspaceId, attendanceId),
+        data,
+      );
+      invalidateChecklist();
+    },
+  });
+
+  return { apply, update, replace };
 }
 
 function checklistQueryKey(workspaceId?: string, attendanceId?: string) {
