@@ -54,3 +54,52 @@ export interface ArchiveOperationalChecklistTemplateParams {
   templateId: string;
   expectedVersion: number;
 }
+
+export interface OperationalAttendanceChecklistItem {
+  id: string;
+  checklistId: string;
+  position: number;
+  label: string;
+  responsible: OperationalChecklistItemResponsible;
+  required: boolean;
+  completed: boolean;
+  completedAt: string | null;
+  completedByUserId: string | null;
+}
+
+export interface OperationalAttendanceChecklist {
+  id: string;
+  companyId: string;
+  workspaceId: string;
+  attendanceId: string;
+  templateId: string;
+  templateVersion: number;
+  name: string;
+  version: number;
+  active: boolean;
+  lastUpdatedByUserId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  items: OperationalAttendanceChecklistItem[];
+}
+
+export interface OperationalAttendanceChecklistProgress {
+  total: number;
+  completed: number;
+  pending: number;
+}
+
+export type OperationalAttendanceChecklistView =
+  OperationalAttendanceChecklist & {
+    progress: OperationalAttendanceChecklistProgress;
+  };
+
+export interface GetOperationalAttendanceChecklistParams {
+  workspaceId: string;
+  attendanceId: string;
+}
+
+export interface ApplyOperationalAttendanceChecklistParams
+  extends GetOperationalAttendanceChecklistParams {
+  templateId: string;
+}

@@ -51,6 +51,7 @@ import {
   AttendanceActionFormValues,
 } from "@/components/operation/AttendanceActionDialog";
 import { AttendanceFollowUpsCard } from "@/components/operation/AttendanceFollowUpsCard";
+import { AttendanceChecklistPanel } from "@/components/operation/AttendanceChecklistPanel";
 import { AttendanceInternalNote } from "@/components/operation/AttendanceInternalNote";
 import { MessageDeliveryChecks } from "@/components/operation/MessageDeliveryChecks";
 import { useMessageDeliveryChecks } from "@/components/operation/useMessageDeliveryChecks";
@@ -897,6 +898,12 @@ export default function OperationAttendanceDetailPage({
                 </Card>
               </Collapsible>
             ) : null}
+
+            <AttendanceChecklistPanel
+              workspaceId={workspaceId!}
+              attendanceId={attendance.id}
+              canOperate={canOperateAttendances}
+            />
 
             <AttendanceFollowUpsCard
               workspaceId={workspaceId!}
