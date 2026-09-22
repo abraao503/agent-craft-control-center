@@ -6,6 +6,8 @@ import {
   Circle,
   ClipboardCheck,
   Loader2,
+  MoreHorizontal,
+  Pencil,
   Plus,
   RefreshCw,
   Trash2,
@@ -25,6 +27,16 @@ import {
   OperationalChecklistTemplate,
 } from "@/types/operational-checklist";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -37,7 +49,21 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -210,15 +236,19 @@ function AppliedChecklistContent({
     toDraftItems(checklist.items),
   );
   const [conflictDetected, setConflictDetected] = useState(false);
+  const [itemEditorOpen, setItemEditorOpen] = useState(false);
+  const [editingItemClientId, setEditingItemClientId] = useState<string | null>(
+    null,
+  );
+  const [itemDraftLabel, setItemDraftLabel] = useState("");
+  const [itemToRemove, setItemToRemove] =
+    useState<ChecklistDraftItem | null>(null);
+  const isUpdating = checklistMutations.update.isPending;
 
   useEffect(() => {
     setDraftItems(toDraftItems(checklist.items));
   }, [checklist.id, checklist.updatedAt, checklist.version]);
 
-  const isDirty = useMemo(
-    () => serializeChecklistItems(draftItems) !== serializeChecklistItems(checklist.items),
-    [checklist.items, draftItems],
-  );
   const progress = canOperate
     ? {
         total: draftItems.length,
@@ -231,76 +261,17 @@ function AppliedChecklistContent({
     : 0;
   const isComplete = progress.pending === 0;
 
-  const updateItem = (
-    clientId: string,
-    changes: Partial<ChecklistDraftItem>,
+  const persistItems = async (
+    nextItems: ChecklistDraftItem[],
+    successMessage?: string,
   ) => {
-    setDraftItems((current) =>
-      current.map((item) =>
-        item.clientId === clientId ? { ...item, ...changes } : item,
-      ),
-    );
-  };
-
-  const addItem = () => {
-    if (draftItems.length >= 50) {
-      toast({
-        title: "Limite de itens atingido",
-        description: "Uma checklist pode ter no máximo 50 itens.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setDraftItems((current) => [
-      ...current,
-      {
-        clientId: `new-${Date.now()}-${current.length}`,
-        checklistId: checklist.id,
-        position: current.length + 1,
-        label: "",
-        responsible: "CUSTOMER",
-        required: true,
-        completed: false,
-        completedAt: null,
-        completedByUserId: null,
-      },
-    ]);
-  };
-
-  const removeItem = (clientId: string) => {
-    if (draftItems.length <= 1) {
-      toast({
-        title: "A checklist precisa de um item",
-        description: "Mantenha ao menos um item antes de salvar.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setDraftItems((current) =>
-      current
-        .filter((item) => item.clientId !== clientId)
-        .map((item, index) => ({ ...item, position: index + 1 })),
-    );
-  };
-
-  const saveChanges = async () => {
-    const invalidItem = draftItems.find((item) => !item.label.trim());
-    if (invalidItem) {
-      toast({
-        title: "Preencha os itens da checklist",
-        description: "Cada etapa precisa ter uma descrição antes de salvar.",
-        variant: "destructive",
-      });
-      return;
-    }
+    setDraftItems(nextItems);
 
     try {
       await checklistMutations.update.mutateAsync({
         expectedVersion: checklist.version,
         name: checklist.name,
-        items: draftItems.map((item, index) => ({
+        items: nextItems.map((item, index) => ({
           ...(item.id ? { id: item.id } : {}),
           position: index + 1,
           label: item.label.trim(),
@@ -310,10 +281,13 @@ function AppliedChecklistContent({
         })),
       });
       setConflictDetected(false);
-      toast({
-        title: "Checklist atualizada",
-        description: "As alterações foram salvas neste atendimento.",
-      });
+      if (successMessage) {
+        toast({
+          title: "Checklist atualizada",
+          description: successMessage,
+        });
+      }
+      return true;
     } catch (error) {
       if (isChecklistVersionConflict(error)) {
         setConflictDetected(true);
@@ -321,12 +295,13 @@ function AppliedChecklistContent({
         toast({
           title: "Checklist atualizada por outra pessoa",
           description:
-            "Os dados mais recentes foram carregados. Revise as alterações antes de salvar novamente.",
+            "Os dados mais recentes foram carregados. Revise a etapa antes de tentar novamente.",
           variant: "destructive",
         });
-        return;
+        return false;
       }
 
+      await onRefresh();
       toast({
         title: "Não foi possível atualizar a checklist",
         description: getOperationalAttendanceErrorMessage(
@@ -335,6 +310,110 @@ function AppliedChecklistContent({
         ),
         variant: "destructive",
       });
+      return false;
+    }
+  };
+
+  const toggleItem = (clientId: string) => {
+    if (isUpdating) return;
+
+    const nextItems = draftItems.map((item) =>
+      item.clientId === clientId
+        ? { ...item, completed: !item.completed }
+        : item,
+    );
+    void persistItems(nextItems);
+  };
+
+  const openAddItem = () => {
+    if (isUpdating) return;
+    setEditingItemClientId(null);
+    setItemDraftLabel("");
+    setItemEditorOpen(true);
+  };
+
+  const openEditItem = (clientId: string) => {
+    const item = draftItems.find((candidate) => candidate.clientId === clientId);
+    if (!item || isUpdating) return;
+
+    setEditingItemClientId(clientId);
+    setItemDraftLabel(item.label);
+    setItemEditorOpen(true);
+  };
+
+  const saveItem = async () => {
+    const label = itemDraftLabel.trim();
+    if (!label) {
+      toast({
+        title: "Descreva a etapa",
+        description: "A checklist precisa de uma descrição para cada item.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!editingItemClientId && draftItems.length >= 50) {
+      toast({
+        title: "Limite de itens atingido",
+        description: "Uma checklist pode ter no máximo 50 itens.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const nextItems = editingItemClientId
+      ? draftItems.map((item) =>
+          item.clientId === editingItemClientId ? { ...item, label } : item,
+        )
+      : [
+          ...draftItems,
+          {
+            clientId: `new-${Date.now()}-${draftItems.length}`,
+            checklistId: checklist.id,
+            position: draftItems.length + 1,
+            label,
+            responsible: "CUSTOMER" as const,
+            required: true,
+            completed: false,
+            completedAt: null,
+            completedByUserId: null,
+          },
+        ];
+
+    const saved = await persistItems(
+      nextItems,
+      editingItemClientId
+        ? "A descrição da etapa foi atualizada."
+        : "A nova etapa foi adicionada.",
+    );
+    if (saved) {
+      setItemEditorOpen(false);
+      setItemDraftLabel("");
+      setEditingItemClientId(null);
+    }
+  };
+
+  const confirmRemoveItem = async () => {
+    if (!itemToRemove) return;
+
+    if (draftItems.length <= 1) {
+      toast({
+        title: "A checklist precisa de um item",
+        description: "Mantenha ao menos um item antes de salvar.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const nextItems = draftItems
+      .filter((item) => item.clientId !== itemToRemove.clientId)
+      .map((item, index) => ({ ...item, position: index + 1 }));
+    const saved = await persistItems(
+      nextItems,
+      "A etapa foi removida da cópia deste atendimento.",
+    );
+    if (saved) {
+      setItemToRemove(null);
     }
   };
 
@@ -380,45 +459,39 @@ function AppliedChecklistContent({
         />
       </div>
 
+      {canOperate ? (
+        <p className="text-xs text-muted-foreground">
+          Clique em uma etapa para marcar ou desmarcar.
+        </p>
+      ) : null}
+
       <ol className="space-y-2">
-        {canOperate
-          ? draftItems.map((item, index) => (
-              <EditableChecklistItem
-                key={item.clientId}
-                item={item}
-                index={index}
-                canRemove={draftItems.length > 1}
-                onChange={updateItem}
-                onRemove={removeItem}
-              />
-            ))
-          : checklist.items.map((item) => (
-              <ReadOnlyChecklistItem key={item.id} item={item} />
-            ))}
+        {(canOperate ? draftItems : checklist.items).map((item, index) => (
+          <ChecklistItemRow
+            key={item.id ?? (item as ChecklistDraftItem).clientId}
+            item={item}
+            index={index}
+            canOperate={canOperate}
+            isUpdating={isUpdating}
+            canRemove={draftItems.length > 1}
+            onToggle={toggleItem}
+            onEdit={openEditItem}
+            onRemove={setItemToRemove}
+          />
+        ))}
       </ol>
 
       {canOperate ? (
-        <div className="flex flex-col gap-2 border-t pt-3">
+        <div className="border-t pt-2">
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
             className="w-full"
-            onClick={addItem}
-            disabled={draftItems.length >= 50 || checklistMutations.update.isPending}
+            onClick={openAddItem}
+            disabled={draftItems.length >= 50 || isUpdating}
           >
             <Plus className="mr-2 h-4 w-4" />
-            Adicionar item
-          </Button>
-          <Button
-            size="sm"
-            className="w-full"
-            onClick={() => void saveChanges()}
-            disabled={!isDirty || checklistMutations.update.isPending}
-          >
-            {checklistMutations.update.isPending ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : null}
-            {checklistMutations.update.isPending ? "Salvando…" : "Salvar alterações"}
+            Adicionar etapa
           </Button>
         </div>
       ) : null}
@@ -429,143 +502,210 @@ function AppliedChecklistContent({
           Atualizando dados…
         </p>
       ) : null}
+
+      <Dialog
+        open={itemEditorOpen}
+        onOpenChange={(open) => {
+          setItemEditorOpen(open);
+          if (!open) {
+            setItemDraftLabel("");
+            setEditingItemClientId(null);
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {editingItemClientId ? "Editar etapa" : "Adicionar etapa"}
+            </DialogTitle>
+            <DialogDescription>
+              Descreva a etapa que ficará visível para quem acompanha este atendimento.
+            </DialogDescription>
+          </DialogHeader>
+          <Input
+            value={itemDraftLabel}
+            onChange={(event) => setItemDraftLabel(event.target.value)}
+            placeholder="Ex.: Enviar comprovante de residência"
+            maxLength={300}
+            autoFocus
+          />
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setItemEditorOpen(false)}
+              disabled={isUpdating}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              onClick={() => void saveItem()}
+              disabled={isUpdating}
+            >
+              {isUpdating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              {isUpdating ? "Salvando…" : "Salvar etapa"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog
+        open={Boolean(itemToRemove)}
+        onOpenChange={(open) => {
+          if (!open && !isUpdating) setItemToRemove(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover etapa?</AlertDialogTitle>
+            <AlertDialogDescription>
+              “{itemToRemove?.label}” será removida apenas da cópia deste atendimento.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isUpdating}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={isUpdating}
+              onClick={(event) => {
+                event.preventDefault();
+                void confirmRemoveItem();
+              }}
+            >
+              {isUpdating ? "Removendo…" : "Remover"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
 
-function EditableChecklistItem({
+function ChecklistItemRow({
   item,
   index,
+  canOperate,
+  isUpdating,
   canRemove,
-  onChange,
+  onToggle,
+  onEdit,
   onRemove,
 }: {
-  item: ChecklistDraftItem;
+  item: OperationalAttendanceChecklistItem | ChecklistDraftItem;
   index: number;
+  canOperate: boolean;
+  isUpdating: boolean;
   canRemove: boolean;
-  onChange: (clientId: string, changes: Partial<ChecklistDraftItem>) => void;
-  onRemove: (clientId: string) => void;
+  onToggle: (clientId: string) => void;
+  onEdit: (clientId: string) => void;
+  onRemove: (item: ChecklistDraftItem) => void;
 }) {
-  return (
-    <li className="space-y-3 rounded-md border bg-background px-3 py-3 text-sm">
-      <div className="flex min-w-0 items-start gap-2">
-        <Checkbox
-          checked={item.completed}
-          onCheckedChange={(checked) =>
-            onChange(item.clientId, { completed: checked === true })
-          }
-          aria-label={`Marcar item ${index + 1} como concluído`}
-          className="mt-2"
-        />
-        <Input
-          value={item.label}
-          onChange={(event) =>
-            onChange(item.clientId, { label: event.target.value })
-          }
-          placeholder="Descreva a etapa"
-          aria-label={`Descrição do item ${index + 1}`}
-          className="min-w-0 flex-1"
-          maxLength={300}
-        />
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="shrink-0 text-muted-foreground hover:text-destructive"
-          onClick={() => onRemove(item.clientId)}
-          disabled={!canRemove}
-          aria-label={`Remover item ${index + 1}`}
-        >
-          <Trash2 className="h-4 w-4" />
-        </Button>
-      </div>
-      <div className="flex flex-wrap items-center justify-between gap-2 border-t pt-2">
-        <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          {item.responsible === "CUSTOMER" ? (
-            <UserRound className="h-3.5 w-3.5" aria-hidden="true" />
-          ) : (
-            <UsersRound className="h-3.5 w-3.5" aria-hidden="true" />
-          )}
-          {item.responsible === "CUSTOMER" ? "Cliente" : "Equipe"}
-        </span>
-        <label className="flex items-center gap-2 text-xs text-muted-foreground">
-          <Checkbox
-            checked={item.required}
-            onCheckedChange={(checked) =>
-              onChange(item.clientId, { required: checked === true })
-            }
-            aria-label={`Item ${index + 1} obrigatório`}
-          />
-          Obrigatória
-        </label>
-      </div>
-    </li>
-  );
-}
-
-function ReadOnlyChecklistItem({
-  item,
-}: {
-  item: OperationalAttendanceChecklistItem;
-}) {
-  return (
-    <li className="min-w-0 space-y-2 rounded-md border bg-background px-3 py-2 text-sm">
-      <div className="flex min-w-0 items-start gap-3">
-        {item.completed ? (
-          <CheckCircle2
-            className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600"
-            aria-hidden="true"
-          />
+  const clientId = "clientId" in item ? item.clientId : item.id;
+  const isCompleted = item.completed;
+  const itemLabel = isCompleted
+    ? `Desmarcar etapa ${index + 1}`
+    : `Marcar etapa ${index + 1} como concluída`;
+  const itemContent = (
+    <>
+      <span
+        className={
+          isCompleted
+            ? "flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground"
+            : "flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-primary/40 text-primary transition-colors group-hover:bg-primary/10"
+        }
+      >
+        {isCompleted ? (
+          <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
         ) : (
-          <Circle
-            className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground"
-            aria-hidden="true"
-          />
+          <Circle className="h-4 w-4" aria-hidden="true" />
         )}
-        <span
-          className={
-            item.completed
-              ? "min-w-0 flex-1 break-words text-muted-foreground line-through"
-              : "min-w-0 flex-1 break-words"
-          }
-        >
-          {item.label}
-        </span>
-      </div>
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t pt-2 text-xs text-muted-foreground">
-        <span className="flex items-center gap-1.5">
-          {item.responsible === "CUSTOMER" ? (
-            <UserRound className="h-3.5 w-3.5" aria-hidden="true" />
-          ) : (
-            <UsersRound className="h-3.5 w-3.5" aria-hidden="true" />
-          )}
+      </span>
+      <span
+        className={
+          isCompleted
+            ? "min-w-0 flex-1 break-words text-left text-muted-foreground line-through"
+            : "min-w-0 flex-1 break-words text-left"
+        }
+      >
+        {item.label}
+      </span>
+      <span className="flex shrink-0 items-center gap-1 text-[11px] text-muted-foreground">
+        {item.responsible === "CUSTOMER" ? (
+          <UserRound className="h-3.5 w-3.5" aria-hidden="true" />
+        ) : (
+          <UsersRound className="h-3.5 w-3.5" aria-hidden="true" />
+        )}
+        <span className="hidden sm:inline">
           {item.responsible === "CUSTOMER" ? "Cliente" : "Equipe"}
         </span>
-        <span>{item.required ? "Obrigatória" : "Opcional"}</span>
-      </div>
+        <span className="sr-only">
+          {item.responsible === "CUSTOMER" ? "Cliente" : "Equipe"}
+        </span>
+      </span>
+    </>
+  );
+
+  return (
+    <li
+      className={
+        isCompleted
+          ? "flex min-w-0 items-center gap-1 rounded-lg border border-primary/20 bg-primary/5 p-2 text-sm"
+          : "group flex min-w-0 items-center gap-1 rounded-lg border bg-background p-2 text-sm transition-colors hover:border-primary/40"
+      }
+    >
+      {canOperate ? (
+        <button
+          type="button"
+          className="flex min-w-0 flex-1 items-center gap-2 rounded-md p-1 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          onClick={() => onToggle(clientId)}
+          disabled={isUpdating}
+          aria-label={itemLabel}
+          aria-pressed={isCompleted}
+        >
+          {itemContent}
+        </button>
+      ) : (
+        <div className="flex min-w-0 flex-1 items-center gap-2 p-1">
+          {itemContent}
+        </div>
+      )}
+      {canOperate ? (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 shrink-0 text-muted-foreground"
+              disabled={isUpdating}
+              aria-label={`Mais ações para etapa ${index + 1}`}
+            >
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-44">
+            <DropdownMenuItem onSelect={() => onEdit(clientId)}>
+              <Pencil className="mr-2 h-4 w-4" />
+              Editar etapa
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              className="text-destructive focus:text-destructive"
+              disabled={!canRemove}
+              onSelect={() => onRemove(item as ChecklistDraftItem)}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Remover etapa
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ) : null}
     </li>
   );
 }
 
 function toDraftItems(items: OperationalAttendanceChecklistItem[]): ChecklistDraftItem[] {
   return items.map((item) => ({ ...item, clientId: item.id }));
-}
-
-function serializeChecklistItems(
-  items: Array<OperationalAttendanceChecklistItem | ChecklistDraftItem>,
-) {
-  return items
-    .map((item, index) =>
-      JSON.stringify({
-        id: item.id,
-        position: index + 1,
-        label: item.label,
-        responsible: item.responsible,
-        required: item.required,
-        completed: item.completed,
-      }),
-    )
-    .join("|");
 }
 
 function isChecklistVersionConflict(error: unknown): boolean {
