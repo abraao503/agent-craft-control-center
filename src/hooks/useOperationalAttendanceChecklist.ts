@@ -41,12 +41,6 @@ export function useOperationalAttendanceChecklistMutations(
     workspaceId ??
     (currentWorkspace?.type === "OPERATION" ? currentWorkspace.id : undefined);
 
-  const invalidateChecklist = () => {
-    void queryClient.invalidateQueries({
-      queryKey: checklistQueryKey(resolvedWorkspaceId, attendanceId),
-    });
-  };
-
   const apply = useMutation({
     mutationFn: (params: Pick<ApplyOperationalAttendanceChecklistParams, "templateId">) => {
       if (!resolvedWorkspaceId) {
@@ -62,7 +56,11 @@ export function useOperationalAttendanceChecklistMutations(
         templateId: params.templateId,
       });
     },
-    onSuccess: invalidateChecklist,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: checklistQueryKey(resolvedWorkspaceId, attendanceId),
+      });
+    },
   });
 
   const update = useMutation({
@@ -90,7 +88,6 @@ export function useOperationalAttendanceChecklistMutations(
         checklistQueryKey(resolvedWorkspaceId, attendanceId),
         data,
       );
-      invalidateChecklist();
     },
   });
 
@@ -119,7 +116,6 @@ export function useOperationalAttendanceChecklistMutations(
         checklistQueryKey(resolvedWorkspaceId, attendanceId),
         data,
       );
-      invalidateChecklist();
     },
   });
 

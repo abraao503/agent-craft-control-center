@@ -80,6 +80,12 @@ interface AttendanceChecklistPanelProps {
   canOperate: boolean;
 }
 
+type ChecklistRefreshResult = {
+  data: OperationalAttendanceChecklistView | null | undefined;
+  error: unknown;
+  isError: boolean;
+};
+
 export function AttendanceChecklistPanel({
   workspaceId,
   attendanceId,
@@ -239,7 +245,7 @@ function AppliedChecklistContent({
   templatesQueryIsError: boolean;
   templatesQueryError: unknown;
   templatesQueryIsLoading: boolean;
-  onRefresh: () => Promise<unknown>;
+  onRefresh: () => Promise<ChecklistRefreshResult>;
   onRetryTemplates: () => void;
 }) {
   const { toast } = useToast();
@@ -260,9 +266,13 @@ function AppliedChecklistContent({
     useState<ChecklistDraftItem | null>(null);
   const [replaceDialogOpen, setReplaceDialogOpen] = useState(false);
   const [replacementTemplateId, setReplacementTemplateId] = useState("");
+  const [replacementExpectedVersion, setReplacementExpectedVersion] =
+    useState<number | null>(null);
+  const [isCheckingReplacementVersion, setIsCheckingReplacementVersion] =
+    useState(false);
   const isUpdating = checklistMutations.update.isPending;
   const isReplacing = checklistMutations.replace.isPending;
-  const isBusy = isUpdating || isReplacing;
+  const isBusy = isUpdating || isReplacing || isCheckingReplacementVersion;
   const replacementTemplates = useMemo(
     () => activeTemplates.filter((template) => template.id !== checklist.templateId),
     [activeTemplates, checklist.templateId],
@@ -443,23 +453,63 @@ function AppliedChecklistContent({
 
   const openReplaceDialog = () => {
     setReplacementTemplateId(replacementTemplates[0]?.id ?? "");
+    setReplacementExpectedVersion(checklist.version);
     setReplaceDialogOpen(true);
   };
 
   const replaceChecklist = async () => {
-    if (!replacementTemplateId || isBusy) return;
+    if (
+      !replacementTemplateId ||
+      replacementExpectedVersion === null ||
+      isBusy
+    ) {
+      return;
+    }
 
     const replacementTemplate = replacementTemplates.find(
       (template) => template.id === replacementTemplateId,
     );
     if (!replacementTemplate) return;
 
+    setIsCheckingReplacementVersion(true);
     try {
+      const latestResult = await onRefresh();
+      if (latestResult.isError) {
+        toast({
+          title: "Não foi possível conferir a versão da checklist",
+          description: getOperationalAttendanceErrorMessage(
+            latestResult.error,
+            "Atualize o atendimento e tente novamente.",
+          ),
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const latestChecklist = latestResult.data;
+      if (
+        !latestChecklist ||
+        latestChecklist.id !== checklist.id ||
+        latestChecklist.version !== replacementExpectedVersion
+      ) {
+        setReplaceDialogOpen(false);
+        setReplacementExpectedVersion(null);
+        setConflictDetected("replace");
+        toast({
+          title: "A checklist mudou durante a troca",
+          description:
+            "Carregamos a versão mais recente. Confira o atendimento e confirme a troca novamente.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       await checklistMutations.replace.mutateAsync({
         templateId: replacementTemplate.id,
-        expectedVersion: checklist.version,
+        expectedVersion: replacementExpectedVersion,
       });
       setReplaceDialogOpen(false);
+      setReplacementExpectedVersion(null);
       setConflictDetected(null);
       toast({
         title: "Checklist substituída",
@@ -468,6 +518,7 @@ function AppliedChecklistContent({
     } catch (error) {
       if (isChecklistVersionConflict(error)) {
         setReplaceDialogOpen(false);
+        setReplacementExpectedVersion(null);
         setConflictDetected("replace");
         await onRefresh();
         toast({
@@ -488,6 +539,8 @@ function AppliedChecklistContent({
         ),
         variant: "destructive",
       });
+    } finally {
+      setIsCheckingReplacementVersion(false);
     }
   };
 
@@ -612,7 +665,10 @@ function AppliedChecklistContent({
       <Dialog
         open={replaceDialogOpen}
         onOpenChange={(open) => {
-          if (!isReplacing) setReplaceDialogOpen(open);
+          if (!isBusy) {
+            setReplaceDialogOpen(open);
+            if (!open) setReplacementExpectedVersion(null);
+          }
         }}
       >
         <DialogContent className="sm:max-w-md">
@@ -685,8 +741,11 @@ function AppliedChecklistContent({
             <Button
               type="button"
               variant="outline"
-              onClick={() => setReplaceDialogOpen(false)}
-              disabled={isReplacing}
+              onClick={() => {
+                setReplaceDialogOpen(false);
+                setReplacementExpectedVersion(null);
+              }}
+              disabled={isBusy}
             >
               Cancelar
             </Button>
@@ -703,8 +762,12 @@ function AppliedChecklistContent({
                 )
               }
             >
-              {isReplacing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              {isReplacing ? "Trocando…" : "Trocar e reiniciar"}
+              {isBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              {isCheckingReplacementVersion
+                ? "Conferindo versão…"
+                : isReplacing
+                  ? "Trocando…"
+                  : "Trocar e reiniciar"}
             </Button>
           </DialogFooter>
         </DialogContent>
