@@ -22,7 +22,6 @@ import { getOperationalAttendanceErrorMessage } from "@/utils/operationalAttenda
 import {
   OperationalAttendanceChecklistItem,
   OperationalAttendanceChecklistView,
-  OperationalChecklistItemResponsible,
   OperationalChecklistTemplate,
 } from "@/types/operational-checklist";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -113,8 +112,8 @@ export function AttendanceChecklistPanel({
 
   return (
     <Collapsible defaultOpen>
-      <Card className="shadow-none">
-        <CardHeader className="p-3 pb-2">
+      <Card className="overflow-hidden shadow-none">
+        <CardHeader className="p-3 pb-3">
           <CollapsibleTrigger asChild>
             <button
               type="button"
@@ -134,7 +133,7 @@ export function AttendanceChecklistPanel({
           </CollapsibleTrigger>
         </CardHeader>
         <CollapsibleContent>
-          <CardContent className="space-y-4 px-3 pb-3">
+          <CardContent className="space-y-3 px-3 pb-3">
             {checklistQuery.isError ? (
               <Alert variant="destructive">
                 <AlertTitle>Não foi possível carregar a checklist</AlertTitle>
@@ -356,15 +355,21 @@ function AppliedChecklistContent({
           </AlertDescription>
         </Alert>
       ) : null}
-      <div className="space-y-2">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="truncate text-sm font-semibold">{checklist.name}</p>
-            <p className="text-xs text-muted-foreground">
-              Modelo v{checklist.templateVersion} · {progress.completed} de {progress.total} concluídas
-            </p>
-          </div>
-          <Badge variant={isComplete ? "default" : "secondary"}>
+      <div className="space-y-3">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold">{checklist.name}</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Modelo v{checklist.templateVersion} · {progress.completed} de {progress.total} concluídas
+          </p>
+        </div>
+        <div className="flex items-center justify-between gap-2 text-xs">
+          <span className="font-medium text-muted-foreground">
+            {percentage}% concluída
+          </span>
+          <Badge
+            variant={isComplete ? "default" : "secondary"}
+            className="shrink-0 whitespace-nowrap"
+          >
             {isComplete ? "Concluída" : "Em andamento"}
           </Badge>
         </div>
@@ -393,10 +398,11 @@ function AppliedChecklistContent({
       </ol>
 
       {canOperate ? (
-        <div className="flex flex-col gap-2 border-t pt-3 sm:flex-row sm:justify-between">
+        <div className="flex flex-col gap-2 border-t pt-3">
           <Button
             variant="outline"
             size="sm"
+            className="w-full"
             onClick={addItem}
             disabled={draftItems.length >= 50 || checklistMutations.update.isPending}
           >
@@ -405,6 +411,7 @@ function AppliedChecklistContent({
           </Button>
           <Button
             size="sm"
+            className="w-full"
             onClick={() => void saveChanges()}
             disabled={!isDirty || checklistMutations.update.isPending}
           >
@@ -472,26 +479,15 @@ function EditableChecklistItem({
           <Trash2 className="h-4 w-4" />
         </Button>
       </div>
-      <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
-        <Select
-          value={item.responsible}
-          onValueChange={(value) =>
-            onChange(item.clientId, {
-              responsible: value as OperationalChecklistItemResponsible,
-            })
-          }
-        >
-          <SelectTrigger
-            className="h-8 text-xs"
-            aria-label={`Responsável do item ${index + 1}`}
-          >
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="CUSTOMER">Cliente</SelectItem>
-            <SelectItem value="TEAM">Equipe</SelectItem>
-          </SelectContent>
-        </Select>
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t pt-2">
+        <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          {item.responsible === "CUSTOMER" ? (
+            <UserRound className="h-3.5 w-3.5" aria-hidden="true" />
+          ) : (
+            <UsersRound className="h-3.5 w-3.5" aria-hidden="true" />
+          )}
+          {item.responsible === "CUSTOMER" ? "Cliente" : "Equipe"}
+        </span>
         <label className="flex items-center gap-2 text-xs text-muted-foreground">
           <Checkbox
             checked={item.required}
@@ -513,38 +509,40 @@ function ReadOnlyChecklistItem({
   item: OperationalAttendanceChecklistItem;
 }) {
   return (
-    <li className="flex min-w-0 items-start gap-3 rounded-md border bg-background px-3 py-2 text-sm">
-      {item.completed ? (
-        <CheckCircle2
-          className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600"
-          aria-hidden="true"
-        />
-      ) : (
-        <Circle
-          className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground"
-          aria-hidden="true"
-        />
-      )}
-      <span
-        className={
-          item.completed
-            ? "min-w-0 flex-1 break-words text-muted-foreground line-through"
-            : "min-w-0 flex-1 break-words"
-        }
-      >
-        {item.label}
-      </span>
-      <span className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
-        {item.responsible === "CUSTOMER" ? (
-          <UserRound className="h-3.5 w-3.5" aria-hidden="true" />
+    <li className="min-w-0 space-y-2 rounded-md border bg-background px-3 py-2 text-sm">
+      <div className="flex min-w-0 items-start gap-3">
+        {item.completed ? (
+          <CheckCircle2
+            className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600"
+            aria-hidden="true"
+          />
         ) : (
-          <UsersRound className="h-3.5 w-3.5" aria-hidden="true" />
+          <Circle
+            className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground"
+            aria-hidden="true"
+          />
         )}
-        <span className="sr-only">
+        <span
+          className={
+            item.completed
+              ? "min-w-0 flex-1 break-words text-muted-foreground line-through"
+              : "min-w-0 flex-1 break-words"
+          }
+        >
+          {item.label}
+        </span>
+      </div>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t pt-2 text-xs text-muted-foreground">
+        <span className="flex items-center gap-1.5">
+          {item.responsible === "CUSTOMER" ? (
+            <UserRound className="h-3.5 w-3.5" aria-hidden="true" />
+          ) : (
+            <UsersRound className="h-3.5 w-3.5" aria-hidden="true" />
+          )}
           {item.responsible === "CUSTOMER" ? "Cliente" : "Equipe"}
         </span>
-        {item.required ? "Obrigatória" : "Opcional"}
-      </span>
+        <span>{item.required ? "Obrigatória" : "Opcional"}</span>
+      </div>
     </li>
   );
 }
