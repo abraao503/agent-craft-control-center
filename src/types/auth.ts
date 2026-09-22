@@ -30,6 +30,7 @@ export type Permission =
   | "manage:operation-channels"
   | "view:operation-attendances"
   | "operate:operation-attendances"
+  | "manage:operation-checklists"
   | "create:company-user"
   | "delete:company-user"
   | "create:workspace-user"

@@ -469,6 +469,15 @@ const SidebarMenuContent = () => {
           requiredPermission: "view:operation-setup",
         },
         {
+          path: "/operation/checklists",
+          label: "Checklists",
+          icon: <List className="h-5 w-5" />,
+          requiredPermissions: [
+            "manage:operation-checklists",
+            "view:operation-attendances",
+          ],
+        },
+        {
           path: "/operation/channels",
           label: "Canais",
           icon: <Radio className="h-5 w-5" />,

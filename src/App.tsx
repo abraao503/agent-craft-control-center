@@ -64,6 +64,7 @@ import OperationAgentsPage from "./pages/OperationAgentsPage";
 import OperationChannelsPage from "./pages/OperationChannelsPage";
 import OperationDistributionPage from "./pages/OperationDistributionPage";
 import OperationStructurePage from "./pages/OperationStructurePage";
+import OperationChecklistTemplatesPage from "./pages/OperationChecklistTemplatesPage";
 import OperationAreaPage from "./pages/OperationAreaPage";
 import OperationQueuePage from "./pages/OperationQueuePage";
 import OperationAssistantsPage from "./pages/OperationAssistantsPage";
@@ -393,6 +394,18 @@ const App = () => (
                         <ProtectedRoute
                           requiredPermission="view:operation-setup"
                           component={OperationStructurePage}
+                        />
+                      }
+                    />
+                    <Route
+                      path="/operation/checklists"
+                      element={
+                        <ProtectedRoute
+                          requiredPermissions={[
+                            "manage:operation-checklists",
+                            "view:operation-attendances",
+                          ]}
+                          component={OperationChecklistTemplatesPage}
                         />
                       }
                     />
