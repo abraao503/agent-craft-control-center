@@ -103,3 +103,19 @@ export interface ApplyOperationalAttendanceChecklistParams
   extends GetOperationalAttendanceChecklistParams {
   templateId: string;
 }
+
+export interface UpdateOperationalAttendanceChecklistItemInput {
+  id?: string;
+  position: number;
+  label: string;
+  responsible: OperationalChecklistItemResponsible;
+  required: boolean;
+  completed: boolean;
+}
+
+export interface UpdateOperationalAttendanceChecklistParams
+  extends GetOperationalAttendanceChecklistParams {
+  expectedVersion: number;
+  name?: string;
+  items: UpdateOperationalAttendanceChecklistItemInput[];
+}

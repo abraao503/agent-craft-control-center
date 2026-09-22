@@ -1,3 +1,4 @@
+import axios from "axios";
 import { useEffect, useMemo, useState } from "react";
 import {
   CheckCircle2,
@@ -5,15 +6,25 @@ import {
   Circle,
   ClipboardCheck,
   Loader2,
+  Plus,
   RefreshCw,
+  Trash2,
   UserRound,
   UsersRound,
 } from "lucide-react";
-import { useOperationalAttendanceChecklist, useOperationalAttendanceChecklistMutations } from "@/hooks/useOperationalAttendanceChecklist";
+import {
+  useOperationalAttendanceChecklist,
+  useOperationalAttendanceChecklistMutations,
+} from "@/hooks/useOperationalAttendanceChecklist";
 import { useOperationalChecklistTemplates } from "@/hooks/useOperationalChecklistTemplates";
 import { useToast } from "@/hooks/use-toast";
 import { getOperationalAttendanceErrorMessage } from "@/utils/operationalAttendanceErrors";
-import { OperationalChecklistTemplate } from "@/types/operational-checklist";
+import {
+  OperationalAttendanceChecklistItem,
+  OperationalAttendanceChecklistView,
+  OperationalChecklistItemResponsible,
+  OperationalChecklistTemplate,
+} from "@/types/operational-checklist";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -27,6 +38,8 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import {
   Select,
@@ -146,7 +159,12 @@ export function AttendanceChecklistPanel({
                 Carregando checklist…
               </div>
             ) : checklistQuery.data ? (
-              <AppliedChecklistContent checklist={checklistQuery.data} />
+              <AppliedChecklistContent
+                checklist={checklistQuery.data}
+                canOperate={canOperate}
+                isRefreshing={checklistQuery.isFetching}
+                onRefresh={() => checklistQuery.refetch()}
+              />
             ) : (
               <EmptyChecklistContent
                 activeTemplates={activeTemplates}
@@ -168,21 +186,176 @@ export function AttendanceChecklistPanel({
   );
 }
 
+type ChecklistDraftItem = Omit<OperationalAttendanceChecklistItem, "id"> & {
+  id?: string;
+  clientId: string;
+};
+
 function AppliedChecklistContent({
   checklist,
+  canOperate,
+  isRefreshing,
+  onRefresh,
 }: {
-  checklist: NonNullable<
-    ReturnType<typeof useOperationalAttendanceChecklist>["data"]
-  >;
+  checklist: OperationalAttendanceChecklistView;
+  canOperate: boolean;
+  isRefreshing: boolean;
+  onRefresh: () => Promise<unknown>;
 }) {
-  const { progress } = checklist;
+  const { toast } = useToast();
+  const checklistMutations = useOperationalAttendanceChecklistMutations(
+    checklist.workspaceId,
+    checklist.attendanceId,
+  );
+  const [draftItems, setDraftItems] = useState<ChecklistDraftItem[]>(() =>
+    toDraftItems(checklist.items),
+  );
+  const [conflictDetected, setConflictDetected] = useState(false);
+
+  useEffect(() => {
+    setDraftItems(toDraftItems(checklist.items));
+  }, [checklist.id, checklist.updatedAt, checklist.version]);
+
+  const isDirty = useMemo(
+    () => serializeChecklistItems(draftItems) !== serializeChecklistItems(checklist.items),
+    [checklist.items, draftItems],
+  );
+  const progress = canOperate
+    ? {
+        total: draftItems.length,
+        completed: draftItems.filter((item) => item.completed).length,
+        pending: draftItems.filter((item) => !item.completed).length,
+      }
+    : checklist.progress;
   const percentage = progress.total
     ? Math.round((progress.completed / progress.total) * 100)
     : 0;
   const isComplete = progress.pending === 0;
 
+  const updateItem = (
+    clientId: string,
+    changes: Partial<ChecklistDraftItem>,
+  ) => {
+    setDraftItems((current) =>
+      current.map((item) =>
+        item.clientId === clientId ? { ...item, ...changes } : item,
+      ),
+    );
+  };
+
+  const addItem = () => {
+    if (draftItems.length >= 50) {
+      toast({
+        title: "Limite de itens atingido",
+        description: "Uma checklist pode ter no máximo 50 itens.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setDraftItems((current) => [
+      ...current,
+      {
+        clientId: `new-${Date.now()}-${current.length}`,
+        checklistId: checklist.id,
+        position: current.length + 1,
+        label: "",
+        responsible: "CUSTOMER",
+        required: true,
+        completed: false,
+        completedAt: null,
+        completedByUserId: null,
+      },
+    ]);
+  };
+
+  const removeItem = (clientId: string) => {
+    if (draftItems.length <= 1) {
+      toast({
+        title: "A checklist precisa de um item",
+        description: "Mantenha ao menos um item antes de salvar.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setDraftItems((current) =>
+      current
+        .filter((item) => item.clientId !== clientId)
+        .map((item, index) => ({ ...item, position: index + 1 })),
+    );
+  };
+
+  const saveChanges = async () => {
+    const invalidItem = draftItems.find((item) => !item.label.trim());
+    if (invalidItem) {
+      toast({
+        title: "Preencha os itens da checklist",
+        description: "Cada etapa precisa ter uma descrição antes de salvar.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      await checklistMutations.update.mutateAsync({
+        expectedVersion: checklist.version,
+        name: checklist.name,
+        items: draftItems.map((item, index) => ({
+          ...(item.id ? { id: item.id } : {}),
+          position: index + 1,
+          label: item.label.trim(),
+          responsible: item.responsible,
+          required: item.required,
+          completed: item.completed,
+        })),
+      });
+      setConflictDetected(false);
+      toast({
+        title: "Checklist atualizada",
+        description: "As alterações foram salvas neste atendimento.",
+      });
+    } catch (error) {
+      if (isChecklistVersionConflict(error)) {
+        setConflictDetected(true);
+        await onRefresh();
+        toast({
+          title: "Checklist atualizada por outra pessoa",
+          description:
+            "Os dados mais recentes foram carregados. Revise as alterações antes de salvar novamente.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Não foi possível atualizar a checklist",
+        description: getOperationalAttendanceErrorMessage(
+          error,
+          "Atualize os dados e tente novamente.",
+        ),
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="space-y-4">
+      {conflictDetected ? (
+        <Alert variant="destructive">
+          <AlertTitle>Os dados foram atualizados durante a edição</AlertTitle>
+          <AlertDescription className="flex flex-wrap items-center gap-3">
+            A cópia atual já foi recarregada. Faça uma nova revisão antes de salvar.
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setConflictDetected(false)}
+            >
+              Entendi
+            </Button>
+          </AlertDescription>
+        </Alert>
+      ) : null}
       <div className="space-y-2">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
@@ -203,42 +376,208 @@ function AppliedChecklistContent({
       </div>
 
       <ol className="space-y-2">
-        {checklist.items.map((item) => (
-          <li
-            key={item.id}
-            className="flex items-start gap-3 rounded-md border bg-background px-3 py-2 text-sm"
-          >
-            {item.completed ? (
-              <CheckCircle2
-                className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600"
-                aria-hidden="true"
+        {canOperate
+          ? draftItems.map((item, index) => (
+              <EditableChecklistItem
+                key={item.clientId}
+                item={item}
+                index={index}
+                canRemove={draftItems.length > 1}
+                onChange={updateItem}
+                onRemove={removeItem}
               />
-            ) : (
-              <Circle
-                className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground"
-                aria-hidden="true"
-              />
-            )}
-            <span
-              className={item.completed ? "min-w-0 flex-1 text-muted-foreground line-through" : "min-w-0 flex-1"}
-            >
-              {item.label}
-            </span>
-            <span className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
-              {item.responsible === "CUSTOMER" ? (
-                <UserRound className="h-3.5 w-3.5" aria-hidden="true" />
-              ) : (
-                <UsersRound className="h-3.5 w-3.5" aria-hidden="true" />
-              )}
-              <span className="sr-only">
-                {item.responsible === "CUSTOMER" ? "Cliente" : "Equipe"}
-              </span>
-              {item.required ? "Obrigatória" : "Opcional"}
-            </span>
-          </li>
-        ))}
+            ))
+          : checklist.items.map((item) => (
+              <ReadOnlyChecklistItem key={item.id} item={item} />
+            ))}
       </ol>
+
+      {canOperate ? (
+        <div className="flex flex-col gap-2 border-t pt-3 sm:flex-row sm:justify-between">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={addItem}
+            disabled={draftItems.length >= 50 || checklistMutations.update.isPending}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Adicionar item
+          </Button>
+          <Button
+            size="sm"
+            onClick={() => void saveChanges()}
+            disabled={!isDirty || checklistMutations.update.isPending}
+          >
+            {checklistMutations.update.isPending ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : null}
+            {checklistMutations.update.isPending ? "Salvando…" : "Salvar alterações"}
+          </Button>
+        </div>
+      ) : null}
+
+      {canOperate && isRefreshing ? (
+        <p className="flex items-center gap-2 text-xs text-muted-foreground">
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          Atualizando dados…
+        </p>
+      ) : null}
     </div>
+  );
+}
+
+function EditableChecklistItem({
+  item,
+  index,
+  canRemove,
+  onChange,
+  onRemove,
+}: {
+  item: ChecklistDraftItem;
+  index: number;
+  canRemove: boolean;
+  onChange: (clientId: string, changes: Partial<ChecklistDraftItem>) => void;
+  onRemove: (clientId: string) => void;
+}) {
+  return (
+    <li className="space-y-3 rounded-md border bg-background px-3 py-3 text-sm">
+      <div className="flex min-w-0 items-start gap-2">
+        <Checkbox
+          checked={item.completed}
+          onCheckedChange={(checked) =>
+            onChange(item.clientId, { completed: checked === true })
+          }
+          aria-label={`Marcar item ${index + 1} como concluído`}
+          className="mt-2"
+        />
+        <Input
+          value={item.label}
+          onChange={(event) =>
+            onChange(item.clientId, { label: event.target.value })
+          }
+          placeholder="Descreva a etapa"
+          aria-label={`Descrição do item ${index + 1}`}
+          className="min-w-0 flex-1"
+          maxLength={300}
+        />
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="shrink-0 text-muted-foreground hover:text-destructive"
+          onClick={() => onRemove(item.clientId)}
+          disabled={!canRemove}
+          aria-label={`Remover item ${index + 1}`}
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </div>
+      <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+        <Select
+          value={item.responsible}
+          onValueChange={(value) =>
+            onChange(item.clientId, {
+              responsible: value as OperationalChecklistItemResponsible,
+            })
+          }
+        >
+          <SelectTrigger
+            className="h-8 text-xs"
+            aria-label={`Responsável do item ${index + 1}`}
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="CUSTOMER">Cliente</SelectItem>
+            <SelectItem value="TEAM">Equipe</SelectItem>
+          </SelectContent>
+        </Select>
+        <label className="flex items-center gap-2 text-xs text-muted-foreground">
+          <Checkbox
+            checked={item.required}
+            onCheckedChange={(checked) =>
+              onChange(item.clientId, { required: checked === true })
+            }
+            aria-label={`Item ${index + 1} obrigatório`}
+          />
+          Obrigatória
+        </label>
+      </div>
+    </li>
+  );
+}
+
+function ReadOnlyChecklistItem({
+  item,
+}: {
+  item: OperationalAttendanceChecklistItem;
+}) {
+  return (
+    <li className="flex min-w-0 items-start gap-3 rounded-md border bg-background px-3 py-2 text-sm">
+      {item.completed ? (
+        <CheckCircle2
+          className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600"
+          aria-hidden="true"
+        />
+      ) : (
+        <Circle
+          className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground"
+          aria-hidden="true"
+        />
+      )}
+      <span
+        className={
+          item.completed
+            ? "min-w-0 flex-1 break-words text-muted-foreground line-through"
+            : "min-w-0 flex-1 break-words"
+        }
+      >
+        {item.label}
+      </span>
+      <span className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
+        {item.responsible === "CUSTOMER" ? (
+          <UserRound className="h-3.5 w-3.5" aria-hidden="true" />
+        ) : (
+          <UsersRound className="h-3.5 w-3.5" aria-hidden="true" />
+        )}
+        <span className="sr-only">
+          {item.responsible === "CUSTOMER" ? "Cliente" : "Equipe"}
+        </span>
+        {item.required ? "Obrigatória" : "Opcional"}
+      </span>
+    </li>
+  );
+}
+
+function toDraftItems(items: OperationalAttendanceChecklistItem[]): ChecklistDraftItem[] {
+  return items.map((item) => ({ ...item, clientId: item.id }));
+}
+
+function serializeChecklistItems(
+  items: Array<OperationalAttendanceChecklistItem | ChecklistDraftItem>,
+) {
+  return items
+    .map((item, index) =>
+      JSON.stringify({
+        id: item.id,
+        position: index + 1,
+        label: item.label,
+        responsible: item.responsible,
+        required: item.required,
+        completed: item.completed,
+      }),
+    )
+    .join("|");
+}
+
+function isChecklistVersionConflict(error: unknown): boolean {
+  if (axios.isAxiosError(error)) {
+    return error.response?.status === 409;
+  }
+
+  return (
+    error instanceof Error &&
+    error.message === "STALE_ATTENDANCE_CHECKLIST_VERSION"
   );
 }
 

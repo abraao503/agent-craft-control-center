@@ -2,7 +2,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useWorkspaceContext } from "@/contexts/workspace/WorkspaceContext";
 import { applyOperationalAttendanceChecklist } from "@/services/operation/applyOperationalAttendanceChecklist";
 import { getOperationalAttendanceChecklist } from "@/services/operation/getOperationalAttendanceChecklist";
-import { ApplyOperationalAttendanceChecklistParams } from "@/types/operational-checklist";
+import { updateOperationalAttendanceChecklist } from "@/services/operation/updateOperationalAttendanceChecklist";
+import {
+  ApplyOperationalAttendanceChecklistParams,
+  UpdateOperationalAttendanceChecklistParams,
+} from "@/types/operational-checklist";
 
 export function useOperationalAttendanceChecklist(
   workspaceId?: string,
@@ -37,12 +41,7 @@ export function useOperationalAttendanceChecklistMutations(
 
   const invalidateChecklist = () => {
     void queryClient.invalidateQueries({
-      queryKey: [
-        "operation",
-        "attendance-checklist",
-        resolvedWorkspaceId,
-        attendanceId,
-      ],
+      queryKey: checklistQueryKey(resolvedWorkspaceId, attendanceId),
     });
   };
 
@@ -64,5 +63,38 @@ export function useOperationalAttendanceChecklistMutations(
     onSuccess: invalidateChecklist,
   });
 
-  return { apply };
+  const update = useMutation({
+    mutationFn: (
+      params: Omit<
+        UpdateOperationalAttendanceChecklistParams,
+        "workspaceId" | "attendanceId"
+      >,
+    ) => {
+      if (!resolvedWorkspaceId) {
+        throw new Error("Workspace operacional não selecionado");
+      }
+      if (!attendanceId) {
+        throw new Error("ID do atendimento não informado");
+      }
+
+      return updateOperationalAttendanceChecklist({
+        ...params,
+        workspaceId: resolvedWorkspaceId,
+        attendanceId,
+      });
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData(
+        checklistQueryKey(resolvedWorkspaceId, attendanceId),
+        data,
+      );
+      invalidateChecklist();
+    },
+  });
+
+  return { apply, update };
+}
+
+function checklistQueryKey(workspaceId?: string, attendanceId?: string) {
+  return ["operation", "attendance-checklist", workspaceId, attendanceId];
 }
