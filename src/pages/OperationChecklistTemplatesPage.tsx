@@ -69,13 +69,18 @@ export default function OperationChecklistTemplatesPage() {
   };
 
   const handleSubmit = async (values: OperationalChecklistTemplateFormValues) => {
+    const items = values.items.map((item) => ({
+      ...item,
+      required: true,
+    }));
+
     try {
       if (editingTemplate) {
         await mutations.update.mutateAsync({
           templateId: editingTemplate.id,
           name: values.name,
           active: values.active,
-          items: values.items,
+          items,
           expectedVersion: editingTemplate.version,
         });
         toast({
@@ -85,7 +90,7 @@ export default function OperationChecklistTemplatesPage() {
       } else {
         await mutations.create.mutateAsync({
           name: values.name,
-          items: values.items,
+          items,
         });
         toast({
           title: canManageOfficial
@@ -147,7 +152,7 @@ export default function OperationChecklistTemplatesPage() {
 
   return (
     <section className="mx-auto w-full max-w-[1180px] space-y-6 pb-8">
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+      <nav aria-label="Navegação estrutural" className="flex items-center gap-2 text-sm text-muted-foreground">
         <Link
           to="/operation"
           className="rounded-sm hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -156,29 +161,28 @@ export default function OperationChecklistTemplatesPage() {
         </Link>
         <span aria-hidden="true">/</span>
         <span className="text-foreground">Checklists</span>
-      </div>
+      </nav>
 
-      <header className="flex flex-col gap-5 rounded-2xl border bg-card p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-6">
+      <header className="flex flex-col gap-5 border-b pb-5 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 items-start gap-4">
-          <div className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary sm:flex">
-            <ClipboardCheck className="h-6 w-6" />
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            <ClipboardCheck className="h-5 w-5" />
           </div>
           <div className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
               Biblioteca operacional
             </p>
-            <h1 className="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">
+            <h1 className="mt-1 text-2xl font-semibold tracking-tight">
               Modelos de checklist
             </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-              Organize documentos e etapas que podem ser reutilizados dentro de
-              cada atendimento.
+            <p className="mt-1 max-w-2xl text-sm leading-5 text-muted-foreground">
+              Organize etapas reutilizáveis para os atendimentos da equipe.
             </p>
           </div>
         </div>
         {canCreate ? (
-          <Button size="lg" className="shrink-0" onClick={openCreate}>
-            <Plus className="h-4 w-4" />
+          <Button className="w-full shrink-0 sm:w-auto" onClick={openCreate}>
+            <Plus className="mr-2 h-4 w-4" />
             Novo modelo
           </Button>
         ) : null}
@@ -219,10 +223,11 @@ export default function OperationChecklistTemplatesPage() {
           </AlertDescription>
         </Alert>
       ) : (
-        <div className="grid items-start gap-5 xl:grid-cols-2">
+        <div className="grid items-start gap-8 xl:grid-cols-2 xl:gap-10">
           <TemplateSection
             sectionId="official-templates"
             title="Modelos oficiais"
+            visibility="OFFICIAL"
             description="Modelos mantidos pela gestão e disponíveis para a equipe."
             templates={officialTemplates}
             emptyMessage="Nenhum modelo oficial foi criado ainda."
@@ -234,6 +239,7 @@ export default function OperationChecklistTemplatesPage() {
           <TemplateSection
             sectionId="personal-templates"
             title="Meus modelos pessoais"
+            visibility="PERSONAL"
             description="Modelos particulares para sua rotina. Eles não passam por aprovação."
             templates={personalTemplates}
             emptyMessage={
@@ -301,6 +307,7 @@ export default function OperationChecklistTemplatesPage() {
 type TemplateSectionProps = {
   sectionId: string;
   title: string;
+  visibility: OperationalChecklistTemplate["visibility"];
   description: string;
   templates: OperationalChecklistTemplate[];
   emptyMessage: string;
@@ -313,6 +320,7 @@ type TemplateSectionProps = {
 function TemplateSection({
   sectionId,
   title,
+  visibility,
   description,
   templates,
   emptyMessage,
@@ -321,21 +329,18 @@ function TemplateSection({
   onEdit,
   onArchive,
 }: TemplateSectionProps) {
-  const isOfficial = title === "Modelos oficiais";
+  const isOfficial = visibility === "OFFICIAL";
   const SectionIcon = isOfficial ? ClipboardCheck : UserRound;
 
   return (
-    <section
-      className="min-w-0 rounded-2xl border bg-card p-4 shadow-sm sm:p-5"
-      aria-labelledby={sectionId}
-    >
-      <div className="flex items-start justify-between gap-3">
+    <section className="min-w-0" aria-labelledby={sectionId}>
+      <div className="flex items-start justify-between gap-3 border-b pb-3">
         <div className="flex min-w-0 items-start gap-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
             <SectionIcon className="h-4 w-4" />
           </div>
           <div className="min-w-0">
-            <h2 id={sectionId} className="text-lg font-semibold tracking-tight">
+            <h2 id={sectionId} className="text-base font-semibold tracking-tight">
               {title}
             </h2>
             <p className="mt-1 text-sm leading-5 text-muted-foreground">
@@ -362,9 +367,9 @@ function TemplateSection({
           ))}
         </div>
       ) : (
-        <div className="mt-4 flex min-h-36 flex-col items-center justify-center rounded-xl border border-dashed bg-muted/20 p-6 text-center">
-          <SectionIcon className="h-8 w-8 text-muted-foreground" />
-          <p className="mt-3 max-w-xs text-sm leading-5 text-muted-foreground">
+        <div className="mt-4 flex items-start gap-3 rounded-xl border border-dashed p-4">
+          <SectionIcon className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+          <p className="text-sm leading-5 text-muted-foreground">
             {emptyMessage}
           </p>
         </div>

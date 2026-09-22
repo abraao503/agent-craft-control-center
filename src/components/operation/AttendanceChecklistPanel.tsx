@@ -438,7 +438,7 @@ function AppliedChecklistContent({
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold">{checklist.name}</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Modelo v{checklist.templateVersion} · {progress.completed} de {progress.total} concluídas
+            {progress.completed} de {progress.total} concluídas
           </p>
         </div>
         <div className="flex items-center justify-between gap-2 text-xs">
