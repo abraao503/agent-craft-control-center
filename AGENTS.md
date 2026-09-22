@@ -38,6 +38,46 @@ confirmação no código ou no contrato atual da API.
 - Não introduza bibliotecas, mudanças globais de estilo ou refactors amplos sem
   necessidade explícita.
 
+### Contrato de apresentação
+
+- Para qualquer mudança visível, leia o contexto autorizado do ledger antes de
+  codificar. A tela deve seguir as referências, o objetivo, a ação primária,
+  os estados e os viewports declarados no item; não complete lacunas por
+  preferência visual própria.
+- Trate a resposta da API como contrato de transporte, não como modelo de
+  apresentação. Crie uma transformação/view model quando necessário e mostre
+  nomes, rótulos e estados compreensíveis para o usuário.
+- Não renderize diretamente UUIDs, IDs internos, enums, códigos de provider,
+  payloads brutos, mensagens de exceção ou outros diagnósticos. Se a tela
+  precisa de uma referência técnica para uma ação, mantenha-a no estado ou no
+  service e mostre uma representação amigável; se o nome não existir, ajuste
+  o contrato ou registre a lacuna em vez de expor o identificador.
+- Procure primeiro a tela e o componente equivalente mais próximo. Reutilize
+  primitives, tokens, espaçamentos, hierarquia, padrões de feedback e copy do
+  domínio; não crie uma linguagem visual paralela para uma única feature.
+- Implemente e verifique loading, erro, vazio, sucesso/dados parciais,
+  acessibilidade básica e viewport estreita quando a tela for afetada. A
+  validação visual deve exercitar a jornada do item, não apenas compilar o
+  componente.
+
+### Perfil Playwright e credenciais de teste
+
+- O perfil de validação do ledger é `front-playwright-ui`. Ele executa
+  `npm run test:e2e` em Chromium desktop e mobile e comprova
+  `UI_INTERACTION`; não substitui a revisão visual do agente.
+- O runner carrega, somente em runtime, `test_admin_email` e
+  `test_admin_password` do `.env` da raiz compartilhada. Nunca copie esses
+  valores para o ledger, código, screenshots, traces, vídeos, logs ou
+  mensagens de erro.
+- O smoke test usa o admin apenas para autenticação. Se uma jornada exigir
+  outro papel, crie ou edite uma fixture identificável dentro do próprio teste,
+  preserve o estado original quando aplicável e remova/reverta a fixture no
+  teardown. Não crie usuários extras como efeito colateral do smoke test.
+- A API local e o ambiente público da aplicação precisam estar acessíveis para
+  o teste. `ECONNREFUSED`, credencial rejeitada ou fixture ausente são falhas
+  de validação; não desabilite o teste nem substitua a API por mocks para
+  obter GREEN.
+
 ## Arquitetura e convenções
 
 - Páginas e rotas vivem em `src/pages/` e são registradas em `src/App.tsx`.
