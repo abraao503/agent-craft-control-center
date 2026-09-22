@@ -176,17 +176,21 @@ export default function OperationChecklistTemplatesPage() {
               Modelos de checklist
             </h1>
             <p className="mt-1 max-w-2xl text-sm leading-5 text-muted-foreground">
-              Organize etapas reutilizáveis para os atendimentos da equipe.
+              Monte as etapas uma vez e aplique a lista a cada atendimento. A
+              equipe acompanha o que já foi enviado ou concluído direto na
+              conversa.
             </p>
           </div>
         </div>
         {canCreate ? (
           <Button className="w-full shrink-0 sm:w-auto" onClick={openCreate}>
             <Plus className="mr-2 h-4 w-4" />
-            Novo modelo
+            Criar modelo
           </Button>
         ) : null}
       </header>
+
+      <ChecklistHowItWorks />
 
       {currentWorkspace?.type !== "OPERATION" ? (
         <Alert>
@@ -300,6 +304,60 @@ export default function OperationChecklistTemplatesPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+    </section>
+  );
+}
+
+function ChecklistHowItWorks() {
+  const steps = [
+    {
+      title: "Monte as etapas",
+      description: "Reúna os passos que se repetem no seu processo.",
+    },
+    {
+      title: "Aplique na conversa",
+      description: "Cada atendimento recebe sua própria cópia do modelo.",
+    },
+    {
+      title: "Acompanhe o andamento",
+      description: "Marque o que chegou ou já foi resolvido.",
+    },
+  ];
+
+  return (
+    <section aria-labelledby="checklist-how-it-works">
+      <Card className="border-primary/15 bg-muted/20 shadow-none">
+        <CardContent className="grid gap-5 p-4 sm:p-5 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.5fr)] lg:items-center">
+          <div className="min-w-0">
+            <h2
+              id="checklist-how-it-works"
+              className="text-sm font-semibold tracking-tight"
+            >
+              Do modelo à conversa
+            </h2>
+            <p className="mt-1 text-sm leading-5 text-muted-foreground">
+              O progresso de uma conversa fica na cópia daquele atendimento e
+              não altera o modelo original.
+            </p>
+          </div>
+
+          <ol className="grid gap-3 sm:grid-cols-3">
+            {steps.map((step, index) => (
+              <li key={step.title} className="flex min-w-0 items-start gap-2.5">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                  {index + 1}
+                </span>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium leading-5">{step.title}</p>
+                  <p className="mt-0.5 text-xs leading-4 text-muted-foreground">
+                    {step.description}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </CardContent>
+      </Card>
     </section>
   );
 }
