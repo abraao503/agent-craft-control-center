@@ -3,7 +3,6 @@ import { AxiosError } from "axios";
 import {
   AlertCircle,
   ClipboardCheck,
-  Loader2,
   Plus,
   RefreshCw,
   UserRound,
@@ -32,12 +31,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
 } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { OperationalChecklistTemplate } from "@/types/operational-checklist";
 
 export default function OperationChecklistTemplatesPage() {
@@ -47,9 +46,9 @@ export default function OperationChecklistTemplatesPage() {
   const workspaceId =
     currentWorkspace?.type === "OPERATION" ? currentWorkspace.id : undefined;
   const canManageOfficial = has("manage:operation-checklists");
-  const canCreatePersonal = has("operate:operation-attendances");
+  const canOperateAttendances = has("operate:operation-attendances");
   const canCreate =
-    Boolean(workspaceId) && (canManageOfficial || canCreatePersonal);
+    Boolean(workspaceId) && (canManageOfficial || canOperateAttendances);
 
   const templatesQuery = useOperationalChecklistTemplates(workspaceId);
   const mutations = useOperationalChecklistTemplateMutations(workspaceId);
@@ -149,10 +148,64 @@ export default function OperationChecklistTemplatesPage() {
   const personalTemplates = templates.filter(
     (template) => template.visibility === "PERSONAL",
   );
+  const shouldShowPersonal =
+    (canOperateAttendances && !canManageOfficial) || personalTemplates.length > 0;
   const isSaving = mutations.create.isPending || mutations.update.isPending;
+  const pageDescription = canManageOfficial
+    ? "Defina os modelos oficiais que padronizam as etapas dos atendimentos da equipe."
+    : canOperateAttendances
+      ? "Consulte os modelos da equipe e organize suas próprias etapas recorrentes."
+      : "Consulte os modelos oficiais da equipe para seguir o padrão nos atendimentos.";
+  const createButtonLabel = canManageOfficial
+    ? "Criar modelo oficial"
+    : "Criar modelo pessoal";
+  const templateSections: TemplateSectionProps[] = [
+    {
+      sectionId: "official-templates",
+      title: "Modelos oficiais",
+      visibility: "OFFICIAL",
+      description: canManageOfficial
+        ? "Padrões da equipe que podem ser aplicados nos atendimentos."
+        : "Modelos da equipe para consultar e aplicar nos atendimentos.",
+      templates: officialTemplates,
+      emptyTitle: canManageOfficial
+        ? "Nenhum modelo oficial criado"
+        : "Nenhum modelo oficial disponível",
+      emptyMessage: canManageOfficial
+        ? "Use “Criar modelo oficial” para definir o primeiro padrão da equipe."
+        : "A gestão ainda não disponibilizou modelos para este workspace.",
+      canEdit: canManageOfficial,
+      isArchiving: mutations.archive.isPending,
+      onEdit: openEdit,
+      onArchive: setTemplateToArchive,
+    },
+    ...(shouldShowPersonal
+      ? [
+          {
+            sectionId: "personal-templates",
+            title: "Meus modelos pessoais",
+            visibility: "PERSONAL" as const,
+            description:
+              canOperateAttendances
+                ? "Privados para você: só você pode consultar e editar estes modelos."
+                : "Privados para você: só você pode consultar estes modelos.",
+            templates: personalTemplates,
+            emptyTitle: "Você ainda não tem modelos pessoais",
+            emptyMessage:
+              canManageOfficial
+                ? "Os modelos pessoais são seus e permanecem separados do padrão oficial da equipe."
+                : "Use “Criar modelo pessoal” para organizar as etapas da sua rotina.",
+            canEdit: canOperateAttendances,
+            isArchiving: mutations.archive.isPending,
+            onEdit: openEdit,
+            onArchive: setTemplateToArchive,
+          },
+        ]
+      : []),
+  ];
 
   return (
-    <section className="mx-auto w-full max-w-[1280px] space-y-5 pb-8">
+    <section className="mx-auto w-full max-w-[1280px] space-y-6 pb-8">
       <nav aria-label="Navegação estrutural" className="flex items-center gap-2 text-sm text-muted-foreground">
         <Link
           to="/operation"
@@ -170,13 +223,13 @@ export default function OperationChecklistTemplatesPage() {
             Modelos de checklist
           </h1>
           <p className="mt-1 max-w-2xl text-sm leading-5 text-muted-foreground">
-            Organize as etapas que a equipe acompanha durante cada atendimento.
+            {pageDescription}
           </p>
         </div>
         {canCreate ? (
           <Button className="w-full shrink-0 sm:w-auto" onClick={openCreate}>
             <Plus className="mr-2 h-4 w-4" />
-            Criar modelo
+            {createButtonLabel}
           </Button>
         ) : null}
       </header>
@@ -187,18 +240,32 @@ export default function OperationChecklistTemplatesPage() {
           <AlertTitle>Workspace operacional não selecionado</AlertTitle>
           <AlertDescription>
             Selecione um workspace de Operação no menu da barra lateral para
-            acessar a biblioteca de modelos.
+            consultar os modelos correspondentes.
           </AlertDescription>
         </Alert>
       ) : templatesQuery.isLoading ? (
-        <Card>
-          <CardContent className="flex min-h-48 items-center justify-center gap-2">
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">
-              Carregando modelos...
-            </span>
-          </CardContent>
-        </Card>
+        <div
+          role="status"
+          aria-label="Carregando modelos"
+          className="space-y-10"
+        >
+          {templateSections.map((section) => (
+            <div key={section.sectionId} className="space-y-4">
+              <div className="space-y-2 border-b pb-4">
+                <Skeleton className="h-5 w-48" />
+                <Skeleton className="h-4 w-80 max-w-full" />
+              </div>
+              <Card className="border-border/70 shadow-none">
+                <CardContent className="space-y-4 p-4">
+                  <Skeleton className="h-5 w-44" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-4/5" />
+                  <Skeleton className="h-9 w-24" />
+                </CardContent>
+              </Card>
+            </div>
+          ))}
+        </div>
       ) : templatesQuery.isError ? (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
@@ -217,35 +284,10 @@ export default function OperationChecklistTemplatesPage() {
           </AlertDescription>
         </Alert>
       ) : (
-        <div className="grid items-start gap-8 xl:grid-cols-2 xl:gap-10">
-          <TemplateSection
-            sectionId="official-templates"
-            title="Modelos oficiais"
-            visibility="OFFICIAL"
-            description="Modelos mantidos pela gestão e disponíveis para a equipe."
-            templates={officialTemplates}
-            emptyMessage="Nenhum modelo oficial foi criado ainda."
-            canEdit={canManageOfficial}
-            isArchiving={mutations.archive.isPending}
-            onEdit={openEdit}
-            onArchive={setTemplateToArchive}
-          />
-          <TemplateSection
-            sectionId="personal-templates"
-            title="Meus modelos pessoais"
-            visibility="PERSONAL"
-            description="Modelos particulares para sua rotina. Eles não passam por aprovação."
-            templates={personalTemplates}
-            emptyMessage={
-              canCreatePersonal
-                ? "Você ainda não criou um modelo pessoal."
-                : "Nenhum modelo pessoal disponível para este usuário."
-            }
-            canEdit={canCreatePersonal}
-            isArchiving={mutations.archive.isPending}
-            onEdit={openEdit}
-            onArchive={setTemplateToArchive}
-          />
+        <div className="space-y-10">
+          {templateSections.map((section) => (
+            <TemplateSection key={section.sectionId} {...section} />
+          ))}
         </div>
       )}
 
@@ -304,6 +346,7 @@ type TemplateSectionProps = {
   visibility: OperationalChecklistTemplate["visibility"];
   description: string;
   templates: OperationalChecklistTemplate[];
+  emptyTitle: string;
   emptyMessage: string;
   canEdit: boolean;
   isArchiving: boolean;
@@ -317,6 +360,7 @@ function TemplateSection({
   visibility,
   description,
   templates,
+  emptyTitle,
   emptyMessage,
   canEdit,
   isArchiving,
@@ -327,24 +371,34 @@ function TemplateSection({
   const SectionIcon = isOfficial ? ClipboardCheck : UserRound;
 
   return (
-    <section className="min-w-0" aria-labelledby={sectionId}>
-      <div className="flex items-center justify-between gap-3 border-b pb-3">
-        <div className="flex min-w-0 items-center gap-2.5">
-          <SectionIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
-          <h2 id={sectionId} className="text-base font-semibold tracking-tight">
-            {title}
-          </h2>
+    <section className="min-w-0 space-y-4" aria-labelledby={sectionId}>
+      <header className="flex items-start justify-between gap-3 border-b border-border/70 pb-4">
+        <div className="flex min-w-0 items-start gap-3">
+          <span
+            className={
+              isOfficial
+                ? "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"
+                : "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground"
+            }
+          >
+            <SectionIcon className="h-4 w-4" aria-hidden="true" />
+          </span>
+          <div className="min-w-0">
+            <h2 id={sectionId} className="text-base font-semibold tracking-tight">
+              {title}
+            </h2>
+            <p className="mt-1 text-sm leading-5 text-muted-foreground">
+              {description}
+            </p>
+          </div>
         </div>
-        <Badge variant="outline" className="shrink-0 whitespace-nowrap">
+        <span className="shrink-0 rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
           {templates.length} {templates.length === 1 ? "modelo" : "modelos"}
-        </Badge>
-      </div>
-      <p className="mt-2.5 text-sm leading-5 text-muted-foreground">
-        {description}
-      </p>
+        </span>
+      </header>
 
       {templates.length ? (
-        <div className="mt-3 space-y-3">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {templates.map((template) => (
             <OperationalChecklistTemplateCard
               key={template.id}
@@ -357,13 +411,22 @@ function TemplateSection({
           ))}
         </div>
       ) : (
-        <div className="mt-3 flex min-h-20 items-center gap-3 rounded-xl border border-dashed bg-muted/10 px-4 py-4">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
+        <div className="flex min-h-28 items-start gap-4 rounded-2xl border border-dashed border-border/80 bg-muted/20 p-5">
+          <span
+            className={
+              isOfficial
+                ? "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"
+                : "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-background text-muted-foreground"
+            }
+          >
             <SectionIcon className="h-4 w-4" />
+          </span>
+          <div className="pt-0.5">
+            <p className="text-sm font-semibold">{emptyTitle}</p>
+            <p className="mt-1 text-sm leading-5 text-muted-foreground">
+              {emptyMessage}
+            </p>
           </div>
-          <p className="text-sm leading-5 text-muted-foreground">
-            {emptyMessage}
-          </p>
         </div>
       )}
     </section>
