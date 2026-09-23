@@ -25,9 +25,12 @@ confirmação no código ou no contrato atual da API.
 - Use **npm**. Não use Bun nem regenere `package-lock.json` ou `bun.lockb` sem
   solicitação explícita. Ambos existem no repositório; o lockfile não é um
   efeito colateral aceitável de uma mudança de código.
-- Não leia, imprima, modifique ou versione `.env` e credenciais. `VITE_*` é
-  configuração pública de build, mas os valores locais não devem aparecer em
-  código, logs ou documentação.
+- Não leia `.env` pelo terminal nem imprima, copie, modifique ou versione
+  credenciais. A conta administrativa de teste pode ser consumida pelo fluxo de
+  autenticação/runtime em testes autorizados; seus valores nunca devem aparecer
+  em código, ledger, argumentos de shell, logs, screenshots, traces, vídeos ou
+  documentação. `VITE_*` é configuração pública de build, mas os valores locais
+  também não devem aparecer nesses registros.
 - Não invente endpoint, payload ou tipo que a API já define. Confirme o
   contrato em `../api` (e em Swagger quando o ambiente estiver disponível)
   antes de implementar uma integração.
@@ -69,10 +72,16 @@ confirmação no código ou no contrato atual da API.
   `test_admin_password` do `.env` da raiz compartilhada. Nunca copie esses
   valores para o ledger, código, screenshots, traces, vídeos, logs ou
   mensagens de erro.
+- Para uma validação manual que exige outro role, o responsável autorizou usar
+  essa conta no tenant de teste para criar um usuário dedicado ou definir uma
+  senha temporária para um usuário de teste especificamente identificado. Siga
+  [Contas de teste por role](docs/agent/test-accounts.md); essa autorização não
+  cobre produção, usuários reais/desconhecidos nem a senha da conta admin
+  compartilhada.
 - O smoke test usa o admin apenas para autenticação. Se uma jornada exigir
-  outro papel, crie ou edite uma fixture identificável dentro do próprio teste,
+  outro role, crie ou edite uma fixture identificável dentro do próprio teste,
   preserve o estado original quando aplicável e remova/reverta a fixture no
-  teardown. Não crie usuários extras como efeito colateral do smoke test.
+  teardown. Não deixe usuários persistentes como efeito colateral do smoke test.
 - A API local e o ambiente público da aplicação precisam estar acessíveis para
   o teste. `ECONNREFUSED`, credencial rejeitada ou fixture ausente são falhas
   de validação; não desabilite o teste nem substitua a API por mocks para
