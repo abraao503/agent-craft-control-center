@@ -48,7 +48,8 @@ export default function OperationChecklistTemplatesPage() {
     currentWorkspace?.type === "OPERATION" ? currentWorkspace.id : undefined;
   const canManageOfficial = has("manage:operation-checklists");
   const canCreatePersonal = has("operate:operation-attendances");
-  const canCreate = canManageOfficial || canCreatePersonal;
+  const canCreate =
+    Boolean(workspaceId) && (canManageOfficial || canCreatePersonal);
 
   const templatesQuery = useOperationalChecklistTemplates(workspaceId);
   const mutations = useOperationalChecklistTemplateMutations(workspaceId);
@@ -151,7 +152,7 @@ export default function OperationChecklistTemplatesPage() {
   const isSaving = mutations.create.isPending || mutations.update.isPending;
 
   return (
-    <section className="mx-auto w-full max-w-[1180px] space-y-6 pb-8">
+    <section className="mx-auto w-full max-w-[1280px] space-y-5 pb-8">
       <nav aria-label="Navegação estrutural" className="flex items-center gap-2 text-sm text-muted-foreground">
         <Link
           to="/operation"
@@ -163,24 +164,14 @@ export default function OperationChecklistTemplatesPage() {
         <span className="text-foreground">Checklists</span>
       </nav>
 
-      <header className="flex flex-col gap-5 border-b pb-5 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex min-w-0 items-start gap-4">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-            <ClipboardCheck className="h-5 w-5" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
-              Biblioteca operacional
-            </p>
-            <h1 className="mt-1 text-2xl font-semibold tracking-tight">
-              Modelos de checklist
-            </h1>
-            <p className="mt-1 max-w-2xl text-sm leading-5 text-muted-foreground">
-              Monte as etapas uma vez e aplique a lista a cada atendimento. A
-              equipe acompanha o que já foi enviado ou concluído direto na
-              conversa.
-            </p>
-          </div>
+      <header className="flex flex-col gap-4 border-b pb-5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-semibold tracking-tight">
+            Modelos de checklist
+          </h1>
+          <p className="mt-1 max-w-2xl text-sm leading-5 text-muted-foreground">
+            Organize as etapas que a equipe acompanha durante cada atendimento.
+          </p>
         </div>
         {canCreate ? (
           <Button className="w-full shrink-0 sm:w-auto" onClick={openCreate}>
@@ -190,14 +181,13 @@ export default function OperationChecklistTemplatesPage() {
         ) : null}
       </header>
 
-      <ChecklistHowItWorks />
-
       {currentWorkspace?.type !== "OPERATION" ? (
         <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Workspace operacional não selecionado</AlertTitle>
           <AlertDescription>
-            Selecione um workspace operacional para visualizar os modelos.
+            Selecione um workspace de Operação no menu da barra lateral para
+            acessar a biblioteca de modelos.
           </AlertDescription>
         </Alert>
       ) : templatesQuery.isLoading ? (
@@ -308,60 +298,6 @@ export default function OperationChecklistTemplatesPage() {
   );
 }
 
-function ChecklistHowItWorks() {
-  const steps = [
-    {
-      title: "Monte as etapas",
-      description: "Reúna os passos que se repetem no seu processo.",
-    },
-    {
-      title: "Aplique na conversa",
-      description: "Cada atendimento recebe sua própria cópia do modelo.",
-    },
-    {
-      title: "Acompanhe o andamento",
-      description: "Marque o que chegou ou já foi resolvido.",
-    },
-  ];
-
-  return (
-    <section aria-labelledby="checklist-how-it-works">
-      <Card className="border-primary/15 bg-muted/20 shadow-none">
-        <CardContent className="grid gap-5 p-4 sm:p-5 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.5fr)] lg:items-center">
-          <div className="min-w-0">
-            <h2
-              id="checklist-how-it-works"
-              className="text-sm font-semibold tracking-tight"
-            >
-              Do modelo à conversa
-            </h2>
-            <p className="mt-1 text-sm leading-5 text-muted-foreground">
-              O progresso de uma conversa fica na cópia daquele atendimento e
-              não altera o modelo original.
-            </p>
-          </div>
-
-          <ol className="grid gap-3 sm:grid-cols-3">
-            {steps.map((step, index) => (
-              <li key={step.title} className="flex min-w-0 items-start gap-2.5">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
-                  {index + 1}
-                </span>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium leading-5">{step.title}</p>
-                  <p className="mt-0.5 text-xs leading-4 text-muted-foreground">
-                    {step.description}
-                  </p>
-                </div>
-              </li>
-            ))}
-          </ol>
-        </CardContent>
-      </Card>
-    </section>
-  );
-}
-
 type TemplateSectionProps = {
   sectionId: string;
   title: string;
@@ -392,27 +328,23 @@ function TemplateSection({
 
   return (
     <section className="min-w-0" aria-labelledby={sectionId}>
-      <div className="flex items-start justify-between gap-3 border-b pb-3">
-        <div className="flex min-w-0 items-start gap-3">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-            <SectionIcon className="h-4 w-4" />
-          </div>
-          <div className="min-w-0">
-            <h2 id={sectionId} className="text-base font-semibold tracking-tight">
-              {title}
-            </h2>
-            <p className="mt-1 text-sm leading-5 text-muted-foreground">
-              {description}
-            </p>
-          </div>
+      <div className="flex items-center justify-between gap-3 border-b pb-3">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <SectionIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
+          <h2 id={sectionId} className="text-base font-semibold tracking-tight">
+            {title}
+          </h2>
         </div>
         <Badge variant="outline" className="shrink-0 whitespace-nowrap">
           {templates.length} {templates.length === 1 ? "modelo" : "modelos"}
         </Badge>
       </div>
+      <p className="mt-2.5 text-sm leading-5 text-muted-foreground">
+        {description}
+      </p>
 
       {templates.length ? (
-        <div className="mt-4 space-y-3">
+        <div className="mt-3 space-y-3">
           {templates.map((template) => (
             <OperationalChecklistTemplateCard
               key={template.id}
@@ -425,8 +357,10 @@ function TemplateSection({
           ))}
         </div>
       ) : (
-        <div className="mt-4 flex items-start gap-3 rounded-xl border border-dashed p-4">
-          <SectionIcon className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+        <div className="mt-3 flex min-h-20 items-center gap-3 rounded-xl border border-dashed bg-muted/10 px-4 py-4">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
+            <SectionIcon className="h-4 w-4" />
+          </div>
           <p className="text-sm leading-5 text-muted-foreground">
             {emptyMessage}
           </p>
