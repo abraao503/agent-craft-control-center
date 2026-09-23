@@ -9,6 +9,7 @@
     "build:dev": "npm run typecheck && vite build --mode development",
     "lint": "eslint .",
     "i18n:check": "node scripts/check-i18n.mjs",
+    "docs:check": "node scripts/check-agent-doc-links.mjs",
     "test:e2e": "playwright test",
     "typecheck": "tsc -b --pretty false",
     "preview": "vite preview"

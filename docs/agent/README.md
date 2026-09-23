@@ -44,3 +44,11 @@ estes guias.
 2. Este diretório `docs/agent/` e `front/AGENTS.md`.
 3. Documentos de domínio recentes, quando conferidos contra o código.
 4. Arquivos legados listados em [Legado](../README.md#legado).
+
+## Verificação documental
+
+Ao alterar `AGENTS.md` ou os guias deste diretório, execute
+`rtk npm run docs:check` na raiz do frontend. O comando verifica se os destinos
+locais usados pelos links Markdown existem. Confira também o diff com
+`rtk git diff --check`; lint, typecheck, build e Playwright ficam para mudanças
+que alterem código.

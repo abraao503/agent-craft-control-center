@@ -111,18 +111,26 @@ confirmação no código ou no contrato atual da API.
 
 ## Verificação e entrega
 
-Execute a verificação proporcional, a partir de `front/`:
+Para alterações somente documentais em `AGENTS.md` ou `docs/agent/`, execute
+`rtk npm run docs:check` e `rtk git diff --check`, a partir de `front/`. Esse
+check valida que os destinos locais dos links existem. Não rode lint,
+typecheck, build ou Playwright quando nenhum código foi alterado.
+
+Para mudanças de código, execute a verificação proporcional, a partir de
+`front/`:
 
 ```bash
-npm run lint
-npm run typecheck
-npm run build
+rtk npm run lint
+rtk npm run typecheck
+rtk npm run build
 ```
 
 Use `npm run typecheck`, e não `tsc --noEmit` diretamente: o `tsconfig.json`
 raiz usa *project references*, e a checagem correta é executada com `tsc -b`.
 
-Não há script de testes automatizados configurado. Quando uma mudança for de
-interface, valide manualmente o fluxo relevante quando o ambiente estiver
-disponível. Ao concluir, informe arquivos alterados, comandos executados e
-qualquer contrato/integração que não pôde ser validado localmente.
+O projeto tem Playwright em `npm run test:e2e`; use o fluxo visual relevante
+quando o ambiente local estiver disponível, conforme o perfil
+`front-playwright-ui`. Essa suíte requer a aplicação e a API acessíveis e não é
+necessária para alterações somente documentais. Ao concluir, informe arquivos
+alterados, comandos executados e qualquer contrato/integração que não pôde ser
+validado localmente.
