@@ -79,7 +79,6 @@ export default function OperationChecklistTemplatesPage() {
         await mutations.update.mutateAsync({
           templateId: editingTemplate.id,
           name: values.name,
-          active: values.active,
           items,
           expectedVersion: editingTemplate.version,
         });
@@ -97,7 +96,7 @@ export default function OperationChecklistTemplatesPage() {
             ? "Modelo oficial criado"
             : "Modelo pessoal criado",
           description: canManageOfficial
-            ? "O modelo ficará disponível para toda a equipe autorizada."
+            ? "O modelo já fica disponível para toda a equipe autorizada."
             : "O modelo ficará disponível somente para você.",
         });
       }
@@ -173,7 +172,7 @@ export default function OperationChecklistTemplatesPage() {
         : "Nenhum modelo oficial disponível",
       emptyMessage: canManageOfficial
         ? "Use “Criar modelo oficial” para definir o primeiro padrão da equipe."
-        : "A gestão ainda não disponibilizou modelos para este workspace.",
+        : "A gestão ainda não criou modelos oficiais para este workspace.",
       canEdit: canManageOfficial,
       isArchiving: mutations.archive.isPending,
       onEdit: openEdit,

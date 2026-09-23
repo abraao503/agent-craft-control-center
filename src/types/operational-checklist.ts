@@ -44,7 +44,6 @@ export interface UpdateOperationalChecklistTemplateParams {
   workspaceId: string;
   templateId: string;
   name?: string;
-  active?: boolean;
   items?: OperationalChecklistTemplateItemInput[];
   expectedVersion: number;
 }

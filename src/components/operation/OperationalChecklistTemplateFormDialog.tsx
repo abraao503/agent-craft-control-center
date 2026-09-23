@@ -32,7 +32,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import {
   OperationalChecklistItemResponsible,
   OperationalChecklistTemplate,
@@ -54,7 +53,6 @@ const checklistTemplateSchema = z.object({
     .trim()
     .min(1, "Informe um nome para o modelo.")
     .max(160, "O nome deve ter no máximo 160 caracteres."),
-  active: z.boolean(),
   items: z
     .array(checklistItemSchema)
     .min(1, "Adicione pelo menos uma etapa.")
@@ -166,7 +164,6 @@ export function OperationalChecklistTemplateFormDialog({
     resolver: zodResolver(checklistTemplateSchema),
     defaultValues: {
       name: "",
-      active: true,
       items: [createEmptyItem()],
     },
   });
@@ -186,7 +183,6 @@ export function OperationalChecklistTemplateFormDialog({
 
     form.reset({
       name: template?.name ?? "",
-      active: template?.active ?? true,
       items: template?.items.length
         ? template.items.map((item) => ({
             label: item.label,
@@ -199,7 +195,7 @@ export function OperationalChecklistTemplateFormDialog({
   const visibilityLabel = visibility === "OFFICIAL" ? "oficial" : "pessoal";
   const isEditing = Boolean(template);
   const description = isEditing
-    ? "Vale para novos atendimentos; checklists já aplicadas mantêm sua cópia."
+    ? "As alterações valem para novas aplicações; checklists já aplicadas mantêm sua cópia."
     : `Este será um modelo ${visibilityLabel}. Cada aplicação cria uma cópia editável para o atendimento.`;
 
   const handleDragEnd = ({ active, over }: DragEndEvent) => {
@@ -231,7 +227,6 @@ export function OperationalChecklistTemplateFormDialog({
           onSubmit={form.handleSubmit(async (values) => {
             await onSubmit({
               name: values.name.trim(),
-              active: values.active,
               items: values.items.map((item) => ({
                 label: item.label.trim(),
                 responsible: item.responsible,
@@ -259,29 +254,6 @@ export function OperationalChecklistTemplateFormDialog({
                   </p>
                 ) : null}
               </div>
-              {isEditing ? (
-                <div className="flex items-center gap-3 sm:border-l sm:pl-5">
-                    <Switch
-                      id="operational-checklist-template-active"
-                      checked={form.watch("active")}
-                      onCheckedChange={(checked) =>
-                        form.setValue("active", checked, { shouldDirty: true })
-                      }
-                      disabled={isPending}
-                    />
-                    <div className="space-y-0.5">
-                      <Label
-                        htmlFor="operational-checklist-template-active"
-                        className="text-sm font-medium"
-                      >
-                        Ativo
-                      </Label>
-                      <p className="text-xs text-muted-foreground">
-                        Disponível em novos atendimentos
-                      </p>
-                    </div>
-                </div>
-              ) : null}
             </div>
 
             <section className="space-y-3" aria-labelledby="checklist-template-items-title">
