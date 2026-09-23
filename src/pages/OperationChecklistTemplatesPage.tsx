@@ -12,6 +12,10 @@ import {
   useOperationalChecklistTemplateMutations,
   useOperationalChecklistTemplates,
 } from "@/hooks/useOperationalChecklistTemplates";
+import {
+  useOperationalChecklistPreference,
+  useOperationalChecklistPreferenceMutations,
+} from "@/hooks/useOperationalChecklistPreference";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useToast } from "@/hooks/use-toast";
 import { useWorkspaceContext } from "@/contexts/workspace/WorkspaceContext";
@@ -35,7 +39,19 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
 } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { OperationalChecklistTemplate } from "@/types/operational-checklist";
 
@@ -52,6 +68,12 @@ export default function OperationChecklistTemplatesPage() {
 
   const templatesQuery = useOperationalChecklistTemplates(workspaceId);
   const mutations = useOperationalChecklistTemplateMutations(workspaceId);
+  const preferenceQuery = useOperationalChecklistPreference(
+    workspaceId,
+    canOperateAttendances,
+  );
+  const preferenceMutations =
+    useOperationalChecklistPreferenceMutations(workspaceId);
   const [editingTemplate, setEditingTemplate] =
     useState<OperationalChecklistTemplate | null>(null);
   const [templateToArchive, setTemplateToArchive] =
@@ -140,7 +162,64 @@ export default function OperationChecklistTemplatesPage() {
     }
   };
 
+  const handleDefaultChange = async (templateId: string) => {
+    try {
+      await preferenceMutations.set.mutateAsync({ templateId });
+      toast({
+        title: "Checklist padrão atualizado",
+        description:
+          "Ele será aplicado quando um atendimento for atribuído a você, se ainda não houver checklist.",
+      });
+    } catch (error) {
+      toast({
+        title: "Não foi possível salvar o padrão",
+        description: getApiErrorMessage(
+          error,
+          "Escolha um modelo ativo e tente novamente.",
+        ),
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleClearDefault = async () => {
+    try {
+      await preferenceMutations.clear.mutateAsync();
+      toast({
+        title: "Aplicação automática desativada",
+        description:
+          "Nenhum checklist será aplicado automaticamente nas próximas atribuições.",
+      });
+    } catch (error) {
+      toast({
+        title: "Não foi possível desativar o padrão",
+        description: getApiErrorMessage(
+          error,
+          "Tente novamente em instantes.",
+        ),
+        variant: "destructive",
+      });
+    }
+  };
+
   const templates = templatesQuery.data ?? [];
+  const activeTemplates = templates.filter((template) => template.active);
+  const activeOfficialTemplates = activeTemplates.filter(
+    (template) => template.visibility === "OFFICIAL",
+  );
+  const activePersonalTemplates = activeTemplates.filter(
+    (template) => template.visibility === "PERSONAL",
+  );
+  const currentDefault = activeTemplates.find(
+    (template) => template.id === preferenceQuery.data?.templateId,
+  );
+  const hasUnavailableDefault =
+    preferenceQuery.isSuccess &&
+    Boolean(preferenceQuery.data) &&
+    templatesQuery.isSuccess &&
+    !currentDefault;
+  const isSavingPreference =
+    preferenceMutations.set.isPending || preferenceMutations.clear.isPending;
   const officialTemplates = templates.filter(
     (template) => template.visibility === "OFFICIAL",
   );
@@ -232,6 +311,131 @@ export default function OperationChecklistTemplatesPage() {
           </Button>
         ) : null}
       </header>
+
+      {canOperateAttendances && workspaceId ? (
+        <Card aria-labelledby="operator-checklist-default-title">
+          <CardHeader className="space-y-1 p-4 pb-3 sm:p-5 sm:pb-3">
+            <CardTitle
+              id="operator-checklist-default-title"
+              className="text-base"
+            >
+              Checklist padrão nas novas atribuições
+            </CardTitle>
+            <CardDescription className="max-w-3xl leading-5">
+              A escolha é salva imediatamente e aplicada quando um atendimento
+              for atribuído a você. Checklists e progresso já existentes são
+              preservados.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3 p-4 pt-0 sm:flex-row sm:items-center sm:p-5 sm:pt-0">
+            <div className="min-w-0 flex-1">
+              <Select
+                value={currentDefault?.id ?? ""}
+                onValueChange={(templateId) =>
+                  void handleDefaultChange(templateId)
+                }
+                disabled={
+                  preferenceQuery.isLoading ||
+                  templatesQuery.isLoading ||
+                  templatesQuery.isError ||
+                  isSavingPreference ||
+                  activeTemplates.length === 0
+                }
+              >
+                <SelectTrigger
+                  aria-label="Checklist padrão para novas atribuições"
+                  className="w-full sm:max-w-md"
+                >
+                  <SelectValue
+                    placeholder={
+                      preferenceQuery.isLoading
+                        ? "Carregando preferência..."
+                        : "Selecione um checklist"
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {activeOfficialTemplates.length ? (
+                    <SelectGroup>
+                      <SelectLabel>Modelos oficiais</SelectLabel>
+                      {activeOfficialTemplates.map((template) => (
+                        <SelectItem key={template.id} value={template.id}>
+                          {template.name}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  ) : null}
+                  {activePersonalTemplates.length ? (
+                    <SelectGroup>
+                      <SelectLabel>Meus modelos pessoais</SelectLabel>
+                      {activePersonalTemplates.map((template) => (
+                        <SelectItem key={template.id} value={template.id}>
+                          {template.name}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  ) : null}
+                </SelectContent>
+              </Select>
+              {isSavingPreference ? (
+                <p role="status" className="mt-2 text-xs text-muted-foreground">
+                  Salvando preferência…
+                </p>
+              ) : preferenceQuery.isLoading ? (
+                <p role="status" className="mt-2 text-xs text-muted-foreground">
+                  Carregando preferência…
+                </p>
+              ) : activeTemplates.length === 0 ? (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Não há modelos ativos para escolher.
+                </p>
+              ) : null}
+            </div>
+            {preferenceQuery.data ? (
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full shrink-0 sm:w-auto"
+                disabled={isSavingPreference || preferenceQuery.isLoading}
+                onClick={() => void handleClearDefault()}
+              >
+                Desativar padrão
+              </Button>
+            ) : null}
+          </CardContent>
+          {preferenceQuery.isError ? (
+            <div className="px-4 pb-4 sm:px-5 sm:pb-5">
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Não foi possível carregar sua preferência</AlertTitle>
+                <AlertDescription className="flex flex-wrap items-center gap-3">
+                  Tente novamente para consultar o checklist padrão salvo.
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => void preferenceQuery.refetch()}
+                    disabled={preferenceQuery.isFetching}
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                    Tentar novamente
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            </div>
+          ) : hasUnavailableDefault ? (
+            <div className="px-4 pb-4 sm:px-5 sm:pb-5">
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>O modelo padrão não está mais disponível</AlertTitle>
+                <AlertDescription>
+                  Ele foi arquivado ou removido. Escolha outro modelo ativo ou
+                  desative a aplicação automática.
+                </AlertDescription>
+              </Alert>
+            </div>
+          ) : null}
+        </Card>
+      ) : null}
 
       {currentWorkspace?.type !== "OPERATION" ? (
         <Alert>

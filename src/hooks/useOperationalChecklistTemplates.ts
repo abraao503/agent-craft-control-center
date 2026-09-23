@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/contexts/auth/hooks";
 import { useWorkspaceContext } from "@/contexts/workspace/WorkspaceContext";
 import { archiveOperationalChecklistTemplate } from "@/services/operation/archiveOperationalChecklistTemplate";
 import { createOperationalChecklistTemplate } from "@/services/operation/createOperationalChecklistTemplate";
@@ -11,8 +12,9 @@ import {
 } from "@/types/operational-checklist";
 
 export function useOperationalChecklistTemplates(workspaceId?: string) {
+  const { userProfile } = useAuth();
   return useQuery({
-    queryKey: ["operation-checklist-templates", workspaceId],
+    queryKey: ["operation-checklist-templates", workspaceId, userProfile?.id],
     queryFn: () => {
       if (!workspaceId) {
         throw new Error("Workspace operacional não selecionado");
@@ -27,13 +29,18 @@ export function useOperationalChecklistTemplates(workspaceId?: string) {
 export function useOperationalChecklistTemplateMutations(workspaceId?: string) {
   const queryClient = useQueryClient();
   const { currentWorkspace } = useWorkspaceContext();
+  const { userProfile } = useAuth();
   const resolvedWorkspaceId =
     workspaceId ??
     (currentWorkspace?.type === "OPERATION" ? currentWorkspace.id : undefined);
 
   const invalidateTemplates = () => {
     void queryClient.invalidateQueries({
-      queryKey: ["operation-checklist-templates", resolvedWorkspaceId],
+      queryKey: [
+        "operation-checklist-templates",
+        resolvedWorkspaceId,
+        userProfile?.id,
+      ],
     });
   };
 

@@ -28,6 +28,21 @@ export interface OperationalChecklistTemplate {
   items: OperationalChecklistTemplateItem[];
 }
 
+export interface OperationalChecklistPreference {
+  id: string;
+  companyId: string;
+  workspaceId: string;
+  userId: string;
+  templateId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SetOperationalChecklistPreferenceParams {
+  workspaceId: string;
+  templateId: string;
+}
+
 export interface OperationalChecklistTemplateItemInput {
   label: string;
   responsible: OperationalChecklistItemResponsible;
