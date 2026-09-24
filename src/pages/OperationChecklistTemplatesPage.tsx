@@ -76,7 +76,7 @@ export default function OperationChecklistTemplatesPage() {
     useOperationalChecklistPreferenceMutations(workspaceId);
   const [editingTemplate, setEditingTemplate] =
     useState<OperationalChecklistTemplate | null>(null);
-  const [templateToArchive, setTemplateToArchive] =
+  const [templateToDelete, setTemplateToDelete] =
     useState<OperationalChecklistTemplate | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
 
@@ -137,22 +137,23 @@ export default function OperationChecklistTemplatesPage() {
     }
   };
 
-  const handleArchive = async () => {
-    if (!templateToArchive) return;
+  const handleDelete = async () => {
+    if (!templateToDelete) return;
 
     try {
-      await mutations.archive.mutateAsync({
-        templateId: templateToArchive.id,
-        expectedVersion: templateToArchive.version,
+      await mutations.remove.mutateAsync({
+        templateId: templateToDelete.id,
+        expectedVersion: templateToDelete.version,
       });
       toast({
-        title: "Modelo arquivado",
-        description: "Ele não aparecerá como opção para novos atendimentos.",
+        title: "Modelo apagado",
+        description:
+          "Ele foi removido da biblioteca. Checklists já aplicadas continuam preservadas.",
       });
-      setTemplateToArchive(null);
+      setTemplateToDelete(null);
     } catch (error) {
       toast({
-        title: "Não foi possível arquivar o modelo",
+        title: "Não foi possível apagar o modelo",
         description: getApiErrorMessage(
           error,
           "O modelo pode ter sido alterado por outra pessoa.",
@@ -253,9 +254,9 @@ export default function OperationChecklistTemplatesPage() {
         ? "Use “Criar modelo oficial” para definir o primeiro padrão da equipe."
         : "A gestão ainda não criou modelos oficiais para este workspace.",
       canEdit: canManageOfficial,
-      isArchiving: mutations.archive.isPending,
+      isDeleting: mutations.remove.isPending,
       onEdit: openEdit,
-      onArchive: setTemplateToArchive,
+      onDelete: setTemplateToDelete,
     },
     ...(shouldShowPersonal
       ? [
@@ -274,9 +275,9 @@ export default function OperationChecklistTemplatesPage() {
                 ? "Os modelos pessoais são seus e permanecem separados do padrão oficial da equipe."
                 : "Use “Criar modelo pessoal” para organizar as etapas da sua rotina.",
             canEdit: canOperateAttendances,
-            isArchiving: mutations.archive.isPending,
+            isDeleting: mutations.remove.isPending,
             onEdit: openEdit,
-            onArchive: setTemplateToArchive,
+            onDelete: setTemplateToDelete,
           },
         ]
       : []),
@@ -510,31 +511,31 @@ export default function OperationChecklistTemplatesPage() {
       />
 
       <AlertDialog
-        open={Boolean(templateToArchive)}
+        open={Boolean(templateToDelete)}
         onOpenChange={(open) => {
-          if (!open && !mutations.archive.isPending) setTemplateToArchive(null);
+          if (!open && !mutations.remove.isPending) setTemplateToDelete(null);
         }}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Arquivar modelo?</AlertDialogTitle>
+            <AlertDialogTitle>Apagar modelo?</AlertDialogTitle>
             <AlertDialogDescription>
-              O modelo “{templateToArchive?.name}” ficará inativo para novos
-              atendimentos. Checklists já aplicados continuarão preservados.
+              O modelo “{templateToDelete?.name}” será removido da biblioteca.
+              Checklists já aplicadas continuarão preservadas.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={mutations.archive.isPending}>
+            <AlertDialogCancel disabled={mutations.remove.isPending}>
               Cancelar
             </AlertDialogCancel>
             <AlertDialogAction
-              disabled={mutations.archive.isPending}
+              disabled={mutations.remove.isPending}
               onClick={(event) => {
                 event.preventDefault();
-                void handleArchive();
+                void handleDelete();
               }}
             >
-              {mutations.archive.isPending ? "Arquivando..." : "Arquivar"}
+              {mutations.remove.isPending ? "Apagando..." : "Apagar"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -552,9 +553,9 @@ type TemplateSectionProps = {
   emptyTitle: string;
   emptyMessage: string;
   canEdit: boolean;
-  isArchiving: boolean;
+  isDeleting: boolean;
   onEdit: (template: OperationalChecklistTemplate) => void;
-  onArchive: (template: OperationalChecklistTemplate) => void;
+  onDelete: (template: OperationalChecklistTemplate) => void;
 };
 
 function TemplateSection({
@@ -566,9 +567,9 @@ function TemplateSection({
   emptyTitle,
   emptyMessage,
   canEdit,
-  isArchiving,
+  isDeleting,
   onEdit,
-  onArchive,
+  onDelete,
 }: TemplateSectionProps) {
   const isOfficial = visibility === "OFFICIAL";
   const SectionIcon = isOfficial ? ClipboardCheck : UserRound;
@@ -607,9 +608,9 @@ function TemplateSection({
               key={template.id}
               template={template}
               canEdit={canEdit}
-              isArchiving={isArchiving}
+              isDeleting={isDeleting}
               onEdit={onEdit}
-              onArchive={onArchive}
+              onDelete={onDelete}
             />
           ))}
         </div>

@@ -1,10 +1,4 @@
-import {
-  Archive,
-  MoreHorizontal,
-  Pencil,
-  UserRound,
-  UsersRound,
-} from "lucide-react";
+import { MoreHorizontal, Pencil, Trash2, UserRound, UsersRound } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,17 +20,17 @@ import { OperationalChecklistTemplate } from "@/types/operational-checklist";
 type OperationalChecklistTemplateCardProps = {
   template: OperationalChecklistTemplate;
   canEdit: boolean;
-  isArchiving: boolean;
+  isDeleting: boolean;
   onEdit: (template: OperationalChecklistTemplate) => void;
-  onArchive: (template: OperationalChecklistTemplate) => void;
+  onDelete: (template: OperationalChecklistTemplate) => void;
 };
 
 export function OperationalChecklistTemplateCard({
   template,
   canEdit,
-  isArchiving,
+  isDeleting,
   onEdit,
-  onArchive,
+  onDelete,
 }: OperationalChecklistTemplateCardProps) {
   return (
     <Card
@@ -110,7 +104,7 @@ export function OperationalChecklistTemplateCard({
                     variant="ghost"
                     className="h-9 w-9 shrink-0 text-muted-foreground"
                     aria-label={`Mais ações para ${template.name}`}
-                    disabled={isArchiving}
+                    disabled={isDeleting}
                   >
                     <MoreHorizontal className="h-4 w-4" />
                   </Button>
@@ -118,10 +112,10 @@ export function OperationalChecklistTemplateCard({
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem
                     className="text-destructive focus:text-destructive"
-                    onSelect={() => onArchive(template)}
+                    onSelect={() => onDelete(template)}
                   >
-                    <Archive className="mr-2 h-4 w-4" />
-                    Arquivar modelo
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Apagar modelo
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

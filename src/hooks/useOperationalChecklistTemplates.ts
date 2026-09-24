@@ -1,13 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/auth/hooks";
 import { useWorkspaceContext } from "@/contexts/workspace/WorkspaceContext";
-import { archiveOperationalChecklistTemplate } from "@/services/operation/archiveOperationalChecklistTemplate";
 import { createOperationalChecklistTemplate } from "@/services/operation/createOperationalChecklistTemplate";
+import { deleteOperationalChecklistTemplate } from "@/services/operation/deleteOperationalChecklistTemplate";
 import { listOperationalChecklistTemplates } from "@/services/operation/listOperationalChecklistTemplates";
 import { updateOperationalChecklistTemplate } from "@/services/operation/updateOperationalChecklistTemplate";
 import {
-  ArchiveOperationalChecklistTemplateParams,
   CreateOperationalChecklistTemplateParams,
+  DeleteOperationalChecklistTemplateParams,
   UpdateOperationalChecklistTemplateParams,
 } from "@/types/operational-checklist";
 
@@ -76,15 +76,15 @@ export function useOperationalChecklistTemplateMutations(workspaceId?: string) {
     onSuccess: invalidateTemplates,
   });
 
-  const archive = useMutation({
+  const remove = useMutation({
     mutationFn: (
-      params: Omit<ArchiveOperationalChecklistTemplateParams, "workspaceId">,
+      params: Omit<DeleteOperationalChecklistTemplateParams, "workspaceId">,
     ) => {
       if (!resolvedWorkspaceId) {
         throw new Error("Workspace operacional não selecionado");
       }
 
-      return archiveOperationalChecklistTemplate({
+      return deleteOperationalChecklistTemplate({
         ...params,
         workspaceId: resolvedWorkspaceId,
       });
@@ -92,5 +92,5 @@ export function useOperationalChecklistTemplateMutations(workspaceId?: string) {
     onSuccess: invalidateTemplates,
   });
 
-  return { create, update, archive };
+  return { create, update, remove };
 }

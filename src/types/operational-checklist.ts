@@ -63,7 +63,7 @@ export interface UpdateOperationalChecklistTemplateParams {
   expectedVersion: number;
 }
 
-export interface ArchiveOperationalChecklistTemplateParams {
+export interface DeleteOperationalChecklistTemplateParams {
   workspaceId: string;
   templateId: string;
   expectedVersion: number;
