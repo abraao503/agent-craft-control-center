@@ -192,11 +192,12 @@ export function OperationalChecklistTemplateFormDialog({
     });
   }, [form, open, template]);
 
-  const visibilityLabel = visibility === "OFFICIAL" ? "oficial" : "pessoal";
   const isEditing = Boolean(template);
   const description = isEditing
-    ? "As alterações valem para novas aplicações; checklists já aplicadas mantêm sua cópia."
-    : `Este será um modelo ${visibilityLabel}. Cada aplicação cria uma cópia editável para o atendimento.`;
+    ? "As alterações valem para os próximos atendimentos. Checklists já iniciadas seguem como estão."
+    : visibility === "OFFICIAL"
+      ? "Crie um padrão de etapas para a equipe seguir em cada atendimento."
+      : "Monte um roteiro para sua rotina e reutilize-o nos seus atendimentos.";
 
   const handleDragEnd = ({ active, over }: DragEndEvent) => {
     if (!over || active.id === over.id) return;

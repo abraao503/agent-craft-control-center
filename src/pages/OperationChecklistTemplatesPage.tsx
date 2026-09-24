@@ -63,6 +63,7 @@ export default function OperationChecklistTemplatesPage() {
     currentWorkspace?.type === "OPERATION" ? currentWorkspace.id : undefined;
   const canManageOfficial = has("manage:operation-checklists");
   const canOperateAttendances = has("operate:operation-attendances");
+  const isOperator = canOperateAttendances && !canManageOfficial;
   const canCreate =
     Boolean(workspaceId) && (canManageOfficial || canOperateAttendances);
 
@@ -70,7 +71,7 @@ export default function OperationChecklistTemplatesPage() {
   const mutations = useOperationalChecklistTemplateMutations(workspaceId);
   const preferenceQuery = useOperationalChecklistPreference(
     workspaceId,
-    canOperateAttendances,
+    isOperator,
   );
   const preferenceMutations =
     useOperationalChecklistPreferenceMutations(workspaceId);
@@ -228,7 +229,7 @@ export default function OperationChecklistTemplatesPage() {
     (template) => template.visibility === "PERSONAL",
   );
   const shouldShowPersonal =
-    (canOperateAttendances && !canManageOfficial) || personalTemplates.length > 0;
+    isOperator || personalTemplates.length > 0;
   const isSaving = mutations.create.isPending || mutations.update.isPending;
   const pageDescription = canManageOfficial
     ? "Defina os modelos oficiais que padronizam as etapas dos atendimentos da equipe."
@@ -313,7 +314,7 @@ export default function OperationChecklistTemplatesPage() {
         ) : null}
       </header>
 
-      {canOperateAttendances && workspaceId ? (
+      {isOperator && workspaceId ? (
         <Card aria-labelledby="operator-checklist-default-title">
           <CardHeader className="space-y-1 p-4 pb-3 sm:p-5 sm:pb-3">
             <CardTitle
