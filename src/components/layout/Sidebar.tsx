@@ -23,7 +23,8 @@ import {
   Radio,
   Inbox,
   SlidersHorizontal,
-  List,
+  Network,
+  ClipboardCheck,
 } from "lucide-react";
 import { useAuth } from "@/contexts/auth/hooks";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -465,13 +466,13 @@ const SidebarMenuContent = () => {
         {
           path: "/operation/structure",
           label: "Estrutura",
-          icon: <List className="h-5 w-5" />,
+          icon: <Network className="h-5 w-5" />,
           requiredPermission: "view:operation-setup",
         },
         {
           path: "/operation/checklists",
           label: "Checklists",
-          icon: <List className="h-5 w-5" />,
+          icon: <ClipboardCheck className="h-5 w-5" />,
           requiredPermissions: [
             "manage:operation-checklists",
             "view:operation-attendances",

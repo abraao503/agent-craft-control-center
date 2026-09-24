@@ -20,6 +20,10 @@ confirmação no código ou no contrato atual da API.
 
 ## Regras obrigatórias
 
+- Antes de consultar uma fatia do ledger, classifique a mudança como
+  `QUICK_CHANGE`, `PATCH` ou `FEATURE`, seguindo o roteamento do `AGENTS.md`
+  da raiz. Não trate toda alteração visual como uma fatia: `QUICK_CHANGE` não
+  usa `frontier`, `feature list`, `context`, `item record` ou `validate list`.
 - Preserve mudanças preexistentes e mantenha o escopo pequeno. Antes de
   começar, rode `git status --short` neste diretório.
 - Use **npm**. Não use Bun nem regenere `package-lock.json` ou `bun.lockb` sem
@@ -43,10 +47,14 @@ confirmação no código ou no contrato atual da API.
 
 ### Contrato de apresentação
 
-- Para qualquer mudança visível, leia o contexto autorizado do ledger antes de
-  codificar. A tela deve seguir as referências, o objetivo, a ação primária,
-  os estados e os viewports declarados no item; não complete lacunas por
-  preferência visual própria.
+- Para uma mudança visível classificada como `PATCH` ou `FEATURE`, leia o
+  contexto autorizado do ledger antes de codificar. A tela deve seguir as
+  referências, o objetivo, a ação primária, os estados e os viewports
+  declarados no item; não complete lacunas por preferência visual própria.
+- Para uma mudança visível classificada como `QUICK_CHANGE`, não consulte uma
+  fatia nem use `context`, `item record` ou `validate list`. Registre o escopo
+  no caminho rápido do workflow, implemente somente os paths autorizados e
+  finalize com a verificação proporcional (`DIFF`, `COMMAND` ou `MANUAL`).
 - Trate a resposta da API como contrato de transporte, não como modelo de
   apresentação. Crie uma transformação/view model quando necessário e mostre
   nomes, rótulos e estados compreensíveis para o usuário.
