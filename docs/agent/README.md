@@ -12,6 +12,7 @@ estes guias.
 | Nova página, rota, provider ou layout | [Arquitetura](arquitetura.md) | `src/App.tsx`, `src/contexts/` |
 | Buscar, criar, editar ou remover dados | [Dados e API](dados-e-api.md) | `src/services/`, `src/types/`, `../api` |
 | Empresa, workspace, usuário ou permissão | [Autorização e tenancy](autorizacao-e-tenancy.md) | `src/hooks/usePermissions.ts`, `src/utils/permissions.ts` |
+| Preparar contas de teste para validar outros roles | [Contas de teste por role](test-accounts.md) | criação/edição de usuário e escopo de empresa/workspace |
 | Formulário, componente, feedback ou Socket.IO | [UI e tempo real](ui-e-tempo-real.md) | `src/components/ui/`, `src/lib/socket.ts` |
 | Follow-ups e regras históricas de domínio | [Domínios](dominios.md) | serviço e componentes do domínio |
 
@@ -43,3 +44,11 @@ estes guias.
 2. Este diretório `docs/agent/` e `front/AGENTS.md`.
 3. Documentos de domínio recentes, quando conferidos contra o código.
 4. Arquivos legados listados em [Legado](../README.md#legado).
+
+## Verificação documental
+
+Ao alterar `AGENTS.md` ou os guias deste diretório, execute
+`rtk npm run docs:check` na raiz do frontend. O comando verifica se os destinos
+locais usados pelos links Markdown existem. Confira também o diff com
+`rtk git diff --check`; lint, typecheck, build e Playwright ficam para mudanças
+que alterem código.

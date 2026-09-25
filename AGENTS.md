@@ -20,14 +20,21 @@ confirmação no código ou no contrato atual da API.
 
 ## Regras obrigatórias
 
+- Antes de consultar uma fatia do ledger, classifique a mudança como
+  `QUICK_CHANGE`, `PATCH` ou `FEATURE`, seguindo o roteamento do `AGENTS.md`
+  da raiz. Não trate toda alteração visual como uma fatia: `QUICK_CHANGE` não
+  usa `frontier`, `feature list`, `context`, `item record` ou `validate list`.
 - Preserve mudanças preexistentes e mantenha o escopo pequeno. Antes de
   começar, rode `git status --short` neste diretório.
 - Use **npm**. Não use Bun nem regenere `package-lock.json` ou `bun.lockb` sem
   solicitação explícita. Ambos existem no repositório; o lockfile não é um
   efeito colateral aceitável de uma mudança de código.
-- Não leia, imprima, modifique ou versione `.env` e credenciais. `VITE_*` é
-  configuração pública de build, mas os valores locais não devem aparecer em
-  código, logs ou documentação.
+- Não leia `.env` pelo terminal nem imprima, copie, modifique ou versione
+  credenciais. A conta administrativa de teste pode ser consumida pelo fluxo de
+  autenticação/runtime em testes autorizados; seus valores nunca devem aparecer
+  em código, ledger, argumentos de shell, logs, screenshots, traces, vídeos ou
+  documentação. `VITE_*` é configuração pública de build, mas os valores locais
+  também não devem aparecer nesses registros.
 - Não invente endpoint, payload ou tipo que a API já define. Confirme o
   contrato em `../api` (e em Swagger quando o ambiente estiver disponível)
   antes de implementar uma integração.
@@ -37,6 +44,56 @@ confirmação no código ou no contrato atual da API.
   é a autoridade; a UI usa permissões para não oferecer ações indisponíveis.
 - Não introduza bibliotecas, mudanças globais de estilo ou refactors amplos sem
   necessidade explícita.
+
+### Contrato de apresentação
+
+- Para uma mudança visível classificada como `PATCH` ou `FEATURE`, leia o
+  contexto autorizado do ledger antes de codificar. A tela deve seguir as
+  referências, o objetivo, a ação primária, os estados e os viewports
+  declarados no item; não complete lacunas por preferência visual própria.
+- Para uma mudança visível classificada como `QUICK_CHANGE`, não consulte uma
+  fatia nem use `context`, `item record` ou `validate list`. Registre o escopo
+  no caminho rápido do workflow, implemente somente os paths autorizados e
+  finalize com a verificação proporcional (`DIFF`, `COMMAND` ou `MANUAL`).
+- Trate a resposta da API como contrato de transporte, não como modelo de
+  apresentação. Crie uma transformação/view model quando necessário e mostre
+  nomes, rótulos e estados compreensíveis para o usuário.
+- Não renderize diretamente UUIDs, IDs internos, enums, códigos de provider,
+  payloads brutos, mensagens de exceção ou outros diagnósticos. Se a tela
+  precisa de uma referência técnica para uma ação, mantenha-a no estado ou no
+  service e mostre uma representação amigável; se o nome não existir, ajuste
+  o contrato ou registre a lacuna em vez de expor o identificador.
+- Procure primeiro a tela e o componente equivalente mais próximo. Reutilize
+  primitives, tokens, espaçamentos, hierarquia, padrões de feedback e copy do
+  domínio; não crie uma linguagem visual paralela para uma única feature.
+- Implemente e verifique loading, erro, vazio, sucesso/dados parciais,
+  acessibilidade básica e viewport estreita quando a tela for afetada. A
+  validação visual deve exercitar a jornada do item, não apenas compilar o
+  componente.
+
+### Perfil Playwright e credenciais de teste
+
+- O perfil de validação do ledger é `front-playwright-ui`. Ele executa
+  `npm run test:e2e` em Chromium desktop e mobile e comprova
+  `UI_INTERACTION`; não substitui a revisão visual do agente.
+- O runner carrega, somente em runtime, `test_admin_email` e
+  `test_admin_password` do `.env` da raiz compartilhada. Nunca copie esses
+  valores para o ledger, código, screenshots, traces, vídeos, logs ou
+  mensagens de erro.
+- Para uma validação manual que exige outro role, o responsável autorizou usar
+  essa conta no tenant de teste para criar um usuário dedicado ou definir uma
+  senha temporária para um usuário de teste especificamente identificado. Siga
+  [Contas de teste por role](docs/agent/test-accounts.md); essa autorização não
+  cobre produção, usuários reais/desconhecidos nem a senha da conta admin
+  compartilhada.
+- O smoke test usa o admin apenas para autenticação. Se uma jornada exigir
+  outro role, crie ou edite uma fixture identificável dentro do próprio teste,
+  preserve o estado original quando aplicável e remova/reverta a fixture no
+  teardown. Não deixe usuários persistentes como efeito colateral do smoke test.
+- A API local e o ambiente público da aplicação precisam estar acessíveis para
+  o teste. `ECONNREFUSED`, credencial rejeitada ou fixture ausente são falhas
+  de validação; não desabilite o teste nem substitua a API por mocks para
+  obter GREEN.
 
 ## Arquitetura e convenções
 
@@ -62,18 +119,26 @@ confirmação no código ou no contrato atual da API.
 
 ## Verificação e entrega
 
-Execute a verificação proporcional, a partir de `front/`:
+Para alterações somente documentais em `AGENTS.md` ou `docs/agent/`, execute
+`rtk npm run docs:check` e `rtk git diff --check`, a partir de `front/`. Esse
+check valida que os destinos locais dos links existem. Não rode lint,
+typecheck, build ou Playwright quando nenhum código foi alterado.
+
+Para mudanças de código, execute a verificação proporcional, a partir de
+`front/`:
 
 ```bash
-npm run lint
-npm run typecheck
-npm run build
+rtk npm run lint
+rtk npm run typecheck
+rtk npm run build
 ```
 
 Use `npm run typecheck`, e não `tsc --noEmit` diretamente: o `tsconfig.json`
 raiz usa *project references*, e a checagem correta é executada com `tsc -b`.
 
-Não há script de testes automatizados configurado. Quando uma mudança for de
-interface, valide manualmente o fluxo relevante quando o ambiente estiver
-disponível. Ao concluir, informe arquivos alterados, comandos executados e
-qualquer contrato/integração que não pôde ser validado localmente.
+O projeto tem Playwright em `npm run test:e2e`; use o fluxo visual relevante
+quando o ambiente local estiver disponível, conforme o perfil
+`front-playwright-ui`. Essa suíte requer a aplicação e a API acessíveis e não é
+necessária para alterações somente documentais. Ao concluir, informe arquivos
+alterados, comandos executados e qualquer contrato/integração que não pôde ser
+validado localmente.

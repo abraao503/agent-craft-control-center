@@ -51,6 +51,7 @@ import {
   AttendanceActionFormValues,
 } from "@/components/operation/AttendanceActionDialog";
 import { AttendanceFollowUpsCard } from "@/components/operation/AttendanceFollowUpsCard";
+import { AttendanceChecklistPanel } from "@/components/operation/AttendanceChecklistPanel";
 import { AttendanceInternalNote } from "@/components/operation/AttendanceInternalNote";
 import { MessageDeliveryChecks } from "@/components/operation/MessageDeliveryChecks";
 import { useMessageDeliveryChecks } from "@/components/operation/useMessageDeliveryChecks";
@@ -125,6 +126,22 @@ const EVENT_ICONS: Record<string, LucideIcon> = {
   CLOSE: XCircle,
 };
 
+const SECONDARY_PANEL_OPEN_STORAGE_KEY =
+  "operation-attendance-detail-secondary-panel-open";
+
+function getStoredSecondaryPanelOpen(): boolean {
+  try {
+    const storedValue = localStorage.getItem(SECONDARY_PANEL_OPEN_STORAGE_KEY);
+
+    if (storedValue === "true") return true;
+    if (storedValue === "false") return false;
+  } catch {
+    // Ignore storage errors and keep the default state.
+  }
+
+  return true;
+}
+
 interface OperationAttendanceDetailPageProps {
   realtimeEnabled?: boolean;
   embedded?: boolean;
@@ -150,7 +167,21 @@ export default function OperationAttendanceDetailPage({
   );
   const attendanceMutations = useOperationalAttendanceMutations(workspaceId);
   const [activeAction, setActiveAction] = useState<AttendanceAction | null>(null);
-  const [secondaryPanelOpen, setSecondaryPanelOpen] = useState(true);
+  const [secondaryPanelOpen, setSecondaryPanelOpen] = useState(
+    getStoredSecondaryPanelOpen,
+  );
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        SECONDARY_PANEL_OPEN_STORAGE_KEY,
+        String(secondaryPanelOpen),
+      );
+    } catch {
+      // Ignore storage errors and keep the in-memory state.
+    }
+  }, [secondaryPanelOpen]);
+
   const detailQuery = useOperationalAttendanceDetail(
     workspaceId,
     attendanceId,
@@ -897,6 +928,12 @@ export default function OperationAttendanceDetailPage({
                 </Card>
               </Collapsible>
             ) : null}
+
+            <AttendanceChecklistPanel
+              workspaceId={workspaceId!}
+              attendanceId={attendance.id}
+              canOperate={canOperateAttendances}
+            />
 
             <AttendanceFollowUpsCard
               workspaceId={workspaceId!}
