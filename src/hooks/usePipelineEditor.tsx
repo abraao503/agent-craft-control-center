@@ -32,6 +32,7 @@ import {
 } from "@/types/whatsapp-integration";
 import { convertHtmlStringToText } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth/hooks";
+import { useWorkspaceContext } from "@/contexts/workspace/WorkspaceContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { CompanyWhatsAppIntegrationFull } from "@/types/whatsapp";
 
@@ -241,6 +242,7 @@ export function usePipelineEditor(): PipelineEditorResult {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { userProfile } = useAuth();
+  const { currentWorkspace } = useWorkspaceContext();
   const { has } = usePermissions();
   const isCreating = !pipelineId;
   const { setDirty, requestNavigation } = useUnsavedChanges();
@@ -274,7 +276,9 @@ export function usePipelineEditor(): PipelineEditorResult {
   const consumedMetaQueryRef = useRef(false);
   const metaSelectionFromQueryRef = useRef(false);
 
-  const metaCloudEnabled = Boolean(userProfile?.metaCloudWhatsappEnabled);
+  const metaCloudEnabled =
+    currentWorkspace?.type === "COMMERCIAL" ||
+    Boolean(userProfile?.metaCloudWhatsappEnabled);
   const canUpdatePipeline = has(
     isCreating ? "create:pipeline" : "update:pipeline",
   );

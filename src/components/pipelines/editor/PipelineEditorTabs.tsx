@@ -144,6 +144,7 @@ export function PipelineEditorTabs({
           availableWhatsAppIntegrations={availableWhatsAppIntegrations}
           companyWhatsappIntegrationId={companyWhatsappIntegrationId}
           pipelineId={pipelineId}
+          workspaceId={workspaceId}
           metaCloudEnabled={metaCloudEnabled}
           canUpdatePipeline={canUpdatePipeline}
           canManageIntegrations={canManageIntegrations}

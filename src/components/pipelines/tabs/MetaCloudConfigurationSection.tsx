@@ -19,9 +19,13 @@ import { Badge } from "@/components/ui/badge";
 import { PipelineStageMinimal } from "@/types/pipeline";
 import { CompanyWhatsAppIntegrationFull } from "@/types/whatsapp";
 import { useMetaCloudPipelineConfiguration } from "@/hooks/useMetaCloudPipelineConfiguration";
+import { usePermissions } from "@/hooks/usePermissions";
+import { useWorkspaceContext } from "@/contexts/workspace/WorkspaceContext";
+import { CommercialMetaManualAccountAssistant } from "@/components/pipelines/CommercialMetaManualAccountAssistant";
 
 type Props = {
   enabled: boolean;
+  workspaceId?: string;
   canManageIntegrations: boolean;
   pipelineId?: string;
   stages: PipelineStageMinimal[];
@@ -41,6 +45,7 @@ function errorMessage(error: unknown) {
 
 export function MetaCloudConfigurationSection({
   enabled,
+  workspaceId,
   canManageIntegrations,
   pipelineId,
   stages,
@@ -50,13 +55,21 @@ export function MetaCloudConfigurationSection({
   onPhoneNumberChange,
   onInitialStageOrderChange,
 }: Props) {
+  const { has } = usePermissions();
+  const { currentWorkspace } = useWorkspaceContext();
+  const isCommercialWorkspace = currentWorkspace?.type === "COMMERCIAL";
   const {
     diagnosticQuery,
     phoneNumbersQuery,
     templatesQuery,
     syncPhoneNumbersMutation,
     syncTemplatesMutation,
-  } = useMetaCloudPipelineConfiguration(enabled, canManageIntegrations);
+  } = useMetaCloudPipelineConfiguration(
+    enabled,
+    canManageIntegrations,
+    workspaceId,
+    has("view:integrations"),
+  );
 
   if (!enabled) return null;
 
@@ -79,13 +92,19 @@ export function MetaCloudConfigurationSection({
         : "Não configurado";
 
   return (
-    <Card className="border-blue-500/20 bg-blue-500/[0.03]">
+    <div className="space-y-4">
+      <CommercialMetaManualAccountAssistant
+        enabled={enabled && isCommercialWorkspace}
+        workspaceId={workspaceId}
+        canManageIntegrations={canManageIntegrations}
+      />
+      <Card className="border-blue-500/20 bg-blue-500/[0.03]">
       <CardHeader className="pb-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <CardTitle className="text-sm">WhatsApp Cloud API oficial</CardTitle>
             <CardDescription className="text-xs">
-              Use um número provisionado pela Meta. Credenciais, QR Code e webhook não são necessários.
+              Use um número provisionado pela Meta. A conta, o webhook e os números são acompanhados no assistente acima.
             </CardDescription>
           </div>
           <Badge variant={status === "CONNECTED" ? "default" : "outline"}>
@@ -198,42 +217,46 @@ export function MetaCloudConfigurationSection({
                     : pipelineDiagnostic?.diagnosticMessage ||
                       (diagnostic?.configured
                         ? "Ambiente Meta configurado."
-                        : "Complete as credenciais do ambiente Meta para sincronizar.")}
+                        : isCommercialWorkspace
+                          ? "Configure a conta Meta acima para liberar os números deste workspace."
+                          : "Complete as credenciais do ambiente Meta para sincronizar.")}
               </p>
             </div>
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={
-              !canManageIntegrations ||
-              diagnosticQuery.isLoading ||
-              syncPhoneNumbersMutation.isPending
-            }
-            onClick={() => syncPhoneNumbersMutation.mutate()}
-          >
-            <RefreshCw className="mr-2 h-3.5 w-3.5" />
-            {syncPhoneNumbersMutation.isPending ? "Sincronizando números..." : "Sincronizar números"}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={
-              !canManageIntegrations ||
-              diagnosticQuery.isLoading ||
-              syncTemplatesMutation.isPending
-            }
-            onClick={() => syncTemplatesMutation.mutate()}
-          >
-            <RefreshCw className="mr-2 h-3.5 w-3.5" />
-            {syncTemplatesMutation.isPending ? "Sincronizando templates..." : "Sincronizar templates"}
-          </Button>
-        </div>
+        {!isCommercialWorkspace ? (
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={
+                !canManageIntegrations ||
+                diagnosticQuery.isLoading ||
+                syncPhoneNumbersMutation.isPending
+              }
+              onClick={() => syncPhoneNumbersMutation.mutate()}
+            >
+              <RefreshCw className="mr-2 h-3.5 w-3.5" />
+              {syncPhoneNumbersMutation.isPending ? "Sincronizando números..." : "Sincronizar números"}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={
+                !canManageIntegrations ||
+                diagnosticQuery.isLoading ||
+                syncTemplatesMutation.isPending
+              }
+              onClick={() => syncTemplatesMutation.mutate()}
+            >
+              <RefreshCw className="mr-2 h-3.5 w-3.5" />
+              {syncTemplatesMutation.isPending ? "Sincronizando templates..." : "Sincronizar templates"}
+            </Button>
+          </div>
+        ) : null}
 
         {syncPhoneNumbersMutation.isError ? (
           <p className="text-xs text-destructive">{errorMessage(syncPhoneNumbersMutation.error)}</p>
@@ -278,6 +301,7 @@ export function MetaCloudConfigurationSection({
           )}
         </div>
       </CardContent>
-    </Card>
+      </Card>
+    </div>
   );
 }
