@@ -88,12 +88,39 @@ interface PipelineApiError {
   path?: PipelineValidationPath;
 }
 
+interface MetaDuplicatePhoneErrorData {
+  code?: string;
+  workspaceName?: string;
+}
+
 interface SaveErrorFeedback {
   message: string;
   tab?: PipelineEditorTab;
   stageIndex?: number;
   ruleIndex?: number;
 }
+
+const getDuplicatePhoneWorkspaceName = (
+  error: unknown,
+): string | undefined => {
+  const response = (
+    error as {
+      response?: {
+        status?: number;
+        data?: MetaDuplicatePhoneErrorData;
+      };
+    }
+  )?.response;
+
+  if (
+    response?.status !== 409 ||
+    response.data?.code !== "DUPLICATE_PHONE_NUMBER"
+  ) {
+    return undefined;
+  }
+
+  return response.data.workspaceName?.trim() || undefined;
+};
 
 const defaultAgentFormData: AgentFormData = {
   name: "",
@@ -925,11 +952,17 @@ export function usePipelineEditor(): PipelineEditorResult {
             phoneNumberId: metaPhoneNumberId!,
             initialPipelineStageOrder: initialStageOrder,
           });
-        } catch {
+        } catch (error) {
           setActiveTab("config");
+          const duplicatePhoneWorkspaceName =
+            getDuplicatePhoneWorkspaceName(error);
           toast({
-            title: "Pipeline salvo; WhatsApp não atualizado",
-            description: "Revise a conexão Meta e tente novamente.",
+            title: duplicatePhoneWorkspaceName
+              ? "Número já configurado"
+              : "Pipeline salvo; WhatsApp não atualizado",
+            description: duplicatePhoneWorkspaceName
+              ? `Esse número já está configurado no workspace "${duplicatePhoneWorkspaceName}".`
+              : "Revise a conexão Meta e tente novamente.",
             variant: "destructive",
           });
           return;
