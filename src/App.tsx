@@ -17,7 +17,6 @@ import { useAuth } from "./contexts/auth/hooks";
 import Dashboard from "./pages/Dashboard";
 import DashboardV2Page from "./pages/DashboardV2Page";
 import Login from "./pages/Login";
-import Signup from "./pages/Signup";
 import { UnsavedChangesProvider } from "./contexts/unsaved-changes/UnsavedChangesContext";
 import SettingsPage from "./pages/SettingsPage";
 import IntegrationsPage from "./pages/IntegrationsPage";
@@ -366,7 +365,6 @@ const App = () => (
                 <Routes>
                   <Route path="/" element={<LandingPage />} />
                   <Route path="/login" element={<Login />} />
-                  <Route path="/signup" element={<Signup />} />
                   <Route
                     path="/forgot-password"
                     element={<ForgotPasswordPage />}

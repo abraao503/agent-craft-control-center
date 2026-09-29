@@ -20,19 +20,22 @@ confirmação no código ou no contrato atual da API.
 
 ## Regras obrigatórias
 
-- Antes de consultar uma fatia do ledger, classifique a mudança como
-  `QUICK_CHANGE`, `PATCH` ou `FEATURE`, seguindo o roteamento do `AGENTS.md`
-  da raiz. Não trate toda alteração visual como uma fatia: `QUICK_CHANGE` não
-  usa `frontier`, `feature list`, `context`, `item record` ou `validate list`.
+- Não inicie o Flow para documentação, formatação, investigação somente leitura
+  ou uma alteração local, reversível e diretamente verificável em um único
+  arquivo. Faça essas tarefas diretamente e execute a validação proporcional.
+- Use o Flow quando a mudança atravessar componentes e services, alterar
+  contrato com a API, autenticação, tenancy, estado assíncrono, múltiplos
+  repositórios ou exigir revisão externa. O Flow deve planejar fatias pequenas
+  e verificáveis; não transforme uma tarefa visual trivial em burocracia.
 - Preserve mudanças preexistentes e mantenha o escopo pequeno. Antes de
-  começar, rode `git status --short` neste diretório.
+  começar, rode `rtk git status --short` neste diretório.
 - Use **npm**. Não use Bun nem regenere `package-lock.json` ou `bun.lockb` sem
   solicitação explícita. Ambos existem no repositório; o lockfile não é um
   efeito colateral aceitável de uma mudança de código.
 - Não leia `.env` pelo terminal nem imprima, copie, modifique ou versione
   credenciais. A conta administrativa de teste pode ser consumida pelo fluxo de
   autenticação/runtime em testes autorizados; seus valores nunca devem aparecer
-  em código, ledger, argumentos de shell, logs, screenshots, traces, vídeos ou
+  em código, Flow, argumentos de shell, logs, screenshots, traces, vídeos ou
   documentação. `VITE_*` é configuração pública de build, mas os valores locais
   também não devem aparecer nesses registros.
 - Não invente endpoint, payload ou tipo que a API já define. Confirme o
@@ -47,14 +50,12 @@ confirmação no código ou no contrato atual da API.
 
 ### Contrato de apresentação
 
-- Para uma mudança visível classificada como `PATCH` ou `FEATURE`, leia o
-  contexto autorizado do ledger antes de codificar. A tela deve seguir as
-  referências, o objetivo, a ação primária, os estados e os viewports
-  declarados no item; não complete lacunas por preferência visual própria.
-- Para uma mudança visível classificada como `QUICK_CHANGE`, não consulte uma
-  fatia nem use `context`, `item record` ou `validate list`. Registre o escopo
-  no caminho rápido do workflow, implemente somente os paths autorizados e
-  finalize com a verificação proporcional (`DIFF`, `COMMAND` ou `MANUAL`).
+- Quando a mudança passar pelo Flow, leia o plano e a fatia autorizada antes de
+  codificar. Siga objetivo, ação primária, estados e viewports declarados; não
+  complete lacunas por preferência visual própria.
+- Quando a mudança for direta, não crie plano artificial: implemente somente o
+  escopo solicitado e finalize com verificação proporcional (`DIFF`,
+  `COMMAND` ou `MANUAL`).
 - Trate a resposta da API como contrato de transporte, não como modelo de
   apresentação. Crie uma transformação/view model quando necessário e mostre
   nomes, rótulos e estados compreensíveis para o usuário.
@@ -71,14 +72,15 @@ confirmação no código ou no contrato atual da API.
   validação visual deve exercitar a jornada do item, não apenas compilar o
   componente.
 
-### Perfil Playwright e credenciais de teste
+### Validação visual e credenciais de teste
 
-- O perfil de validação do ledger é `front-playwright-ui`. Ele executa
-  `npm run test:e2e` em Chromium desktop e mobile e comprova
-  `UI_INTERACTION`; não substitui a revisão visual do agente.
+- Quando Playwright estiver no escopo, declare `rtk npm run test:e2e` como check
+  do plano Flow ou execute-o diretamente quando a tarefa não passar pelo Flow.
+  O teste cobre Chromium desktop e mobile, mas não substitui a revisão visual
+  do agente.
 - O runner carrega, somente em runtime, `test_admin_email` e
   `test_admin_password` do `.env` da raiz compartilhada. Nunca copie esses
-  valores para o ledger, código, screenshots, traces, vídeos, logs ou
+  valores para o Flow, código, screenshots, traces, vídeos, logs ou
   mensagens de erro.
 - Para uma validação manual que exige outro role, o responsável autorizou usar
   essa conta no tenant de teste para criar um usuário dedicado ou definir uma
@@ -93,7 +95,7 @@ confirmação no código ou no contrato atual da API.
 - A API local e o ambiente público da aplicação precisam estar acessíveis para
   o teste. `ECONNREFUSED`, credencial rejeitada ou fixture ausente são falhas
   de validação; não desabilite o teste nem substitua a API por mocks para
-  obter GREEN.
+  considerar a validação aprovada.
 
 ## Arquitetura e convenções
 
@@ -128,17 +130,24 @@ Para mudanças de código, execute a verificação proporcional, a partir de
 `front/`:
 
 ```bash
-rtk npm run lint
+rtk npm run lint:modified -- src/caminho/arquivo.tsx
 rtk npm run typecheck
 rtk npm run build
 ```
 
-Use `npm run typecheck`, e não `tsc --noEmit` diretamente: o `tsconfig.json`
+O script `lint:modified` recebe explicitamente os arquivos alterados e evita
+que erros preexistentes em outras áreas bloqueiem a tarefa. No workspace que
+usa o Flow, prefira `rtk node ../flow/dist/src/main.js check modified --repo
+front`, que descobre os arquivos rastreados e não rastreados automaticamente.
+Use `rtk npm run lint` somente quando houver mudança em configuração global do
+ESLint/parser, dependências ou quando a validação completa for solicitada.
+
+Use `rtk npm run typecheck`, e não `tsc --noEmit` diretamente: o `tsconfig.json`
 raiz usa *project references*, e a checagem correta é executada com `tsc -b`.
 
-O projeto tem Playwright em `npm run test:e2e`; use o fluxo visual relevante
-quando o ambiente local estiver disponível, conforme o perfil
-`front-playwright-ui`. Essa suíte requer a aplicação e a API acessíveis e não é
+O projeto tem Playwright em `rtk npm run test:e2e`; use o fluxo visual relevante
+quando o ambiente local estiver disponível, conforme o check definido para a
+tarefa. Essa suíte requer a aplicação e a API acessíveis e não é
 necessária para alterações somente documentais. Ao concluir, informe arquivos
 alterados, comandos executados e qualquer contrato/integração que não pôde ser
 validado localmente.

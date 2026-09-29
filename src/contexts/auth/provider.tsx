@@ -118,31 +118,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     applySwitchedSession(session, returnPath, false);
   };
 
-  const signup = async (name: string, email: string, password: string) => {
-    try {
-      const { data } = await api.post("/user/register", {
-        name,
-        email,
-        password,
-      });
-
-      toast({
-        title: t("auth.signupSuccess"),
-        description: t("auth.accountCreated"),
-      });
-    } catch (error) {
-      if (error instanceof AxiosError) {
-        const message = error.response?.data?.message || error.message;
-        toast({
-          title: t("auth.signupFailed"),
-          description: translateAuthError(message, t("auth.genericError")),
-          variant: "destructive",
-        });
-      }
-      throw error;
-    }
-  };
-
   const logout = () => {
     removeUserData();
 
@@ -226,7 +201,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         login,
         impersonateUser,
         stopImpersonation,
-        signup,
         logout,
         loadUserProfile,
       }}

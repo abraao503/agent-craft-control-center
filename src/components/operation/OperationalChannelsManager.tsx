@@ -135,6 +135,14 @@ export function OperationalChannelsManager({
     setChannelsPage(1);
   }, [workspaceId]);
 
+  useEffect(() => {
+    const totalPages = channelsQuery.data?.totalPages ?? 1;
+
+    if (channelsPage > totalPages) {
+      setChannelsPage(Math.max(1, totalPages));
+    }
+  }, [channelsPage, channelsQuery.data?.totalPages]);
+
   const routesByChannelId = useMemo(
     () =>
       new Map(
