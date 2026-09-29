@@ -6,7 +6,6 @@ import {
   Zap,
   Shield,
   BarChart3,
-  ChevronRight,
   MessageSquare,
   Calendar,
 } from "lucide-react";
@@ -50,15 +49,6 @@ const LandingPage = () => {
           >
             {t("landing.login")}
           </Link>
-          <Link
-            to="/signup"
-            className={buttonVariants({
-              variant: "default",
-              className: "rounded-full shadow-lg shadow-primary/20 px-6",
-            })}
-          >
-            {t("landing.createAccount")}
-          </Link>
         </nav>
       </header>
 
@@ -86,17 +76,6 @@ const LandingPage = () => {
           </p>
 
           <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 animate-in fade-in slide-in-from-bottom-10 duration-700 delay-300">
-            <Link
-              to="/signup"
-              className={buttonVariants({
-                variant: "default",
-                size: "lg",
-                className:
-                  "rounded-full px-8 h-14 text-base shadow-xl shadow-primary/25",
-              })}
-            >
-              {t("landing.startNow")} <ChevronRight className="ml-2 h-5 w-5" />
-            </Link>
             <Link
               to="/login"
               className={buttonVariants({

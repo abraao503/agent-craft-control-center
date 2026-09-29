@@ -33,6 +33,7 @@ interface ConfigurationsTabProps {
   availableWhatsAppIntegrations: CompanyWhatsAppIntegration[];
   companyWhatsappIntegrationId?: string | null;
   pipelineId?: string;
+  workspaceId?: string;
   metaCloudEnabled: boolean;
   canUpdatePipeline: boolean;
   canManageIntegrations: boolean;
@@ -62,6 +63,7 @@ export const ConfigurationsTab: React.FC<ConfigurationsTabProps> = ({
   externalClientToken,
   postbackUrl,
   pipelineId,
+  workspaceId,
   metaCloudEnabled,
   canUpdatePipeline,
   canManageIntegrations,
@@ -217,6 +219,7 @@ export const ConfigurationsTab: React.FC<ConfigurationsTabProps> = ({
           {whatsAppIntegrationName === WHATSAPP_INTEGRATION_NAMES.META_CLOUD ? (
             <MetaCloudConfigurationSection
               enabled={metaCloudEnabled}
+              workspaceId={workspaceId}
               canManageIntegrations={canManageIntegrations}
               pipelineId={pipelineId}
               stages={stages}

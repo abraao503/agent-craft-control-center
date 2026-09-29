@@ -18,7 +18,6 @@ export interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   impersonateUser: (userId: string, reason: string) => Promise<void>;
   stopImpersonation: () => Promise<void>;
-  signup: (name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
   loadUserProfile: () => Promise<void>;
 }

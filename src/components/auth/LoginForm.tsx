@@ -7,7 +7,6 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -152,17 +151,6 @@ const LoginForm = () => {
           </Button>
         </form>
       </CardContent>
-      <CardFooter className="flex flex-col space-y-2">
-        <div className="text-sm text-center text-muted-foreground">
-          {t("auth.noAccount")} {" "}
-          <Link
-            to="/signup"
-            className="text-primary hover:underline font-medium"
-          >
-            {t("auth.registerCompany")}
-          </Link>
-        </div>
-      </CardFooter>
     </Card>
   );
 };

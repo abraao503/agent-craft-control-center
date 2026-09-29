@@ -5,15 +5,6 @@ import i18n from "@/i18n/index";
  */
 
 export const authErrorTranslations: Record<string, string> = {
-  // Erros de signup
-  "User already exists":
-    "Este email já está cadastrado. Por favor, faça login ou use outro email.",
-  "Email already in use":
-    "Este email já está em uso. Por favor, use outro email.",
-  "Company already exists": "Uma empresa com este nome já existe.",
-  "Invalid email": "Email inválido.",
-  "Password too weak": "Senha muito fraca. Use no mínimo 8 caracteres.",
-
   // Erros de login
   "Invalid credentials": "Email ou senha incorretos.",
   "User not found": "Usuário não encontrado.",
@@ -34,11 +25,6 @@ export const authErrorTranslations: Record<string, string> = {
 };
 
 const authErrorKeys: Record<string, string> = {
-  "User already exists": "errors.userAlreadyExists",
-  "Email already in use": "errors.emailInUse",
-  "Company already exists": "errors.companyAlreadyExists",
-  "Invalid email": "errors.invalidEmail",
-  "Password too weak": "errors.weakPassword",
   "Invalid credentials": "errors.invalidCredentials",
   "User not found": "errors.userNotFound",
   "Invalid password": "errors.invalidPassword",
