@@ -54,6 +54,7 @@ import { AttendanceFollowUpsCard } from "@/components/operation/AttendanceFollow
 import { AttendanceChecklistPanel } from "@/components/operation/AttendanceChecklistPanel";
 import { AttendanceInternalNote } from "@/components/operation/AttendanceInternalNote";
 import { MessageDeliveryChecks } from "@/components/operation/MessageDeliveryChecks";
+import { TemplateMessage } from "@/components/chats/media/TemplateMessage";
 import { useMessageDeliveryChecks } from "@/components/operation/useMessageDeliveryChecks";
 import { OperationalTriageAgentHistory } from "@/components/operation/OperationalTriageAgentHistory";
 import { AttendanceComposer } from "@/components/operation/AttendanceComposer";
@@ -1263,7 +1264,9 @@ function ConversationMessage({
         ? message.sentByUser?.name || "Operador"
         : "Agente";
   const content = message.content?.trim();
-  const hasMedia = message.type.toLowerCase() !== "text";
+  const normalizedType = message.type.toLowerCase();
+  const isTemplate = normalizedType === "template";
+  const hasMedia = ["image", "audio", "document"].includes(normalizedType);
   const hasDeliveryChecks =
     !isCustomer && deliveryChecksState !== "disabled";
   const messageStatuses = [message.dispatchStatus, message.deliveryStatus]
@@ -1290,7 +1293,14 @@ function ConversationMessage({
         {message.templateName ? (
           <p className="mb-1 font-medium">Template: {message.templateName}</p>
         ) : null}
-        {content ? <p className="whitespace-pre-wrap break-words">{content}</p> : null}
+        {isTemplate ? (
+          <TemplateMessage
+            snapshot={message.templateSnapshot}
+            fallbackBody={content || message.templateName || "Template Meta"}
+          />
+        ) : content ? (
+          <p className="whitespace-pre-wrap break-words">{content}</p>
+        ) : null}
         <div className="mt-2 flex flex-wrap items-center justify-end gap-1 text-xs opacity-75">
           <span>{formatDateTime(message.createdAt)}</span>
           {hasDeliveryChecks ? (

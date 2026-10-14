@@ -127,6 +127,11 @@ function TimelineMessage({ event, chatId }: { event: ChatTimelineEvent; chatId: 
     deliveryUpdatedAt: event.payload.deliveryUpdatedAt,
     deliveryErrorCode: event.payload.deliveryErrorCode,
     deliveryErrorMessage: event.payload.deliveryErrorMessage,
+    templateId: event.payload.templateId,
+    templateName: event.payload.templateName,
+    templateLanguage: event.payload.templateLanguage,
+    templateParameters: event.payload.templateParameters,
+    templateSnapshot: event.payload.templateSnapshot,
   };
   const isCustomer = sender === "customer";
   const author =

@@ -29,6 +29,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { AudioRecorder } from "@/components/chats/AudioRecorder";
+import { TemplateMessage } from "@/components/chats/media/TemplateMessage";
 import { WhisperIcon } from "@/components/operation/WhisperIcon";
 
 const MAX_MEDIA_SIZE = 50 * 1024 * 1024;
@@ -78,16 +79,100 @@ function getTemplateSlots(template?: OperationalAttendanceTemplate): string[] {
     if (type === "BUTTONS" && Array.isArray(component.buttons)) {
       (component.buttons as TemplateComponent[]).forEach(
         (button, buttonIndex) => {
-          if (String(button.type ?? "").toUpperCase() !== "URL") return;
+          const type = String(button.type ?? "").toUpperCase();
+          if (type === "COPY_CODE") {
+            slots.push(`button.${buttonIndex}.1`);
+            return;
+          }
+          if (type !== "URL") return;
           variables(button.url).forEach((_value, index) =>
-            slots.push(`button.${buttonIndex}.${index + 1}`),
-          );
+              slots.push(`button.${buttonIndex}.${index + 1}`),
+            );
         },
       );
     }
   }
 
   return slots;
+}
+
+function renderTemplateText(
+  text: unknown,
+  bindings: Record<string, OperationalTemplateBinding>,
+  component: string,
+) {
+  if (typeof text !== "string") return "";
+
+  return text.replace(/\{\{\s*(\d+)\s*\}\}/g, (_match, index: string) => {
+    const slot = `${component}.${Number(index)}`;
+    const binding = bindings[slot];
+    if (!binding) return `{{${index}}}`;
+    if (binding.source === "fixed") return binding.value || `{{${index}}}`;
+    return `[${binding.source === "customer" ? "Cliente" : "Responsável"}: ${binding.field}]`;
+  });
+}
+
+function getTemplatePreviewSnapshot(
+  template: OperationalAttendanceTemplate | undefined,
+  bindings: Record<string, OperationalTemplateBinding>,
+) {
+  if (!template || !Array.isArray(template.components)) return null;
+
+  const components = template.components as TemplateComponent[];
+  const header = components.find(
+    (component) =>
+      String(component.type ?? "").toUpperCase() === "HEADER" &&
+      String(component.format ?? "").toUpperCase() === "TEXT",
+  );
+  const body = components.find(
+    (component) => String(component.type ?? "").toUpperCase() === "BODY",
+  );
+  const footer = components.find(
+    (component) => String(component.type ?? "").toUpperCase() === "FOOTER",
+  );
+  const buttonsComponent = components.find(
+    (component) => String(component.type ?? "").toUpperCase() === "BUTTONS",
+  );
+  const buttons = Array.isArray(buttonsComponent?.buttons)
+    ? (buttonsComponent.buttons as TemplateComponent[]).map(
+        (button, buttonIndex) => {
+          const type = String(button.type ?? "").toUpperCase();
+          const result: Record<string, unknown> = {
+            type,
+            text: typeof button.text === "string" ? button.text : "",
+          };
+
+          if (type === "URL") {
+            result.url = renderTemplateText(
+              button.url,
+              bindings,
+              `button.${buttonIndex}`,
+            );
+          }
+          if (type === "PHONE_NUMBER") {
+            result.phoneNumber = button.phone_number;
+          }
+          if (type === "COPY_CODE") {
+            const codeBinding = bindings[`button.${buttonIndex}.1`];
+            result.code =
+              codeBinding?.source === "fixed"
+                ? codeBinding.value
+                : Array.isArray(button.example)
+                  ? button.example[0]
+                  : undefined;
+          }
+
+          return result;
+        },
+      )
+    : [];
+
+  return {
+    header: renderTemplateText(header?.text, bindings, "header") || null,
+    body: renderTemplateText(body?.text, bindings, "body"),
+    footer: typeof footer?.text === "string" ? footer.text : null,
+    buttons,
+  };
 }
 
 function getBindingSelectorValue(
@@ -196,6 +281,10 @@ export function AttendanceComposer({
   const templateSlots = useMemo(
     () => getTemplateSlots(selectedTemplate),
     [selectedTemplate],
+  );
+  const templatePreview = useMemo(
+    () => getTemplatePreviewSnapshot(selectedTemplate, templateBindings),
+    [selectedTemplate, templateBindings],
   );
 
   useEffect(() => {
@@ -953,6 +1042,17 @@ export function AttendanceComposer({
                         Este template não possui parâmetros variáveis.
                       </p>
                     )}
+                    {templatePreview ? (
+                      <div className="space-y-2 rounded-md border bg-background p-3">
+                        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                          Pré-visualização
+                        </p>
+                        <TemplateMessage
+                          snapshot={templatePreview}
+                          fallbackBody="Este template não possui conteúdo textual."
+                        />
+                      </div>
+                    ) : null}
                   </>
                 )}
               </div>
