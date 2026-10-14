@@ -8,6 +8,7 @@ export type AttendanceStatus =
 export type AttendanceCommandAction =
   | "INBOUND_CREATE"
   | "INBOUND_RESUME"
+  | "MIGRATE_CHANNEL"
   | "ROUTE"
   | "CLAIM"
   | "ASSIGN"
@@ -100,6 +101,7 @@ export interface AttendanceWithDetails extends Attendance {
   customer?: AttendanceCustomerSnapshot;
   destination?: AttendanceDestinationSnapshot;
   assignee?: AttendanceAssigneeSnapshot | null;
+  channel?: AttendanceChannelDetail | null;
   lastMessage?: AttendanceLastMessageSnapshot | null;
   unreadCount?: number;
 }
@@ -115,6 +117,9 @@ export interface AttendanceChannelDetail {
   id: string;
   displayName: string;
   provider: string;
+  active: boolean;
+  deletedAt: string | null;
+  connectionStatus: string;
 }
 
 export type AttendanceReplyCapabilityStatus =
@@ -126,6 +131,7 @@ export type AttendanceReplyCapabilityStatus =
 
 export interface AttendanceActionCapabilities {
   canResume: boolean;
+  canMigrateChannel: boolean;
 }
 
 export interface AttendanceReplyCapabilities {
@@ -771,6 +777,15 @@ export interface TransferAttendanceParams {
   targetQueueId: string;
   targetUserId?: string;
   targetAssistantId?: string;
+  reason?: string;
+  idempotencyKey?: string;
+}
+
+export interface MigrateAttendanceChannelParams {
+  workspaceId: string;
+  attendanceId: string;
+  expectedVersion: number;
+  targetChannelId: string;
   reason?: string;
   idempotencyKey?: string;
 }

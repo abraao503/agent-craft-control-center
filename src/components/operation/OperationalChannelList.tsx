@@ -41,6 +41,9 @@ type OperationalChannelListProps = {
   isSyncingMetaTemplates: boolean;
   metaTemplateSyncReady: boolean;
   onSyncMetaTemplates: (channel: OperationalChannel) => void;
+  canMigrateAttendances: boolean;
+  isMigratingAttendances: boolean;
+  onMigrateAttendances: (channel: OperationalChannel) => void;
   onRefresh: () => void;
   page: number;
   totalPages: number;
@@ -73,6 +76,9 @@ export function OperationalChannelList({
   isSyncingMetaTemplates,
   metaTemplateSyncReady,
   onSyncMetaTemplates,
+  canMigrateAttendances,
+  isMigratingAttendances,
+  onMigrateAttendances,
   onRefresh,
   page,
   totalPages,
@@ -220,6 +226,9 @@ export function OperationalChannelList({
     isSyncingMetaTemplates,
     metaTemplateSyncReady,
     onSyncMetaTemplates,
+    canMigrateAttendances,
+    isMigratingAttendances,
+    onMigrateAttendances,
     onRefresh,
   };
 

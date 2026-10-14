@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   AlertCircle,
   FlaskConical,
@@ -21,6 +22,8 @@ import { useOperationalRouteOptions } from "@/hooks/useOperationalRouteOptions";
 import { useSyncMetaTemplates } from "@/hooks/useSyncMetaTemplates";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useToast } from "@/hooks/use-toast";
+import { createOperationalChannelMigration } from "@/services/operation/createOperationalChannelMigration";
+import { getOperationalChannelMigration } from "@/services/operation/getOperationalChannelMigration";
 import {
   CreateOperationalChannelBody,
   CreateOperationalChannelRouteBody,
@@ -60,6 +63,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { OperationalChannelDialog, OperationalChannelFormValues } from "@/components/operation/OperationalChannelDialog";
 import { OperationalChannelList } from "@/components/operation/OperationalChannelList";
+import { OperationalChannelMigrationDialog } from "@/components/operation/OperationalChannelMigrationDialog";
 import { OperationalChannelOnboarding } from "@/components/operation/OperationalChannelOnboarding";
 import { OperationalMetaManualAccountCard } from "@/components/operation/OperationalMetaManualAccountCard";
 import {
@@ -109,6 +113,11 @@ export function OperationalChannelsManager({
   );
   const [channelToDeactivate, setChannelToDeactivate] =
     useState<OperationalChannel | null>(null);
+  const [channelToMigrate, setChannelToMigrate] =
+    useState<OperationalChannel | null>(null);
+  const [migrationToMonitorId, setMigrationToMonitorId] = useState<string | null>(
+    null,
+  );
   const [qrCode, setQrCode] = useState<QrCodeState | null>(null);
   const [webhookUrls, setWebhookUrls] = useState<Record<string, string>>({});
 
@@ -124,7 +133,13 @@ export function OperationalChannelsManager({
     canManageCompanyMeta,
   );
   const syncMetaTemplates = useSyncMetaTemplates(workspaceId, true);
-  const channelsQuery = useOperationalChannels(workspaceId, channelsPage);
+  const channelsQuery = useOperationalChannels(
+    workspaceId,
+    channelsPage,
+    true,
+    undefined,
+    true,
+  );
   const routesQuery = useOperationalChannelRoutes(workspaceId);
   const providersQuery = useOperationalChannelProviders(
     workspaceId,
@@ -137,6 +152,59 @@ export function OperationalChannelsManager({
   );
   const channelMutations = useOperationalChannelMutations(workspaceId);
   const routeMutations = useOperationalChannelRouteMutations(workspaceId);
+  const migrationQuery = useQuery({
+    queryKey: [
+      "operation-channel-migration",
+      workspaceId,
+      migrationToMonitorId,
+    ],
+    queryFn: () =>
+      getOperationalChannelMigration({
+        workspaceId: workspaceId!,
+        migrationId: migrationToMonitorId!,
+      }),
+    enabled: Boolean(workspaceId && migrationToMonitorId),
+    refetchInterval: (query) => {
+      const status = query.state.data?.status;
+      return status === "PENDING" || status === "PROCESSING" ? 3000 : false;
+    },
+  });
+  const channelMigration = useMutation({
+    mutationFn: async (targetChannelId: string) => {
+      if (!workspaceId || !channelToMigrate) {
+        throw new Error("CHANNEL_MIGRATION_CONTEXT_MISSING");
+      }
+
+      return createOperationalChannelMigration({
+        workspaceId,
+        sourceChannelId: channelToMigrate.id,
+        targetChannelId,
+        idempotencyKey: crypto.randomUUID(),
+      });
+    },
+    onSuccess: (result) => {
+      toast({
+        title: "Migração iniciada",
+        description:
+          result.totalItems === 0
+            ? "Não há atendimentos abertos para migrar neste canal."
+            : `${result.totalItems} atendimento(s) foram adicionados à fila de migração.`,
+      });
+      setMigrationToMonitorId(result.id);
+      setChannelToMigrate(null);
+      void refreshOperationalState();
+    },
+    onError: (error) => {
+      toast({
+        title: "Não foi possível iniciar a migração",
+        description: getOperationalErrorMessage(
+          error,
+          "Verifique se o canal de destino está conectado e tente novamente.",
+        ),
+        variant: "destructive",
+      });
+    },
+  });
 
   useEffect(() => {
     setChannelsPage(1);
@@ -559,6 +627,52 @@ export function OperationalChannelsManager({
         presentation="notice"
       />
 
+      {migrationQuery.data ? (
+        <Alert
+          variant={
+            migrationQuery.data.status === "COMPLETED_WITH_WARNINGS"
+              ? "destructive"
+              : "default"
+          }
+        >
+          <AlertTitle>
+            {migrationQuery.data.status === "COMPLETED" ||
+            migrationQuery.data.status === "COMPLETED_WITH_WARNINGS"
+              ? "Migração concluída"
+              : "Migração em andamento"}
+          </AlertTitle>
+          <AlertDescription className="flex flex-wrap items-center gap-3">
+            {migrationQuery.data.migratedItems} de {migrationQuery.data.totalItems}{" "}
+            atendimento(s) migrado(s).
+            {migrationQuery.data.pendingItems > 0
+              ? " " + migrationQuery.data.pendingItems + " pendente(s)."
+              : null}
+            {migrationQuery.data.skippedItems > 0
+              ? " " + migrationQuery.data.skippedItems + " ignorado(s)."
+              : null}
+            {migrationQuery.data.failedItems > 0
+              ? " " + migrationQuery.data.failedItems + " falhou(aram)."
+              : null}
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => migrationQuery.refetch()}
+              disabled={migrationQuery.isFetching}
+            >
+              Atualizar progresso
+            </Button>
+          </AlertDescription>
+        </Alert>
+      ) : migrationQuery.isError ? (
+        <Alert variant="destructive">
+          <AlertTitle>Não foi possível consultar a migração</AlertTitle>
+          <AlertDescription>
+            O processamento continua no servidor. Tente atualizar a página para
+            consultar o resultado novamente.
+          </AlertDescription>
+        </Alert>
+      ) : null}
+
       {routesQuery.isError ? (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
@@ -604,6 +718,9 @@ export function OperationalChannelsManager({
             !metaAccountsQuery.isLoading && !metaAccountsQuery.isError
           }
           onSyncMetaTemplates={handleSyncMetaTemplates}
+          canMigrateAttendances={canManageChannels}
+          isMigratingAttendances={channelMigration.isPending}
+          onMigrateAttendances={setChannelToMigrate}
           onRefresh={() => void refreshOperationalState()}
           page={channelsQuery.data?.page ?? channelsPage}
           totalPages={channelsQuery.data?.totalPages ?? 1}
@@ -679,6 +796,22 @@ export function OperationalChannelsManager({
           if (!open) setEditingChannel(null);
         }}
         onSubmit={handleChannelSubmit}
+      />
+
+      <OperationalChannelMigrationDialog
+        open={Boolean(channelToMigrate)}
+        workspaceId={workspaceId}
+        sourceChannel={channelToMigrate}
+        channels={channels}
+        isSubmitting={channelMigration.isPending}
+        onOpenChange={(open) => {
+          if (!open && !channelMigration.isPending) {
+            setChannelToMigrate(null);
+          }
+        }}
+        onSubmit={async (targetChannelId) => {
+          await channelMigration.mutateAsync(targetChannelId);
+        }}
       />
 
       <OperationalRouteDialog

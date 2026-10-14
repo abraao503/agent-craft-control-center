@@ -15,6 +15,7 @@ export async function listOperationalChannels(
         page: params.page ?? 1,
         limit: params.limit ?? 100,
         ...(params.active === undefined ? {} : { active: params.active }),
+        ...(params.includeArchived ? { includeArchived: true } : {}),
         ...(params.provider ? { provider: params.provider } : {}),
       },
     },

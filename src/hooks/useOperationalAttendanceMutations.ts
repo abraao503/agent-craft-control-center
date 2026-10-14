@@ -10,6 +10,7 @@ import { pendingAttendance } from "@/services/operation/pendingAttendance";
 import { resumeAttendance } from "@/services/operation/resumeAttendance";
 import { routeAttendance } from "@/services/operation/routeAttendance";
 import { transferAttendance } from "@/services/operation/transferAttendance";
+import { migrateAttendanceChannel } from "@/services/operation/migrateAttendanceChannel";
 import { unassignAttendance } from "@/services/operation/unassignAttendance";
 import { updateOperationalFollowUp } from "@/services/operation/updateOperationalFollowUp";
 import { sendOperationalAttendanceMessage } from "@/services/operation/sendOperationalAttendanceMessage";
@@ -24,6 +25,7 @@ import {
   ResumeAttendanceParams,
   RouteAttendanceParams,
   TransferAttendanceParams,
+  MigrateAttendanceChannelParams,
   UnassignAttendanceParams,
   UpdateOperationalFollowUpParams,
   SendOperationalAttendanceMessageParams,
@@ -239,6 +241,29 @@ export function useOperationalAttendanceMutations(workspaceId?: string) {
         throw new Error("Workspace operacional não selecionado");
       }
       return transferAttendance({
+        ...params,
+        workspaceId: targetWorkspaceId,
+      });
+    },
+    onSuccess: (_data, variables) => {
+      invalidateAttendanceScope(variables.attendanceId);
+    },
+    onError: (error, variables) => {
+      handleMutationError(error, variables.attendanceId);
+    },
+  });
+
+  const migrateChannel = useMutation({
+    mutationFn: (
+      params: Omit<MigrateAttendanceChannelParams, "workspaceId"> & {
+        workspaceId?: string;
+      },
+    ) => {
+      const targetWorkspaceId = params.workspaceId ?? resolvedWorkspaceId;
+      if (!targetWorkspaceId) {
+        throw new Error("Workspace operacional não selecionado");
+      }
+      return migrateAttendanceChannel({
         ...params,
         workspaceId: targetWorkspaceId,
       });
@@ -479,6 +504,7 @@ export function useOperationalAttendanceMutations(workspaceId?: string) {
     claim,
     assign,
     transfer,
+    migrateChannel,
     unassign,
     pending,
     resume,

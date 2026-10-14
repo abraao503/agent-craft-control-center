@@ -57,6 +57,7 @@ import { MessageDeliveryChecks } from "@/components/operation/MessageDeliveryChe
 import { useMessageDeliveryChecks } from "@/components/operation/useMessageDeliveryChecks";
 import { OperationalTriageAgentHistory } from "@/components/operation/OperationalTriageAgentHistory";
 import { AttendanceComposer } from "@/components/operation/AttendanceComposer";
+import { MigrateAttendanceChannelDialog } from "@/components/operation/MigrateAttendanceChannelDialog";
 import { OperationalContactNameField } from "@/components/operation/OperationalContactNameField";
 import { OperationalRealtimeStatus } from "@/components/operation/OperationalRealtimeStatus";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -103,6 +104,7 @@ const REPLY_STATUS_LABELS = {
 const EVENT_LABELS: Record<string, string> = {
   INBOUND_CREATE: "Atendimento criado",
   INBOUND_RESUME: "Atendimento retomado",
+  MIGRATE_CHANNEL: "Canal da conversa migrado",
   ROUTE: "Encaminhado para fila",
   CLAIM: "Assumido por operador",
   ASSIGN: "Responsável atribuído",
@@ -116,6 +118,7 @@ const EVENT_LABELS: Record<string, string> = {
 const EVENT_ICONS: Record<string, LucideIcon> = {
   INBOUND_CREATE: MessageSquare,
   INBOUND_RESUME: PlayCircle,
+  MIGRATE_CHANNEL: ArrowRightLeft,
   ROUTE: ArrowRight,
   CLAIM: CheckCircle2,
   ASSIGN: UserPlus,
@@ -167,6 +170,7 @@ export default function OperationAttendanceDetailPage({
   );
   const attendanceMutations = useOperationalAttendanceMutations(workspaceId);
   const [activeAction, setActiveAction] = useState<AttendanceAction | null>(null);
+  const [migrationDialogOpen, setMigrationDialogOpen] = useState(false);
   const [secondaryPanelOpen, setSecondaryPanelOpen] = useState(
     getStoredSecondaryPanelOpen,
   );
@@ -362,6 +366,7 @@ export default function OperationAttendanceDetailPage({
     attendanceMutations.claim.isPending ||
     attendanceMutations.assign.isPending ||
     attendanceMutations.transfer.isPending ||
+    attendanceMutations.migrateChannel.isPending ||
     attendanceMutations.unassign.isPending ||
     attendanceMutations.pending.isPending ||
     attendanceMutations.resume.isPending ||
@@ -370,6 +375,8 @@ export default function OperationAttendanceDetailPage({
     canOperateAttendances && options?.capabilities.canAssign,
   );
   const canTransfer = Boolean(canOperateAttendances && options);
+  const canMigrateChannel =
+    canOperateAttendances && attendance.actionCapabilities?.canMigrateChannel === true;
 
   const runQuickAction = async (action: "CLAIM" | "RESUME") => {
     try {
@@ -394,6 +401,31 @@ export default function OperationAttendanceDetailPage({
         description: getOperationalAttendanceErrorMessage(
           error,
           "Atualize o atendimento e tente novamente.",
+        ),
+        variant: "destructive",
+      });
+    }
+  };
+
+  const runChannelMigration = async (targetChannelId: string) => {
+    try {
+      await attendanceMutations.migrateChannel.mutateAsync({
+        attendanceId: attendance.id,
+        expectedVersion: attendance.version,
+        targetChannelId,
+        reason: "Migração manual pelo detalhe do atendimento",
+      });
+      toast({
+        title: "Conversa migrada",
+        description: "O histórico, a equipe e o destino foram preservados.",
+      });
+      setMigrationDialogOpen(false);
+    } catch (error) {
+      toast({
+        title: "Não foi possível migrar a conversa",
+        description: getOperationalAttendanceErrorMessage(
+          error,
+          "O atendimento pode ter sido alterado em outra sessão. Atualize e tente novamente.",
         ),
         variant: "destructive",
       });
@@ -510,6 +542,10 @@ export default function OperationAttendanceDetailPage({
   ]
     .filter(Boolean)
     .join(" · ");
+  const channelUnavailable = Boolean(
+    attendance.channel &&
+      (!attendance.channel.active || attendance.channel.deletedAt),
+  );
 
   return (
     <section
@@ -555,17 +591,19 @@ export default function OperationAttendanceDetailPage({
               status={realtime.status}
               joinedWorkspace={realtime.joinedWorkspace}
             />
-          <AttendanceActionControls
-            status={attendance.status}
-            hasAssignee={Boolean(attendance.assignee)}
-            canResume={attendance.actionCapabilities?.canResume === true}
-            canOperate={canOperateAttendances}
-            canManageAssignments={canManageAssignments}
-            canTransfer={canTransfer}
+            <AttendanceActionControls
+              status={attendance.status}
+              hasAssignee={Boolean(attendance.assignee)}
+              canResume={attendance.actionCapabilities?.canResume === true}
+              canOperate={canOperateAttendances}
+              canManageAssignments={canManageAssignments}
+              canTransfer={canTransfer}
+              canMigrateChannel={canMigrateChannel}
               optionsAvailable={Boolean(options)}
               pending={isActionPending}
               onQuickAction={(action) => void runQuickAction(action)}
               onAction={setActiveAction}
+              onMigrateChannel={() => setMigrationDialogOpen(true)}
             />
           </div>
         </header>
@@ -617,6 +655,27 @@ export default function OperationAttendanceDetailPage({
           <AlertDescription>
             A conversa continua disponível, mas o contador pode permanecer até a
             próxima atualização.
+          </AlertDescription>
+        </Alert>
+      ) : null}
+
+      {channelUnavailable ? (
+        <Alert>
+          <PauseCircle className="h-4 w-4" />
+          <AlertTitle>O canal desta conversa está pausado ou arquivado</AlertTitle>
+          <AlertDescription className="flex flex-wrap items-center gap-3">
+            O histórico continua disponível, mas novas respostas ficam bloqueadas
+            até a conversa ser migrada para um canal conectado.
+            {canMigrateChannel ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setMigrationDialogOpen(true)}
+                disabled={isActionPending}
+              >
+                Migrar conversa
+              </Button>
+            ) : null}
           </AlertDescription>
         </Alert>
       ) : null}
@@ -911,17 +970,19 @@ export default function OperationAttendanceDetailPage({
                           </AlertDescription>
                         </Alert>
                       ) : null}
-        <AttendanceActionControls
-          status={attendance.status}
-          hasAssignee={Boolean(attendance.assignee)}
-          canResume={attendance.actionCapabilities?.canResume === true}
-          canOperate={canOperateAttendances}
-          canManageAssignments={canManageAssignments}
-          canTransfer={canTransfer}
+                      <AttendanceActionControls
+                        status={attendance.status}
+                        hasAssignee={Boolean(attendance.assignee)}
+                        canResume={attendance.actionCapabilities?.canResume === true}
+                        canOperate={canOperateAttendances}
+                        canManageAssignments={canManageAssignments}
+                        canTransfer={canTransfer}
+                        canMigrateChannel={canMigrateChannel}
                         optionsAvailable={Boolean(options)}
                         pending={isActionPending}
                         onQuickAction={(action) => void runQuickAction(action)}
                         onAction={setActiveAction}
+                        onMigrateChannel={() => setMigrationDialogOpen(true)}
                       />
                     </CardContent>
                   </CollapsibleContent>
@@ -1004,6 +1065,16 @@ export default function OperationAttendanceDetailPage({
         onOpenChange={(open) => !open && setActiveAction(null)}
         onSubmit={(values) => void submitAction(values)}
       />
+
+      <MigrateAttendanceChannelDialog
+        open={migrationDialogOpen}
+        workspaceId={attendance.workspaceId}
+        currentChannelId={attendance.channel?.id ?? attendance.companyWhatsappIntegrationId}
+        currentChannelName={attendance.channel?.displayName}
+        isSubmitting={attendanceMutations.migrateChannel.isPending}
+        onOpenChange={setMigrationDialogOpen}
+        onSubmit={runChannelMigration}
+      />
     </section>
   );
 }
@@ -1015,10 +1086,12 @@ function AttendanceActionControls({
   canOperate,
   canManageAssignments,
   canTransfer,
+  canMigrateChannel,
   optionsAvailable,
   pending,
   onQuickAction,
   onAction,
+  onMigrateChannel,
 }: {
   status: AttendanceStatus;
   hasAssignee: boolean;
@@ -1026,10 +1099,12 @@ function AttendanceActionControls({
   canOperate: boolean;
   canManageAssignments: boolean;
   canTransfer: boolean;
+  canMigrateChannel: boolean;
   optionsAvailable: boolean;
   pending: boolean;
   onQuickAction: (action: "CLAIM" | "RESUME") => void;
   onAction: (action: AttendanceAction) => void;
+  onMigrateChannel: () => void;
 }) {
   if (!canOperate) {
     return (
@@ -1078,6 +1153,18 @@ function AttendanceActionControls({
         <Button size="sm" variant="outline" className="h-8" onClick={() => onAction("PENDING")} disabled={pending}>
           <PauseCircle className="mr-1.5 h-4 w-4" />
           Aguardar
+        </Button>
+      ) : null}
+      {canMigrateChannel ? (
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-8"
+          onClick={onMigrateChannel}
+          disabled={pending}
+        >
+          <ArrowRightLeft className="mr-1.5 h-4 w-4" />
+          Migrar canal
         </Button>
       ) : null}
       {hasMoreActions ? (
