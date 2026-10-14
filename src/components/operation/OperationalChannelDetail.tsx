@@ -60,6 +60,10 @@ type OperationalChannelDetailProps = {
   onActivate: (channel: OperationalChannel) => void;
   onDeactivate: (channel: OperationalChannel) => void;
   onRequestQrCode: (channel: OperationalChannel) => void;
+  canSyncMetaTemplates: boolean;
+  isSyncingMetaTemplates: boolean;
+  metaTemplateSyncReady: boolean;
+  onSyncMetaTemplates: (channel: OperationalChannel) => void;
   onRefresh: () => void;
 };
 
@@ -106,6 +110,10 @@ function ChannelDetailContent({
   onActivate,
   onDeactivate,
   onRequestQrCode,
+  canSyncMetaTemplates,
+  isSyncingMetaTemplates,
+  metaTemplateSyncReady,
+  onSyncMetaTemplates,
   onRefresh,
   compact = false,
 }: Omit<OperationalChannelDetailProps, "channel"> & {
@@ -139,6 +147,8 @@ function ChannelDetailContent({
     !channel.active &&
     channel.provider === "meta-cloud" &&
     Boolean(channel.metaPhoneNumberId);
+  const showMetaTemplateSync =
+    canSyncMetaTemplates && channel.provider === "meta-cloud";
 
   return (
     <article className={cn("flex min-h-full flex-col", compact && "pt-2")}>
@@ -165,50 +175,80 @@ function ChannelDetailContent({
           )}
         </div>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+        <div className="flex shrink-0 items-center gap-1">
+          {showMetaTemplateSync ? (
             <Button
-              size="icon"
-              variant="ghost"
-              className="h-9 w-9 shrink-0"
-              aria-label={`Ações do canal ${channelName}`}
+              size="sm"
+              variant="outline"
+              onClick={() => onSyncMetaTemplates(channel)}
+              disabled={isSyncingMetaTemplates || !metaTemplateSyncReady}
+              aria-label={
+                isSyncingMetaTemplates
+                  ? "Sincronizando templates"
+                  : "Sincronizar templates"
+              }
+              title={
+                metaTemplateSyncReady
+                  ? "Sincronizar templates aprovados deste canal"
+                  : "A conta Meta deste canal ainda está sendo carregada"
+              }
             >
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onSelect={onRefresh} disabled={isRefreshing}>
               <RefreshCw
-                className={cn("mr-2 h-4 w-4", isRefreshing && "animate-spin")}
+                className={cn(
+                  "h-4 w-4",
+                  isSyncingMetaTemplates && "animate-spin",
+                )}
               />
-              Atualizar status
-            </DropdownMenuItem>
-            {canManageConnection ? (
-              <DropdownMenuItem onSelect={() => onEditChannel(channel)}>
-                <Pencil className="mr-2 h-4 w-4" />
-                Editar canal
+              <span className="hidden sm:inline">
+                {isSyncingMetaTemplates ? "Sincronizando..." : "Sincronizar templates"}
+              </span>
+            </Button>
+          ) : null}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-9 w-9 shrink-0"
+                aria-label={`Ações do canal ${channelName}`}
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onSelect={onRefresh} disabled={isRefreshing}>
+                <RefreshCw
+                  className={cn("mr-2 h-4 w-4", isRefreshing && "animate-spin")}
+                />
+                Atualizar status
               </DropdownMenuItem>
-            ) : null}
-            {canManageRoute ? (
-              <DropdownMenuItem onSelect={() => onEditDestination(channel)}>
-                <Settings2 className="mr-2 h-4 w-4" />
-                Editar destino
-              </DropdownMenuItem>
-            ) : null}
-            {canManageConnection && (channel.active || canReleaseMetaBinding) ? (
-              <>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  className="text-destructive focus:text-destructive"
-                  onSelect={() => onDeactivate(channel)}
-                  disabled={isDeactivationPending}
-                >
-                  {channel.active ? "Pausar canal" : "Liberar número e arquivar"}
+              {canManageConnection ? (
+                <DropdownMenuItem onSelect={() => onEditChannel(channel)}>
+                  <Pencil className="mr-2 h-4 w-4" />
+                  Editar canal
                 </DropdownMenuItem>
-              </>
-            ) : null}
-          </DropdownMenuContent>
-        </DropdownMenu>
+              ) : null}
+              {canManageRoute ? (
+                <DropdownMenuItem onSelect={() => onEditDestination(channel)}>
+                  <Settings2 className="mr-2 h-4 w-4" />
+                  Editar destino
+                </DropdownMenuItem>
+              ) : null}
+              {canManageConnection && (channel.active || canReleaseMetaBinding) ? (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive"
+                    onSelect={() => onDeactivate(channel)}
+                    disabled={isDeactivationPending}
+                  >
+                    {channel.active ? "Pausar canal" : "Liberar número e arquivar"}
+                  </DropdownMenuItem>
+                </>
+              ) : null}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </header>
 
       <div className="space-y-5 p-5 sm:p-6">

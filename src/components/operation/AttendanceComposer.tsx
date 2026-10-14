@@ -9,7 +9,6 @@ import {
   Loader2,
   Mic,
   Paperclip,
-  RefreshCw,
   Send,
   X,
 } from "lucide-react";
@@ -477,28 +476,24 @@ export function AttendanceComposer({
           templateCatalogQuery.error,
           "Não foi possível carregar os templates aprovados.",
         ),
-        canRefresh: true,
       }
     : catalogStatus === "PROVIDER_UNSUPPORTED"
       ? {
           title: "Templates não disponíveis neste canal",
           description:
             "Este provedor não oferece templates Meta. Use texto ou mídia quando o canal permitir.",
-          canRefresh: false,
         }
       : catalogStatus === "NO_APPROVED_TEMPLATES"
         ? {
             title: "Nenhum template aprovado disponível",
             description:
-              "Sincronize um template aprovado na configuração da conta Meta e atualize esta lista.",
-            canRefresh: true,
+              "Sincronize os templates aprovados na página Canais, na configuração deste canal.",
           }
         : catalogStatus === "NO_COMPATIBLE_TEMPLATES"
           ? {
               title: "Nenhum template compatível disponível",
               description:
                 "A conta possui templates aprovados, mas nenhum é compatível com este canal ou atendimento.",
-              canRefresh: true,
             }
           : null;
 
@@ -533,22 +528,6 @@ export function AttendanceComposer({
           <AlertTitle>{catalogFeedback.title}</AlertTitle>
           <AlertDescription className="flex flex-wrap items-center gap-3">
             <span>{catalogFeedback.description}</span>
-            {catalogFeedback.canRefresh ? (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => void templateCatalogQuery.refetch()}
-                disabled={templateCatalogQuery.isFetching}
-              >
-                {templateCatalogQuery.isFetching ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                )}
-                Atualizar lista
-              </Button>
-            ) : null}
           </AlertDescription>
         </Alert>
       ) : null}
