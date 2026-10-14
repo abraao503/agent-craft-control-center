@@ -18,6 +18,9 @@ import {
   previewMetaCloudPipelineTemplate,
 } from "@/services/whatsapp/metaCloud";
 import { Loader2, RefreshCw } from "lucide-react";
+import { useSyncMetaTemplates } from "@/hooks/useSyncMetaTemplates";
+import { useWorkspaceContext } from "@/contexts/workspace/WorkspaceContext";
+import { usePermissions } from "@/hooks/usePermissions";
 
 export type MetaTemplateConfigValue = {
   templateId: string;
@@ -77,6 +80,9 @@ export function MetaTemplateConfigurator({
   label = "Template Meta",
 }: Props) {
   const [preview, setPreview] = useState<{ header: string | null; body: string } | null>(null);
+  const { currentWorkspace } = useWorkspaceContext();
+  const { has } = usePermissions();
+  const syncTemplates = useSyncMetaTemplates(currentWorkspace?.id);
   const templatesQuery = useQuery({
     queryKey: ["metaCloudPipelineTemplates", pipelineId],
     queryFn: () => listMetaCloudPipelineTemplates(pipelineId!),
@@ -138,9 +144,10 @@ export function MetaTemplateConfigurator({
           type="button"
           variant="ghost"
           size="icon"
-          onClick={() => void templatesQuery.refetch()}
-          disabled={templatesQuery.isFetching || disabled}
-          title="Atualizar templates"
+          onClick={() => has("manage:integrations") ? syncTemplates.mutate({ pipelineId }) : void templatesQuery.refetch()}
+          disabled={templatesQuery.isFetching || syncTemplates.isPending || disabled}
+          title={has("manage:integrations") ? "Sincronizar modelos com a Meta" : "Atualizar modelos disponíveis"}
+          aria-label={has("manage:integrations") ? "Sincronizar modelos com a Meta" : "Atualizar modelos disponíveis"}
         >
           <RefreshCw className="h-4 w-4" />
         </Button>

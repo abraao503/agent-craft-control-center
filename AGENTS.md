@@ -48,6 +48,20 @@ confirmação no código ou no contrato atual da API.
 - Não introduza bibliotecas, mudanças globais de estilo ou refactors amplos sem
   necessidade explícita.
 
+### Execução com Flow
+
+Siga o protocolo e a autorização externa do
+[`AGENTS.md` do workspace](../AGENTS.md). Quando a tarefa exigir Flow, use
+`run`/`next` para obter a fatia aprovada, implemente na sessão atual e conclua
+com `finish`, que roda os checks e prepara o pedido de revisão. Execute
+`review run` somente após autorização explícita para aquele pedido; a flag
+`--authorize` não autoriza o agente a conceder permissão a si próprio.
+
+Use o plano e o pedido gerado pelo Flow, sem documentos adicionais obrigatórios
+ou um executor Codex filho. Mantenha configuração e estado no workspace do
+Flow; a partir de `front/`, informe `--workspace ..` ao CLI. Os checks locais
+e a verificação visual abaixo continuam necessários conforme o escopo.
+
 ### Contrato de apresentação
 
 - Quando a mudança passar pelo Flow, leia o plano e a fatia autorizada antes de
@@ -138,7 +152,7 @@ rtk npm run build
 O script `lint:modified` recebe explicitamente os arquivos alterados e evita
 que erros preexistentes em outras áreas bloqueiem a tarefa. No workspace que
 usa o Flow, prefira `rtk node ../flow/dist/src/main.js check modified --repo
-front`, que descobre os arquivos rastreados e não rastreados automaticamente.
+front --workspace ..`, que descobre os arquivos rastreados e não rastreados automaticamente.
 Use `rtk npm run lint` somente quando houver mudança em configuração global do
 ESLint/parser, dependências ou quando a validação completa for solicitada.
 

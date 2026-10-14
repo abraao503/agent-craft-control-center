@@ -79,7 +79,6 @@ export interface UserProfile {
   email: string;
   role: UserRole;
   companyId: string;
-  metaCloudWhatsappEnabled: boolean;
   workspaceId: string | null;
   permissions: Permission[];
   impersonation?: {
