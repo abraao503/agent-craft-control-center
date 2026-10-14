@@ -3,12 +3,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/auth/hooks";
 import { useWorkspaceContext } from "@/contexts/workspace/WorkspaceContext";
 import { useCommercialMetaManualAccounts } from "@/hooks/useCommercialMetaManualAccounts";
+import { useSyncMetaTemplates } from "@/hooks/useSyncMetaTemplates";
 import {
-  getMetaCloudDiagnostic,
+  getMetaCloudWorkspaceDiagnostic,
   listMetaCloudPhoneNumbers,
   listMetaCloudTemplates,
   syncMetaCloudPhoneNumbers,
-  syncMetaCloudTemplates,
 } from "@/services/whatsapp/metaCloud";
 
 export function useMetaCloudPipelineConfiguration(
@@ -30,7 +30,7 @@ export function useMetaCloudPipelineConfiguration(
 
   const diagnosticQuery = useQuery({
     queryKey: ["meta-cloud-diagnostic", workspaceId ?? companyId],
-    queryFn: getMetaCloudDiagnostic,
+    queryFn: () => getMetaCloudWorkspaceDiagnostic(workspaceId),
     enabled: enabled && Boolean(companyId),
   });
 
@@ -58,13 +58,13 @@ export function useMetaCloudPipelineConfiguration(
       Boolean(companyId) &&
       (commercialWorkspaceId
         ? manualAccountsQuery.isSuccess
-        : diagnosticQuery.data?.enabled === true),
+        : diagnosticQuery.data?.configured === true),
   });
 
   const templatesQuery = useQuery({
     queryKey: ["meta-cloud-templates", companyId, workspaceId],
-    queryFn: () => listMetaCloudTemplates("APPROVED"),
-    enabled: enabled && Boolean(companyId) && diagnosticQuery.data?.enabled === true,
+    queryFn: () => listMetaCloudTemplates("APPROVED", undefined, workspaceId),
+    enabled: enabled && Boolean(companyId) && diagnosticQuery.data?.configured === true,
   });
 
   const syncPhoneNumbersMutation = useMutation({
@@ -80,15 +80,7 @@ export function useMetaCloudPipelineConfiguration(
     },
   });
 
-  const syncTemplatesMutation = useMutation({
-    mutationFn: syncMetaCloudTemplates,
-    onSuccess: (data) => {
-      queryClient.setQueryData(
-        ["meta-cloud-templates", companyId, workspaceId],
-        data,
-      );
-    },
-  });
+  const syncTemplatesMutation = useSyncMetaTemplates(workspaceId);
 
   const autoSyncQueryKey = useMemo(
     () => ["meta-cloud-phone-numbers-auto-sync", companyId, workspaceId] as const,
@@ -104,8 +96,7 @@ export function useMetaCloudPipelineConfiguration(
       Boolean(commercialWorkspaceId) ||
       !canManageIntegrations ||
       !companyId ||
-      diagnosticQuery.data?.enabled !== true ||
-      diagnosticQuery.data.configured !== true ||
+      diagnosticQuery.data?.configured !== true ||
       !phoneNumbersQuery.isSuccess ||
       phoneNumbersQuery.data.length > 0 ||
       syncPhoneNumbersMutation.isPending ||

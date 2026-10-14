@@ -303,9 +303,7 @@ export function usePipelineEditor(): PipelineEditorResult {
   const consumedMetaQueryRef = useRef(false);
   const metaSelectionFromQueryRef = useRef(false);
 
-  const metaCloudEnabled =
-    currentWorkspace?.type === "COMMERCIAL" ||
-    Boolean(userProfile?.metaCloudWhatsappEnabled);
+  const metaCloudEnabled = currentWorkspace?.type === "COMMERCIAL";
   const canUpdatePipeline = has(
     isCreating ? "create:pipeline" : "update:pipeline",
   );

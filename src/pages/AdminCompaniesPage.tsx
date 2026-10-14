@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { enUS, es, ptBR } from "date-fns/locale";
 import { Building2, Edit2, Ellipsis, Plus } from "lucide-react";
@@ -21,8 +21,6 @@ import {
 } from "@/components/admin/AdminCompanyManagement";
 import { Company } from "@/types/company";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import { setMetaCloudAccess } from "@/services/company/setMetaCloudAccess";
 import { SmartPagination } from "@/components/common/SmartPagination";
 import {
   DropdownMenu,
@@ -39,7 +37,6 @@ export default function AdminCompaniesPage() {
   const { t } = useTranslation();
   const { locale } = useAppLocale();
   const dateLocale = locale === "es-ES" ? es : locale === "en-US" ? enUS : ptBR;
-  const queryClient = useQueryClient();
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
@@ -47,14 +44,6 @@ export default function AdminCompaniesPage() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const limit = 10;
-  const metaCloudMutation = useMutation({
-    mutationFn: ({ companyId, enabled }: { companyId: string; enabled: boolean }) =>
-      setMetaCloudAccess(companyId, enabled),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["companies"] });
-    },
-  });
-
   const companiesQuery = useQuery({
     queryKey: ["companies", currentPage, debouncedSearch],
     queryFn: () =>
@@ -167,22 +156,6 @@ export default function AdminCompaniesPage() {
                       }),
                     })}
                   </p>
-                  {has("manage:platform") && (
-                    <div
-                      className="flex items-center gap-2 text-xs text-muted-foreground"
-                      onClick={(event) => event.stopPropagation()}
-                    >
-                      <span>Cloud piloto</span>
-                      <Switch
-                        checked={company.metaCloudWhatsappEnabled}
-                        disabled={metaCloudMutation.isPending}
-                        onCheckedChange={(enabled) =>
-                          metaCloudMutation.mutate({ companyId: company.id, enabled })
-                        }
-                        aria-label={`Habilitar WhatsApp Cloud para ${company.name}`}
-                      />
-                    </div>
-                  )}
                   {has("manage:company") && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>

@@ -7,7 +7,6 @@ export interface Company {
   updatedAt: string;
   ownerEmail: string;
   ownerName: string;
-  metaCloudWhatsappEnabled: boolean;
 }
 
 export interface CreateCompanyRequest {
@@ -54,7 +53,6 @@ export interface CompanyWorkspace {
 export interface CompanyDetails {
   id: string;
   name: string | null;
-  metaCloudWhatsappEnabled: boolean;
   createdAt: string;
   updatedAt: string;
   workspaces: CompanyWorkspace[];

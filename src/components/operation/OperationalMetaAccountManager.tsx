@@ -22,6 +22,7 @@ import {
 import { useOperationalMetaManualAccountMutations, useOperationalMetaManualAccounts } from "@/hooks/useOperationalMetaManualAccounts";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useToast } from "@/hooks/use-toast";
+import { useSyncMetaTemplates } from "@/hooks/useSyncMetaTemplates";
 import type {
   ConfigureOperationalMetaWebhookData,
   OperationalMetaManualAccount,
@@ -103,6 +104,7 @@ export function OperationalMetaAccountManager({
   const { toast } = useToast();
   const accountsQuery = useOperationalMetaManualAccounts(workspaceId);
   const mutations = useOperationalMetaManualAccountMutations(workspaceId);
+  const syncTemplates = useSyncMetaTemplates(workspaceId, true);
   const [dialog, setDialog] = useState<ManualAccountDialogState | null>(null);
   const [webhookSetups, setWebhookSetups] = useState<
     Record<string, WebhookSetup>
@@ -432,6 +434,8 @@ export function OperationalMetaAccountManager({
                 }
                 onEdit={() => openCredentialsDialog(account)}
                 onConfigureWebhook={() => openWebhookDialog(account)}
+                onSyncTemplates={() => syncTemplates.mutate({ wabaId: account.wabaId })}
+                isSyncingTemplates={syncTemplates.isPending}
               />
             ))}
           </div>
@@ -670,6 +674,8 @@ function ManualAccountRow({
   onDetailsOpenChange,
   onEdit,
   onConfigureWebhook,
+  onSyncTemplates,
+  isSyncingTemplates,
 }: {
   account: OperationalMetaManualAccount;
   canManage: boolean;
@@ -679,6 +685,8 @@ function ManualAccountRow({
   onDetailsOpenChange: (open: boolean) => void;
   onEdit: () => void;
   onConfigureWebhook: () => void;
+  onSyncTemplates: () => void;
+  isSyncingTemplates: boolean;
 }) {
   const needsAttention = [
     "CONNECTING",
@@ -699,7 +707,8 @@ function ManualAccountRow({
     : webhookSetup
       ? "Aguardando verificação"
       : "Webhook ainda não verificado";
-  const primaryAction = needsAttention || !account.lastValidatedAt
+  const credentialsNeedAttention = ["ERROR", "NEEDS_REAUTHORIZATION"].includes(account.status) || !account.lastValidatedAt;
+  const primaryAction = credentialsNeedAttention
     ? "credentials"
     : !account.webhookConfigured
       ? "webhook"
@@ -724,6 +733,15 @@ function ManualAccountRow({
         </div>
         {canManage ? (
           <div className="flex shrink-0 flex-wrap gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onSyncTemplates}
+              disabled={isSyncingTemplates || credentialsNeedAttention}
+            >
+              <RefreshCw className={isSyncingTemplates ? "h-4 w-4 animate-spin" : "h-4 w-4"} />
+              {isSyncingTemplates ? "Sincronizando..." : "Sincronizar modelos"}
+            </Button>
             {primaryAction === "credentials" ? (
               <Button size="sm" onClick={onEdit}>
                 <Pencil className="h-4 w-4" />

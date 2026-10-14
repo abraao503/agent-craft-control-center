@@ -45,9 +45,6 @@ export type MetaCloudTemplatePreview = {
 };
 
 export type MetaCloudDiagnostic = {
-  enabled: boolean;
-  companyFlag: boolean;
-  environmentFlag: boolean;
   configured: boolean;
   graphVersion: string;
   integrations: Array<{
@@ -81,7 +78,12 @@ export type MetaCloudConsent = {
 };
 
 export async function getMetaCloudDiagnostic() {
+  return getMetaCloudWorkspaceDiagnostic();
+}
+
+export async function getMetaCloudWorkspaceDiagnostic(workspaceId?: string) {
   const response = await api.get<MetaCloudDiagnostic>("/meta-cloud/diagnostic", {
+    params: workspaceId ? { workspaceId } : undefined,
     // O G5 representa o recurso desativado como 409. Isso é um estado
     // esperado do diagnóstico, não uma falha de transporte para o usuário.
     validateStatus: (status) => status === 200 || status === 409,
@@ -89,9 +91,6 @@ export async function getMetaCloudDiagnostic() {
 
   if (response.status === 409) {
     return {
-      enabled: false,
-      companyFlag: false,
-      environmentFlag: false,
       configured: false,
       graphVersion: "",
       integrations: [],
@@ -151,24 +150,41 @@ export async function disconnectMetaCloudPipelineIntegration(
 export async function listMetaCloudTemplates(
   status?: string,
   integrationId?: string,
+  workspaceId?: string,
 ) {
   const response = await api.get<MetaCloudTemplate[]>("/meta-cloud/templates", {
     params:
-      status || integrationId
+      status || integrationId || workspaceId
         ? {
             ...(status ? { status } : {}),
             ...(integrationId ? { integrationId } : {}),
+            ...(workspaceId ? { workspaceId } : {}),
           }
         : undefined,
   });
   return response.data;
 }
 
-export async function syncMetaCloudTemplates() {
+export type SyncMetaCloudTemplatesParams = {
+  workspaceId?: string;
+  integrationId?: string;
+  pipelineId?: string;
+  wabaId?: string;
+};
+
+export async function syncMetaCloudTemplates(params: SyncMetaCloudTemplatesParams = {}) {
   const response = await api.post<MetaCloudTemplate[]>(
     "/meta-cloud/templates/sync",
+    params,
   );
   return response.data;
+}
+
+export async function syncOperationalMetaAccountTemplates(workspaceId: string, wabaId: string) {
+  const { data } = await api.post<MetaCloudTemplate[]>(
+    `/operation/workspaces/${encodeURIComponent(workspaceId)}/channels/meta-cloud/manual-accounts/${encodeURIComponent(wabaId)}/templates/sync`,
+  );
+  return data;
 }
 
 export async function setMetaCloudConsent(params: {

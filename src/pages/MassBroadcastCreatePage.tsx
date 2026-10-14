@@ -112,7 +112,7 @@ export default function MassBroadcastCreatePage() {
     queryFn: () =>
       listMetaCloudTemplates("APPROVED", selectedMetaIntegration?.id),
     enabled: Boolean(
-      workspaceId && metaDiagnostic?.enabled && selectedMetaIntegration,
+      workspaceId && metaDiagnostic?.configured && selectedMetaIntegration,
     ),
   });
   const selectedMetaTemplate = metaTemplates?.find((template) => template.id === metaTemplateId);

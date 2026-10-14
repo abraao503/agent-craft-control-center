@@ -22,6 +22,7 @@ import { useMetaCloudPipelineConfiguration } from "@/hooks/useMetaCloudPipelineC
 import { usePermissions } from "@/hooks/usePermissions";
 import { useWorkspaceContext } from "@/contexts/workspace/WorkspaceContext";
 import { CommercialMetaManualAccountAssistant } from "@/components/pipelines/CommercialMetaManualAccountAssistant";
+import { metaTemplateSyncError } from "@/utils/metaTemplateSyncError";
 
 type Props = {
   enabled: boolean;
@@ -170,7 +171,7 @@ export function MetaCloudConfigurationSection({
             ) : phoneNumbersQuery.isError ? (
               <p className="text-xs text-destructive">{errorMessage(phoneNumbersQuery.error)}</p>
             ) :
-              diagnostic?.enabled === true &&
+              diagnostic?.configured === true &&
               !phoneNumbersQuery.isLoading &&
               !phoneNumbersQuery.data?.length ? (
               <p className="text-xs text-muted-foreground">
@@ -225,8 +226,8 @@ export function MetaCloudConfigurationSection({
           </div>
         </div>
 
-        {!isCommercialWorkspace ? (
           <div className="flex flex-wrap gap-2">
+            {!isCommercialWorkspace ? (
             <Button
               type="button"
               variant="outline"
@@ -241,28 +242,29 @@ export function MetaCloudConfigurationSection({
               <RefreshCw className="mr-2 h-3.5 w-3.5" />
               {syncPhoneNumbersMutation.isPending ? "Sincronizando números..." : "Sincronizar números"}
             </Button>
+            ) : null}
             <Button
               type="button"
               variant="outline"
               size="sm"
               disabled={
                 !canManageIntegrations ||
+                !active ||
                 diagnosticQuery.isLoading ||
                 syncTemplatesMutation.isPending
               }
-              onClick={() => syncTemplatesMutation.mutate()}
+              onClick={() => syncTemplatesMutation.mutate({ integrationId: integration?.id ?? pipelineDiagnostic?.id })}
             >
               <RefreshCw className="mr-2 h-3.5 w-3.5" />
               {syncTemplatesMutation.isPending ? "Sincronizando templates..." : "Sincronizar templates"}
             </Button>
           </div>
-        ) : null}
 
         {syncPhoneNumbersMutation.isError ? (
           <p className="text-xs text-destructive">{errorMessage(syncPhoneNumbersMutation.error)}</p>
         ) : null}
         {syncTemplatesMutation.isError ? (
-          <p className="text-xs text-destructive">{errorMessage(syncTemplatesMutation.error)}</p>
+          <p className="text-xs text-destructive">{metaTemplateSyncError(syncTemplatesMutation.error)}</p>
         ) : null}
 
         <div className="space-y-2">
