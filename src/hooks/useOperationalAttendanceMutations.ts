@@ -28,7 +28,10 @@ import {
   UpdateOperationalFollowUpParams,
   SendOperationalAttendanceMessageParams,
 } from "@/types/operation-attendance";
-import { isStaleVersionError } from "@/utils/operationalAttendanceErrors";
+import {
+  extractOperationalErrorCode,
+  isStaleVersionError,
+} from "@/utils/operationalAttendanceErrors";
 
 export function useOperationalAttendanceMutations(workspaceId?: string) {
   const queryClient = useQueryClient();
@@ -79,6 +82,15 @@ export function useOperationalAttendanceMutations(workspaceId?: string) {
       void queryClient.invalidateQueries({
         queryKey: [
           "operation",
+          "attendance-templates",
+          "catalog",
+          resolvedWorkspaceId,
+          attendanceId,
+        ],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: [
+          "operation",
           "attendance-timeline",
           resolvedWorkspaceId,
           attendanceId,
@@ -121,6 +133,28 @@ export function useOperationalAttendanceMutations(workspaceId?: string) {
     if (isStaleVersionError(error) && resolvedWorkspaceId && attendanceId) {
       void queryClient.invalidateQueries({
         queryKey: ["operation", "attendance", resolvedWorkspaceId, attendanceId],
+      });
+    }
+
+    const errorCode = extractOperationalErrorCode(error);
+    if (
+      resolvedWorkspaceId &&
+      attendanceId &&
+      ["WINDOW_CLOSED", "TEMPLATE_REQUIRED", "REPLY_CONTEXT_STALE"].includes(
+        errorCode ?? "",
+      )
+    ) {
+      void queryClient.invalidateQueries({
+        queryKey: ["operation", "attendance", resolvedWorkspaceId, attendanceId],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: [
+          "operation",
+          "attendance-templates",
+          "catalog",
+          resolvedWorkspaceId,
+          attendanceId,
+        ],
       });
     }
   };

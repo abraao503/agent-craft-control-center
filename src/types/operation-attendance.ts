@@ -154,9 +154,23 @@ export interface OperationalAttendanceTemplate {
   compatible: boolean;
 }
 
+export type OperationalAttendanceTemplateCatalogStatus =
+  | "AVAILABLE"
+  | "NO_APPROVED_TEMPLATES"
+  | "NO_COMPATIBLE_TEMPLATES"
+  | "PROVIDER_UNSUPPORTED";
+
+export interface OperationalAttendanceTemplateCatalog {
+  channelId: string;
+  provider: string;
+  status: OperationalAttendanceTemplateCatalogStatus;
+  templates: OperationalAttendanceTemplate[];
+}
+
 export type AttendanceDetail = Omit<AttendanceWithDetails, "customer"> & {
   customer?: AttendanceCustomerDetail;
   channel?: AttendanceChannelDetail | null;
+  serviceWindowExpiresAt?: string | null;
   replyCapabilities: AttendanceReplyCapabilities;
   actionCapabilities: AttendanceActionCapabilities;
 };

@@ -9,13 +9,12 @@ import {
   Loader2,
   Mic,
   Paperclip,
+  RefreshCw,
   Send,
   X,
 } from "lucide-react";
 import { useOperationalAttendanceMutations } from "@/hooks/useOperationalAttendanceMutations";
-import {
-  useOperationalAttendanceTemplates,
-} from "@/hooks/useOperationalAttendances";
+import { useOperationalAttendanceTemplateCatalog } from "@/hooks/useOperationalAttendances";
 import { useToast } from "@/hooks/use-toast";
 import {
   AttendanceDetail,
@@ -180,12 +179,18 @@ export function AttendanceComposer({
     resolver: zodResolver(composerSchema),
     defaultValues: { text: "", caption: "" },
   });
-  const templatesQuery = useOperationalAttendanceTemplates(
+  const templateCatalogQuery = useOperationalAttendanceTemplateCatalog(
     workspaceId,
     attendance.id,
-    canCompose && attendance.replyCapabilities.supportsTemplate,
+    attendance.companyWhatsappIntegrationId,
+    attendance.channel?.provider,
+    canCompose,
   );
-  const templates = useMemo(() => templatesQuery.data ?? [], [templatesQuery.data]);
+  const templates = useMemo(
+    () => templateCatalogQuery.data?.templates ?? [],
+    [templateCatalogQuery.data?.templates],
+  );
+  const catalogStatus = templateCatalogQuery.data?.status;
   const selectedTemplate = templates.find(
     (template) => template.id === selectedTemplateId,
   ) ?? templates[0];
@@ -205,6 +210,11 @@ export function AttendanceComposer({
       setIsInternalNoteMode(false);
     }
   }, [canUseInternalNote]);
+
+  useEffect(() => {
+    setSelectedTemplateId(null);
+    setTemplateBindings({});
+  }, [attendance.channel?.provider, attendance.companyWhatsappIntegrationId]);
 
   useEffect(() => {
     if (!templates.length) {
@@ -460,6 +470,38 @@ export function AttendanceComposer({
           ? "O atendimento precisa estar em andamento ou pendente."
           : "Não há um modo de resposta disponível para este canal.";
 
+  const catalogFeedback = templateCatalogQuery.isError
+    ? {
+        title: "Catálogo de templates indisponível",
+        description: getOperationalAttendanceErrorMessage(
+          templateCatalogQuery.error,
+          "Não foi possível carregar os templates aprovados.",
+        ),
+        canRefresh: true,
+      }
+    : catalogStatus === "PROVIDER_UNSUPPORTED"
+      ? {
+          title: "Templates não disponíveis neste canal",
+          description:
+            "Este provedor não oferece templates Meta. Use texto ou mídia quando o canal permitir.",
+          canRefresh: false,
+        }
+      : catalogStatus === "NO_APPROVED_TEMPLATES"
+        ? {
+            title: "Nenhum template aprovado disponível",
+            description:
+              "Sincronize um template aprovado na configuração da conta Meta e atualize esta lista.",
+            canRefresh: true,
+          }
+        : catalogStatus === "NO_COMPATIBLE_TEMPLATES"
+          ? {
+              title: "Nenhum template compatível disponível",
+              description:
+                "A conta possui templates aprovados, mas nenhum é compatível com este canal ou atendimento.",
+              canRefresh: true,
+            }
+          : null;
+
   return (
     <div
       className={
@@ -481,6 +523,34 @@ export function AttendanceComposer({
           A janela de 24 horas foi encerrada. Para iniciar uma nova conversa,
           envie um template aprovado.
         </p>
+      ) : null}
+
+      {canCompose && catalogFeedback ? (
+        <Alert
+          variant={templateCatalogQuery.isError ? "destructive" : "default"}
+          className="mb-3"
+        >
+          <AlertTitle>{catalogFeedback.title}</AlertTitle>
+          <AlertDescription className="flex flex-wrap items-center gap-3">
+            <span>{catalogFeedback.description}</span>
+            {catalogFeedback.canRefresh ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => void templateCatalogQuery.refetch()}
+                disabled={templateCatalogQuery.isFetching}
+              >
+                {templateCatalogQuery.isFetching ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                )}
+                Atualizar lista
+              </Button>
+            ) : null}
+          </AlertDescription>
+        </Alert>
       ) : null}
 
       {!canCompose && !isInternalNoteMode ? (
@@ -822,36 +892,15 @@ export function AttendanceComposer({
                     </Button>
                   </div>
                 ) : null}
-                {templatesQuery.isError ? (
-                  <Alert variant="destructive">
-                    <AlertTitle>Catálogo de templates indisponível</AlertTitle>
-                    <AlertDescription className="flex flex-wrap items-center gap-3">
-                      {getOperationalAttendanceErrorMessage(
-                        templatesQuery.error,
-                        "Não foi possível carregar os templates aprovados.",
-                      )}
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => void templatesQuery.refetch()}
-                      >
-                        Tentar novamente
-                      </Button>
-                    </AlertDescription>
-                  </Alert>
-                ) : templatesQuery.isLoading ? (
+                {templateCatalogQuery.isLoading ? (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Loader2 className="h-4 w-4 animate-spin" />
                     Carregando templates aprovados...
                   </div>
                 ) : templates.length === 0 ? (
-                  <Alert>
-                    <AlertTitle>Nenhum template disponível</AlertTitle>
-                    <AlertDescription>
-                      Sincronize um template aprovado e tente novamente.
-                    </AlertDescription>
-                  </Alert>
+                  <p className="text-sm text-muted-foreground">
+                    Atualize a lista depois de sincronizar um template aprovado.
+                  </p>
                 ) : (
                   <>
                     <div className="space-y-2">
