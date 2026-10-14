@@ -110,6 +110,7 @@ export interface OperationalChannel {
   capabilities: OperationalChannelProviderCapabilities;
   displayName: string | null;
   active: boolean;
+  deletedAt: string | null;
   status: string;
   connectionStatus: string;
   credentialsConfigured: boolean;
@@ -168,6 +169,43 @@ export interface OperationalChannelsPage {
   totalPages: number;
 }
 
+export interface OperationalChannelMigrationPreview {
+  sourceChannelId: string;
+  targetChannelId: string;
+  openAttendanceCount: number;
+  status: "READY" | "EMPTY" | "TARGET_UNAVAILABLE";
+}
+
+export interface OperationalChannelMigrationResult {
+  id: string;
+  status: "PENDING" | "PROCESSING" | "COMPLETED" | "COMPLETED_WITH_WARNINGS";
+  totalItems: number;
+  pendingItems: number;
+  migratedItems: number;
+  skippedItems: number;
+  failedItems: number;
+}
+
+export interface OperationalChannelMigrationItem {
+  id: string;
+  attendanceId: string;
+  status: "PENDING" | "PROCESSING" | "MIGRATED" | "SKIPPED" | "FAILED";
+  errorCode: string | null;
+  errorMessage: string | null;
+  completedAt: string | null;
+}
+
+export interface OperationalChannelMigrationDetails
+  extends OperationalChannelMigrationResult {
+  sourceChannelId: string;
+  targetChannelId: string;
+  items: OperationalChannelMigrationItem[];
+  itemTotal: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 export interface OperationalChannelRoutesPage {
   items: OperationalChannelRoute[];
   total: number;
@@ -202,6 +240,7 @@ export interface OperationalChannelListParams {
   page?: number;
   limit?: number;
   active?: boolean;
+  includeArchived?: boolean;
   provider?: OperationalChannelProviderName;
 }
 

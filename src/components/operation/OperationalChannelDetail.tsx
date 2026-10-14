@@ -7,6 +7,7 @@ import {
   Pencil,
   QrCode,
   RefreshCw,
+  ArrowRightLeft,
   Settings2,
 } from "lucide-react";
 import {
@@ -64,6 +65,9 @@ type OperationalChannelDetailProps = {
   isSyncingMetaTemplates: boolean;
   metaTemplateSyncReady: boolean;
   onSyncMetaTemplates: (channel: OperationalChannel) => void;
+  canMigrateAttendances: boolean;
+  isMigratingAttendances: boolean;
+  onMigrateAttendances: (channel: OperationalChannel) => void;
   onRefresh: () => void;
 };
 
@@ -114,6 +118,9 @@ function ChannelDetailContent({
   isSyncingMetaTemplates,
   metaTemplateSyncReady,
   onSyncMetaTemplates,
+  canMigrateAttendances,
+  isMigratingAttendances,
+  onMigrateAttendances,
   onRefresh,
   compact = false,
 }: Omit<OperationalChannelDetailProps, "channel"> & {
@@ -201,6 +208,20 @@ function ChannelDetailContent({
               />
               <span className="hidden sm:inline">
                 {isSyncingMetaTemplates ? "Sincronizando..." : "Sincronizar templates"}
+              </span>
+            </Button>
+          ) : null}
+          {canMigrateAttendances && !channel.active ? (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => onMigrateAttendances(channel)}
+              disabled={isMigratingAttendances}
+              aria-label="Migrar atendimentos abertos"
+            >
+              <ArrowRightLeft className="h-4 w-4" />
+              <span className="hidden sm:inline">
+                {isMigratingAttendances ? "Migrando..." : "Migrar atendimentos"}
               </span>
             </Button>
           ) : null}
