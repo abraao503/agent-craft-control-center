@@ -130,11 +130,23 @@ export function OperationalMetaAccountManager({
     (total, account) => total + account.phoneNumbers.length,
     0,
   );
-  const accountNeedsAttention = accounts.some((account) =>
-    ["CONNECTING", "ERROR", "NEEDS_REAUTHORIZATION"].includes(account.status),
+  const accountNeedsAttention = accounts.some(
+    (account) =>
+      ["CONNECTING", "ERROR", "NEEDS_REAUTHORIZATION"].includes(
+        account.status,
+      ) ||
+      account.messagesWebhookStatus === "NOT_SUBSCRIBED" ||
+      (account.webhookConfigured && account.messagesWebhookStatus === "UNKNOWN"),
   );
   const webhookPending = accounts.some(
     (account) => !account.webhookConfigured || !account.lastValidatedAt,
+  );
+  const messagesWebhookPending = accounts.some(
+    (account) => account.messagesWebhookStatus === "NOT_SUBSCRIBED",
+  );
+  const messagesWebhookUnknown = accounts.some(
+    (account) =>
+      account.webhookConfigured && account.messagesWebhookStatus === "UNKNOWN",
   );
   const accountStatusLabel = accountsQuery.isError
     ? "Indisponível"
@@ -143,9 +155,13 @@ export function OperationalMetaAccountManager({
       : accountNeedsAttention
         ? "Requer atenção"
         : accounts.length
-          ? webhookPending
-            ? "Configurada · webhook pendente"
-            : "Configurada"
+          ? messagesWebhookPending
+            ? "Configurada · recebimento pendente"
+            : messagesWebhookUnknown
+              ? "Configurada · recebimento não verificado"
+              : webhookPending
+                ? "Configurada · webhook pendente"
+                : "Configurada"
           : "Pendente";
   const accountHealth: "healthy" | "attention" | "incomplete" | "unavailable" = accountsQuery.isError
     ? "unavailable"
@@ -162,7 +178,11 @@ export function OperationalMetaAccountManager({
       ? "Não foi possível consultar a conta Meta agora."
       : accounts.length
         ? accountNeedsAttention
-          ? "A conta Meta ainda está concluindo a conexão. Verifique o webhook e atualize o status antes de ativar novos canais."
+          ? messagesWebhookPending
+            ? "O webhook foi verificado, mas a Meta ainda não está enviando eventos de mensagens. Ative o campo messages no painel de Webhooks do WhatsApp Business Account."
+            : messagesWebhookUnknown
+              ? "Não foi possível confirmar a assinatura do campo messages na Meta. Atualize o status para tentar novamente."
+              : "A conta Meta ainda está concluindo a conexão. Verifique o webhook e atualize o status antes de ativar novos canais."
           : `${accounts.length} ${accounts.length === 1 ? "conta configurada" : "contas configuradas"} · ${totalPhoneNumbers} ${totalPhoneNumbers === 1 ? "número sincronizado" : "números sincronizados"}`
         : canManageManualAccount
           ? "Configure a conta para liberar números nos canais deste ambiente."
@@ -552,7 +572,9 @@ export function OperationalMetaAccountManager({
               <DialogTitle>Concluir configuração da Meta</DialogTitle>
               <DialogDescription>
                 A conta foi validada. Cadastre a callback URL e o token no app
-                da Meta para liberar o recebimento de mensagens.
+                da Meta para liberar o recebimento de mensagens. Depois, ative
+                também o campo “messages” na assinatura de Webhooks do WhatsApp
+                Business Account.
               </DialogDescription>
             </DialogHeader>
 
@@ -684,7 +706,9 @@ function ManualAccountRow({
     "CONNECTING",
     "ERROR",
     "NEEDS_REAUTHORIZATION",
-  ].includes(account.status);
+  ].includes(account.status) ||
+    account.messagesWebhookStatus === "NOT_SUBSCRIBED" ||
+    (account.webhookConfigured && account.messagesWebhookStatus === "UNKNOWN");
   const validationLabel = needsAttention
     ? account.status === "NEEDS_REAUTHORIZATION"
       ? "Reautorização necessária"
@@ -699,6 +723,12 @@ function ManualAccountRow({
     : webhookSetup
       ? "Aguardando verificação"
       : "Webhook ainda não verificado";
+  const messagesWebhookLabel =
+    account.messagesWebhookStatus === "SUBSCRIBED"
+      ? "Recebimento de mensagens ativo"
+      : account.messagesWebhookStatus === "NOT_SUBSCRIBED"
+        ? "Recebimento de mensagens pendente"
+        : "Recebimento de mensagens não verificado";
   const credentialsNeedAttention = ["ERROR", "NEEDS_REAUTHORIZATION"].includes(account.status) || !account.lastValidatedAt;
   const primaryAction = credentialsNeedAttention
     ? "credentials"
@@ -717,7 +747,7 @@ function ManualAccountRow({
             </Badge>
           </div>
           <p className="text-sm text-muted-foreground">
-            {webhookLabel} · {account.phoneNumbers.length}{" "}
+            {webhookLabel} · {messagesWebhookLabel} · {account.phoneNumbers.length}{" "}
             {account.phoneNumbers.length === 1
               ? "número sincronizado"
               : "números sincronizados"}
@@ -782,6 +812,22 @@ function ManualAccountRow({
           </div>
         ) : null}
       </div>
+      {account.webhookConfigured &&
+      account.messagesWebhookStatus !== "SUBSCRIBED" ? (
+        <Alert variant="destructive" className="mt-3">
+          <TriangleAlert className="h-4 w-4" />
+          <AlertTitle>
+            {account.messagesWebhookStatus === "NOT_SUBSCRIBED"
+              ? "Ative o recebimento de mensagens na Meta"
+              : "Recebimento de mensagens não confirmado"}
+          </AlertTitle>
+          <AlertDescription>
+            {account.messagesWebhookStatus === "NOT_SUBSCRIBED"
+              ? "No app da Meta, abra Webhooks → WhatsApp Business Account e assine o campo messages."
+              : "Atualize o status da conta para tentar confirmar a assinatura do campo messages novamente."}
+          </AlertDescription>
+        </Alert>
+      ) : null}
       <Collapsible
         open={detailsOpen}
         onOpenChange={onDetailsOpenChange}
@@ -804,6 +850,10 @@ function ManualAccountRow({
               value={getOperationalStatusLabel(account.status)}
             />
             <SummaryItem label="Webhook" value={webhookLabel} />
+            <SummaryItem
+              label="Recebimento"
+              value={messagesWebhookLabel}
+            />
           </div>
           {account.lastValidatedAt ? (
             <p className="mt-3 text-xs text-muted-foreground">
@@ -863,7 +913,8 @@ function WebhookInstructions({
         <p className="font-medium">Cadastre estes dados no app da Meta</p>
         <p className="mt-1 text-sm text-muted-foreground">
           No painel do app, abra a configuração do WhatsApp e informe a
-          callback URL e o token de verificação abaixo.
+          callback URL e o token de verificação abaixo. Depois, assine também o
+          campo “messages” para liberar o recebimento.
         </p>
       </div>
       <CopyField

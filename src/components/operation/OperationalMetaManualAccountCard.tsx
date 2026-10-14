@@ -37,10 +37,22 @@ export function OperationalMetaManualAccountCard({
   const accountWithPendingWebhook = accounts.find(
     (account) => !account.lastValidatedAt || !account.webhookConfigured,
   );
+  const accountWithMessagesWebhookPending = accounts.find(
+    (account) => account.messagesWebhookStatus === "NOT_SUBSCRIBED",
+  );
+  const accountWithMessagesWebhookUnknown = accounts.find(
+    (account) =>
+      account.webhookConfigured && account.messagesWebhookStatus === "UNKNOWN",
+  );
   const requiresAttention =
     accountsQuery.isError ||
     (!accountsQuery.isLoading && !accounts.length) ||
-    Boolean(accountWithError || accountWithPendingWebhook);
+    Boolean(
+      accountWithError ||
+        accountWithPendingWebhook ||
+        accountWithMessagesWebhookPending ||
+        accountWithMessagesWebhookUnknown,
+    );
 
   const dialog = (
     <Dialog open={managementOpen} onOpenChange={setManagementOpen}>
@@ -114,12 +126,26 @@ export function OperationalMetaManualAccountCard({
                 : "A última validação da conta Meta encontrou um problema.",
             destructive: true,
           }
-        : {
-            title: "Configuração Meta incompleta",
-            description:
-              "Conclua a validação e o webhook para liberar os números da empresa.",
-            destructive: false,
-          };
+        : accountWithMessagesWebhookPending
+          ? {
+              title: "Recebimento de mensagens Meta desativado",
+              description:
+                "A callback foi verificada, mas o app da Meta não está inscrito no campo messages. Ative esse campo no Webhooks do WhatsApp Business Account.",
+              destructive: true,
+            }
+          : accountWithMessagesWebhookUnknown
+            ? {
+                title: "Não foi possível verificar o recebimento Meta",
+                description:
+                  "A plataforma não conseguiu confirmar a assinatura do campo messages na Meta. Atualize as configurações para tentar novamente.",
+                destructive: true,
+              }
+            : {
+                title: "Configuração Meta incompleta",
+                description:
+                  "Conclua a validação e o webhook para liberar os números da empresa.",
+                destructive: false,
+              };
 
   return (
     <>
