@@ -31,6 +31,7 @@ export interface OperationalMetaManualAccount {
   createdAt: string;
   updatedAt: string;
   webhookConfigured: boolean;
+  messagesWebhookStatus: "SUBSCRIBED" | "NOT_SUBSCRIBED" | "UNKNOWN";
   phoneNumbers: OperationalMetaManualPhoneNumber[];
 }
 
