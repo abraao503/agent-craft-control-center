@@ -35,6 +35,9 @@ export function useSyncMetaTemplates(
         queryClient.invalidateQueries({
           queryKey: ["operation", "attendance-templates"],
         }),
+        queryClient.invalidateQueries({
+          queryKey: ["operation", "channel-templates"],
+        }),
       ]);
       toast({
         title: "Modelos sincronizados",

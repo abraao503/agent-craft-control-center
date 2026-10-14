@@ -41,6 +41,7 @@ import {
   deriveOperationalChannelStateWithActivation,
 } from "@/components/operation/operationalChannelStatus";
 import { cn } from "@/lib/utils";
+import { OperationalChannelTemplateCatalog } from "@/components/operation/OperationalChannelTemplateCatalog";
 
 type OperationalChannelDetailProps = {
   open?: boolean;
@@ -391,6 +392,13 @@ function ChannelDetailContent({
             </dl>
           </section>
         </div>
+
+        {channel.provider === "meta-cloud" ? (
+          <OperationalChannelTemplateCatalog
+            workspaceId={channel.workspaceId}
+            channelId={channel.id}
+          />
+        ) : null}
 
         <section className="rounded-lg border">
           <button

@@ -4,6 +4,7 @@ import { TextMessage } from "./TextMessage";
 import { ImageMessage } from "./ImageMessage";
 import { AudioMessage } from "./AudioMessage";
 import { DocumentMessage } from "./DocumentMessage";
+import { TemplateMessage } from "./TemplateMessage";
 
 interface MessageContentProps {
   message: Message;
@@ -48,8 +49,15 @@ export const MessageContent: React.FC<MessageContentProps> = ({ message }) => {
         />
       );
 
-    case "text":
     case "template":
+      return (
+        <TemplateMessage
+          snapshot={message.templateSnapshot}
+          fallbackBody={message.content}
+        />
+      );
+
+    case "text":
     default:
       return <TextMessage content={message.content} />;
   }

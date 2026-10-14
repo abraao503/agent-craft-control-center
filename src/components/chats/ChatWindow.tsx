@@ -45,6 +45,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ChatSidebar } from "./ChatSidebar";
 import { MessageSentEvent } from "@/types/websocket";
 import { MessageContent } from "./media/MessageContent";
+import { TemplateMessage } from "./media/TemplateMessage";
 import { MediaPreviewModal } from "./MediaPreviewModal";
 import { AudioRecorder } from "./AudioRecorder";
 import { formatPhone } from "@/utils/phone";
@@ -59,6 +60,7 @@ import {
   listMetaCloudChatTemplates,
   MetaCloudTemplate,
   MetaCloudTemplateBinding,
+  MetaCloudTemplatePreview,
   previewMetaCloudChatTemplate,
   sendMetaCloudTemplate,
 } from "@/services/whatsapp/metaCloud";
@@ -259,6 +261,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   const [templatePreview, setTemplatePreview] = useState<{
     body: string;
     header: string | null;
+    footer: string | null;
+    buttons: MetaCloudTemplatePreview["buttons"];
   } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const canSendPermission = has("send:message");
@@ -340,7 +344,12 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       }
       if (type === "BUTTONS" && Array.isArray(component.buttons)) {
         (component.buttons as Array<Record<string, unknown>>).forEach((button, buttonIndex) => {
-          if (String(button.type ?? "").toUpperCase() !== "URL") return;
+          const type = String(button.type ?? "").toUpperCase();
+          if (type === "COPY_CODE") {
+            slots.push(`button.${buttonIndex}.1`);
+            return;
+          }
+          if (type !== "URL") return;
           variables(button.url).forEach((_value, index) => slots.push(`button.${buttonIndex}.${index + 1}`));
         });
       }
@@ -370,7 +379,13 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         bindings: templateBindings,
         replyContextMessageId: replyContextMessageId ?? undefined,
       }),
-    onSuccess: (preview) => setTemplatePreview({ body: preview.body, header: preview.header }),
+    onSuccess: (preview) =>
+      setTemplatePreview({
+        body: preview.body,
+        header: preview.header,
+        footer: preview.footer,
+        buttons: preview.buttons,
+      }),
     onError: (error) =>
       handleSendError(error, {
         title: "Não foi possível validar o template",
@@ -1533,8 +1548,10 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                   ))}
                 {templatePreview && (
                   <div className="rounded-md bg-muted/50 px-3 py-2 text-sm">
-                    {templatePreview.header && <p className="font-medium">{templatePreview.header}</p>}
-                    <p>{templatePreview.body}</p>
+                    <TemplateMessage
+                      snapshot={templatePreview}
+                      fallbackBody={templatePreview.body}
+                    />
                   </div>
                 )}
                 <div className="flex justify-end gap-2">

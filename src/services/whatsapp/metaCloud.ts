@@ -35,6 +35,14 @@ export type MetaCloudTemplatePreview = {
   language: string;
   header: string | null;
   body: string;
+  footer: string | null;
+  buttons: Array<{
+    type: string;
+    text: string;
+    url?: string;
+    phoneNumber?: string;
+    code?: string;
+  }>;
   parameters: Array<{ slot: string; binding: MetaCloudTemplateBinding; value: string }>;
   graphComponents: Array<Record<string, unknown>>;
   serviceWindow?: {

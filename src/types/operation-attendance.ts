@@ -160,6 +160,14 @@ export interface OperationalAttendanceTemplate {
   compatible: boolean;
 }
 
+export interface OperationalTemplateButton {
+  type?: string;
+  text?: string;
+  url?: string;
+  phoneNumber?: string;
+  code?: string;
+}
+
 export type OperationalAttendanceTemplateCatalogStatus =
   | "AVAILABLE"
   | "NO_APPROVED_TEMPLATES"
@@ -191,6 +199,7 @@ export interface AttendanceMessageItem {
   mediaMimetype?: string | null;
   templateName?: string | null;
   templateId?: string | null;
+  templateSnapshot?: unknown;
   sentByUser?: {
     id: string;
     name: string;
