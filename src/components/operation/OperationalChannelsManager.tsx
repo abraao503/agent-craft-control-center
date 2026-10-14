@@ -16,7 +16,9 @@ import {
   useOperationalChannelRealtime,
   useOperationalChannels,
 } from "@/hooks/useOperationalChannels";
+import { useOperationalMetaManualAccounts } from "@/hooks/useOperationalMetaManualAccounts";
 import { useOperationalRouteOptions } from "@/hooks/useOperationalRouteOptions";
+import { useSyncMetaTemplates } from "@/hooks/useSyncMetaTemplates";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -117,6 +119,11 @@ export function OperationalChannelsManager({
     canManageChannels && has("connect:whatsapp");
   const canManageCompanyMeta =
     isCompanyLevel() && has("manage:integrations") && canManageChannels;
+  const metaAccountsQuery = useOperationalMetaManualAccounts(
+    workspaceId,
+    canManageCompanyMeta,
+  );
+  const syncMetaTemplates = useSyncMetaTemplates(workspaceId, true);
   const channelsQuery = useOperationalChannels(workspaceId, channelsPage);
   const routesQuery = useOperationalChannelRoutes(workspaceId);
   const providersQuery = useOperationalChannelProviders(
@@ -150,6 +157,18 @@ export function OperationalChannelsManager({
       ),
     [routesQuery.data?.items],
   );
+  const metaWabaByPhoneNumberId = useMemo(
+    () =>
+      new Map(
+        (metaAccountsQuery.data ?? []).flatMap((account) =>
+          account.phoneNumbers.map((phoneNumber) => [
+            phoneNumber.phoneNumberId,
+            account.wabaId,
+          ] as const),
+        ),
+      ),
+    [metaAccountsQuery.data],
+  );
   const channels = channelsQuery.data?.items ?? [];
   const defaultProvider: OperationalChannelProviderName =
     providersQuery.data?.[0]?.name ?? "z-api";
@@ -174,6 +193,25 @@ export function OperationalChannelsManager({
 
   const refreshOperationalState = async () => {
     await Promise.all([channelsQuery.refetch(), routesQuery.refetch()]);
+  };
+
+  const handleSyncMetaTemplates = (channel: OperationalChannel) => {
+    const phoneNumberId = channel.metaPhoneNumberId;
+    const wabaId = phoneNumberId
+      ? metaWabaByPhoneNumberId.get(phoneNumberId)
+      : undefined;
+
+    if (!wabaId) {
+      toast({
+        title: "Conta Meta não encontrada",
+        description:
+          "Atualize a configuração da conta Meta antes de sincronizar os templates deste canal.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    void syncMetaTemplates.mutateAsync({ wabaId }).catch(() => undefined);
   };
 
   const staleVersionAction = (error: unknown) =>
@@ -560,6 +598,12 @@ export function OperationalChannelsManager({
           onDeactivate={setChannelToDeactivate}
           onActivate={(item) => void handleActivate(item)}
           onRequestQrCode={(item) => void handleRequestQrCode(item)}
+          canSyncMetaTemplates={canManageCompanyMeta}
+          isSyncingMetaTemplates={syncMetaTemplates.isPending}
+          metaTemplateSyncReady={
+            !metaAccountsQuery.isLoading && !metaAccountsQuery.isError
+          }
+          onSyncMetaTemplates={handleSyncMetaTemplates}
           onRefresh={() => void refreshOperationalState()}
           page={channelsQuery.data?.page ?? channelsPage}
           totalPages={channelsQuery.data?.totalPages ?? 1}

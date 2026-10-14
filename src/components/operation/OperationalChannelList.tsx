@@ -37,6 +37,10 @@ type OperationalChannelListProps = {
   onDeactivate: (channel: OperationalChannel) => void;
   onActivate: (channel: OperationalChannel) => void;
   onRequestQrCode: (channel: OperationalChannel) => void;
+  canSyncMetaTemplates: boolean;
+  isSyncingMetaTemplates: boolean;
+  metaTemplateSyncReady: boolean;
+  onSyncMetaTemplates: (channel: OperationalChannel) => void;
   onRefresh: () => void;
   page: number;
   totalPages: number;
@@ -65,6 +69,10 @@ export function OperationalChannelList({
   onDeactivate,
   onActivate,
   onRequestQrCode,
+  canSyncMetaTemplates,
+  isSyncingMetaTemplates,
+  metaTemplateSyncReady,
+  onSyncMetaTemplates,
   onRefresh,
   page,
   totalPages,
@@ -208,6 +216,10 @@ export function OperationalChannelList({
     onActivate,
     onDeactivate,
     onRequestQrCode,
+    canSyncMetaTemplates,
+    isSyncingMetaTemplates,
+    metaTemplateSyncReady,
+    onSyncMetaTemplates,
     onRefresh,
   };
 
