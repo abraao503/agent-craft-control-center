@@ -17,6 +17,7 @@ import { markAttendanceRead } from "@/services/operation/markAttendanceRead";
 import { listOperationalFollowUpOccurrences } from "@/services/operation/listOperationalFollowUpOccurrences";
 import { listOperationalFollowUps } from "@/services/operation/listOperationalFollowUps";
 import { listOperationalAttendanceTemplates } from "@/services/operation/listOperationalAttendanceTemplates";
+import { getOperationalAttendanceTemplateCatalog } from "@/services/operation/getOperationalAttendanceTemplateCatalog";
 import {
   AttendanceSummaryFilters,
   ListAttendanceMessagesParams,
@@ -254,6 +255,42 @@ export function useOperationalAttendanceTemplates(
       return listOperationalAttendanceTemplates({ workspaceId, attendanceId });
     },
     enabled: Boolean(workspaceId && attendanceId && enabled),
+  });
+}
+
+export function useOperationalAttendanceTemplateCatalog(
+  workspaceId?: string,
+  attendanceId?: string,
+  channelId?: string,
+  provider?: string,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: [
+      "operation",
+      "attendance-templates",
+      "catalog",
+      workspaceId,
+      attendanceId,
+      channelId,
+      provider,
+    ],
+    queryFn: () => {
+      if (!workspaceId) {
+        throw new Error("Workspace operacional não selecionado");
+      }
+      if (!attendanceId) {
+        throw new Error("ID do atendimento não informado");
+      }
+      return getOperationalAttendanceTemplateCatalog({
+        workspaceId,
+        attendanceId,
+      });
+    },
+    enabled: Boolean(workspaceId && attendanceId && enabled),
+    refetchOnWindowFocus: true,
+    refetchInterval: (query) =>
+      query.state.data?.status === "AVAILABLE" ? false : 60_000,
   });
 }
 

@@ -208,6 +208,15 @@ export function useOperationalRealtime({
         queryKey: ["operation", "attendance-messages", workspaceId, targetAttendanceId],
       });
       void queryClient.invalidateQueries({
+        queryKey: [
+          "operation",
+          "attendance-templates",
+          "catalog",
+          workspaceId,
+          targetAttendanceId,
+        ],
+      });
+      void queryClient.invalidateQueries({
         queryKey: ["operation", "attendance-events", workspaceId, targetAttendanceId],
       });
       void queryClient.invalidateQueries({
