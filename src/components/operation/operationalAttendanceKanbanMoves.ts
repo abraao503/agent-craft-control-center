@@ -32,6 +32,7 @@ export type OperationalKanbanMoveResult =
 
 const STATUS_LABELS: Record<AttendanceStatus, string> = {
   TRIAGE: "Triagem",
+  WAITING_CUSTOMER_REPLY: "Aguardando resposta",
   WAITING_QUEUE: "Aguardando fila",
   IN_PROGRESS: "Em atendimento",
   PENDING: "Pendente",
@@ -62,6 +63,7 @@ const MOVE_RULES: Partial<
 
 const ACTION_MENUS: Record<AttendanceStatus, OperationalKanbanMoveAction[]> = {
   TRIAGE: ["ROUTE"],
+  WAITING_CUSTOMER_REPLY: [],
   WAITING_QUEUE: ["CLAIM", "ASSIGN", "TRANSFER"],
   IN_PROGRESS: ["ASSIGN", "TRANSFER", "UNASSIGN", "PENDING", "CLOSE"],
   PENDING: ["ASSIGN", "TRANSFER", "UNASSIGN", "RESUME", "CLOSE"],

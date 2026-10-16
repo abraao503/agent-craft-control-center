@@ -3,7 +3,8 @@ export type AttendanceStatus =
   | "WAITING_QUEUE"
   | "IN_PROGRESS"
   | "PENDING"
-  | "CLOSED";
+  | "CLOSED"
+  | "WAITING_CUSTOMER_REPLY";
 
 export type AttendanceCommandAction =
   | "INBOUND_CREATE"
@@ -19,7 +20,8 @@ export type AttendanceCommandAction =
   | "CLOSE"
   | "FOLLOW_UP_CREATE"
   | "FOLLOW_UP_UPDATE"
-  | "FOLLOW_UP_CANCEL";
+  | "FOLLOW_UP_CANCEL"
+  | "WEBHOOK_AUTOMATION_STARTED";
 
 export type AttendanceActorType =
   | "USER"

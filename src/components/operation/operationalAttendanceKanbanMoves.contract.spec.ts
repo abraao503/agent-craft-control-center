@@ -58,6 +58,7 @@ const expectedMoves: Array<{
 
 const expectedActionMenus: Record<AttendanceStatus, OperationalKanbanMoveAction[]> = {
   TRIAGE: ["ROUTE"],
+  WAITING_CUSTOMER_REPLY: [],
   WAITING_QUEUE: ["CLAIM", "ASSIGN", "TRANSFER"],
   IN_PROGRESS: ["ASSIGN", "TRANSFER", "UNASSIGN", "PENDING", "CLOSE"],
   PENDING: ["ASSIGN", "TRANSFER", "UNASSIGN", "RESUME", "CLOSE"],

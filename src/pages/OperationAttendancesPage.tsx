@@ -64,6 +64,7 @@ const PAGE_SIZE = 20;
 
 const STATUS_LABELS: Record<AttendanceStatus, string> = {
   TRIAGE: "Triagem",
+  WAITING_CUSTOMER_REPLY: "Aguardando resposta",
   WAITING_QUEUE: "Aguardando fila",
   IN_PROGRESS: "Em atendimento",
   PENDING: "Pendente",
@@ -72,13 +73,18 @@ const STATUS_LABELS: Record<AttendanceStatus, string> = {
 
 const STATUS_ORDER: AttendanceStatus[] = [
   "TRIAGE",
+  "WAITING_CUSTOMER_REPLY",
   "WAITING_QUEUE",
   "IN_PROGRESS",
   "PENDING",
   "CLOSED",
 ];
 
-const PRIMARY_STATUSES: AttendanceStatus[] = ["TRIAGE", "WAITING_QUEUE"];
+const PRIMARY_STATUSES: AttendanceStatus[] = [
+  "TRIAGE",
+  "WAITING_CUSTOMER_REPLY",
+  "WAITING_QUEUE",
+];
 const SECONDARY_STATUSES: AttendanceStatus[] = [
   "IN_PROGRESS",
   "PENDING",
