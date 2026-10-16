@@ -5,6 +5,7 @@ import { AttendanceStatus, OperationalConversation } from "@/types/operation-att
 
 const STATUS_LABELS: Record<AttendanceStatus, string> = {
   TRIAGE: "Triagem",
+  WAITING_CUSTOMER_REPLY: "Aguardando resposta",
   WAITING_QUEUE: "Aguardando fila",
   IN_PROGRESS: "Em atendimento",
   PENDING: "Pendente",
@@ -146,6 +147,7 @@ function getStatusVariant(
 ): "default" | "secondary" | "destructive" | "outline" {
   if (status === "IN_PROGRESS") return "default";
   if (status === "CLOSED") return "outline";
+  if (status === "WAITING_CUSTOMER_REPLY") return "secondary";
   if (status === "PENDING") return "secondary";
   return "outline";
 }
@@ -159,6 +161,9 @@ function getStatusClassName(status: AttendanceStatus) {
   }
   if (status === "TRIAGE") {
     return "border-sky-300 bg-sky-50 text-sky-800";
+  }
+  if (status === "WAITING_CUSTOMER_REPLY") {
+    return "border-cyan-300 bg-cyan-50 text-cyan-800";
   }
   if (status === "PENDING") {
     return "border-violet-300 bg-violet-50 text-violet-800";

@@ -18,6 +18,7 @@ import {
   UserMinus,
   UserPlus,
   UserRound,
+  Webhook as WebhookIcon,
   XCircle,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -88,6 +89,7 @@ import { formatOperationalMessageStatus } from "@/utils/operationalMessageStatus
 
 const STATUS_LABELS: Record<AttendanceStatus, string> = {
   TRIAGE: "Triagem automática",
+  WAITING_CUSTOMER_REPLY: "Aguardando resposta do cliente",
   WAITING_QUEUE: "Fila humana",
   IN_PROGRESS: "Atendimento humano",
   PENDING: "Pendente",
@@ -114,6 +116,7 @@ const EVENT_LABELS: Record<string, string> = {
   PENDING: "Marcado como pendente",
   RESUME: "Retomado",
   CLOSE: "Encerrado",
+  WEBHOOK_AUTOMATION_STARTED: "Automação iniciada via webhook",
 };
 
 const EVENT_ICONS: Record<string, LucideIcon> = {
@@ -128,6 +131,7 @@ const EVENT_ICONS: Record<string, LucideIcon> = {
   PENDING: PauseCircle,
   RESUME: PlayCircle,
   CLOSE: XCircle,
+  WEBHOOK_AUTOMATION_STARTED: WebhookIcon,
 };
 
 const SECONDARY_PANEL_OPEN_STORAGE_KEY =

@@ -68,6 +68,9 @@ import OperationAreaPage from "./pages/OperationAreaPage";
 import OperationQueuePage from "./pages/OperationQueuePage";
 import OperationAssistantsPage from "./pages/OperationAssistantsPage";
 import OperationTriageAgentsPage from "./pages/OperationTriageAgentsPage";
+import OperationWebhooksPage from "./pages/OperationWebhooksPage";
+import OperationWebhookCreatePage from "./pages/OperationWebhookCreatePage";
+import OperationWebhookDetailPage from "./pages/OperationWebhookDetailPage";
 import OperationAttendanceStationPage from "./pages/OperationAttendanceStationPage";
 import Sidebar from "./components/layout/Sidebar";
 import Header from "./components/layout/Header";
@@ -449,6 +452,33 @@ const App = () => (
                         <ProtectedRoute
                           requiredPermission="view:operation-channels"
                           component={OperationChannelsPage}
+                        />
+                      }
+                    />
+                    <Route
+                      path="/operation/webhooks"
+                      element={
+                        <ProtectedRoute
+                          requiredPermission="view:operation-channels"
+                          component={OperationWebhooksPage}
+                        />
+                      }
+                    />
+                    <Route
+                      path="/operation/webhooks/create"
+                      element={
+                        <ProtectedRoute
+                          requiredPermission="manage:operation-channels"
+                          component={OperationWebhookCreatePage}
+                        />
+                      }
+                    />
+                    <Route
+                      path="/operation/webhooks/:webhookId"
+                      element={
+                        <ProtectedRoute
+                          requiredPermission="view:operation-channels"
+                          component={OperationWebhookDetailPage}
                         />
                       }
                     />

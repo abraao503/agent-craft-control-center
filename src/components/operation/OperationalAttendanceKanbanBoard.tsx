@@ -62,6 +62,7 @@ import {
 
 const STATUS_ORDER: AttendanceStatus[] = [
   "TRIAGE",
+  "WAITING_CUSTOMER_REPLY",
   "WAITING_QUEUE",
   "IN_PROGRESS",
   "PENDING",
@@ -70,6 +71,7 @@ const STATUS_ORDER: AttendanceStatus[] = [
 
 const STATUS_LABELS: Record<AttendanceStatus, string> = {
   TRIAGE: "Triagem",
+  WAITING_CUSTOMER_REPLY: "Aguardando resposta",
   WAITING_QUEUE: "Aguardando fila",
   IN_PROGRESS: "Em atendimento",
   PENDING: "Pendente",
@@ -78,6 +80,7 @@ const STATUS_LABELS: Record<AttendanceStatus, string> = {
 
 const STATUS_CLASS_NAMES: Record<AttendanceStatus, string> = {
   TRIAGE: "border-amber-200 bg-amber-50 text-amber-700",
+  WAITING_CUSTOMER_REPLY: "border-cyan-200 bg-cyan-50 text-cyan-700",
   WAITING_QUEUE: "border-sky-200 bg-sky-50 text-sky-700",
   IN_PROGRESS: "border-emerald-200 bg-emerald-50 text-emerald-700",
   PENDING: "border-violet-200 bg-violet-50 text-violet-700",
@@ -86,6 +89,7 @@ const STATUS_CLASS_NAMES: Record<AttendanceStatus, string> = {
 
 const COLUMN_DROPZONE_IDS: Record<AttendanceStatus, string> = {
   TRIAGE: "operation-kanban-column-triage",
+  WAITING_CUSTOMER_REPLY: "operation-kanban-column-waiting-customer-reply",
   WAITING_QUEUE: "operation-kanban-column-waiting-queue",
   IN_PROGRESS: "operation-kanban-column-in-progress",
   PENDING: "operation-kanban-column-pending",
@@ -572,6 +576,7 @@ function isAttendanceWithDetails(
 
 const columnStatusDotClassNames: Record<AttendanceStatus, string> = {
   TRIAGE: "bg-amber-500",
+  WAITING_CUSTOMER_REPLY: "bg-cyan-500",
   WAITING_QUEUE: "bg-sky-500",
   IN_PROGRESS: "bg-emerald-500",
   PENDING: "bg-violet-500",

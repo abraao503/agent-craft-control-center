@@ -485,6 +485,12 @@ const SidebarMenuContent = () => {
           requiredPermission: "view:operation-channels",
         },
         {
+          path: "/operation/webhooks",
+          label: "Webhooks",
+          icon: <Webhook className="h-5 w-5" />,
+          requiredPermission: "view:operation-channels",
+        },
+        {
           path: "/operation/agents",
           label: "Agentes",
           icon: <Bot className="h-5 w-5" />,
