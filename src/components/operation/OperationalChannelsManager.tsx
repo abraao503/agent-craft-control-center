@@ -521,7 +521,7 @@ export function OperationalChannelsManager({
     });
     toast({
       title: "Destino definido",
-      description: "A conexão do canal pode ser concluída agora.",
+      description: "O canal será ativado para você concluir a conexão.",
     });
   };
 
@@ -767,8 +767,19 @@ export function OperationalChannelsManager({
           handleOnboardingSaveDestination(channelId, values)
         }
         onActivateChannel={async (channelId) => {
-          await handleActivateById(channelId);
+          const response = await channelMutations.activate.mutateAsync({
+            channelId,
+            idempotencyKey: crypto.randomUUID(),
+          });
+          setWebhookUrls((current) => ({
+            ...current,
+            [channelId]: response.webhookUrl,
+          }));
           await refreshOperationalState();
+          toast({
+            title: "Canal ativado",
+            description: "O webhook operacional foi configurado pelo provedor.",
+          });
         }}
         onRequestQrCode={async (channelId) => {
           const target = channels.find((item) => item.id === channelId);

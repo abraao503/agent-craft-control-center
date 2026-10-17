@@ -159,6 +159,7 @@ export function OperationalChannelOnboarding({
   const [activationError, setActivationError] = useState<string | null>(null);
   const [isSavingDestination, setIsSavingDestination] = useState(false);
   const [isActivating, setIsActivating] = useState(false);
+  const [isChannelActivated, setIsChannelActivated] = useState(false);
   const [isRequestingQr, setIsRequestingQr] = useState(false);
 
   const destinationForm = useForm<OperationalRouteFormValues>({
@@ -246,6 +247,7 @@ export function OperationalChannelOnboarding({
       displayName: channel.displayName ?? "",
       metaPhoneNumberId: channel.metaPhoneNumberId ?? "",
     }));
+    setIsChannelActivated(channel.active);
     destinationForm.setValue("channelId", channel.id);
     setStep(
       !channel.route.configured
@@ -289,6 +291,7 @@ export function OperationalChannelOnboarding({
     setQrCode(null);
     setDestinationError(null);
     setActivationError(null);
+    setIsChannelActivated(false);
     destinationForm.reset();
   };
 
@@ -351,6 +354,20 @@ export function OperationalChannelOnboarding({
     }
   };
 
+  const activateChannel = async (channelId: string) => {
+    setIsActivating(true);
+    setActivationError(null);
+    try {
+      await onActivateChannel(channelId);
+      setIsChannelActivated(true);
+    } catch (error) {
+      setActivationError(getActivationErrorMessage(error));
+      throw error;
+    } finally {
+      setIsActivating(false);
+    }
+  };
+
   const handleSaveDestination = async () => {
     if (!createdChannelId) return;
 
@@ -363,6 +380,11 @@ export function OperationalChannelOnboarding({
     try {
       await onSaveDestination(createdChannelId, values);
       setStep("connect");
+      try {
+        await activateChannel(createdChannelId);
+      } catch {
+        // A etapa de conexão exibe a falha e permite tentar novamente sem salvar a rota.
+      }
     } catch (error) {
       setDestinationError(getOperationalErrorMessage(error, "Verifique os destinos e tente novamente."));
     } finally {
@@ -370,18 +392,13 @@ export function OperationalChannelOnboarding({
     }
   };
 
-  const handleActivate = async () => {
+  const handleRetryActivation = async () => {
     if (!createdChannelId) return;
 
-    setIsActivating(true);
-    setActivationError(null);
     try {
-      await onActivateChannel(createdChannelId);
-      setStep(connectionReady ? "done" : "connect");
-    } catch (error) {
-      setActivationError(getActivationErrorMessage(error));
-    } finally {
-      setIsActivating(false);
+      await activateChannel(createdChannelId);
+    } catch {
+      // A mensagem já foi atualizada por activateChannel.
     }
   };
 
@@ -390,6 +407,14 @@ export function OperationalChannelOnboarding({
 
     setIsRequestingQr(true);
     try {
+      if (!createdChannel?.active && !isChannelActivated) {
+        try {
+          await activateChannel(createdChannelId);
+        } catch {
+          return;
+        }
+      }
+
       const value = await onRequestQrCode(createdChannelId);
       setQrCode(value);
     } catch (error) {
@@ -499,8 +524,8 @@ export function OperationalChannelOnboarding({
                 <p className="font-medium">Nenhum dado adicional agora</p>
                 <p className="mt-1 text-muted-foreground">
                   {selectedProvider?.capabilities.supportsQr
-                    ? "Depois de definir o destino, você ativará o canal e conectará o WhatsApp com um QR Code."
-                    : "Depois de definir o destino, você poderá ativar e acompanhar a conexão deste canal."}
+                    ? "Depois de definir o destino, o canal será ativado para você conectar o WhatsApp com um QR Code."
+                    : "Depois de definir o destino, o canal será ativado e você poderá acompanhar a conexão."}
                 </p>
               </div>
             ) : null}
@@ -564,11 +589,16 @@ export function OperationalChannelOnboarding({
               <p className="text-xs text-destructive">{activationError}</p>
             ) : null}
 
-            {createdChannel && !createdChannel.active ? (
+            {activationError &&
+            createdChannel &&
+            !supportsQr &&
+            !createdChannel.active &&
+            !isChannelActivated ? (
               <Button
                 className="w-full sm:w-auto"
-                onClick={() => void handleActivate()}
-                disabled={isActivating}
+                variant="outline"
+                onClick={() => void handleRetryActivation()}
+                disabled={isActivating || isRequestingQr}
               >
                 {isActivating ? (
                   <>
@@ -576,7 +606,7 @@ export function OperationalChannelOnboarding({
                     Ativando...
                   </>
                 ) : (
-                  "Ativar canal"
+                  "Tentar ativação novamente"
                 )}
               </Button>
             ) : null}
@@ -598,7 +628,7 @@ export function OperationalChannelOnboarding({
                   <Button
                     variant="outline"
                     onClick={() => void handleRequestQr()}
-                    disabled={isRequestingQr}
+                    disabled={isRequestingQr || isActivating}
                   >
                     {isRequestingQr ? (
                       <>
