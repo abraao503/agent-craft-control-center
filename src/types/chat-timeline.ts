@@ -1,4 +1,4 @@
-import { Message } from "./message";
+import type { Message, WhatsappMessageReactionSummary } from "./message";
 import { Pagination } from "./pagination";
 
 type Related = { id: string; name: string };
@@ -28,6 +28,7 @@ export type ChatTimelineEvent = {
     deliveryErrorMessage?: string | null;
     providerCreatedAt?: string | null;
     providerUpdatedAt?: string | null;
+    reactions?: WhatsappMessageReactionSummary[];
     channel?: {
       integrationId: string;
       provider: string;

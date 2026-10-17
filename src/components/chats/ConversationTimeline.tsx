@@ -1,5 +1,6 @@
-import { useEffect, useLayoutEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
+import type { InfiniteData } from "@tanstack/react-query";
 import { format } from "date-fns";
 import {
   AlertCircle,
@@ -14,13 +15,47 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MessageContent } from "./media/MessageContent";
+import { MessageReactions } from "./MessageReactions";
 import { listChatTimeline } from "@/services/conversation/listChatTimeline";
-import { ChatTimelineEvent } from "@/types/chat-timeline";
-import { Message } from "@/types/message";
+import type { ChatTimelineEvent, ChatTimelineResponse } from "@/types/chat-timeline";
+import type {
+  Message,
+  MessageReactionEvent,
+  WhatsappMessageReactionSummary,
+} from "@/types/message";
 import { MessageSentEvent } from "@/types/websocket";
 import { useTranslation } from "react-i18next";
+import { connectSocket } from "@/lib/socket";
 
 type Props = { chatId: string; newMessageEvent?: MessageSentEvent | null };
+
+function isMessageReactionEvent(value: unknown): value is MessageReactionEvent {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return false;
+  }
+
+  const event = value as Record<string, unknown>;
+  return (
+    typeof event.chatId === "string" &&
+    event.chatId.length > 0 &&
+    typeof event.messageId === "string" &&
+    event.messageId.length > 0 &&
+    Array.isArray(event.reactions) &&
+    event.reactions.every((reaction) => {
+      if (typeof reaction !== "object" || reaction === null || Array.isArray(reaction)) {
+        return false;
+      }
+      const summary = reaction as Record<string, unknown>;
+      return (
+        typeof summary.emoji === "string" &&
+        summary.emoji.trim().length > 0 &&
+        typeof summary.count === "number" &&
+        Number.isInteger(summary.count) &&
+        summary.count > 0
+      );
+    })
+  );
+}
 
 export function ConversationTimeline({ chatId, newMessageEvent }: Props) {
   const { t } = useTranslation();
@@ -28,8 +63,9 @@ export function ConversationTimeline({ chatId, newMessageEvent }: Props) {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const initialScrollChatId = useRef<string | null>(null);
   const lastScrolledEventKey = useRef<string | null>(null);
+  const timelineQueryKey = useMemo(() => ["chat-timeline", chatId] as const, [chatId]);
   const query = useInfiniteQuery({
-    queryKey: ["chat-timeline", chatId],
+    queryKey: timelineQueryKey,
     queryFn: ({ pageParam }) =>
       listChatTimeline({ chatId, page: pageParam, limit: 50 }),
     initialPageParam: 1,
@@ -42,6 +78,53 @@ export function ConversationTimeline({ chatId, newMessageEvent }: Props) {
       void queryClient.invalidateQueries({ queryKey: ["chat-timeline", chatId] });
     }
   }, [chatId, newMessageEvent, queryClient]);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token") ?? "";
+    if (!token) return;
+
+    const socket = connectSocket(token);
+    const handleReaction = (rawEvent: unknown) => {
+      if (!isMessageReactionEvent(rawEvent) || rawEvent.chatId !== chatId) return;
+
+      const cached = queryClient.getQueryData<InfiniteData<ChatTimelineResponse>>(
+        timelineQueryKey,
+      );
+      const messageIsLoaded = cached?.pages.some((page) =>
+        page.items.some(
+          (item) => item.type === "message" && item.id === rawEvent.messageId,
+        ),
+      );
+
+      if (!cached || !messageIsLoaded) {
+        void queryClient.invalidateQueries({ queryKey: timelineQueryKey });
+        return;
+      }
+
+      queryClient.setQueryData<InfiniteData<ChatTimelineResponse>>(
+        timelineQueryKey,
+        {
+          ...cached,
+          pages: cached.pages.map((page) => ({
+            ...page,
+            items: page.items.map((item) =>
+              item.type === "message" && item.id === rawEvent.messageId
+                ? {
+                    ...item,
+                    payload: { ...item.payload, reactions: rawEvent.reactions },
+                  }
+                : item,
+            ),
+          })),
+        },
+      );
+    };
+
+    socket.on("message:reaction", handleReaction);
+    return () => {
+      socket.off("message:reaction", handleReaction);
+    };
+  }, [chatId, queryClient, timelineQueryKey]);
 
   const events = query.data?.pages.flatMap((page) => page.items) ?? [];
 
@@ -132,6 +215,7 @@ function TimelineMessage({ event, chatId }: { event: ChatTimelineEvent; chatId: 
     templateLanguage: event.payload.templateLanguage,
     templateParameters: event.payload.templateParameters,
     templateSnapshot: event.payload.templateSnapshot,
+    reactions: event.payload.reactions,
   };
   const isCustomer = sender === "customer";
   const author =
@@ -143,25 +227,31 @@ function TimelineMessage({ event, chatId }: { event: ChatTimelineEvent; chatId: 
 
   return (
     <div className={`flex ${isCustomer ? "justify-start" : "justify-end"}`}>
-      <div className={`max-w-[70%] rounded-lg p-3 ${isCustomer ? "bg-white dark:bg-[#202c33]" : sender === "assistant" ? "bg-[#d9fdd3] dark:bg-[#005c4b]" : "bg-[#cfe9ff] dark:bg-[#1f4e7e]"}`}>
-        <div className="mb-1 flex items-center gap-2 text-xs font-semibold text-muted-foreground">
-          {sender === "assistant" ? <Bot className="h-3 w-3" /> : sender === "human_assistant" ? <UserCog className="h-3 w-3" /> : null}
-          {author}
-        </div>
-        <MessageContent message={message} />
-        {event.payload.channel && (
-          <div className="mt-1 text-[10px] text-muted-foreground">
-            Canal: {event.payload.channel.pipeline.name} · {event.payload.channel.provider}
+      <div className="flex max-w-[70%] flex-col">
+        <div className={`w-fit max-w-full rounded-lg p-3 ${isCustomer ? "bg-white dark:bg-[#202c33]" : sender === "assistant" ? "bg-[#d9fdd3] dark:bg-[#005c4b]" : "bg-[#cfe9ff] dark:bg-[#1f4e7e]"}`}>
+          <div className="mb-1 flex items-center gap-2 text-xs font-semibold text-muted-foreground">
+            {sender === "assistant" ? <Bot className="h-3 w-3" /> : sender === "human_assistant" ? <UserCog className="h-3 w-3" /> : null}
+            {author}
           </div>
-        )}
-        <div className="mt-1 text-right text-xs text-muted-foreground">
-          {format(new Date(event.createdAt), "dd/MM/yyyy HH:mm")}
-          {message.deliveryStatus && message.sender !== "customer" && (
-            <span className="ml-2" title={message.deliveryErrorMessage ?? undefined}>
-              <DeliveryStatusIcon status={message.deliveryStatus} />
-            </span>
+          <MessageContent message={message} />
+          {event.payload.channel && (
+            <div className="mt-1 text-[10px] text-muted-foreground">
+              Canal: {event.payload.channel.pipeline.name} · {event.payload.channel.provider}
+            </div>
           )}
+          <div className="mt-1 text-right text-xs text-muted-foreground">
+            {format(new Date(event.createdAt), "dd/MM/yyyy HH:mm")}
+            {message.deliveryStatus && message.sender !== "customer" && (
+              <span className="ml-2" title={message.deliveryErrorMessage ?? undefined}>
+                <DeliveryStatusIcon status={message.deliveryStatus} />
+              </span>
+            )}
+          </div>
         </div>
+        <MessageReactions
+          reactions={message.reactions}
+          align={isCustomer ? "start" : "end"}
+        />
       </div>
     </div>
   );

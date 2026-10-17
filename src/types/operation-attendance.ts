@@ -1,3 +1,5 @@
+import type { WhatsappMessageReactionSummary } from "./message";
+
 export type AttendanceStatus =
   | "TRIAGE"
   | "WAITING_QUEUE"
@@ -208,6 +210,7 @@ export interface AttendanceMessageItem {
   } | null;
   dispatchStatus?: string | null;
   deliveryStatus?: string | null;
+  reactions?: WhatsappMessageReactionSummary[];
   createdAt: string;
   updatedAt: string;
 }

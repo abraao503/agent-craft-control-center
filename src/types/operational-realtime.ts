@@ -1,7 +1,10 @@
+import type { WhatsappMessageReactionSummary } from "./message";
+
 export const OPERATIONAL_PUBLIC_EVENTS = {
   ATTENDANCE_CHANGED: "operation:attendance.changed:v1",
   MESSAGE_CREATED: "operation:message.created:v1",
   MESSAGE_STATUS: "operation:message.status:v1",
+  MESSAGE_REACTION: "operation:message.reaction:v1",
   READ_CHANGED: "operation:read.changed:v1",
 } as const;
 
@@ -18,6 +21,7 @@ export interface OperationalPublicEvent {
   messageId: string | null;
   kind: string;
   occurredAt: string;
+  reactions?: WhatsappMessageReactionSummary[];
 }
 
 export interface LegacyWhatsappMessageStatusEvent {

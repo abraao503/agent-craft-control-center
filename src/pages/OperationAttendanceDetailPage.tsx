@@ -54,6 +54,7 @@ import {
 import { AttendanceFollowUpsCard } from "@/components/operation/AttendanceFollowUpsCard";
 import { AttendanceChecklistPanel } from "@/components/operation/AttendanceChecklistPanel";
 import { AttendanceInternalNote } from "@/components/operation/AttendanceInternalNote";
+import { MessageReactions } from "@/components/chats/MessageReactions";
 import { MessageDeliveryChecks } from "@/components/operation/MessageDeliveryChecks";
 import { TemplateMessage } from "@/components/chats/media/TemplateMessage";
 import { useMessageDeliveryChecks } from "@/components/operation/useMessageDeliveryChecks";
@@ -1279,43 +1280,49 @@ function ConversationMessage({
 
   return (
     <article className={`flex ${isCustomer ? "justify-start" : "justify-end"}`}>
-      <div
-        className={`max-w-[min(90%,42rem)] rounded-2xl px-4 py-3 text-sm ${
+      <div className="flex max-w-[min(90%,42rem)] flex-col">
+        <div
+          className={`w-fit max-w-full rounded-2xl px-4 py-3 text-sm ${
           isCustomer
             ? "rounded-tl-sm bg-muted text-foreground shadow-sm"
             : "rounded-tr-sm bg-primary text-primary-foreground shadow-sm"
         }`}
-      >
-        <div className="mb-1 flex flex-wrap items-center gap-2 text-xs opacity-75">
-          <span className="font-semibold">{senderLabel}</span>
-        </div>
-        {hasMedia ? (
-          <p className="mb-1 font-medium">
-            Mídia: {message.mediaMimetype || message.type}
-          </p>
-        ) : null}
-        {message.templateName ? (
-          <p className="mb-1 font-medium">Template: {message.templateName}</p>
-        ) : null}
-        {isTemplate ? (
-          <TemplateMessage
-            snapshot={message.templateSnapshot}
-            fallbackBody={content || message.templateName || "Template Meta"}
-          />
-        ) : content ? (
-          <p className="whitespace-pre-wrap break-words">{content}</p>
-        ) : null}
-        <div className="mt-2 flex flex-wrap items-center justify-end gap-1 text-xs opacity-75">
-          <span>{formatDateTime(message.createdAt)}</span>
-          {hasDeliveryChecks ? (
-            <MessageDeliveryChecks
-              summary={deliveryChecks}
-              state={deliveryChecksState}
-            />
-          ) : messageStatuses.length > 0 ? (
-            <span>{messageStatuses.join(" · ")}</span>
+        >
+          <div className="mb-1 flex flex-wrap items-center gap-2 text-xs opacity-75">
+            <span className="font-semibold">{senderLabel}</span>
+          </div>
+          {hasMedia ? (
+            <p className="mb-1 font-medium">
+              Mídia: {message.mediaMimetype || message.type}
+            </p>
           ) : null}
+          {message.templateName ? (
+            <p className="mb-1 font-medium">Template: {message.templateName}</p>
+          ) : null}
+          {isTemplate ? (
+            <TemplateMessage
+              snapshot={message.templateSnapshot}
+              fallbackBody={content || message.templateName || "Template Meta"}
+            />
+          ) : content ? (
+            <p className="whitespace-pre-wrap break-words">{content}</p>
+          ) : null}
+          <div className="mt-2 flex flex-wrap items-center justify-end gap-1 text-xs opacity-75">
+            <span>{formatDateTime(message.createdAt)}</span>
+            {hasDeliveryChecks ? (
+              <MessageDeliveryChecks
+                summary={deliveryChecks}
+                state={deliveryChecksState}
+              />
+            ) : messageStatuses.length > 0 ? (
+              <span>{messageStatuses.join(" · ")}</span>
+            ) : null}
+          </div>
         </div>
+        <MessageReactions
+          reactions={message.reactions}
+          align={isCustomer ? "start" : "end"}
+        />
       </div>
     </article>
   );

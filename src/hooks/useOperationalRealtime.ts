@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import type { InfiniteData } from "@tanstack/react-query";
 import { connectSocket } from "@/lib/socket";
 import { replaceAttendanceInKanban } from "@/utils/operationalKanbanCache";
 import {
@@ -9,10 +10,26 @@ import {
   OperationalPublicEventName,
   OperationalRealtimeStatus,
 } from "@/types/operational-realtime";
-import type { AttendanceKanbanPage, AttendanceWithDetails } from "@/types/operation-attendance";
+import type {
+  AttendanceKanbanPage,
+  AttendanceTimelinePage,
+  AttendanceWithDetails,
+} from "@/types/operation-attendance";
 
 const EVENT_NAMES = Object.values(OPERATIONAL_PUBLIC_EVENTS) as OperationalPublicEventName[];
 const MAX_REMEMBERED_EVENTS = 500;
+
+function isReactionSummary(value: unknown): value is { emoji: string; count: number } {
+  if (!isRecord(value)) return false;
+
+  return (
+    typeof value.emoji === "string" &&
+    value.emoji.trim().length > 0 &&
+    typeof value.count === "number" &&
+    Number.isInteger(value.count) &&
+    value.count > 0
+  );
+}
 
 function isAttendanceWithDetails(
   value: unknown,
@@ -51,6 +68,11 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function isOperationalPublicEvent(value: unknown): value is OperationalPublicEvent {
   if (!isRecord(value)) return false;
 
+  const hasValidReactions =
+    value.reactions === undefined ||
+    (Array.isArray(value.reactions) && value.reactions.every(isReactionSummary));
+  const isReactionEvent = value.kind === "REACTION";
+
   return (
     value.schemaVersion === 1 &&
     typeof value.eventId === "string" &&
@@ -66,6 +88,11 @@ function isOperationalPublicEvent(value: unknown): value is OperationalPublicEve
         value.aggregateVersion >= 1)) &&
     (value.messageId === null || typeof value.messageId === "string") &&
     typeof value.kind === "string" &&
+    hasValidReactions &&
+    (!isReactionEvent ||
+      (typeof value.messageId === "string" &&
+        value.messageId.length > 0 &&
+        Array.isArray(value.reactions))) &&
     typeof value.occurredAt === "string" &&
     !Number.isNaN(Date.parse(value.occurredAt))
   );
@@ -179,9 +206,65 @@ export function useOperationalRealtime({
       return patched;
     };
 
+    const patchAttendanceReactionCache = (
+      event: OperationalPublicEvent,
+    ): boolean => {
+      if (
+        event.kind !== "REACTION" ||
+        !event.messageId ||
+        !event.reactions
+      ) {
+        return false;
+      }
+
+      const timelineQueries = queryClient.getQueriesData<
+        InfiniteData<AttendanceTimelinePage>
+      >({
+        queryKey: [
+          "operation",
+          "attendance-timeline",
+          workspaceId,
+          event.attendanceId,
+        ],
+      });
+      let patched = false;
+
+      for (const [queryKey, cached] of timelineQueries) {
+        if (
+          !cached ||
+          !cached.pages.some((page) =>
+            page.items.some(
+              (item) => item.kind === "message" && item.id === event.messageId,
+            ),
+          )
+        ) {
+          continue;
+        }
+
+        queryClient.setQueryData<InfiniteData<AttendanceTimelinePage>>(
+          queryKey,
+          {
+            ...cached,
+            pages: cached.pages.map((page) => ({
+              ...page,
+              items: page.items.map((item) =>
+                item.kind === "message" && item.id === event.messageId
+                  ? { ...item, reactions: event.reactions }
+                  : item,
+              ),
+            })),
+          },
+        );
+        patched = true;
+      }
+
+      return patched;
+    };
+
     const invalidateWorkspace = (
       eventAttendanceId?: string,
       eventChatId?: string | null,
+      skipTimeline = false,
     ) => {
       void queryClient.invalidateQueries({
         queryKey: ["operation", "attendances", workspaceId],
@@ -219,9 +302,11 @@ export function useOperationalRealtime({
       void queryClient.invalidateQueries({
         queryKey: ["operation", "attendance-events", workspaceId, targetAttendanceId],
       });
-      void queryClient.invalidateQueries({
-        queryKey: ["operation", "attendance-timeline", workspaceId, targetAttendanceId],
-      });
+      if (!skipTimeline) {
+        void queryClient.invalidateQueries({
+          queryKey: ["operation", "attendance-timeline", workspaceId, targetAttendanceId],
+        });
+      }
       void queryClient.invalidateQueries({
         queryKey: [
           "operation",
@@ -310,8 +395,10 @@ export function useOperationalRealtime({
       remember(processedEventIdsRef.current, rawEvent.eventId);
 
       const isCurrentAttendance = rawEvent.attendanceId === targetAttendanceId;
+      const isReactionEvent = rawEvent.kind === "REACTION";
       const isKnownStaleEvent =
         isCurrentAttendance &&
+        !isReactionEvent &&
         rawEvent.aggregateVersion !== null &&
         currentVersionRef.current !== undefined &&
         rawEvent.aggregateVersion <= currentVersionRef.current;
@@ -319,8 +406,11 @@ export function useOperationalRealtime({
 
       setLastEventAt(rawEvent.occurredAt);
 
-      patchKanbanCache(rawEvent);
-      invalidateWorkspace(rawEvent.attendanceId, rawEvent.chatId);
+      if (!isReactionEvent) patchKanbanCache(rawEvent);
+      const reactionPatched = isReactionEvent
+        ? patchAttendanceReactionCache(rawEvent)
+        : false;
+      invalidateWorkspace(rawEvent.attendanceId, rawEvent.chatId, reactionPatched);
     };
 
     const handleLegacyWhatsappMessageStatus = (rawEvent: unknown) => {
