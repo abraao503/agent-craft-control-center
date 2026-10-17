@@ -29,6 +29,7 @@ export type ChatTimelineEvent = {
     providerCreatedAt?: string | null;
     providerUpdatedAt?: string | null;
     reactions?: WhatsappMessageReactionSummary[];
+    replyContext?: Message["replyContext"];
     channel?: {
       integrationId: string;
       provider: string;

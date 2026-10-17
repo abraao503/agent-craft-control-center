@@ -55,6 +55,7 @@ import { AttendanceFollowUpsCard } from "@/components/operation/AttendanceFollow
 import { AttendanceChecklistPanel } from "@/components/operation/AttendanceChecklistPanel";
 import { AttendanceInternalNote } from "@/components/operation/AttendanceInternalNote";
 import { MessageReactions } from "@/components/chats/MessageReactions";
+import { MessageReplyPreview } from "@/components/chats/MessageReplyPreview";
 import { MessageDeliveryChecks } from "@/components/operation/MessageDeliveryChecks";
 import { TemplateMessage } from "@/components/chats/media/TemplateMessage";
 import { useMessageDeliveryChecks } from "@/components/operation/useMessageDeliveryChecks";
@@ -1288,9 +1289,7 @@ function ConversationMessage({
             : "rounded-tr-sm bg-primary text-primary-foreground shadow-sm"
         }`}
         >
-          <div className="mb-1 flex flex-wrap items-center gap-2 text-xs opacity-75">
-            <span className="font-semibold">{senderLabel}</span>
-          </div>
+          <MessageReplyPreview replyContext={message.replyContext} />
           {hasMedia ? (
             <p className="mb-1 font-medium">
               Mídia: {message.mediaMimetype || message.type}
@@ -1307,16 +1306,14 @@ function ConversationMessage({
           ) : content ? (
             <p className="whitespace-pre-wrap break-words">{content}</p>
           ) : null}
-          <div className="mt-2 flex flex-wrap items-center justify-end gap-1 text-xs opacity-75">
+          <div className="mt-2 flex flex-wrap items-center gap-1 text-xs opacity-75">
             <span>{formatDateTime(message.createdAt)}</span>
-            {hasDeliveryChecks ? (
+            {hasDeliveryChecks && (
               <MessageDeliveryChecks
                 summary={deliveryChecks}
                 state={deliveryChecksState}
               />
-            ) : messageStatuses.length > 0 ? (
-              <span>{messageStatuses.join(" · ")}</span>
-            ) : null}
+            )}
           </div>
         </div>
         <MessageReactions

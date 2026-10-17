@@ -1,4 +1,5 @@
 import type { WhatsappMessageReactionSummary } from "./message";
+import type { MessageReplyContext } from "./message";
 
 export type AttendanceStatus =
   | "TRIAGE"
@@ -211,6 +212,7 @@ export interface AttendanceMessageItem {
   dispatchStatus?: string | null;
   deliveryStatus?: string | null;
   reactions?: WhatsappMessageReactionSummary[];
+  replyContext?: MessageReplyContext;
   createdAt: string;
   updatedAt: string;
 }

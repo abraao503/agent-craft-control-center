@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { MessageContent } from "./media/MessageContent";
 import { MessageReactions } from "./MessageReactions";
+import { MessageReplyPreview } from "./MessageReplyPreview";
 import { listChatTimeline } from "@/services/conversation/listChatTimeline";
 import type { ChatTimelineEvent, ChatTimelineResponse } from "@/types/chat-timeline";
 import type {
@@ -216,6 +217,7 @@ function TimelineMessage({ event, chatId }: { event: ChatTimelineEvent; chatId: 
     templateParameters: event.payload.templateParameters,
     templateSnapshot: event.payload.templateSnapshot,
     reactions: event.payload.reactions,
+    replyContext: event.payload.replyContext,
   };
   const isCustomer = sender === "customer";
   const author =
@@ -233,6 +235,7 @@ function TimelineMessage({ event, chatId }: { event: ChatTimelineEvent; chatId: 
             {sender === "assistant" ? <Bot className="h-3 w-3" /> : sender === "human_assistant" ? <UserCog className="h-3 w-3" /> : null}
             {author}
           </div>
+          <MessageReplyPreview replyContext={message.replyContext} />
           <MessageContent message={message} />
           {event.payload.channel && (
             <div className="mt-1 text-[10px] text-muted-foreground">

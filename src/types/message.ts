@@ -5,6 +5,21 @@ export type WhatsappMessageReactionSummary = {
   count: number;
 };
 
+export type QuotedMessageSummary = {
+  id: string;
+  author: {
+    type: "CUSTOMER" | "HUMAN" | "ASSISTANT";
+    name: string | null;
+  };
+  type: string;
+  preview: string;
+};
+
+export type MessageReplyContext =
+  | { status: "available"; message: QuotedMessageSummary }
+  | { status: "unavailable" }
+  | null;
+
 export type MessageReactionEvent = {
   chatId: string;
   messageId: string;
@@ -39,6 +54,7 @@ export type Message = {
   providerUpdatedAt?: string | null;
   companyWhatsappIntegrationId?: string | null;
   reactions?: WhatsappMessageReactionSummary[];
+  replyContext?: MessageReplyContext;
 };
 
 export type ListMessagesParams = {
