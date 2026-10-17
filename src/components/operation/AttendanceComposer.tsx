@@ -42,6 +42,14 @@ const composerSchema = z.object({
 type ComposerFormValues = z.infer<typeof composerSchema>;
 type ComposerMode = "TEXT" | "MEDIA" | "TEMPLATE";
 
+interface QueuedAttendanceSend {
+  workspaceId: string;
+  attendanceId: string;
+  body: SendOperationalAttendanceMessageBody;
+  file?: File;
+  errorTitle: string;
+}
+
 interface AttendanceComposerProps {
   workspaceId: string;
   attendance: AttendanceDetail;
@@ -263,6 +271,45 @@ export function AttendanceComposer({
     resolver: zodResolver(composerSchema),
     defaultValues: { text: "", caption: "" },
   });
+  const sendQueueRef = useRef<QueuedAttendanceSend[]>([]);
+  const isProcessingSendQueueRef = useRef(false);
+
+  const processSendQueue = async () => {
+    if (isProcessingSendQueueRef.current) return;
+
+    isProcessingSendQueueRef.current = true;
+    try {
+      while (sendQueueRef.current.length > 0) {
+        const queuedSend = sendQueueRef.current.shift();
+        if (!queuedSend) continue;
+
+        try {
+          await mutations.sendMessage.mutateAsync({
+            workspaceId: queuedSend.workspaceId,
+            attendanceId: queuedSend.attendanceId,
+            body: queuedSend.body,
+            file: queuedSend.file,
+          });
+        } catch (error) {
+          toast({
+            title: queuedSend.errorTitle,
+            description: getOperationalAttendanceErrorMessage(
+              error,
+              "Atualize o atendimento e tente novamente.",
+            ),
+            variant: "destructive",
+          });
+        }
+      }
+    } finally {
+      isProcessingSendQueueRef.current = false;
+    }
+  };
+
+  const enqueueSend = (queuedSend: QueuedAttendanceSend) => {
+    sendQueueRef.current.push(queuedSend);
+    void processSendQueue();
+  };
   const templateCatalogQuery = useOperationalAttendanceTemplateCatalog(
     workspaceId,
     attendance.id,
@@ -386,11 +433,11 @@ export function AttendanceComposer({
     });
   };
 
-  const handleSendAudio = async (audioBlob: Blob) => {
+  const handleSendAudio = (audioBlob: Blob) => {
     if (
       !canCompose ||
       !supportedModes.includes("MEDIA") ||
-      mutations.sendMessage.isPending
+      mutations.createInternalNote.isPending
     ) {
       return;
     }
@@ -400,26 +447,17 @@ export function AttendanceComposer({
       type: "audio/ogg; codecs=opus",
     });
 
-    try {
-      await mutations.sendMessage.mutateAsync({
-        attendanceId: attendance.id,
-        body: {
-          kind: "MEDIA",
-          expectedVersion: attendance.version,
-          mediaType: "audio",
-        },
-        file: audioFile,
-      });
-    } catch (error) {
-      toast({
-        title: "Não foi possível enviar o áudio",
-        description: getOperationalAttendanceErrorMessage(
-          error,
-          "Atualize o atendimento e tente novamente.",
-        ),
-        variant: "destructive",
-      });
-    }
+    enqueueSend({
+      workspaceId,
+      attendanceId: attendance.id,
+      body: {
+        kind: "MEDIA",
+        expectedVersion: attendance.version,
+        mediaType: "audio",
+      },
+      file: audioFile,
+      errorTitle: "Não foi possível enviar o áudio",
+    });
   };
 
   const submit = async (values: ComposerFormValues) => {
@@ -521,25 +559,18 @@ export function AttendanceComposer({
       };
     }
 
-    try {
-      await mutations.sendMessage.mutateAsync({
-        attendanceId: attendance.id,
-        body,
-        file,
-      });
-      form.reset({ text: "", caption: "" });
-      setSelectedFile(null);
-      if (mode !== "TEXT" && !isTemplateRequired) setMode("TEXT");
-    } catch (error) {
-      toast({
-        title: "Não foi possível enviar a mensagem",
-        description: getOperationalAttendanceErrorMessage(
-          error,
-          "Atualize o atendimento e tente novamente.",
-        ),
-        variant: "destructive",
-      });
-    }
+    enqueueSend({
+      workspaceId,
+      attendanceId: attendance.id,
+      body,
+      file,
+      errorTitle: "Não foi possível enviar a mensagem",
+    });
+    form.reset({ text: "", caption: "" });
+    setSelectedFile(null);
+    setSelectedTemplateId(null);
+    setTemplateBindings({});
+    if (mode !== "TEXT" && !isTemplateRequired) setMode("TEXT");
   };
 
   const disabledReason = !canOperate
@@ -566,13 +597,7 @@ export function AttendanceComposer({
           "Não foi possível carregar os templates aprovados.",
         ),
       }
-    : catalogStatus === "PROVIDER_UNSUPPORTED"
-      ? {
-          title: "Templates não disponíveis neste canal",
-          description:
-            "Este provedor não oferece templates Meta. Use texto ou mídia quando o canal permitir.",
-        }
-      : catalogStatus === "NO_APPROVED_TEMPLATES"
+    : catalogStatus === "NO_APPROVED_TEMPLATES"
         ? {
             title: "Nenhum template aprovado disponível",
             description:
@@ -711,10 +736,7 @@ export function AttendanceComposer({
                               : "shrink-0"
                           }
                           onClick={() => setIsInternalNoteMode((current) => !current)}
-                          disabled={
-                            mutations.sendMessage.isPending ||
-                            mutations.createInternalNote.isPending
-                          }
+                          disabled={mutations.createInternalNote.isPending}
                           aria-label={
                             isInternalNoteMode
                               ? "Desativar modo sussurro"
@@ -737,7 +759,6 @@ export function AttendanceComposer({
                           size="icon"
                           className="shrink-0"
                           onClick={() => setMode("TEMPLATE")}
-                          disabled={mutations.sendMessage.isPending}
                           aria-label="Usar template"
                         >
                           <FileText className="h-5 w-5" />
@@ -762,10 +783,7 @@ export function AttendanceComposer({
                               }
                               event.currentTarget.value = "";
                             }}
-                            disabled={
-                              mutations.sendMessage.isPending ||
-                              mutations.createInternalNote.isPending
-                            }
+                            disabled={mutations.createInternalNote.isPending}
                           />
                           <Button
                             type="button"
@@ -773,10 +791,7 @@ export function AttendanceComposer({
                             size="icon"
                             className="shrink-0"
                             onClick={() => fileInputRef.current?.click()}
-                            disabled={
-                              mutations.sendMessage.isPending ||
-                              mutations.createInternalNote.isPending
-                            }
+                            disabled={mutations.createInternalNote.isPending}
                             aria-label="Adicionar anexo"
                           >
                             <Paperclip className="h-5 w-5" />
@@ -792,10 +807,7 @@ export function AttendanceComposer({
                               ? "Digite uma nota visível somente para a equipe"
                               : "Digite uma mensagem"
                           }
-                          disabled={
-                            mutations.sendMessage.isPending ||
-                            mutations.createInternalNote.isPending
-                          }
+                          disabled={mutations.createInternalNote.isPending}
                           onKeyDown={(event) => {
                             if (event.key === "Enter" && !event.shiftKey) {
                               event.preventDefault();
@@ -812,7 +824,6 @@ export function AttendanceComposer({
                           size="icon"
                           className="shrink-0"
                           disabled={
-                            mutations.sendMessage.isPending ||
                             mutations.createInternalNote.isPending ||
                             (isInternalNoteMode && !field.value.trim())
                           }
@@ -822,8 +833,7 @@ export function AttendanceComposer({
                               : "Enviar mensagem"
                           }
                         >
-                          {mutations.sendMessage.isPending ||
-                          mutations.createInternalNote.isPending ? (
+                          {mutations.createInternalNote.isPending ? (
                             <Loader2 className="h-5 w-5 animate-spin" />
                           ) : (
                             <Send className="h-5 w-5" />
@@ -836,7 +846,7 @@ export function AttendanceComposer({
                           size="icon"
                           className="shrink-0"
                           onClick={() => setIsRecordingAudio(true)}
-                          disabled={mutations.sendMessage.isPending}
+                          disabled={mutations.createInternalNote.isPending}
                           aria-label="Gravar áudio"
                         >
                           <Mic className="h-5 w-5" />
@@ -865,7 +875,7 @@ export function AttendanceComposer({
                           setMode("TEXT");
                         }
                       }}
-                      disabled={mutations.sendMessage.isPending}
+                      disabled={mutations.createInternalNote.isPending}
                       className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                     >
                       <option value="image">Imagem</option>
@@ -895,7 +905,7 @@ export function AttendanceComposer({
                               : undefined
                         }
                         onChange={(event) => handleFileChange(event.target.files?.[0])}
-                        disabled={mutations.sendMessage.isPending}
+                        disabled={mutations.createInternalNote.isPending}
                       />
                       <span className="text-xs text-muted-foreground">Até 50 MB</span>
                     </div>
@@ -918,7 +928,7 @@ export function AttendanceComposer({
                         setSelectedFile(null);
                         setMode("TEXT");
                       }}
-                      disabled={mutations.sendMessage.isPending}
+                      disabled={mutations.createInternalNote.isPending}
                       aria-label="Remover arquivo"
                     >
                       <X className="h-4 w-4" />
@@ -936,7 +946,7 @@ export function AttendanceComposer({
                           {...field}
                           value={field.value ?? ""}
                           placeholder="Adicione uma legenda para a mídia..."
-                          disabled={mutations.sendMessage.isPending}
+                          disabled={mutations.createInternalNote.isPending}
                         />
                       </FormControl>
                       <FormMessage />
@@ -977,7 +987,7 @@ export function AttendanceComposer({
                         id="operational-template"
                         value={selectedTemplate?.id ?? ""}
                         onChange={(event) => setSelectedTemplateId(event.target.value)}
-                        disabled={mutations.sendMessage.isPending}
+                        disabled={mutations.createInternalNote.isPending}
                         className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                       >
                         {templates.map((template) => (
@@ -1001,7 +1011,7 @@ export function AttendanceComposer({
                                   id={`binding-source-${slot}`}
                                   value={getBindingSelectorValue(binding)}
                                   onChange={(event) => updateBinding(slot, event.target.value)}
-                                  disabled={mutations.sendMessage.isPending}
+                                  disabled={mutations.createInternalNote.isPending}
                                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                                 >
                                   <option value="fixed">Valor fixo</option>
@@ -1024,7 +1034,7 @@ export function AttendanceComposer({
                                         [slot]: { source: "fixed", value: event.target.value },
                                       }))
                                     }
-                                    disabled={mutations.sendMessage.isPending}
+                                    disabled={mutations.createInternalNote.isPending}
                                     placeholder="Informe o valor"
                                   />
                                 </div>
@@ -1060,13 +1070,18 @@ export function AttendanceComposer({
 
             {mode !== "TEXT" ? (
               <div className="flex justify-end gap-3">
-                <Button type="submit" disabled={mutations.sendMessage.isPending}>
-                  {mutations.sendMessage.isPending ? (
+                <Button
+                  type="submit"
+                  disabled={mutations.createInternalNote.isPending}
+                >
+                  {mutations.createInternalNote.isPending ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   ) : (
                     <Send className="mr-2 h-4 w-4" />
                   )}
-                  {mutations.sendMessage.isPending ? "Enviando..." : "Enviar"}
+                  {mutations.createInternalNote.isPending
+                    ? "Salvando..."
+                    : "Enviar"}
                 </Button>
               </div>
             ) : null}
