@@ -678,6 +678,8 @@ export interface ListAttendanceTimelineParams {
   attendanceId: string;
   limit?: number;
   before?: string;
+  aroundMessageId?: string;
+  signal?: AbortSignal;
 }
 
 export interface ListOperationalAttendanceTemplatesParams {
