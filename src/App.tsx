@@ -71,6 +71,7 @@ import OperationTriageAgentsPage from "./pages/OperationTriageAgentsPage";
 import OperationWebhooksPage from "./pages/OperationWebhooksPage";
 import OperationWebhookCreatePage from "./pages/OperationWebhookCreatePage";
 import OperationWebhookDetailPage from "./pages/OperationWebhookDetailPage";
+import OperationApiAccessPage from "./pages/OperationApiAccessPage";
 import OperationAttendanceStationPage from "./pages/OperationAttendanceStationPage";
 import Sidebar from "./components/layout/Sidebar";
 import Header from "./components/layout/Header";
@@ -479,6 +480,15 @@ const App = () => (
                         <ProtectedRoute
                           requiredPermission="view:operation-channels"
                           component={OperationWebhookDetailPage}
+                        />
+                      }
+                    />
+                    <Route
+                      path="/operation/api-access"
+                      element={
+                        <ProtectedRoute
+                          requiredPermission="manage:operation-api-access"
+                          component={OperationApiAccessPage}
                         />
                       }
                     />
