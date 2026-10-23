@@ -105,7 +105,7 @@ export function OperationalQueueDetail({
   };
 
   return (
-    <section className="mx-auto w-full max-w-[1100px] space-y-6">
+    <section className="mx-auto w-full max-w-6xl space-y-6">
       <nav
         aria-label="Breadcrumb"
         className="flex min-w-0 flex-wrap items-center gap-2 text-sm text-muted-foreground"

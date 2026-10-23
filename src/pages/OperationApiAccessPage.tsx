@@ -77,17 +77,17 @@ export default function OperationApiAccessPage() {
   };
 
   if (currentWorkspace?.type !== "OPERATION") {
-    return <Alert><AlertCircle className="h-4 w-4" /><AlertTitle>Ambiente operacional não selecionado</AlertTitle><AlertDescription>Selecione um workspace de operação para administrar o acesso da integração.</AlertDescription></Alert>;
+    return <section className="mx-auto w-full max-w-6xl"><Alert><AlertCircle className="h-4 w-4" /><AlertTitle>Ambiente operacional não selecionado</AlertTitle><AlertDescription>Selecione um workspace de operação para administrar o acesso da integração.</AlertDescription></Alert></section>;
   }
 
   if (!canManage) {
-    return <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertTitle>Acesso insuficiente</AlertTitle><AlertDescription>Você precisa da permissão de gerenciamento da API operacional para acessar esta área.</AlertDescription></Alert>;
+    return <section className="mx-auto w-full max-w-6xl"><Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertTitle>Acesso insuficiente</AlertTitle><AlertDescription>Você precisa da permissão de gerenciamento da API operacional para acessar esta área.</AlertDescription></Alert></section>;
   }
 
   const items = query.data?.items ?? [];
 
   return (
-    <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+    <section className="mx-auto w-full max-w-6xl space-y-6">
       <header>
         <p className="text-sm font-medium uppercase tracking-wide text-primary">Operação / integrações</p>
         <h1 className="mt-2 text-3xl font-semibold tracking-tight">Acesso à API operacional</h1>

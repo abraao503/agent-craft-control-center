@@ -26,27 +26,29 @@ export default function OperationWebhooksPage() {
   const mutations = useOperationalWebhookMutations(workspaceId);
 
   if (currentWorkspace?.type !== "OPERATION") {
-    return <Alert><AlertCircle className="h-4 w-4" /><AlertTitle>Ambiente operacional não selecionado</AlertTitle><AlertDescription>Selecione um workspace de operação para administrar webhooks.</AlertDescription></Alert>;
+    return <section className="mx-auto w-full max-w-6xl"><Alert><AlertCircle className="h-4 w-4" /><AlertTitle>Ambiente operacional não selecionado</AlertTitle><AlertDescription>Selecione um workspace de operação para administrar webhooks.</AlertDescription></Alert></section>;
   }
 
   if (query.isError) {
     return (
-      <Alert variant="destructive">
-        <AlertCircle className="h-4 w-4" />
-        <AlertTitle>Não foi possível carregar os webhooks</AlertTitle>
-        <AlertDescription className="flex flex-wrap items-center gap-3">
-          Verifique o acesso ao canal operacional e tente novamente.
-          <Button variant="outline" size="sm" onClick={() => void query.refetch()} disabled={query.isFetching}>
-            <RefreshCw className="mr-2 h-4 w-4" />Tentar novamente
-          </Button>
-        </AlertDescription>
-      </Alert>
+      <section className="mx-auto w-full max-w-6xl">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Não foi possível carregar os webhooks</AlertTitle>
+          <AlertDescription className="flex flex-wrap items-center gap-3">
+            Verifique o acesso ao canal operacional e tente novamente.
+            <Button variant="outline" size="sm" onClick={() => void query.refetch()} disabled={query.isFetching}>
+              <RefreshCw className="mr-2 h-4 w-4" />Tentar novamente
+            </Button>
+          </AlertDescription>
+        </Alert>
+      </section>
     );
   }
 
   const items = query.data?.items ?? [];
   return (
-    <section className="mx-auto flex w-full max-w-7xl flex-col gap-6">
+    <section className="mx-auto w-full max-w-6xl space-y-6">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-sm font-medium uppercase tracking-wide text-primary">Operação / integrações</p>

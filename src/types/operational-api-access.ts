@@ -28,3 +28,14 @@ export interface CreateOperationalApiKeyResponse {
   apiKey: OperationalApiKeySummary;
   key: string;
 }
+
+export type OperationalAttendanceHistoryCompleteness =
+  | "COMPLETE"
+  | "PARTIAL"
+  | "UNAVAILABLE";
+
+export interface OperationalAttendanceHistoryMetadata {
+  historyActivatedAt: string | null;
+  historyCompleteness: OperationalAttendanceHistoryCompleteness;
+  metricsCalculatedAt: string;
+}

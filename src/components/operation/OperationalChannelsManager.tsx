@@ -548,7 +548,7 @@ export function OperationalChannelsManager({
 
   if (!workspaceId) {
     return (
-      <section className="mx-auto w-full max-w-5xl p-6">
+      <section className="mx-auto w-full max-w-6xl">
         <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Ambiente operacional não selecionado</AlertTitle>
@@ -561,7 +561,7 @@ export function OperationalChannelsManager({
   }
 
   return (
-    <section className="mx-auto w-full max-w-6xl space-y-5 px-4 py-5 sm:px-6 sm:py-6">
+    <section className="mx-auto w-full max-w-6xl space-y-6">
       <header className="flex flex-col gap-4 border-b pb-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
