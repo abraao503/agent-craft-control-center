@@ -490,6 +490,7 @@ const SidebarMenuContent = () => {
           icon: <Webhook className="h-5 w-5" />,
           requiredPermission: "view:operation-channels",
         },
+        // Acesso à API fica fora da navegação até o lançamento.
         {
           path: "/operation/agents",
           label: "Agentes",

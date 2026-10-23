@@ -285,7 +285,7 @@ export default function OperationChecklistTemplatesPage() {
   ];
 
   return (
-    <section className="mx-auto w-full max-w-[1280px] space-y-6 pb-8">
+    <section className="mx-auto w-full max-w-6xl space-y-6">
       <nav aria-label="Navegação estrutural" className="flex items-center gap-2 text-sm text-muted-foreground">
         <Link
           to="/operation"

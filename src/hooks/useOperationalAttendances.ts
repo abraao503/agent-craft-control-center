@@ -108,7 +108,7 @@ export function useOperationalAttendanceTimeline(
   attendanceId?: string,
   options: Pick<
     Omit<ListAttendanceTimelineParams, "workspaceId" | "attendanceId">,
-    "limit"
+    "limit" | "aroundMessageId"
   > = {},
   enabled = true,
 ) {
@@ -118,10 +118,11 @@ export function useOperationalAttendanceTimeline(
       "attendance-timeline",
       workspaceId,
       attendanceId,
+      options.aroundMessageId ?? null,
       options.limit ?? 50,
     ],
     initialPageParam: undefined as string | undefined,
-    queryFn: ({ pageParam }) => {
+    queryFn: ({ pageParam, signal }) => {
       if (!workspaceId) {
         throw new Error("Workspace operacional não selecionado");
       }
@@ -131,8 +132,12 @@ export function useOperationalAttendanceTimeline(
       return listAttendanceTimeline({
         workspaceId,
         attendanceId,
-        ...options,
-        before: pageParam,
+        limit: options.limit,
+        ...(pageParam ? { before: pageParam } : {}),
+        ...(!pageParam && options.aroundMessageId
+          ? { aroundMessageId: options.aroundMessageId }
+          : {}),
+        signal,
       });
     },
     getNextPageParam: (lastPage) =>

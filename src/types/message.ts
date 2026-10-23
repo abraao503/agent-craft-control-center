@@ -1,5 +1,31 @@
 import { Pagination } from "./pagination";
 
+export type WhatsappMessageReactionSummary = {
+  emoji: string;
+  count: number;
+};
+
+export type QuotedMessageSummary = {
+  id: string;
+  author: {
+    type: "CUSTOMER" | "HUMAN" | "ASSISTANT";
+    name: string | null;
+  };
+  type: string;
+  preview: string;
+};
+
+export type MessageReplyContext =
+  | { status: "available"; message: QuotedMessageSummary }
+  | { status: "unavailable" }
+  | null;
+
+export type MessageReactionEvent = {
+  chatId: string;
+  messageId: string;
+  reactions: WhatsappMessageReactionSummary[];
+};
+
 export type Message = {
   id: string;
   sender: "customer" | "assistant" | "human_assistant";
@@ -27,6 +53,8 @@ export type Message = {
   providerCreatedAt?: string | null;
   providerUpdatedAt?: string | null;
   companyWhatsappIntegrationId?: string | null;
+  reactions?: WhatsappMessageReactionSummary[];
+  replyContext?: MessageReplyContext;
 };
 
 export type ListMessagesParams = {

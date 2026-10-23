@@ -28,6 +28,7 @@ export type Permission =
   | "manage:operation-memberships"
   | "view:operation-channels"
   | "manage:operation-channels"
+  | "manage:operation-api-access"
   | "view:operation-attendances"
   | "operate:operation-attendances"
   | "manage:operation-checklists"

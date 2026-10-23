@@ -54,6 +54,10 @@ import {
 import { AttendanceFollowUpsCard } from "@/components/operation/AttendanceFollowUpsCard";
 import { AttendanceChecklistPanel } from "@/components/operation/AttendanceChecklistPanel";
 import { AttendanceInternalNote } from "@/components/operation/AttendanceInternalNote";
+import { MessageReactions } from "@/components/chats/MessageReactions";
+import { MessageReplyPreview } from "@/components/chats/MessageReplyPreview";
+import { useQuotedMessageNavigation } from "@/hooks/useQuotedMessageNavigation";
+import type { QuotedNavigationState } from "@/utils/quoted-message-navigation";
 import { MessageDeliveryChecks } from "@/components/operation/MessageDeliveryChecks";
 import { TemplateMessage } from "@/components/chats/media/TemplateMessage";
 import { useMessageDeliveryChecks } from "@/components/operation/useMessageDeliveryChecks";
@@ -209,15 +213,69 @@ export default function OperationAttendanceDetailPage({
     { limit: 50 },
     canViewAttendances,
   );
+  const [remoteAnchorId, setRemoteAnchorId] = useState<string | null>(null);
+  const remoteTimelineQuery = useOperationalAttendanceTimeline(
+    workspaceId,
+    attendanceId,
+    {
+      limit: 50,
+      ...(remoteAnchorId ? { aroundMessageId: remoteAnchorId } : {}),
+    },
+    canViewAttendances && Boolean(remoteAnchorId),
+  );
+  const remoteTimelineItems = useMemo(() => {
+    const seen = new Set<string>();
+    return (remoteTimelineQuery.data?.pages
+      .slice()
+      .reverse()
+      .flatMap((page) => page.items) ?? []).filter((item) => {
+      const key = `${item.kind}:${item.id}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [remoteTimelineQuery.data]);
+  const remoteFound = Boolean(
+    remoteAnchorId &&
+      remoteTimelineItems.some(
+        (item) => item.kind === "message" && item.id === remoteAnchorId,
+      ),
+  );
+  const remoteStatus = remoteAnchorId
+    ? remoteTimelineQuery.isError
+      ? "error"
+      : remoteTimelineQuery.isLoading
+        ? "loading"
+        : remoteTimelineQuery.data
+          ? "success"
+          : "idle"
+    : "idle";
+  const messagesViewportRef = useRef<HTMLDivElement>(null);
+  const navigation = useQuotedMessageNavigation({
+    scopeKey: `${workspaceId ?? ""}:${attendanceId ?? ""}`,
+    containerRef: messagesViewportRef,
+    requestRemoteMessage: setRemoteAnchorId,
+    remoteMessageState: {
+      targetMessageId: remoteAnchorId,
+      status: remoteStatus,
+      found: remoteFound,
+    },
+  });
+  const returnToRecentRef = useRef(false);
+  const showRemoteTimeline = Boolean(remoteAnchorId && remoteTimelineQuery.data);
+  const activeTimelineQuery = showRemoteTimeline ? remoteTimelineQuery : timelineQuery;
   const outboundMessageIds = useMemo(
     () =>
-      (timelineQuery.data?.pages ?? [])
+      [
+        ...(timelineQuery.data?.pages ?? []),
+        ...(remoteTimelineQuery.data?.pages ?? []),
+      ]
         .flatMap((page) => page.items)
         .filter(
           (item) => item.kind === "message" && item.sender !== "CUSTOMER",
         )
         .map((item) => item.id),
-    [timelineQuery.data],
+    [remoteTimelineQuery.data, timelineQuery.data],
   );
   const { checksByMessageId, state: deliveryChecksState } =
     useMessageDeliveryChecks({
@@ -231,13 +289,17 @@ export default function OperationAttendanceDetailPage({
     attendanceId,
   );
   const markedAttendanceId = useRef<string | null>(null);
-  const messagesViewportRef = useRef<HTMLDivElement>(null);
   const timelineScrollSnapshotRef = useRef<{
     height: number;
     top: number;
   } | null>(null);
   const timelinePageCountRef = useRef(0);
   const markRead = markReadMutation.mutate;
+
+  useEffect(() => {
+    setRemoteAnchorId(null);
+    returnToRecentRef.current = false;
+  }, [attendanceId, workspaceId]);
 
   useEffect(() => {
     if (!detailQuery.data || !attendanceId) return;
@@ -248,14 +310,29 @@ export default function OperationAttendanceDetailPage({
   }, [attendanceId, detailQuery.data, markRead]);
 
   useEffect(() => {
+    if (!remoteAnchorId || !remoteTimelineQuery.isError) return;
+    setRemoteAnchorId(null);
+  }, [remoteAnchorId, remoteTimelineQuery.isError]);
+
+  useEffect(() => {
+    if (!remoteAnchorId || !remoteTimelineQuery.data || remoteFound) return;
+    setRemoteAnchorId(null);
+  }, [remoteAnchorId, remoteFound, remoteTimelineQuery.data]);
+
+  useEffect(() => {
     if (!embedded || !timelineQuery.data) return;
+    if (remoteAnchorId || navigation.isNavigating) return;
     const viewport = messagesViewportRef.current;
     if (!viewport) return;
 
     const previousPosition = timelineScrollSnapshotRef.current;
     const pageCount = timelineQuery.data.pages.length;
 
-    if (previousPosition && pageCount > timelinePageCountRef.current) {
+    if (returnToRecentRef.current) {
+      viewport.scrollTop = viewport.scrollHeight;
+      returnToRecentRef.current = false;
+      timelineScrollSnapshotRef.current = null;
+    } else if (previousPosition && pageCount > timelinePageCountRef.current) {
       viewport.scrollTop =
         viewport.scrollHeight - previousPosition.height + previousPosition.top;
       timelineScrollSnapshotRef.current = null;
@@ -264,7 +341,13 @@ export default function OperationAttendanceDetailPage({
     }
 
     timelinePageCountRef.current = pageCount;
-  }, [embedded, timelineQuery.data, timelineQuery.dataUpdatedAt]);
+  }, [embedded, navigation.isNavigating, remoteAnchorId, timelineQuery.data, timelineQuery.dataUpdatedAt]);
+
+  const returnToRecent = () => {
+    returnToRecentRef.current = true;
+    setRemoteAnchorId(null);
+    navigation.reset();
+  };
 
   if (!attendanceId) {
     return (
@@ -354,7 +437,7 @@ export default function OperationAttendanceDetailPage({
   }
 
   const attendance = detailQuery.data;
-  const timelineItems = timelineQuery.data?.pages
+  const timelineItems = activeTimelineQuery.data?.pages
     .slice()
     .reverse()
     .flatMap((page) => page.items) ?? [];
@@ -728,7 +811,19 @@ export default function OperationAttendanceDetailPage({
                   : undefined
               }
             >
-              {timelineQuery.isError ? (
+              {remoteAnchorId ? (
+                <div className="mb-3 flex items-center justify-between gap-3 rounded-md border bg-muted/20 px-3 py-2 text-sm text-muted-foreground">
+                  <span>
+                    {showRemoteTimeline
+                      ? "Exibindo outro trecho da conversa."
+                      : "Carregando outro trecho da conversa…"}
+                  </span>
+                  <Button variant="outline" size="sm" onClick={returnToRecent}>
+                    Voltar às recentes
+                  </Button>
+                </div>
+              ) : null}
+              {activeTimelineQuery.isError ? (
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
                   <AlertTitle>
@@ -736,26 +831,26 @@ export default function OperationAttendanceDetailPage({
                   </AlertTitle>
                   <AlertDescription className="flex flex-wrap items-center gap-3">
                     {getOperationalAttendanceErrorMessage(
-                      timelineQuery.error,
+                      activeTimelineQuery.error,
                       "Tente atualizar a conversa.",
                     )}
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => void timelineQuery.refetch()}
+                      onClick={() => void activeTimelineQuery.refetch()}
                     >
                       <RefreshCw className="mr-2 h-4 w-4" />
                       Atualizar
                     </Button>
                   </AlertDescription>
                 </Alert>
-              ) : timelineQuery.isLoading ? (
+              ) : activeTimelineQuery.isLoading ? (
                 <ConversationLoading />
               ) : timelineItems.length === 0 ? (
                 <EmptyConversation />
               ) : (
                 <>
-                  {timelineQuery.hasNextPage ? (
+                  {activeTimelineQuery.hasNextPage ? (
                     <div className="mb-4 flex justify-center">
                       <Button
                         variant="outline"
@@ -768,11 +863,11 @@ export default function OperationAttendanceDetailPage({
                               top: viewport.scrollTop,
                             };
                           }
-                          void timelineQuery.fetchNextPage();
+                          void activeTimelineQuery.fetchNextPage();
                         }}
-                        disabled={timelineQuery.isFetchingNextPage}
+                        disabled={activeTimelineQuery.isFetchingNextPage}
                       >
-                        {timelineQuery.isFetchingNextPage ? (
+                        {activeTimelineQuery.isFetchingNextPage ? (
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         ) : null}
                         Carregar itens anteriores
@@ -795,6 +890,9 @@ export default function OperationAttendanceDetailPage({
                             message={item}
                             deliveryChecks={checksByMessageId.get(item.id)}
                             deliveryChecksState={deliveryChecksState}
+                            highlighted={navigation.highlightedMessageId === item.id}
+                            onNavigate={navigation.navigateToMessage}
+                            navigationState={navigation.getPreviewState(item.id)}
                           />
                         ) : item.kind === "internal_note" ? (
                           <AttendanceInternalNote
@@ -1255,10 +1353,16 @@ function ConversationMessage({
   message,
   deliveryChecks,
   deliveryChecksState,
+  highlighted,
+  onNavigate,
+  navigationState,
 }: {
   message: AttendanceMessageItem;
   deliveryChecks?: MessageDeliveryCheckSummary;
   deliveryChecksState: MessageDeliveryChecksQueryState;
+  highlighted: boolean;
+  onNavigate: (targetMessageId: string, sourceMessageId: string) => void;
+  navigationState: QuotedNavigationState;
 }) {
   const isCustomer = message.sender === "CUSTOMER";
   const senderLabel =
@@ -1278,44 +1382,54 @@ function ConversationMessage({
     .map((status) => formatOperationalMessageStatus(status));
 
   return (
-    <article className={`flex ${isCustomer ? "justify-start" : "justify-end"}`}>
-      <div
-        className={`max-w-[min(90%,42rem)] rounded-2xl px-4 py-3 text-sm ${
+    <article
+      className={`flex rounded-lg transition-shadow ${highlighted ? "ring-2 ring-primary ring-offset-2" : ""} ${isCustomer ? "justify-start" : "justify-end"}`}
+      data-message-id={message.id}
+      tabIndex={-1}
+    >
+      <div className="flex max-w-[min(90%,42rem)] flex-col">
+        <div
+          className={`w-fit max-w-full rounded-2xl px-4 py-3 text-sm ${
           isCustomer
             ? "rounded-tl-sm bg-muted text-foreground shadow-sm"
             : "rounded-tr-sm bg-primary text-primary-foreground shadow-sm"
         }`}
-      >
-        <div className="mb-1 flex flex-wrap items-center gap-2 text-xs opacity-75">
-          <span className="font-semibold">{senderLabel}</span>
-        </div>
-        {hasMedia ? (
-          <p className="mb-1 font-medium">
-            Mídia: {message.mediaMimetype || message.type}
-          </p>
-        ) : null}
-        {message.templateName ? (
-          <p className="mb-1 font-medium">Template: {message.templateName}</p>
-        ) : null}
-        {isTemplate ? (
-          <TemplateMessage
-            snapshot={message.templateSnapshot}
-            fallbackBody={content || message.templateName || "Template Meta"}
+        >
+          <MessageReplyPreview
+            replyContext={message.replyContext}
+            onNavigate={(targetMessageId) => onNavigate(targetMessageId, message.id)}
+            navigationState={navigationState}
           />
-        ) : content ? (
-          <p className="whitespace-pre-wrap break-words">{content}</p>
-        ) : null}
-        <div className="mt-2 flex flex-wrap items-center justify-end gap-1 text-xs opacity-75">
-          <span>{formatDateTime(message.createdAt)}</span>
-          {hasDeliveryChecks ? (
-            <MessageDeliveryChecks
-              summary={deliveryChecks}
-              state={deliveryChecksState}
-            />
-          ) : messageStatuses.length > 0 ? (
-            <span>{messageStatuses.join(" · ")}</span>
+          {hasMedia ? (
+            <p className="mb-1 font-medium">
+              Mídia: {message.mediaMimetype || message.type}
+            </p>
           ) : null}
+          {message.templateName ? (
+            <p className="mb-1 font-medium">Template: {message.templateName}</p>
+          ) : null}
+          {isTemplate ? (
+            <TemplateMessage
+              snapshot={message.templateSnapshot}
+              fallbackBody={content || message.templateName || "Template Meta"}
+            />
+          ) : content ? (
+            <p className="whitespace-pre-wrap break-words">{content}</p>
+          ) : null}
+          <div className="mt-2 flex flex-wrap items-center gap-1 text-xs opacity-75">
+            <span>{formatDateTime(message.createdAt)}</span>
+            {hasDeliveryChecks && (
+              <MessageDeliveryChecks
+                summary={deliveryChecks}
+                state={deliveryChecksState}
+              />
+            )}
+          </div>
         </div>
+        <MessageReactions
+          reactions={message.reactions}
+          align={isCustomer ? "start" : "end"}
+        />
       </div>
     </article>
   );

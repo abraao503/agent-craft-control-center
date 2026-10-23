@@ -28,7 +28,7 @@ export default function OperationQueuePage() {
 
   if (queueQuery.isLoading) {
     return (
-      <section className="mx-auto w-full max-w-[1100px]">
+      <section className="mx-auto w-full max-w-6xl">
         <Card>
           <CardContent className="flex min-h-48 items-center justify-center gap-2">
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
@@ -84,7 +84,7 @@ function SafeQueueState({
   isRetrying?: boolean;
 }) {
   return (
-    <section className="mx-auto w-full max-w-[1100px]">
+    <section className="mx-auto w-full max-w-6xl">
       <Alert>
         <AlertCircle className="h-4 w-4" />
         <AlertTitle>{title}</AlertTitle>

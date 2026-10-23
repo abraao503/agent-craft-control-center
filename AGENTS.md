@@ -25,7 +25,7 @@ confirmação no código ou no contrato atual da API.
   arquivo. Faça essas tarefas diretamente e execute a validação proporcional.
 - Use o Flow quando a mudança atravessar componentes e services, alterar
   contrato com a API, autenticação, tenancy, estado assíncrono, múltiplos
-  repositórios ou exigir revisão externa. O Flow deve planejar fatias pequenas
+  repositórios ou exigir validação pelo Flow. O Flow deve planejar fatias pequenas
   e verificáveis; não transforme uma tarefa visual trivial em burocracia.
 - Preserve mudanças preexistentes e mantenha o escopo pequeno. Antes de
   começar, rode `rtk git status --short` neste diretório.
@@ -50,12 +50,20 @@ confirmação no código ou no contrato atual da API.
 
 ### Execução com Flow
 
-Siga o protocolo e a autorização externa do
-[`AGENTS.md` do workspace](../AGENTS.md). Quando a tarefa exigir Flow, use
-`run`/`next` para obter a fatia aprovada, implemente na sessão atual e conclua
-com `finish`, que roda os checks e prepara o pedido de revisão. Execute
-`review run` somente após autorização explícita para aquele pedido; a flag
-`--authorize` não autoriza o agente a conceder permissão a si próprio.
+Siga o protocolo de validação do [`AGENTS.md` do workspace](../AGENTS.md).
+Em planos novos compatíveis, use `plan approve <plan-id> --prepare-review-cycle`
+e apresente o pedido de consentimento gerado pelo Flow no início do plano,
+antes de `run`/`next` e da implementação. Não espere a etapa de validação.
+Somente após consentimento explícito registre `review cycle-authorize`.
+Com ciclo `ACTIVE` confirmado por `review cycle-status`, use `review run`
+sem pedir autorização novamente para pedidos cobertos pelo `cycleHash`.
+Legados ou `UNAVAILABLE` mantêm o modo por execução indicado pelo Flow.
+
+Implemente a fatia retornada na sessão atual e conclua com `finish`, que roda
+checks e prepara a validação. O agente apenas solicita a validação ao Flow:
+não escolhe validador/modelo, não chama provider diretamente e não monta
+prompt paralelo. O destino e os limites do pedido continuam sendo apresentados
+ao usuário no consentimento inicial; o agente nunca concede consentimento a si próprio.
 
 Use o plano e o pedido gerado pelo Flow, sem documentos adicionais obrigatórios
 ou um executor Codex filho. Mantenha configuração e estado no workspace do

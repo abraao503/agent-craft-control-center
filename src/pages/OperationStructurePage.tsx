@@ -131,7 +131,7 @@ export default function OperationStructurePage() {
   };
 
   return (
-    <section className="mx-auto w-full max-w-[1100px] space-y-6">
+    <section className="mx-auto w-full max-w-6xl space-y-6">
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <Link
           to="/operation"

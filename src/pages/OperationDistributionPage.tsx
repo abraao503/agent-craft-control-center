@@ -141,7 +141,7 @@ export default function OperationDistributionPage() {
 
   if (currentWorkspace?.type !== "OPERATION") {
     return (
-      <section className="mx-auto w-full max-w-5xl">
+      <section className="mx-auto w-full max-w-6xl">
         <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Seção disponível apenas em ambientes operacionais</AlertTitle>

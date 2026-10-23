@@ -48,6 +48,7 @@ export interface OperationalWebhookExecution {
   status: OperationalWebhookExecutionStatus;
   errorCode: string | null;
   errorMessage: string | null;
+  providerErrorCode: string | null;
   attendanceId: string | null;
   messageId: string | null;
   outboundRequestId: string | null;

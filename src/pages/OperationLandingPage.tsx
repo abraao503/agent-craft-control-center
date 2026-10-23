@@ -54,7 +54,7 @@ export default function OperationLandingPage() {
     setup?.readiness.missing.some((item) => item !== "FALLBACK_ROUTE") ?? false;
 
   return (
-    <section className="mx-auto w-full max-w-[1500px] space-y-6">
+    <section className="mx-auto w-full max-w-6xl space-y-6">
       <header className="flex flex-col gap-5 border-b pb-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
