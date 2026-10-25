@@ -1,10 +1,16 @@
 import { useEffect } from "react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
+import type { UseFormReturn } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AlertCircle, Info, Loader2, Plus, Trash2 } from "lucide-react";
 import { useOperationalAssistant } from "@/hooks/useOperationalAssistants";
-import { OperationalAssistantSummary } from "@/types/operation-assistant";
+import {
+  OperationalAssistantAbilities,
+  OperationalAssistantAbilityAreaOption,
+  OperationalAssistantConfiguredDestination,
+  OperationalAssistantSummary,
+} from "@/types/operation-assistant";
 import { IaModel } from "@/types/iaModel";
 import { Content } from "@/types/content";
 import { getOperationalAssistantErrorMessage } from "@/utils/operationalAssistantErrors";
@@ -30,6 +36,73 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+
+const abilityBaseSchema = z.object({
+  enabled: z.boolean(),
+  instructions: z.string().max(4_000),
+  confirmationMessage: z.string().max(1_000),
+});
+
+const routedAbilitySchema = abilityBaseSchema.extend({
+  destination: z.object({
+    areaId: z.string().uuid().nullable(),
+    queueId: z.string().uuid().nullable(),
+  }),
+});
+
+const abilitiesFormSchema = z
+  .object({
+    humanHandoff: routedAbilitySchema,
+    transfer: routedAbilitySchema,
+    pending: abilityBaseSchema,
+    close: abilityBaseSchema,
+  })
+  .superRefine((abilities, context) => {
+    for (const name of ["humanHandoff", "transfer"] as const) {
+      const ability = abilities[name];
+      if (!ability.enabled) continue;
+      if (ability.instructions.trim().length < 3) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [name, "instructions"],
+          message: "Informe instruções para a habilidade ativa.",
+        });
+      }
+      if (!ability.confirmationMessage.trim()) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [name, "confirmationMessage"],
+          message: "Informe a mensagem de confirmação.",
+        });
+      }
+      if (!ability.destination.areaId || !ability.destination.queueId) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [name, "destination"],
+          message: "Selecione a área e a fila de destino.",
+        });
+      }
+    }
+
+    for (const name of ["pending", "close"] as const) {
+      const ability = abilities[name];
+      if (!ability.enabled) continue;
+      if (ability.instructions.trim().length < 3) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [name, "instructions"],
+          message: "Informe instruções para a habilidade ativa.",
+        });
+      }
+      if (!ability.confirmationMessage.trim()) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [name, "confirmationMessage"],
+          message: "Informe a mensagem de confirmação.",
+        });
+      }
+    }
+  });
 
 const assistantFormSchema = z.object({
   name: z.string().trim().min(3, "Informe um nome com pelo menos 3 caracteres."),
@@ -62,6 +135,8 @@ const assistantFormSchema = z.object({
     }),
   ),
   contentIds: z.array(z.string().uuid()),
+  abilities: abilitiesFormSchema,
+  abilitiesVersion: z.number().int().positive().optional(),
 });
 
 export type OperationalAssistantFormValues = z.infer<
@@ -85,6 +160,8 @@ const EMPTY_FORM: OperationalAssistantFormValues = {
   blacklist: "",
   links: [],
   contentIds: [],
+  abilities: createEmptyAbilities(),
+  abilitiesVersion: undefined,
 };
 
 type OperationalAssistantDialogProps = {
@@ -93,9 +170,11 @@ type OperationalAssistantDialogProps = {
   assistant: OperationalAssistantSummary | null;
   models: IaModel[];
   contents: Content[];
+  abilityAreas: OperationalAssistantAbilityAreaOption[];
   optionsLoading: boolean;
   modelsError: unknown;
   contentsError: unknown;
+  abilityOptionsError: unknown;
   isPending: boolean;
   onRetryOptions: () => void;
   onOpenChange: (open: boolean) => void;
@@ -108,9 +187,11 @@ export function OperationalAssistantDialog({
   assistant,
   models,
   contents,
+  abilityAreas,
   optionsLoading,
   modelsError,
   contentsError,
+  abilityOptionsError,
   isPending,
   onRetryOptions,
   onOpenChange,
@@ -178,6 +259,10 @@ export function OperationalAssistantDialog({
     contents,
     detailsQuery.data?.contents ?? [],
   );
+  const availableAbilityAreas = mergeCurrentAbilityAreas(
+    abilityAreas,
+    detailsQuery.data?.abilityDestinations,
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -234,6 +319,27 @@ export function OperationalAssistantDialog({
                   {getOperationalAssistantErrorMessage(
                     modelsError,
                     "Atualize para carregar os modelos de IA e continuar.",
+                  )}
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={onRetryOptions}
+                    disabled={optionsLoading}
+                  >
+                    Tentar novamente
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            ) : null}
+            {abilityOptionsError ? (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Não foi possível carregar os destinos</AlertTitle>
+                <AlertDescription className="flex flex-wrap items-center gap-3">
+                  {getOperationalAssistantErrorMessage(
+                    abilityOptionsError,
+                    "Atualize para carregar as áreas e filas antes de configurar habilidades.",
                   )}
                   <Button
                     type="button"
@@ -505,6 +611,59 @@ export function OperationalAssistantDialog({
 
             <section className="space-y-4 border-t pt-6">
               <SectionHeading
+                title="Habilidades do agente"
+                description="Habilite apenas as ações que o agente pode executar. A API valida novamente permissões, destinos e a versão da configuração."
+              />
+              <div className="grid gap-4">
+                <AbilityEditor
+                  form={form}
+                  name="humanHandoff"
+                  title="Chamar uma pessoa"
+                  description="Suspende a IA e encaminha o atendimento para a fila humana configurada."
+                  routed
+                  areas={availableAbilityAreas}
+                  abilityOptionsError={abilityOptionsError}
+                  optionsLoading={optionsLoading}
+                  disabled={isPending}
+                  configuredDestination={detailsQuery.data?.abilityDestinations.humanHandoff}
+                />
+                <AbilityEditor
+                  form={form}
+                  name="transfer"
+                  title="Transferir para outra área ou fila"
+                  description="Mantém o agente e a sessão ativos, alterando apenas o destino operacional."
+                  routed
+                  areas={availableAbilityAreas}
+                  abilityOptionsError={abilityOptionsError}
+                  optionsLoading={optionsLoading}
+                  disabled={isPending}
+                  configuredDestination={detailsQuery.data?.abilityDestinations.transfer}
+                />
+                <AbilityEditor
+                  form={form}
+                  name="pending"
+                  title="Colocar em pendência"
+                  description="Marca o atendimento como pendente até uma nova mensagem do cliente."
+                  areas={availableAbilityAreas}
+                  abilityOptionsError={abilityOptionsError}
+                  optionsLoading={optionsLoading}
+                  disabled={isPending}
+                />
+                <AbilityEditor
+                  form={form}
+                  name="close"
+                  title="Encerrar atendimento"
+                  description="Encerra a sessão quando o agente concluir o atendimento."
+                  areas={availableAbilityAreas}
+                  abilityOptionsError={abilityOptionsError}
+                  optionsLoading={optionsLoading}
+                  disabled={isPending}
+                />
+              </div>
+            </section>
+
+            <section className="space-y-4 border-t pt-6">
+              <SectionHeading
                 title="Instruções e contexto"
                 description="Mantenha as instruções operacionais e referências usadas pelo agente."
               />
@@ -694,7 +853,12 @@ export function OperationalAssistantDialog({
               </Button>
               <Button
                 type="submit"
-                disabled={isPending || optionsLoading || Boolean(modelsError)}
+                disabled={
+                  isPending ||
+                  optionsLoading ||
+                  Boolean(modelsError) ||
+                  Boolean(abilityOptionsError)
+                }
               >
                 {isPending ? (
                   <>
@@ -735,6 +899,271 @@ function Field({
   );
 }
 
+type AbilityName = keyof OperationalAssistantAbilities;
+type RoutedAbilityName = "humanHandoff" | "transfer";
+type AbilityEnabledPath = `abilities.${AbilityName}.enabled`;
+type AbilityInstructionsPath = `abilities.${AbilityName}.instructions`;
+type AbilityConfirmationPath = `abilities.${AbilityName}.confirmationMessage`;
+type RoutedAbilityAreaPath = `abilities.${RoutedAbilityName}.destination.areaId`;
+type RoutedAbilityQueuePath = `abilities.${RoutedAbilityName}.destination.queueId`;
+type RoutedAbilityDestinationPath =
+  `abilities.${RoutedAbilityName}.destination`;
+
+function AbilityEditor({
+  form,
+  name,
+  title,
+  description,
+  routed = false,
+  areas,
+  abilityOptionsError,
+  optionsLoading,
+  disabled,
+  configuredDestination,
+}: {
+  form: UseFormReturn<OperationalAssistantFormValues>;
+  name: AbilityName;
+  title: string;
+  description: string;
+  routed?: boolean;
+  areas: OperationalAssistantAbilityAreaOption[];
+  abilityOptionsError: unknown;
+  optionsLoading: boolean;
+  disabled: boolean;
+  configuredDestination?: OperationalAssistantConfiguredDestination | null;
+}) {
+  const enabled = form.watch(
+    `abilities.${name}.enabled` as AbilityEnabledPath,
+  );
+  const areaId = routed
+    ? form.watch(
+        `abilities.${name as RoutedAbilityName}.destination.areaId` as RoutedAbilityAreaPath,
+      )
+    : null;
+  const queueId = routed
+    ? form.watch(
+        `abilities.${name as RoutedAbilityName}.destination.queueId` as RoutedAbilityQueuePath,
+      )
+    : null;
+  const errors = form.formState.errors.abilities?.[name];
+  const destinationError = getFormErrorMessage(
+    (
+      errors as
+        | { destination?: { message?: unknown } }
+        | undefined
+    )?.destination?.message,
+  );
+  const selectedArea = areas.find((area) => area.id === areaId);
+  const destinationUnavailable = Boolean(
+    routed &&
+      enabled &&
+      configuredDestination &&
+      (!configuredDestination.areaActive || !configuredDestination.queueActive),
+  );
+
+  const setEnabled = (value: boolean) => {
+    form.setValue(`abilities.${name}.enabled` as AbilityEnabledPath, value, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+    if (!value && routed) {
+      form.setValue(
+        `abilities.${name as RoutedAbilityName}.destination` as RoutedAbilityDestinationPath,
+        { areaId: null, queueId: null },
+        { shouldDirty: true, shouldValidate: true },
+      );
+    }
+  };
+
+  return (
+    <div className="space-y-4 rounded-lg border p-4">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <Label htmlFor={`operational-assistant-ability-${name}`}>
+            {title}
+          </Label>
+          <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+        </div>
+        <Switch
+          id={`operational-assistant-ability-${name}`}
+          checked={Boolean(enabled)}
+          onCheckedChange={(value) => setEnabled(value === true)}
+          disabled={disabled}
+          aria-label={`${enabled ? "Desativar" : "Ativar"} habilidade: ${title}`}
+        />
+      </div>
+
+      {enabled ? (
+        <>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field
+              label="Orientação para o agente"
+              htmlFor={`operational-assistant-ability-${name}-instructions`}
+              error={getFormErrorMessage(errors?.instructions)}
+            >
+              <Textarea
+                id={`operational-assistant-ability-${name}-instructions`}
+                className="min-h-24"
+                placeholder="Explique quando e como usar esta habilidade."
+                disabled={disabled}
+                {...form.register(
+                  `abilities.${name}.instructions` as AbilityInstructionsPath,
+                )}
+              />
+            </Field>
+            <Field
+              label="Mensagem de confirmação"
+              htmlFor={`operational-assistant-ability-${name}-confirmation`}
+              error={getFormErrorMessage(errors?.confirmationMessage)}
+            >
+              <Textarea
+                id={`operational-assistant-ability-${name}-confirmation`}
+                className="min-h-24"
+                placeholder="Mensagem enviada após a ação ser confirmada."
+                disabled={disabled}
+                {...form.register(
+                  `abilities.${name}.confirmationMessage` as AbilityConfirmationPath,
+                )}
+              />
+            </Field>
+          </div>
+
+          {routed ? (
+            <div className="space-y-3">
+              {destinationUnavailable ? (
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>Destino configurado indisponível</AlertTitle>
+                  <AlertDescription>
+                    Escolha uma área e uma fila ativas para salvar esta habilidade.
+                  </AlertDescription>
+                </Alert>
+              ) : null}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field
+                  label="Área de destino"
+                  htmlFor={`operational-assistant-ability-${name}-area`}
+                  error={destinationError}
+                >
+                  <Select
+                    value={areaId ?? undefined}
+                    onValueChange={(value) => {
+                      form.setValue(
+                        `abilities.${name as RoutedAbilityName}.destination.areaId` as RoutedAbilityAreaPath,
+                        value,
+                        { shouldDirty: true, shouldValidate: true },
+                      );
+                      form.setValue(
+                        `abilities.${name as RoutedAbilityName}.destination.queueId` as RoutedAbilityQueuePath,
+                        null,
+                        { shouldDirty: true, shouldValidate: true },
+                      );
+                    }}
+                    disabled={
+                      disabled || optionsLoading || Boolean(abilityOptionsError)
+                    }
+                  >
+                    <SelectTrigger
+                      id={`operational-assistant-ability-${name}-area`}
+                    >
+                      <SelectValue
+                        placeholder={
+                          optionsLoading
+                            ? "Carregando áreas..."
+                            : abilityOptionsError
+                              ? "Áreas indisponíveis"
+                              : "Selecione uma área"
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {areas.length ? (
+                        areas.map((area) => (
+                          <SelectItem key={area.id} value={area.id}>
+                            {area.name}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="__empty__" disabled>
+                          Nenhuma área ativa disponível
+                        </SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <Field
+                  label="Fila de destino"
+                  htmlFor={`operational-assistant-ability-${name}-queue`}
+                  error={destinationError}
+                >
+                  <Select
+                    value={queueId ?? undefined}
+                    onValueChange={(value) =>
+                      form.setValue(
+                        `abilities.${name as RoutedAbilityName}.destination.queueId` as RoutedAbilityQueuePath,
+                        value,
+                        { shouldDirty: true, shouldValidate: true },
+                      )
+                    }
+                    disabled={
+                      disabled ||
+                      optionsLoading ||
+                      Boolean(abilityOptionsError) ||
+                      !areaId
+                    }
+                  >
+                    <SelectTrigger
+                      id={`operational-assistant-ability-${name}-queue`}
+                    >
+                      <SelectValue
+                        placeholder={
+                          optionsLoading
+                            ? "Carregando filas..."
+                            : abilityOptionsError
+                              ? "Filas indisponíveis"
+                              : areaId
+                                ? "Selecione uma fila"
+                                : "Escolha a área primeiro"
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {selectedArea?.queues.length ? (
+                        selectedArea.queues.map((queue) => (
+                          <SelectItem key={queue.id} value={queue.id}>
+                            {queue.name}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="__empty__" disabled>
+                          Nenhuma fila ativa disponível
+                        </SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                </Field>
+              </div>
+            </div>
+          ) : null}
+        </>
+      ) : null}
+    </div>
+  );
+}
+
+function getFormErrorMessage(error: unknown): string | undefined {
+  if (typeof error === "string") return error;
+  if (
+    error &&
+    typeof error === "object" &&
+    "message" in error &&
+    typeof error.message === "string"
+  ) {
+    return error.message;
+  }
+  return undefined;
+}
+
 function SectionHeading({
   title,
   description,
@@ -770,6 +1199,8 @@ function toFormValues(
     blacklist: assistant.prompt.blacklist ?? "",
     links: assistant.prompt.links ?? [],
     contentIds: assistant.contents.map((content) => content.id),
+    abilities: assistant.abilities,
+    abilitiesVersion: assistant.abilitiesVersion,
   };
 }
 
@@ -788,6 +1219,77 @@ function mergeCurrentContents(
     }));
 
   return [...contents, ...missingCurrentContents];
+}
+
+function createEmptyAbilities(): OperationalAssistantAbilities {
+  return {
+    humanHandoff: {
+      enabled: false,
+      instructions: "",
+      confirmationMessage: "",
+      destination: { areaId: null, queueId: null },
+    },
+    transfer: {
+      enabled: false,
+      instructions: "",
+      confirmationMessage: "",
+      destination: { areaId: null, queueId: null },
+    },
+    pending: {
+      enabled: false,
+      instructions: "",
+      confirmationMessage: "",
+    },
+    close: {
+      enabled: false,
+      instructions: "",
+      confirmationMessage: "",
+    },
+  };
+}
+
+function mergeCurrentAbilityAreas(
+  areas: OperationalAssistantAbilityAreaOption[],
+  destinations:
+    | {
+        humanHandoff: OperationalAssistantConfiguredDestination | null;
+        transfer: OperationalAssistantConfiguredDestination | null;
+      }
+    | undefined,
+): OperationalAssistantAbilityAreaOption[] {
+  const merged = areas.map((area) => ({
+    ...area,
+    queues: [...area.queues],
+  }));
+
+  for (const destination of [
+    destinations?.humanHandoff,
+    destinations?.transfer,
+  ]) {
+    if (!destination?.areaId) continue;
+
+    let area = merged.find((candidate) => candidate.id === destination.areaId);
+    if (!area) {
+      area = {
+        id: destination.areaId,
+        name: destination.areaName ?? "Área configurada indisponível",
+        queues: [],
+      };
+      merged.push(area);
+    }
+
+    if (
+      destination.queueId &&
+      !area.queues.some((queue) => queue.id === destination.queueId)
+    ) {
+      area.queues.push({
+        id: destination.queueId,
+        name: destination.queueName ?? "Fila configurada indisponível",
+      });
+    }
+  }
+
+  return merged;
 }
 
 const TIME_ZONES = [

@@ -12,13 +12,13 @@ import {
   Plus,
   Radio,
   RefreshCw,
-  Settings2,
   Trash2,
   XCircle,
 } from "lucide-react";
 import { useWorkspaceContext } from "@/contexts/workspace/WorkspaceContext";
 import {
   useOperationalAssistantMutations,
+  useOperationalAssistantAbilityOptions,
   useOperationalAssistants,
 } from "@/hooks/useOperationalAssistants";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -77,6 +77,10 @@ export default function OperationAssistantsPage() {
     canViewAssistants,
   );
   const mutations = useOperationalAssistantMutations(workspaceId);
+  const abilityOptionsQuery = useOperationalAssistantAbilityOptions(
+    workspaceId,
+    dialogOpen && (canCreateAssistant || canManageAssistants),
+  );
 
   const modelsQuery = useQuery({
     queryKey: ["operation-assistant-models"],
@@ -140,6 +144,7 @@ export default function OperationAssistantsPage() {
         values.contextWindowTurns,
       ) as OperationalAssistantContextWindowTurns,
       claudeResponseProfile: values.claudeResponseProfile,
+      abilities: values.abilities,
     };
 
     try {
@@ -155,6 +160,8 @@ export default function OperationAssistantsPage() {
                   values.openAiTranscriptionCredential.trim(),
               }
             : {}),
+          abilities: values.abilities,
+          expectedAbilitiesVersion: values.abilitiesVersion,
         };
         await mutations.update.mutateAsync({
           assistantId: editingAssistant.id,
@@ -242,7 +249,10 @@ export default function OperationAssistantsPage() {
   }
 
   const operationalWorkspaceId = currentWorkspace.id;
-  const optionsLoading = modelsQuery.isLoading || contentsQuery.isLoading;
+  const optionsLoading =
+    modelsQuery.isLoading ||
+    contentsQuery.isLoading ||
+    abilityOptionsQuery.isLoading;
 
   return (
     <section className="mx-auto w-full max-w-6xl space-y-6">
@@ -371,13 +381,16 @@ export default function OperationAssistantsPage() {
         assistant={editingAssistant}
         models={modelsQuery.data?.iaModels ?? []}
         contents={contentsQuery.data?.contents ?? []}
+        abilityAreas={abilityOptionsQuery.data?.areas ?? []}
         optionsLoading={optionsLoading}
         modelsError={modelsQuery.error}
         contentsError={contentsQuery.error}
+        abilityOptionsError={abilityOptionsQuery.error}
         isPending={mutations.create.isPending || mutations.update.isPending}
         onRetryOptions={() => {
           void modelsQuery.refetch();
           void contentsQuery.refetch();
+          void abilityOptionsQuery.refetch();
         }}
         onOpenChange={closeDialog}
         onSubmit={handleAssistantSubmit}

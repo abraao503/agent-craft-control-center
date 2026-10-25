@@ -12,6 +12,12 @@ const OPERATIONAL_ASSISTANT_ERROR_MESSAGES: Record<string, string> = {
   AVATAR_INVALID: "O arquivo de avatar não é uma imagem válida.",
   CONTENT_NOT_FOUND:
     "Um dos conteúdos selecionados não pertence a este ambiente.",
+  INVALID_ABILITY_DESTINATION:
+    "A área ou fila escolhida não está mais disponível neste ambiente.",
+  STALE_ABILITIES_VERSION:
+    "As habilidades foram alteradas por outra pessoa. Recarregue o agente e tente novamente.",
+  FAILED_TO_LIST_OPERATIONAL_ASSISTANT_ABILITY_OPTIONS:
+    "Não foi possível carregar as áreas e filas disponíveis.",
   PROVIDER_CREDENTIAL_REQUIRED:
     "Informe a credencial do provedor para ativar o agente.",
   TRANSCRIPTION_CREDENTIAL_REQUIRED:
@@ -78,5 +84,6 @@ export function getOperationalAssistantErrorMessage(
 }
 
 export function isOperationalAssistantStaleVersion(error: unknown): boolean {
-  return getOperationalAssistantErrorCode(error) === "STALE_VERSION";
+  const code = getOperationalAssistantErrorCode(error);
+  return code === "STALE_VERSION" || code === "STALE_ABILITIES_VERSION";
 }
