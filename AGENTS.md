@@ -56,7 +56,12 @@ Para testar o próprio fluxo, leia
 [Experimentos do Flow](../flow/AGENTS.md#experimentos-do-flow).
 
 Siga o protocolo de validação do [`AGENTS.md` do workspace](../AGENTS.md).
-Em planos novos compatíveis, use `plan approve <plan-id> --prepare-review-cycle`
+Em plano operacional novo, siga o
+[contrato obrigatório](../AGENTS.md#contrato-dos-planos-novos): declare
+`reviewProtocolVersion: 3` e `reviewRetryPolicy` v1, com duas retentativas e
+backoffs `[2, 5]`, e confira ambos no resultado da criação e no pedido do ciclo.
+Protocolo inferido sem política não é o padrão para novas entregas.
+Use `plan approve <plan-id> --prepare-review-cycle`
 e apresente o pedido de consentimento gerado pelo Flow no início do plano,
 antes de `run`/`next` e da implementação. Não espere a etapa de validação.
 Somente após consentimento explícito registre `review cycle-authorize`.
