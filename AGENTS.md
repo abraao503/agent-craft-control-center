@@ -20,13 +20,8 @@ confirmação no código ou no contrato atual da API.
 
 ## Regras obrigatórias
 
-- Não inicie o Flow para documentação, formatação, investigação somente leitura
-  ou uma alteração local, reversível e diretamente verificável em um único
-  arquivo. Faça essas tarefas diretamente e execute a validação proporcional.
-- Use o Flow quando a mudança atravessar componentes e services, alterar
-  contrato com a API, autenticação, tenancy, estado assíncrono, múltiplos
-  repositórios ou exigir validação pelo Flow. O Flow deve planejar fatias pequenas
-  e verificáveis; não transforme uma tarefa visual trivial em burocracia.
+- Para escolher execução direta ou Flow, siga o
+  [roteamento do workspace](../AGENTS.md#roteamento-de-tarefas).
 - Preserve mudanças preexistentes e mantenha o escopo pequeno. Antes de
   começar, rode `rtk git status --short` neste diretório.
 - Use **npm**. Não use Bun nem regenere `package-lock.json` ou `bun.lockb` sem
@@ -50,51 +45,10 @@ confirmação no código ou no contrato atual da API.
 
 ### Execução com Flow
 
-Ao definir critérios ou relatar resultados, siga
-[Critérios de planos e evidências](../AGENTS.md#critérios-de-planos-e-evidências).
-Para testar o próprio fluxo, leia
-[Experimentos do Flow](../flow/AGENTS.md#experimentos-do-flow).
-
-Siga o protocolo de validação do [`AGENTS.md` do workspace](../AGENTS.md).
-Em plano operacional novo, siga o
-[contrato obrigatório](../AGENTS.md#contrato-dos-planos-novos): declare
-`reviewProtocolVersion: 3` e `reviewRetryPolicy` v1, com duas retentativas e
-backoffs `[2, 5]`, e confira ambos no resultado da criação e no pedido do ciclo.
-Protocolo inferido sem política não é o padrão para novas entregas.
-Use `plan approve <plan-id> --prepare-review-cycle`
-e apresente o pedido de consentimento gerado pelo Flow no início do plano,
-antes de `run`/`next` e da implementação. Não espere a etapa de validação.
-Somente após consentimento explícito registre `review cycle-authorize`.
-Com ciclo `ACTIVE` confirmado por `review cycle-status`, use `review run`
-sem pedir autorização novamente para pedidos cobertos pelo `cycleHash`.
-Legados ou `UNAVAILABLE` mantêm o modo por execução indicado pelo Flow.
-
-Em contrato novo com `reviewRetryPolicy`, uma falha transitória allowlisted e
-com término confirmado pode manter `RUNNING`/`REVIEWING`; acompanhe
-`reviewProgress` e use `flow retry <plan-id> [--authorize <hash>]` quando o Flow
-indicar ação manual. Não chame provider diretamente, não crie executor e não
-troque destino. Segurança, estado incerto, finalização, `BLOCKED` e falhas
-determinísticas/desconhecidas continuam exigindo recuperação explícita.
-
-Para impedimento local de ambiente/acesso, siga
-[Continuação por etapa](../flow/docs/continuation.md): o plano aguarda em
-`RUNNING`, preservando consentimentos externos independentes. Resolva correções
-reversíveis já autorizadas e use `retry <plano>`; checks não têm retry automático.
-Negativa explícita exige direção humana antes de registrar o hash local. O agente
-obtém os identificadores do CLI e confirma etapas legadas com evidências; apresenta
-ao usuário somente a operação e a decisão necessárias. Ciclos suspensos continuam
-suspensos. As exigências de recuperação acima referem-se à revisão externa.
-
-Implemente a fatia retornada na sessão atual e conclua com `finish`, que roda
-checks e prepara a validação. O agente apenas solicita a validação ao Flow:
-não escolhe validador/modelo, não chama provider diretamente e não monta
-prompt paralelo. O destino e os limites do pedido continuam sendo apresentados
-ao usuário no consentimento inicial; o agente nunca concede consentimento a si próprio.
-
-Use o plano e o pedido gerado pelo Flow, sem documentos adicionais obrigatórios
-ou um executor Codex filho. Mantenha configuração e estado no workspace do
-Flow; a partir de `front/`, informe `--workspace ..` ao CLI. Os checks locais
-e a verificação visual abaixo continuam necessários conforme o escopo.
+Para planos, consentimento, emendas e recuperação, siga o
+[protocolo operacional compartilhado](../flow/docs/agent-workflow.md).
+Execute o CLI com `--workspace ..` a partir de `front/`.
+Os checks e a verificação visual deste arquivo continuam aplicáveis.
 
 ### Contrato de apresentação
 
