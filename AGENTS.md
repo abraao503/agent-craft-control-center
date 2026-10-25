@@ -50,6 +50,11 @@ confirmação no código ou no contrato atual da API.
 
 ### Execução com Flow
 
+Ao definir critérios ou relatar resultados, siga
+[Critérios de planos e evidências](../AGENTS.md#critérios-de-planos-e-evidências).
+Para testar o próprio fluxo, leia
+[Experimentos do Flow](../flow/AGENTS.md#experimentos-do-flow).
+
 Siga o protocolo de validação do [`AGENTS.md` do workspace](../AGENTS.md).
 Em planos novos compatíveis, use `plan approve <plan-id> --prepare-review-cycle`
 e apresente o pedido de consentimento gerado pelo Flow no início do plano,
@@ -58,6 +63,22 @@ Somente após consentimento explícito registre `review cycle-authorize`.
 Com ciclo `ACTIVE` confirmado por `review cycle-status`, use `review run`
 sem pedir autorização novamente para pedidos cobertos pelo `cycleHash`.
 Legados ou `UNAVAILABLE` mantêm o modo por execução indicado pelo Flow.
+
+Em contrato novo com `reviewRetryPolicy`, uma falha transitória allowlisted e
+com término confirmado pode manter `RUNNING`/`REVIEWING`; acompanhe
+`reviewProgress` e use `flow retry <plan-id> [--authorize <hash>]` quando o Flow
+indicar ação manual. Não chame provider diretamente, não crie executor e não
+troque destino. Segurança, estado incerto, finalização, `BLOCKED` e falhas
+determinísticas/desconhecidas continuam exigindo recuperação explícita.
+
+Para impedimento local de ambiente/acesso, siga
+[Continuação por etapa](../flow/docs/continuation.md): o plano aguarda em
+`RUNNING`, preservando consentimentos externos independentes. Resolva correções
+reversíveis já autorizadas e use `retry <plano>`; checks não têm retry automático.
+Negativa explícita exige direção humana antes de registrar o hash local. O agente
+obtém os identificadores do CLI e confirma etapas legadas com evidências; apresenta
+ao usuário somente a operação e a decisão necessárias. Ciclos suspensos continuam
+suspensos. As exigências de recuperação acima referem-se à revisão externa.
 
 Implemente a fatia retornada na sessão atual e conclua com `finish`, que roda
 checks e prepara a validação. O agente apenas solicita a validação ao Flow:
