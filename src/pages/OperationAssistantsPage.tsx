@@ -22,7 +22,6 @@ import {
   useOperationalAssistants,
 } from "@/hooks/useOperationalAssistants";
 import { usePermissions } from "@/hooks/usePermissions";
-import { listContent } from "@/services/content/listContent";
 import { listIaModels } from "@/services/iaModel/listIaModel";
 import {
   OperationalAssistantContextWindowTurns,
@@ -30,7 +29,6 @@ import {
   OperationalAssistantUpdateBody,
   OperationalAssistantCreateBody,
 } from "@/types/operation-assistant";
-import { Content } from "@/types/content";
 import { IaModel } from "@/types/iaModel";
 import {
   getOperationalAssistantErrorMessage,
@@ -87,18 +85,6 @@ export default function OperationAssistantsPage() {
     queryFn: listIaModels,
     enabled: Boolean(dialogOpen && canViewAssistants),
   });
-  const contentsQuery = useQuery({
-    queryKey: ["operation-assistant-contents", workspaceId],
-    queryFn: () => {
-      if (!workspaceId) {
-        throw new Error("Ambiente operacional não selecionado");
-      }
-
-      return listContent(workspaceId);
-    },
-    enabled: Boolean(dialogOpen && workspaceId && canViewAssistants),
-  });
-
   const openCreateDialog = () => {
     setEditingAssistant(null);
     setDialogOpen(true);
@@ -251,7 +237,6 @@ export default function OperationAssistantsPage() {
   const operationalWorkspaceId = currentWorkspace.id;
   const optionsLoading =
     modelsQuery.isLoading ||
-    contentsQuery.isLoading ||
     abilityOptionsQuery.isLoading;
 
   return (
@@ -380,16 +365,13 @@ export default function OperationAssistantsPage() {
         workspaceId={operationalWorkspaceId}
         assistant={editingAssistant}
         models={modelsQuery.data?.iaModels ?? []}
-        contents={contentsQuery.data?.contents ?? []}
         abilityAreas={abilityOptionsQuery.data?.areas ?? []}
         optionsLoading={optionsLoading}
         modelsError={modelsQuery.error}
-        contentsError={contentsQuery.error}
         abilityOptionsError={abilityOptionsQuery.error}
         isPending={mutations.create.isPending || mutations.update.isPending}
         onRetryOptions={() => {
           void modelsQuery.refetch();
-          void contentsQuery.refetch();
           void abilityOptionsQuery.refetch();
         }}
         onOpenChange={closeDialog}

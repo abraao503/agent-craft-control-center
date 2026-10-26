@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Controller, useFieldArray, useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import type { UseFormReturn } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -8,8 +8,6 @@ import {
   Info,
   Loader2,
   LockKeyhole,
-  Plus,
-  Trash2,
 } from "lucide-react";
 import { useOperationalAssistant } from "@/hooks/useOperationalAssistants";
 import {
@@ -19,7 +17,6 @@ import {
   OperationalAssistantSummary,
 } from "@/types/operation-assistant";
 import { IaModel } from "@/types/iaModel";
-import { Content } from "@/types/content";
 import { getOperationalAssistantErrorMessage } from "@/utils/operationalAssistantErrors";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -42,7 +39,6 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
 
 const abilityBaseSchema = z.object({
   enabled: z.boolean(),
@@ -176,11 +172,9 @@ type OperationalAssistantDialogProps = {
   workspaceId: string;
   assistant: OperationalAssistantSummary | null;
   models: IaModel[];
-  contents: Content[];
   abilityAreas: OperationalAssistantAbilityAreaOption[];
   optionsLoading: boolean;
   modelsError: unknown;
-  contentsError: unknown;
   abilityOptionsError: unknown;
   isPending: boolean;
   onRetryOptions: () => void;
@@ -193,11 +187,9 @@ export function OperationalAssistantDialog({
   workspaceId,
   assistant,
   models,
-  contents,
   abilityAreas,
   optionsLoading,
   modelsError,
-  contentsError,
   abilityOptionsError,
   isPending,
   onRetryOptions,
@@ -213,12 +205,7 @@ export function OperationalAssistantDialog({
     resolver: zodResolver(assistantFormSchema),
     defaultValues: EMPTY_FORM,
   });
-  const linksField = useFieldArray({
-    control: form.control,
-    name: "links",
-  });
   const audioTranscriptionEnabled = form.watch("audioTranscriptionEnabled");
-  const selectedContentIds = form.watch("contentIds");
 
   useEffect(() => {
     if (!open) return;
@@ -262,10 +249,6 @@ export function OperationalAssistantDialog({
 
   const isDetailsLoading = Boolean(assistant) && detailsQuery.isLoading;
   const isDetailsError = Boolean(assistant) && detailsQuery.isError;
-  const availableContents = mergeCurrentContents(
-    contents,
-    detailsQuery.data?.contents ?? [],
-  );
   const availableAbilityAreas = mergeCurrentAbilityAreas(
     abilityAreas,
     detailsQuery.data?.abilityDestinations,
@@ -732,131 +715,6 @@ export function OperationalAssistantDialog({
                   {...form.register("blacklist")}
                 />
               </Field>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <Label>Links de referência</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Opcional. Adicione apenas referências públicas e relevantes.
-                    </p>
-                  </div>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={() => linksField.append({ name: "", url: "" })}
-                    disabled={linksField.fields.length >= 100}
-                  >
-                    <Plus className="h-4 w-4" />
-                    Adicionar link
-                  </Button>
-                </div>
-                {linksField.fields.map((field, index) => (
-                  <div key={field.id} className="grid gap-3 rounded-md border p-3 sm:grid-cols-[1fr_1.4fr_auto] sm:items-start">
-                    <Field
-                      label="Nome"
-                      htmlFor={`operational-assistant-link-name-${index}`}
-                      error={form.formState.errors.links?.[index]?.name?.message}
-                    >
-                      <Input
-                        id={`operational-assistant-link-name-${index}`}
-                        placeholder="Central de ajuda"
-                        {...form.register(`links.${index}.name`)}
-                      />
-                    </Field>
-                    <Field
-                      label="URL"
-                      htmlFor={`operational-assistant-link-url-${index}`}
-                      error={form.formState.errors.links?.[index]?.url?.message}
-                    >
-                      <Input
-                        id={`operational-assistant-link-url-${index}`}
-                        placeholder="https://exemplo.com/ajuda"
-                        {...form.register(`links.${index}.url`)}
-                      />
-                    </Field>
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="ghost"
-                      className="mt-6 text-destructive"
-                      onClick={() => linksField.remove(index)}
-                      aria-label={`Remover link ${index + 1}`}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            <section className="space-y-4 border-t pt-6">
-              <SectionHeading
-                title="Conteúdo de conhecimento"
-                description="Selecione conteúdos já pertencentes a este ambiente."
-              />
-              {contentsError ? (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>Não foi possível carregar os conteúdos</AlertTitle>
-                  <AlertDescription className="flex flex-wrap items-center gap-3">
-                    {getOperationalAssistantErrorMessage(
-                      contentsError,
-                      "Tente novamente para consultar os conteúdos deste ambiente.",
-                    )}
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      onClick={onRetryOptions}
-                      disabled={optionsLoading}
-                    >
-                      Tentar novamente
-                    </Button>
-                  </AlertDescription>
-                </Alert>
-              ) : null}
-              {availableContents.length ? (
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {availableContents.map((content) => {
-                    const checked = selectedContentIds.includes(content.id);
-                    const inputId = `operational-assistant-content-${content.id}`;
-                    return (
-                      <label
-                        key={content.id}
-                        htmlFor={inputId}
-                        className="flex cursor-pointer items-start gap-3 rounded-md border p-3 text-sm hover:bg-muted/30"
-                      >
-                        <Checkbox
-                          id={inputId}
-                          checked={checked}
-                          onCheckedChange={(value) => {
-                            const next = value
-                              ? [...selectedContentIds, content.id]
-                              : selectedContentIds.filter(
-                                  (id) => id !== content.id,
-                                );
-                            form.setValue("contentIds", next, {
-                              shouldDirty: true,
-                              shouldValidate: true,
-                            });
-                          }}
-                        />
-                        <span className="min-w-0">
-                          <span className="block font-medium">{content.name}</span>
-                          <span className="text-xs text-muted-foreground">
-                            {content.type === "file" ? "Arquivo" : "Respostas"}
-                          </span>
-                        </span>
-                      </label>
-                    );
-                  })}
-                </div>
-              ) : contentsError ? null : (
-                <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
-                  Nenhum conteúdo disponível para este ambiente.
-                </div>
-              )}
             </section>
 
             <DialogFooter>
@@ -1229,23 +1087,6 @@ function toFormValues(
     abilities: assistant.abilities,
     abilitiesVersion: assistant.abilitiesVersion,
   };
-}
-
-function mergeCurrentContents(
-  contents: Content[],
-  currentContents: Array<{ id: string; name: string }>,
-): Content[] {
-  const knownIds = new Set(contents.map((content) => content.id));
-  const missingCurrentContents = currentContents
-    .filter((content) => !knownIds.has(content.id))
-    .map((content) => ({
-      ...content,
-      type: "answersQuestions" as const,
-      createdAt: new Date(0),
-      updatedAt: new Date(0),
-    }));
-
-  return [...contents, ...missingCurrentContents];
 }
 
 function createEmptyAbilities(): OperationalAssistantAbilities {
