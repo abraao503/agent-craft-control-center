@@ -3,7 +3,14 @@ import { Controller, useFieldArray, useForm } from "react-hook-form";
 import type { UseFormReturn } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { AlertCircle, Info, Loader2, Plus, Trash2 } from "lucide-react";
+import {
+  AlertCircle,
+  Info,
+  Loader2,
+  LockKeyhole,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import { useOperationalAssistant } from "@/hooks/useOperationalAssistants";
 import {
   OperationalAssistantAbilities,
@@ -263,6 +270,12 @@ export function OperationalAssistantDialog({
     abilityAreas,
     detailsQuery.data?.abilityDestinations,
   );
+  const providerCredentialConfigured = Boolean(
+    assistant && detailsQuery.data?.providerCredentialConfigured,
+  );
+  const transcriptionCredentialConfigured = Boolean(
+    assistant && detailsQuery.data?.openAiTranscriptionCredentialConfigured,
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -484,11 +497,16 @@ export function OperationalAssistantDialog({
             <section className="space-y-4 border-t pt-6">
               <SectionHeading
                 title="Credenciais"
-                description="Os campos são somente para gravação (não podem ser lidos depois). Deixe vazio ao editar para manter a credencial existente."
+                description="Suas chaves não são exibidas. Deixe os campos vazios para manter as atuais."
               />
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field
-                  label="Chave do serviço de IA"
+                  label={
+                    <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1">
+                      Chave do serviço de IA
+                      {providerCredentialConfigured && <CredentialConfiguredLabel />}
+                    </span>
+                  }
                   htmlFor="operational-assistant-provider-credential"
                   error={form.formState.errors.providerCredential?.message}
                 >
@@ -497,20 +515,20 @@ export function OperationalAssistantDialog({
                     type="password"
                     autoComplete="new-password"
                     placeholder={
-                      assistant && detailsQuery.data?.providerCredentialConfigured
-                        ? "Chave configurada"
+                      providerCredentialConfigured
+                        ? "Nova chave (opcional)"
                         : "Informe a credencial"
                     }
                     {...form.register("providerCredential")}
                   />
-                  {assistant && detailsQuery.data?.providerCredentialConfigured ? (
-                    <p className="text-xs text-muted-foreground">
-                      Uma credencial já está configurada e não é exibida.
-                    </p>
-                  ) : null}
                 </Field>
                 <Field
-                  label="Chave de transcrição"
+                  label={
+                    <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1">
+                      Chave de transcrição
+                      {transcriptionCredentialConfigured && <CredentialConfiguredLabel />}
+                    </span>
+                  }
                   htmlFor="operational-assistant-transcription-credential"
                   error={
                     form.formState.errors.openAiTranscriptionCredential?.message
@@ -521,9 +539,8 @@ export function OperationalAssistantDialog({
                     type="password"
                     autoComplete="new-password"
                     placeholder={
-                      assistant &&
-                      detailsQuery.data?.openAiTranscriptionCredentialConfigured
-                        ? "Chave configurada"
+                      transcriptionCredentialConfigured
+                        ? "Nova chave (opcional)"
                         : "Opcional até ativar o áudio"
                     }
                     {...form.register("openAiTranscriptionCredential")}
@@ -885,7 +902,7 @@ function Field({
   error,
   children,
 }: {
-  label: string;
+  label: React.ReactNode;
   htmlFor: string;
   error?: string;
   children: React.ReactNode;
@@ -896,6 +913,16 @@ function Field({
       {children}
       {error ? <p className="text-xs text-destructive">{error}</p> : null}
     </div>
+  );
+}
+
+function CredentialConfiguredLabel() {
+  return (
+    <span className="inline-flex items-center gap-1 whitespace-nowrap text-xs font-normal text-muted-foreground">
+      <span className="mr-1" aria-hidden="true">·</span>
+      <LockKeyhole className="h-3 w-3" aria-hidden="true" />
+      Configurada
+    </span>
   );
 }
 
