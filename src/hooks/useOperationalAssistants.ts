@@ -4,6 +4,7 @@ import { createOperationalAssistant } from "@/services/operation/createOperation
 import { deleteOperationalAssistant } from "@/services/operation/deleteOperationalAssistant";
 import { getOperationalAssistant } from "@/services/operation/getOperationalAssistant";
 import { listOperationalAssistantOptions } from "@/services/operation/listOperationalAssistantOptions";
+import { listOperationalAssistantAbilityOptions } from "@/services/operation/listOperationalAssistantAbilityOptions";
 import { listOperationalAssistants } from "@/services/operation/listOperationalAssistants";
 import { updateOperationalAssistant } from "@/services/operation/updateOperationalAssistant";
 import {
@@ -64,6 +65,23 @@ export function useOperationalAssistantOptions(
   });
 }
 
+export function useOperationalAssistantAbilityOptions(
+  workspaceId?: string,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: ["operation-assistant-ability-options", workspaceId],
+    queryFn: () => {
+      if (!workspaceId) {
+        throw new Error("Workspace operacional não selecionado");
+      }
+
+      return listOperationalAssistantAbilityOptions(workspaceId);
+    },
+    enabled: Boolean(workspaceId && enabled),
+  });
+}
+
 export function useOperationalAssistantMutations(workspaceId?: string) {
   const queryClient = useQueryClient();
   const { currentWorkspace } = useWorkspaceContext();
@@ -80,6 +98,12 @@ export function useOperationalAssistantMutations(workspaceId?: string) {
       }),
       queryClient.invalidateQueries({
         queryKey: ["operation-assistant-options", resolvedWorkspaceId],
+      }),
+      queryClient.invalidateQueries({
+        queryKey: [
+          "operation-assistant-ability-options",
+          resolvedWorkspaceId,
+        ],
       }),
       queryClient.invalidateQueries({
         queryKey: ["operation-route-assistants", resolvedWorkspaceId],

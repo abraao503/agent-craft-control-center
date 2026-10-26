@@ -20,6 +20,43 @@ export interface OperationalAssistantPrompt {
   links: OperationalAssistantPromptLink[] | null;
 }
 
+export interface OperationalAssistantAbility {
+  enabled: boolean;
+  instructions: string;
+  confirmationMessage: string;
+}
+
+export interface OperationalAssistantAbilityDestination {
+  areaId: string | null;
+  queueId: string | null;
+}
+
+export interface OperationalAssistantRoutedAbility
+  extends OperationalAssistantAbility {
+  destination: OperationalAssistantAbilityDestination;
+}
+
+export interface OperationalAssistantAbilities {
+  humanHandoff: OperationalAssistantRoutedAbility;
+  transfer: OperationalAssistantRoutedAbility;
+  pending: OperationalAssistantAbility;
+  close: OperationalAssistantAbility;
+}
+
+export interface OperationalAssistantConfiguredDestination
+  extends OperationalAssistantAbilityDestination {
+  areaName: string | null;
+  areaActive: boolean;
+  queueName: string | null;
+  queueActive: boolean;
+}
+
+export interface OperationalAssistantAbilityAreaOption {
+  id: string;
+  name: string;
+  queues: Array<{ id: string; name: string }>;
+}
+
 export interface OperationalAssistantSummary {
   id: string;
   name: string;
@@ -54,6 +91,12 @@ export interface OperationalAssistantDetails
   audioTranscriptionEnabled: boolean;
   contextWindowTurns: OperationalAssistantContextWindowTurns;
   claudeResponseProfile: OperationalAssistantResponseProfile;
+  abilities: OperationalAssistantAbilities;
+  abilitiesVersion: number;
+  abilityDestinations: {
+    humanHandoff: OperationalAssistantConfiguredDestination | null;
+    transfer: OperationalAssistantConfiguredDestination | null;
+  };
   createdAt: string;
   updatedAt: string;
 }
@@ -76,12 +119,15 @@ export interface OperationalAssistantCreateBody
   extends OperationalAssistantCommonBody {
   providerCredential: string;
   openAiTranscriptionCredential?: string;
+  abilities?: OperationalAssistantAbilities;
 }
 
 export interface OperationalAssistantUpdateBody
   extends OperationalAssistantCommonBody {
   providerCredential?: string;
   openAiTranscriptionCredential?: string;
+  abilities?: OperationalAssistantAbilities;
+  expectedAbilitiesVersion?: number;
 }
 
 export interface CreateOperationalAssistantParams {
