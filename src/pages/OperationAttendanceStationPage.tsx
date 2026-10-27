@@ -6,6 +6,7 @@ import {
   MessageSquare,
   Settings2,
 } from "lucide-react";
+import { useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import OperationAttendanceDetailPage from "./OperationAttendanceDetailPage";
 import OperationAttendancesPage from "./OperationAttendancesPage";
@@ -15,12 +16,16 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { useWorkspaceContext } from "@/contexts/workspace/WorkspaceContext";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/components/ui/sidebar";
+import { NewOperationalChatDialog } from "@/components/operation/NewOperationalChatDialog";
+import { usePermissions } from "@/hooks/usePermissions";
 
 export default function OperationAttendanceStationPage() {
   const { attendanceId } = useParams<{ attendanceId?: string }>();
   const [searchParams] = useSearchParams();
   const { currentWorkspace } = useWorkspaceContext();
   const { isMobile, setOpenMobile } = useSidebar();
+  const { has } = usePermissions();
+  const [newChatOpen, setNewChatOpen] = useState(false);
   const isKanbanView = !attendanceId && searchParams.get("view") === "kanban";
 
   return (
@@ -88,6 +93,16 @@ export default function OperationAttendanceStationPage() {
             <Settings2 className="h-4 w-4" />
             <span className="hidden md:inline">Configurações</span>
           </Link>
+          {has("operate:operation-attendances") ? (
+            <Button
+              size="sm"
+              className="gap-2"
+              onClick={() => setNewChatOpen(true)}
+            >
+              <MessageSquare className="h-4 w-4" />
+              <span className="hidden sm:inline">Novo chat</span>
+            </Button>
+          ) : null}
         </div>
       </header>
 
@@ -121,6 +136,11 @@ export default function OperationAttendanceStationPage() {
           </div>
         </div>
       )}
+      <NewOperationalChatDialog
+        open={newChatOpen}
+        onOpenChange={setNewChatOpen}
+        workspaceId={currentWorkspace?.type === "OPERATION" ? currentWorkspace.id : undefined}
+      />
     </section>
   );
 }

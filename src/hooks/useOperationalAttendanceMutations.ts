@@ -14,6 +14,7 @@ import { migrateAttendanceChannel } from "@/services/operation/migrateAttendance
 import { unassignAttendance } from "@/services/operation/unassignAttendance";
 import { updateOperationalFollowUp } from "@/services/operation/updateOperationalFollowUp";
 import { sendOperationalAttendanceMessage } from "@/services/operation/sendOperationalAttendanceMessage";
+import { createManualAttendance } from "@/services/operation/createManualAttendance";
 import {
   AssignAttendanceParams,
   CancelOperationalFollowUpParams,
@@ -29,6 +30,7 @@ import {
   UnassignAttendanceParams,
   UpdateOperationalFollowUpParams,
   SendOperationalAttendanceMessageParams,
+  CreateManualAttendanceParams,
 } from "@/types/operation-attendance";
 import {
   extractOperationalErrorCode,
@@ -53,6 +55,9 @@ export function useOperationalAttendanceMutations(workspaceId?: string) {
     });
     void queryClient.invalidateQueries({
       queryKey: ["operation", "attendance-summary", resolvedWorkspaceId],
+    });
+    void queryClient.invalidateQueries({
+      queryKey: ["operation", "conversations", resolvedWorkspaceId],
     });
   };
 
@@ -470,6 +475,29 @@ export function useOperationalAttendanceMutations(workspaceId?: string) {
     },
   });
 
+  const createManual = useMutation({
+    mutationFn: (
+      params: Omit<CreateManualAttendanceParams, "workspaceId"> & {
+        workspaceId?: string;
+      },
+    ) => {
+      const targetWorkspaceId = params.workspaceId ?? resolvedWorkspaceId;
+      if (!targetWorkspaceId) {
+        throw new Error("Workspace operacional não selecionado");
+      }
+      return createManualAttendance({
+        ...params,
+        workspaceId: targetWorkspaceId,
+      });
+    },
+    onSuccess: (data) => {
+      invalidateAttendanceScope(data.attendance.id);
+      void queryClient.invalidateQueries({
+        queryKey: ["operation", "attendance-options", resolvedWorkspaceId],
+      });
+    },
+  });
+
   const createInternalNote = useMutation({
     mutationFn: (
       params: Omit<CreateAttendanceInternalNoteParams, "workspaceId"> & {
@@ -513,6 +541,7 @@ export function useOperationalAttendanceMutations(workspaceId?: string) {
     updateFollowUp,
     cancelFollowUp,
     sendMessage,
+    createManual,
     createInternalNote,
     invalidateAttendanceScope,
   };

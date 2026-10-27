@@ -110,6 +110,7 @@ const REPLY_STATUS_LABELS = {
 
 const EVENT_LABELS: Record<string, string> = {
   INBOUND_CREATE: "Atendimento criado",
+  MANUAL_CREATE: "Novo atendimento criado",
   INBOUND_RESUME: "Atendimento retomado",
   MIGRATE_CHANNEL: "Canal da conversa migrado",
   ROUTE: "Encaminhado para fila",
