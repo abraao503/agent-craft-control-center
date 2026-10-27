@@ -10,6 +10,7 @@ export type AttendanceStatus =
   | "WAITING_CUSTOMER_REPLY";
 
 export type AttendanceCommandAction =
+  | "MANUAL_CREATE"
   | "INBOUND_CREATE"
   | "INBOUND_RESUME"
   | "MIGRATE_CHANNEL"
@@ -258,6 +259,24 @@ export interface AttendanceOptions {
   users: AttendanceOptionUser[];
   channels: AttendanceOptionChannel[];
   capabilities: AttendanceOptionCapabilities;
+}
+
+export interface CreateManualAttendanceParams {
+  workspaceId: string;
+  customerId?: string;
+  customerName?: string;
+  customerPhone?: string;
+  channelId: string;
+  targetAreaId: string;
+  targetQueueId: string;
+  assigneeUserId?: string;
+  idempotencyKey?: string;
+}
+
+export interface CreateManualAttendanceResponse {
+  attendance: AttendanceWithDetails;
+  created: boolean;
+  duplicate: boolean;
 }
 
 export interface AttendanceEvent {
