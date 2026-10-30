@@ -17,12 +17,14 @@ interface Props {
 
 const textPayload = {
   phone: "+5511999887766",
+  targetQueueId: "<UUID da fila ativa>",
   text: "Olá! Sua solicitação foi recebida.",
   correlationId: "pedido-123",
 };
 
 const templatePayload = {
   phone: "+5511999887766",
+  targetQueueId: "<UUID da fila ativa>",
   template: {
     name: "pedido_atualizado",
     language: "pt_BR",
@@ -103,6 +105,25 @@ export function OperationWebhookDocumentation({ endpoint, onCopy }: Props) {
         <CardContent className="space-y-5">
           <CodeBlock label="Mensagem de texto" value={JSON.stringify(textPayload, null, 2)} onCopy={onCopy} />
           <CodeBlock label="Template Meta" value={JSON.stringify(templatePayload, null, 2)} onCopy={onCopy} />
+          <div className="space-y-1 rounded-md border bg-muted/30 p-3 text-sm">
+            <p className="font-medium">Direcionar para uma fila</p>
+            <p className="text-muted-foreground">
+              <code>targetQueueId</code> é opcional. Substitua o exemplo pelo ID
+              de uma fila ativa do mesmo workspace do webhook; a área é
+              identificada pela fila. Para encontrar o ID, abra Operação →
+              Estrutura, selecione a área e abra a fila. Use <strong>Copiar ID</strong>
+              na listagem ou no detalhe da fila. Remova o campo para seguir sem
+              indicar uma fila.
+            </p>
+            <p className="text-muted-foreground">
+              Quando informado, o atendimento é encaminhado para essa fila no
+              disparo e a distribuição automática configurada para ela é
+              executada. O webhook envia pela conexão Meta selecionada nele.
+              Para conversas novas recebidas pelo WhatsApp, continua valendo a
+              entrada padrão configurada no canal. Se a Meta recusar o envio
+              depois do encaminhamento, o atendimento permanece aberto na fila.
+            </p>
+          </div>
           <Separator />
           <CodeBlock label="Exemplo com cURL" value={curlExample} onCopy={onCopy} />
           <div className="flex items-start gap-2 rounded-md border bg-muted/30 p-3 text-sm text-muted-foreground">

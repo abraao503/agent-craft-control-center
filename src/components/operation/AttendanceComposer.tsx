@@ -4,6 +4,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import {
   CheckCircle2,
+  ChevronDown,
+  ChevronUp,
   FileText,
   LockKeyhole,
   Loader2,
@@ -257,6 +259,12 @@ export function AttendanceComposer({
     isTemplateRequired ? "TEMPLATE" : "TEXT",
   );
   const [isInternalNoteMode, setIsInternalNoteMode] = useState(false);
+  const [templateCollapsed, setTemplateCollapsed] = useState(false);
+
+  useEffect(() => {
+    setTemplateCollapsed(false);
+  }, [attendance.id, mode]);
+
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [mediaType, setMediaType] = useState<"image" | "audio" | "document">(
     "image",
@@ -613,15 +621,37 @@ export function AttendanceComposer({
 
   return (
     <div
-      className={
+      className={[
         sticky
           ? embedded
             ? "sticky bottom-0 z-10 shrink-0 border-t bg-background/95 px-4 pb-3 pt-3 backdrop-blur"
             : "sticky bottom-0 z-10 -mx-6 border-t bg-background/95 px-6 pb-1 pt-4 backdrop-blur"
-          : "mt-6 border-t pt-6"
-      }
+          : "mt-6 border-t pt-6",
+        mode === "TEMPLATE" && !templateCollapsed
+          ? "[container-type:inline-size] flex max-h-[calc(100dvh-22rem)] min-h-0 flex-col overflow-hidden xl:max-h-full"
+          : "",
+      ].join(" ")}
     >
-      {isTemplateRequired ? (
+      {mode === "TEMPLATE" && canCompose ? (
+        <div className="mb-2 flex shrink-0 items-center justify-between gap-2">
+          <span className="min-w-0 truncate text-sm font-medium">
+            {templateCollapsed && selectedTemplate ? selectedTemplate.name : "Mensagem por template"}
+          </span>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="shrink-0"
+            aria-expanded={!templateCollapsed}
+            aria-controls="operational-template-form"
+            onClick={() => setTemplateCollapsed((collapsed) => !collapsed)}
+          >
+            {templateCollapsed ? <ChevronUp className="mr-2 h-4 w-4" /> : <ChevronDown className="mr-2 h-4 w-4" />}
+            {templateCollapsed ? "Expandir template" : "Recolher template"}
+          </Button>
+        </div>
+      ) : null}
+      {isTemplateRequired && !templateCollapsed ? (
         <p
           className={
             embedded
@@ -703,8 +733,17 @@ export function AttendanceComposer({
       ) : (
         <Form {...form}>
           <form
+            id="operational-template-form"
             onSubmit={form.handleSubmit(submit)}
-            className={embedded ? "space-y-2" : "space-y-4"}
+            className={
+              mode === "TEMPLATE" && templateCollapsed
+                ? "hidden"
+                : mode === "TEMPLATE"
+                ? "flex min-h-0 flex-1 flex-col gap-3"
+                : embedded
+                  ? "space-y-2"
+                  : "space-y-4"
+            }
           >
             {isInternalNoteMode ? (
               <Alert className="border-primary/25 bg-primary/5">
@@ -957,7 +996,7 @@ export function AttendanceComposer({
             ) : null}
 
             {mode === "TEMPLATE" ? (
-              <div className="space-y-4 rounded-md border bg-muted/10 p-4">
+              <div className="flex min-h-0 flex-1 flex-col gap-4 rounded-md border bg-muted/10 p-4">
                 {!isTemplateRequired ? (
                   <div className="flex justify-end">
                     <Button
@@ -981,7 +1020,7 @@ export function AttendanceComposer({
                   </p>
                 ) : (
                   <>
-                    <div className="space-y-2">
+                    <div className="shrink-0 space-y-2">
                       <Label htmlFor="operational-template">Template aprovado</Label>
                       <select
                         id="operational-template"
@@ -998,78 +1037,90 @@ export function AttendanceComposer({
                       </select>
                     </div>
 
-                    {templateSlots.length ? (
-                      <div className="space-y-3">
-                        <p className="text-sm font-medium">Parâmetros</p>
-                        {templateSlots.map((slot) => {
-                          const binding = templateBindings[slot];
-                          return (
-                            <div key={slot} className="grid gap-2 sm:grid-cols-[9rem_minmax(0,1fr)]">
-                              <div className="space-y-2">
-                                <Label htmlFor={`binding-source-${slot}`}>{slot}</Label>
-                                <select
-                                  id={`binding-source-${slot}`}
-                                  value={getBindingSelectorValue(binding)}
-                                  onChange={(event) => updateBinding(slot, event.target.value)}
-                                  disabled={mutations.createInternalNote.isPending}
-                                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                                >
-                                  <option value="fixed">Valor fixo</option>
-                                  <option value="customer:name">Cliente · nome</option>
-                                  <option value="customer:firstName">Cliente · primeiro nome</option>
-                                  <option value="customer:phone">Cliente · telefone</option>
-                                  <option value="customer:email">Cliente · e-mail</option>
-                                  <option value="owner:name">Responsável · nome</option>
-                                </select>
-                              </div>
-                              {binding?.source === "fixed" ? (
-                                <div className="space-y-2">
-                                  <Label htmlFor={`binding-value-${slot}`}>Valor</Label>
-                                  <Input
-                                    id={`binding-value-${slot}`}
-                                    value={binding.value}
-                                    onChange={(event) =>
-                                      setTemplateBindings((current) => ({
-                                        ...current,
-                                        [slot]: { source: "fixed", value: event.target.value },
-                                      }))
-                                    }
-                                    disabled={mutations.createInternalNote.isPending}
-                                    placeholder="Informe o valor"
-                                  />
+                    <div className="grid min-h-0 gap-4 overflow-y-auto overscroll-contain [@container(min-width:40rem)]:grid-cols-2 [@container(min-width:40rem)]:overflow-hidden">
+                      <section
+                        aria-label="Parâmetros do template"
+                        tabIndex={0}
+                        className="min-w-0 space-y-3 [@container(min-width:40rem)]:overflow-y-auto [@container(min-width:40rem)]:overscroll-contain [@container(min-width:40rem)]:pr-2"
+                      >
+                        {templateSlots.length ? (
+                          <>
+                            <p className="text-sm font-medium">Parâmetros</p>
+                            {templateSlots.map((slot) => {
+                              const binding = templateBindings[slot];
+                              return (
+                                <div key={slot} className="grid gap-2 [@container(min-width:56rem)]:grid-cols-[9rem_minmax(0,1fr)]">
+                                  <div className="space-y-2">
+                                    <Label htmlFor={`binding-source-${slot}`}>{slot}</Label>
+                                    <select
+                                      id={`binding-source-${slot}`}
+                                      value={getBindingSelectorValue(binding)}
+                                      onChange={(event) => updateBinding(slot, event.target.value)}
+                                      disabled={mutations.createInternalNote.isPending}
+                                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                    >
+                                      <option value="fixed">Valor fixo</option>
+                                      <option value="customer:name">Cliente · nome</option>
+                                      <option value="customer:firstName">Cliente · primeiro nome</option>
+                                      <option value="customer:phone">Cliente · telefone</option>
+                                      <option value="customer:email">Cliente · e-mail</option>
+                                      <option value="owner:name">Responsável · nome</option>
+                                    </select>
+                                  </div>
+                                  {binding?.source === "fixed" ? (
+                                    <div className="space-y-2">
+                                      <Label htmlFor={`binding-value-${slot}`}>Valor</Label>
+                                      <Input
+                                        id={`binding-value-${slot}`}
+                                        value={binding.value}
+                                        onChange={(event) =>
+                                          setTemplateBindings((current) => ({
+                                            ...current,
+                                            [slot]: { source: "fixed", value: event.target.value },
+                                          }))
+                                        }
+                                        disabled={mutations.createInternalNote.isPending}
+                                        placeholder="Informe o valor"
+                                      />
+                                    </div>
+                                  ) : (
+                                    <div className="flex items-end pb-2 text-sm text-muted-foreground">
+                                      Valor preenchido a partir do cadastro autorizado.
+                                    </div>
+                                  )}
                                 </div>
-                              ) : (
-                                <div className="flex items-end pb-2 text-sm text-muted-foreground">
-                                  Valor preenchido a partir do cadastro autorizado.
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">
-                        Este template não possui parâmetros variáveis.
-                      </p>
-                    )}
-                    {templatePreview ? (
-                      <div className="space-y-2 rounded-md border bg-background p-3">
-                        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                          Pré-visualização
-                        </p>
-                        <TemplateMessage
-                          snapshot={templatePreview}
-                          fallbackBody="Este template não possui conteúdo textual."
-                        />
-                      </div>
-                    ) : null}
+                              );
+                            })}
+                          </>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">
+                            Este template não possui parâmetros variáveis.
+                          </p>
+                        )}
+                      </section>
+                      {templatePreview ? (
+                        <section
+                          aria-label="Pré-visualização da mensagem"
+                          tabIndex={0}
+                          className="min-w-0 space-y-2 rounded-md border bg-background p-3 [@container(min-width:40rem)]:overflow-y-auto [@container(min-width:40rem)]:overscroll-contain"
+                        >
+                          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                            Pré-visualização
+                          </p>
+                          <TemplateMessage
+                            snapshot={templatePreview}
+                            fallbackBody="Este template não possui conteúdo textual."
+                          />
+                        </section>
+                      ) : null}
+                    </div>
                   </>
                 )}
               </div>
             ) : null}
 
             {mode !== "TEXT" ? (
-              <div className="flex justify-end gap-3">
+              <div className="flex shrink-0 justify-end gap-3">
                 <Button
                   type="submit"
                   disabled={mutations.createInternalNote.isPending}

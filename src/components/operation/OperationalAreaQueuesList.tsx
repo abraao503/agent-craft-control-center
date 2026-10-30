@@ -3,6 +3,7 @@ import { AxiosError } from "axios";
 import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowRight,
+  Copy,
   Loader2,
   Pencil,
   Plus,
@@ -118,6 +119,40 @@ export function OperationalAreaQueuesList({
     }
   };
 
+  const canCopyQueueId = (queue: ServiceQueue) =>
+    Boolean(workspaceId) &&
+    !queuesQuery.isLoading &&
+    !queuesQuery.isFetching &&
+    !queuesQuery.isError &&
+    queue.active &&
+    queue.deletedAt === null &&
+    queue.workspaceId === workspaceId;
+
+  const handleCopyQueueId = async (queue: ServiceQueue) => {
+    if (!canCopyQueueId(queue)) {
+      toast({
+        title: "Não foi possível copiar o ID da fila",
+        description: "A fila não está disponível no workspace atual.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(queue.id);
+      toast({
+        title: "ID da fila copiado",
+        description: `O ID de ${queue.name} foi copiado para a área de transferência.`,
+      });
+    } catch {
+      toast({
+        title: "Não foi possível copiar o ID da fila",
+        description: "Verifique a permissão de área de transferência do navegador e tente novamente.",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (queuesQuery.isLoading) {
     return (
       <div className="flex min-h-36 items-center justify-center gap-2 text-sm text-muted-foreground">
@@ -193,7 +228,18 @@ export function OperationalAreaQueuesList({
                   {queue.description || "Sem descrição cadastrada."}
                 </p>
               </Link>
-              <div className="flex w-full shrink-0 items-center justify-end gap-1 sm:w-auto">
+              <div className="flex w-full shrink-0 flex-wrap items-center justify-end gap-1 sm:w-auto">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  aria-label={`Copiar ID da fila ${queue.name}`}
+                  disabled={!canCopyQueueId(queue)}
+                  onClick={() => void handleCopyQueueId(queue)}
+                >
+                  <Copy className="h-4 w-4" />
+                  <span>Copiar ID</span>
+                </Button>
                 {canManage ? (
                   <>
                     <Button
