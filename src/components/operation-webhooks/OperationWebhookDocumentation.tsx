@@ -115,6 +115,14 @@ export function OperationWebhookDocumentation({ endpoint, onCopy }: Props) {
               na listagem ou no detalhe da fila. Remova o campo para seguir sem
               indicar uma fila.
             </p>
+            <p className="text-muted-foreground">
+              Quando informado, o atendimento é encaminhado para essa fila no
+              disparo e a distribuição automática configurada para ela é
+              executada. O webhook envia pela conexão Meta selecionada nele.
+              Para conversas novas recebidas pelo WhatsApp, continua valendo a
+              entrada padrão configurada no canal. Se a Meta recusar o envio
+              depois do encaminhamento, o atendimento permanece aberto na fila.
+            </p>
           </div>
           <Separator />
           <CodeBlock label="Exemplo com cURL" value={curlExample} onCopy={onCopy} />
