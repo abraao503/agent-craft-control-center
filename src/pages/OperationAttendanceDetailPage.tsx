@@ -54,6 +54,7 @@ import {
 import { AttendanceFollowUpsCard } from "@/components/operation/AttendanceFollowUpsCard";
 import { AttendanceChecklistPanel } from "@/components/operation/AttendanceChecklistPanel";
 import { AttendanceInternalNote } from "@/components/operation/AttendanceInternalNote";
+import { AttendanceMessageMedia } from "@/components/operation/AttendanceMessageMedia";
 import { MessageReactions } from "@/components/chats/MessageReactions";
 import { MessageReplyPreview } from "@/components/chats/MessageReplyPreview";
 import { useQuotedMessageNavigation } from "@/hooks/useQuotedMessageNavigation";
@@ -889,6 +890,8 @@ export default function OperationAttendanceDetailPage({
                           <ConversationMessage
                             key={`message:${item.id}`}
                             message={item}
+                            workspaceId={workspaceId}
+                            attendanceId={attendanceId}
                             deliveryChecks={checksByMessageId.get(item.id)}
                             deliveryChecksState={deliveryChecksState}
                             highlighted={navigation.highlightedMessageId === item.id}
@@ -1352,6 +1355,8 @@ function DetailField({ label, value }: { label: string; value: string }) {
 
 function ConversationMessage({
   message,
+  workspaceId,
+  attendanceId,
   deliveryChecks,
   deliveryChecksState,
   highlighted,
@@ -1359,6 +1364,8 @@ function ConversationMessage({
   navigationState,
 }: {
   message: AttendanceMessageItem;
+  workspaceId?: string;
+  attendanceId?: string;
   deliveryChecks?: MessageDeliveryCheckSummary;
   deliveryChecksState: MessageDeliveryChecksQueryState;
   highlighted: boolean;
@@ -1402,9 +1409,11 @@ function ConversationMessage({
             navigationState={navigationState}
           />
           {hasMedia ? (
-            <p className="mb-1 font-medium">
-              Mídia: {message.mediaMimetype || message.type}
-            </p>
+            <AttendanceMessageMedia
+              workspaceId={workspaceId}
+              attendanceId={attendanceId}
+              message={message}
+            />
           ) : null}
           {message.templateName ? (
             <p className="mb-1 font-medium">Template: {message.templateName}</p>
@@ -1414,7 +1423,7 @@ function ConversationMessage({
               snapshot={message.templateSnapshot}
               fallbackBody={content || message.templateName || "Template Meta"}
             />
-          ) : content ? (
+          ) : !hasMedia && content ? (
             <p className="whitespace-pre-wrap break-words">{content}</p>
           ) : null}
           <div className="mt-2 flex flex-wrap items-center gap-1 text-xs opacity-75">
