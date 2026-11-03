@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { AxiosError } from "axios";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Inbox, Pencil } from "lucide-react";
+import { ArrowLeft, Copy, Inbox, Pencil } from "lucide-react";
 import { useOperationalQueueMutations } from "@/hooks/useOperationalQueues";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useToast } from "@/hooks/use-toast";
@@ -35,6 +35,7 @@ type OperationalQueueDetailProps = {
   workspaceId: string;
   area: ServiceArea;
   queue: ServiceQueue;
+  isQueueQueryFetching: boolean;
   onReload: () => Promise<unknown>;
 };
 
@@ -42,6 +43,7 @@ export function OperationalQueueDetail({
   workspaceId,
   area,
   queue,
+  isQueueQueryFetching,
   onReload,
 }: OperationalQueueDetailProps) {
   const navigate = useNavigate();
@@ -53,6 +55,41 @@ export function OperationalQueueDetail({
   const mutations = useOperationalQueueMutations(workspaceId, area.id);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeactivateOpen, setIsDeactivateOpen] = useState(false);
+
+  const canCopyQueueId =
+    !isQueueQueryFetching &&
+    queue.active &&
+    queue.deletedAt === null &&
+    queue.workspaceId === workspaceId &&
+    queue.areaId === area.id &&
+    area.active &&
+    area.deletedAt === null &&
+    area.workspaceId === workspaceId;
+
+  const handleCopyQueueId = async () => {
+    if (!canCopyQueueId) {
+      toast({
+        title: "Não foi possível copiar o ID da fila",
+        description: "A fila não está disponível no workspace atual.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(queue.id);
+      toast({
+        title: "ID da fila copiado",
+        description: `O ID de ${queue.name} foi copiado para a área de transferência.`,
+      });
+    } catch {
+      toast({
+        title: "Não foi possível copiar o ID da fila",
+        description: "Verifique a permissão de área de transferência do navegador e tente novamente.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleSubmit = async (values: OperationalQueueFormValues) => {
     try {
@@ -147,21 +184,31 @@ export function OperationalQueueDetail({
             {queue.description || "Sem descrição cadastrada para esta fila."}
           </p>
         </div>
-        {canManage ? (
-          <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:shrink-0 sm:justify-end">
-            <Button variant="outline" onClick={() => setIsFormOpen(true)}>
-              <Pencil className="h-4 w-4" />
-              Editar fila
-            </Button>
-            <Button
-              variant="outline"
-              className="text-destructive hover:text-destructive"
-              onClick={() => setIsDeactivateOpen(true)}
-            >
-              Desativar fila
-            </Button>
-          </div>
-        ) : null}
+        <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:shrink-0 sm:justify-end">
+          <Button
+            variant="outline"
+            onClick={() => void handleCopyQueueId()}
+            disabled={!canCopyQueueId}
+          >
+            <Copy className="h-4 w-4" />
+            Copiar ID
+          </Button>
+          {canManage ? (
+            <>
+              <Button variant="outline" onClick={() => setIsFormOpen(true)}>
+                <Pencil className="h-4 w-4" />
+                Editar fila
+              </Button>
+              <Button
+                variant="outline"
+                className="text-destructive hover:text-destructive"
+                onClick={() => setIsDeactivateOpen(true)}
+              >
+                Desativar fila
+              </Button>
+            </>
+          ) : null}
+        </div>
       </header>
 
       <Card>

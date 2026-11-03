@@ -67,6 +67,7 @@ export default function OperationQueuePage() {
       workspaceId={currentWorkspace.id}
       area={detail.area}
       queue={detail.queue}
+      isQueueQueryFetching={queueQuery.isFetching}
       onReload={queueQuery.refetch}
     />
   );
