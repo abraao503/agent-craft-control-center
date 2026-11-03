@@ -641,12 +641,12 @@ export default function OperationAttendanceDetailPage({
     <section
       className={
         embedded
-          ? "flex h-full min-h-0 w-full min-w-0 flex-col bg-background"
+          ? "[container-type:inline-size] flex h-full min-h-0 w-full min-w-0 flex-col bg-background"
           : "mx-auto flex w-full max-w-[1600px] flex-col gap-6"
       }
     >
       {embedded ? (
-        <header className="flex shrink-0 flex-col gap-2 border-b bg-card px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between lg:px-5">
+        <header className="flex shrink-0 flex-col gap-2 border-b bg-card px-4 py-2.5 [@container(min-width:48rem)]:flex-row [@container(min-width:48rem)]:items-center [@container(min-width:48rem)]:justify-between lg:px-5">
           <div className="flex min-w-0 items-center gap-3">
             <Link
               to="/operation/attendances"
@@ -676,7 +676,7 @@ export default function OperationAttendanceDetailPage({
               </p>
             </div>
           </div>
-          <div className="flex shrink-0 flex-wrap items-center gap-2 pl-12 sm:pl-0">
+          <div className="flex min-w-0 flex-wrap items-center justify-end gap-2 [@container(min-width:48rem)]:flex-1">
             <OperationalRealtimeStatus
               status={realtime.status}
               joinedWorkspace={realtime.joinedWorkspace}
@@ -774,8 +774,8 @@ export default function OperationAttendanceDetailPage({
         className={
           embedded
             ? secondaryPanelOpen
-              ? "min-h-0 flex-1 overflow-y-auto xl:grid xl:overflow-hidden xl:grid-cols-[minmax(0,1fr)_19rem]"
-              : "min-h-0 flex-1 overflow-y-auto xl:grid xl:overflow-hidden xl:grid-cols-[minmax(0,1fr)_3.25rem]"
+              ? "min-h-0 flex-1 overflow-y-auto [@container(min-width:64rem)]:grid [@container(min-width:64rem)]:overflow-hidden [@container(min-width:64rem)]:grid-cols-[minmax(0,1fr)_19rem]"
+              : "min-h-0 flex-1 overflow-y-auto [@container(min-width:64rem)]:grid [@container(min-width:64rem)]:overflow-hidden [@container(min-width:64rem)]:grid-cols-[minmax(0,1fr)_3.25rem]"
             : "grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]"
         }
       >
@@ -936,7 +936,7 @@ export default function OperationAttendanceDetailPage({
           onOpenChange={setSecondaryPanelOpen}
           className={
             embedded
-              ? "min-w-0 border-t bg-card xl:flex xl:min-h-0 xl:flex-col xl:border-l xl:border-t-0"
+              ? "min-w-0 border-t bg-card [@container(min-width:64rem)]:flex [@container(min-width:64rem)]:min-h-0 [@container(min-width:64rem)]:flex-col [@container(min-width:64rem)]:border-l [@container(min-width:64rem)]:border-t-0"
               : "min-w-0"
           }
         >
@@ -978,7 +978,7 @@ export default function OperationAttendanceDetailPage({
           <CollapsibleContent
             className={
               embedded
-                ? "space-y-4 p-3 xl:min-h-0 xl:flex-1 xl:overflow-y-auto"
+                ? "space-y-4 p-3 [@container(min-width:64rem)]:min-h-0 [@container(min-width:64rem)]:flex-1 [@container(min-width:64rem)]:overflow-y-auto"
                 : "space-y-6"
             }
           >
@@ -1231,7 +1231,7 @@ function AttendanceActionControls({
   const hasMoreActions = canAssign || canUnassign || canClose;
 
   return (
-    <div className="flex shrink-0 flex-wrap items-center gap-1.5" role="toolbar" aria-label="Ações do atendimento">
+    <div className="flex min-w-0 flex-wrap items-center justify-end gap-1.5" role="toolbar" aria-label="Ações do atendimento">
       {status === "WAITING_QUEUE" ? (
         <Button size="sm" className="h-8" onClick={() => onQuickAction("CLAIM")} disabled={pending}>
           <CheckCircle2 className="mr-1.5 h-4 w-4" />
