@@ -4,6 +4,7 @@ import { TextMessage } from "./TextMessage";
 import { ImageMessage } from "./ImageMessage";
 import { AudioMessage } from "./AudioMessage";
 import { DocumentMessage } from "./DocumentMessage";
+import { VideoMessage } from "./VideoMessage";
 import { TemplateMessage } from "./TemplateMessage";
 
 interface MessageContentProps {
@@ -36,6 +37,12 @@ export const MessageContent: React.FC<MessageContentProps> = ({ message }) => {
           mimetype={message.mediaMimetype || undefined}
         />
       );
+
+    case "video":
+      if (!message.mediaUrl) {
+        return <TextMessage content={message.content} />;
+      }
+      return <VideoMessage url={message.mediaUrl} caption={message.content} />;
 
     case "document":
       if (!message.mediaUrl) {

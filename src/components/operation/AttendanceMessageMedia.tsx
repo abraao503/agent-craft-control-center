@@ -4,6 +4,7 @@ import type { AttendanceMessageItem } from '@/types/operation-attendance';
 import { ImageMessage } from '@/components/chats/media/ImageMessage';
 import { AudioMessage } from '@/components/chats/media/AudioMessage';
 import { DocumentMessage } from '@/components/chats/media/DocumentMessage';
+import { VideoMessage } from '@/components/chats/media/VideoMessage';
 import { getOperationalAttendanceMessageMedia } from '@/services/operation/getOperationalAttendanceMessageMedia';
 
 type AttendanceMessageMediaProps = {
@@ -93,6 +94,10 @@ export function AttendanceMessageMedia({
         mimetype={message.mediaMimetype || undefined}
       />
     );
+  }
+
+  if (message.type === 'video') {
+    return <VideoMessage url={mediaUrl} caption={message.content || undefined} />;
   }
 
   if (message.type === 'document') {

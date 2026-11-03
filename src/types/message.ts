@@ -30,7 +30,7 @@ export type Message = {
   id: string;
   sender: "customer" | "assistant" | "human_assistant";
   content: string;
-  type: "text" | "image" | "audio" | "document" | "template";
+  type: "text" | "image" | "audio" | "video" | "document" | "template";
   mediaUrl: string | null;
   mediaMimetype: string | null;
   createdAt: string;
