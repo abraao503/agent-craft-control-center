@@ -1109,26 +1109,30 @@ function buildManualAccountBody(
 
 function getManualAccountErrorMessage(error: unknown): string {
   const code = getOperationalErrorCode(error);
+  let message: string;
+
   if (code === "META_MANUAL_CREDENTIALS_INVALID") {
-    return "A Meta recusou as credenciais. Confirme o App ID, App Secret e token de acesso.";
+    message = "A Meta recusou as credenciais. Confirme o App ID, App Secret e token de acesso.";
+  } else if (code === "META_MANUAL_MISSING_SCOPES") {
+    message = "O token não possui todas as permissões necessárias para o WhatsApp Business.";
+  } else if (code === "META_MANUAL_WABA_NOT_FOUND") {
+    message = "O WABA ID não foi encontrado ou não pertence a estas credenciais.";
+  } else if (code === "META_MANUAL_NO_PHONE_NUMBERS") {
+    message = "A Meta não retornou números para este WABA. Verifique se há um número provisionado.";
+  } else if (code === "META_MANUAL_PHONE_NUMBER_CONFLICT") {
+    message = "Um dos números desta conta já está vinculado a outra empresa.";
+  } else if (code === "META_MANUAL_ENCRYPTION_NOT_CONFIGURED") {
+    message = "A configuração segura do servidor ainda não está disponível. Tente novamente mais tarde.";
+  } else if (code === "META_MANUAL_GRAPH_FAILED") {
+    message = "A Meta não conseguiu concluir a validação. Informe o código ao suporte.";
+  } else {
+    message = getOperationalErrorMessage(
+      error,
+      "Não foi possível validar a conta Meta. Confira os dados e tente novamente.",
+    );
   }
-  if (code === "META_MANUAL_MISSING_SCOPES") {
-    return "O token não possui todas as permissões necessárias para o WhatsApp Business.";
-  }
-  if (code === "META_MANUAL_WABA_NOT_FOUND") {
-    return "O WABA ID não foi encontrado ou não pertence a estas credenciais.";
-  }
-  if (code === "META_MANUAL_NO_PHONE_NUMBERS") {
-    return "A Meta não retornou números para este WABA. Verifique se há um número provisionado.";
-  }
-  if (code === "META_MANUAL_PHONE_NUMBER_CONFLICT") {
-    return "Um dos números desta conta já está vinculado a outra empresa.";
-  }
-  if (code === "META_MANUAL_ENCRYPTION_NOT_CONFIGURED") {
-    return "A configuração segura do servidor ainda não está disponível. Tente novamente mais tarde.";
-  }
-  return getOperationalErrorMessage(
-    error,
-    "Não foi possível validar a conta Meta. Confira os dados e tente novamente.",
-  );
+
+  return code && /^[A-Z][A-Z0-9_]+$/.test(code)
+    ? `${message} (código: ${code})`
+    : message;
 }
