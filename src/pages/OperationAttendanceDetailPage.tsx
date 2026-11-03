@@ -1382,7 +1382,7 @@ function ConversationMessage({
   const content = message.content?.trim();
   const normalizedType = message.type.toLowerCase();
   const isTemplate = normalizedType === "template";
-  const hasMedia = ["image", "audio", "document"].includes(normalizedType);
+  const hasMedia = ["image", "audio", "video", "document"].includes(normalizedType);
   const hasDeliveryChecks =
     !isCustomer && deliveryChecksState !== "disabled";
   const messageStatuses = [message.dispatchStatus, message.deliveryStatus]
