@@ -7,7 +7,7 @@ import opusMediaRecorderWorkerUrl from "opus-media-recorder/encoderWorker.umd.js
 import oggOpusEncoderWasmUrl from "opus-media-recorder/OggOpusEncoder.wasm?url";
 
 const OGG_OPUS_MIME_TYPE = "audio/ogg; codecs=opus";
-const MP4_AUDIO_MIME_TYPE = "audio/mp4";
+const MP4_AAC_MIME_TYPE = "audio/mp4; codecs=mp4a.40.2";
 
 let opusMediaRecorderLoadPromise: Promise<OpusMediaRecorderConstructor> | null =
   null;
@@ -48,29 +48,43 @@ const createAudioMediaRecorder = async (stream: MediaStream) => {
     typeof MediaRecorder !== "undefined" &&
     typeof MediaRecorder.isTypeSupported === "function"
   ) {
-    const nativeFormats = [OGG_OPUS_MIME_TYPE, MP4_AUDIO_MIME_TYPE];
+    const nativeFormats = [
+      { mimeType: MP4_AAC_MIME_TYPE, codec: "mp4a.40.2" },
+      { mimeType: OGG_OPUS_MIME_TYPE, codec: "opus" },
+    ];
 
-    for (const mimeType of nativeFormats) {
-      if (!MediaRecorder.isTypeSupported(mimeType)) {
+    for (const format of nativeFormats) {
+      if (!MediaRecorder.isTypeSupported(format.mimeType)) {
         continue;
       }
 
       try {
-        const recorder = new MediaRecorder(stream, { mimeType });
-        const reportedType = recorder.mimeType.toLowerCase();
-        const baseReportedType = reportedType.split(";", 1)[0].trim();
-        const expectedBaseType = mimeType.split(";", 1)[0].trim();
+        const recorder = new MediaRecorder(stream, {
+          mimeType: format.mimeType,
+        });
+        const reportedType = recorder.mimeType.toLowerCase().replace(/\s/g, "");
+        const reportedCodecs =
+          reportedType
+            .split(";")
+            .find((parameter) => parameter.startsWith("codecs="))
+            ?.slice("codecs=".length)
+            .replace(/^"|"$/g, "")
+            .split(",") ?? [];
+        const expectedBaseType = format.mimeType
+          .split(";", 1)[0]
+          .trim()
+          .toLowerCase();
 
-        if (baseReportedType && baseReportedType !== expectedBaseType) {
+        if (
+          reportedType.split(";", 1)[0] !== expectedBaseType ||
+          !reportedCodecs.includes(format.codec)
+        ) {
           continue;
         }
 
         return {
           recorder,
-          mimeType:
-            expectedBaseType === "audio/ogg"
-              ? OGG_OPUS_MIME_TYPE
-              : MP4_AUDIO_MIME_TYPE,
+          mimeType: format.mimeType,
         };
       } catch {
         // Fall through to the next native format or the bundled Opus encoder.
