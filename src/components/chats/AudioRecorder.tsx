@@ -1,109 +1,12 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Trash2, Play, Pause, Send, Mic as MicIcon } from "lucide-react";
+import { Trash2, Play, Pause, Send, Loader2, Mic as MicIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import opusMediaRecorderScriptUrl from "opus-media-recorder/OpusMediaRecorder.umd.js?url";
-import opusMediaRecorderWorkerUrl from "opus-media-recorder/encoderWorker.umd.js?url";
-import oggOpusEncoderWasmUrl from "opus-media-recorder/OggOpusEncoder.wasm?url";
-
-const OGG_OPUS_MIME_TYPE = "audio/ogg; codecs=opus";
-const MP4_AAC_MIME_TYPE = "audio/mp4; codecs=mp4a.40.2";
-
-let opusMediaRecorderLoadPromise: Promise<OpusMediaRecorderConstructor> | null =
-  null;
-
-const loadOpusMediaRecorder = () => {
-  if (window.OpusMediaRecorder) {
-    return Promise.resolve(window.OpusMediaRecorder);
-  }
-
-  if (!opusMediaRecorderLoadPromise) {
-    opusMediaRecorderLoadPromise = new Promise((resolve, reject) => {
-      const script = document.createElement("script");
-      script.src = opusMediaRecorderScriptUrl;
-      script.onload = () => {
-        if (window.OpusMediaRecorder) {
-          resolve(window.OpusMediaRecorder);
-          return;
-        }
-
-        opusMediaRecorderLoadPromise = null;
-        reject(new Error("OPUS_MEDIA_RECORDER_UNAVAILABLE"));
-      };
-      script.onerror = () => {
-        opusMediaRecorderLoadPromise = null;
-        script.remove();
-        reject(new Error("OPUS_MEDIA_RECORDER_LOAD_FAILED"));
-      };
-
-      document.head.appendChild(script);
-    });
-  }
-
-  return opusMediaRecorderLoadPromise;
-};
-
-const createAudioMediaRecorder = async (stream: MediaStream) => {
-  if (
-    typeof MediaRecorder !== "undefined" &&
-    typeof MediaRecorder.isTypeSupported === "function"
-  ) {
-    const nativeFormats = [
-      { mimeType: MP4_AAC_MIME_TYPE, codec: "mp4a.40.2" },
-      { mimeType: OGG_OPUS_MIME_TYPE, codec: "opus" },
-    ];
-
-    for (const format of nativeFormats) {
-      if (!MediaRecorder.isTypeSupported(format.mimeType)) {
-        continue;
-      }
-
-      try {
-        const recorder = new MediaRecorder(stream, {
-          mimeType: format.mimeType,
-        });
-        const reportedType = recorder.mimeType.toLowerCase().replace(/\s/g, "");
-        const reportedCodecs =
-          reportedType
-            .split(";")
-            .find((parameter) => parameter.startsWith("codecs="))
-            ?.slice("codecs=".length)
-            .replace(/^"|"$/g, "")
-            .split(",") ?? [];
-        const expectedBaseType = format.mimeType
-          .split(";", 1)[0]
-          .trim()
-          .toLowerCase();
-
-        if (
-          reportedType.split(";", 1)[0] !== expectedBaseType ||
-          !reportedCodecs.includes(format.codec)
-        ) {
-          continue;
-        }
-
-        return {
-          recorder,
-          mimeType: format.mimeType,
-        };
-      } catch {
-        // Fall through to the next native format or the bundled Opus encoder.
-      }
-    }
-  }
-
-  const OpusMediaRecorder = await loadOpusMediaRecorder();
-  const recorder = new OpusMediaRecorder(
-    stream,
-    { mimeType: OGG_OPUS_MIME_TYPE },
-    {
-      encoderWorkerFactory: () => new Worker(opusMediaRecorderWorkerUrl),
-      OggOpusEncoderWasmPath: oggOpusEncoderWasmUrl,
-    },
-  );
-
-  return { recorder, mimeType: OGG_OPUS_MIME_TYPE };
-};
+import {
+  createOggOpusRecorder,
+  isOggOpusRecording,
+  OGG_OPUS_MIME_TYPE,
+} from "./media/create-ogg-opus-recorder";
 
 interface AudioRecorderProps {
   onSend: (audioBlob: Blob, optimisticId?: string) => void;
@@ -119,6 +22,7 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
   onCancel,
 }) => {
   const { toast } = useToast();
+  const [isPreparing, setIsPreparing] = useState(true);
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -186,19 +90,22 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
   };
 
   const startRecording = async () => {
+    setIsPreparing(true);
     const attempt = ++recordingAttemptRef.current;
     let stream: MediaStream | null = null;
     let recorder: MediaRecorder | null = null;
 
     try {
-      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream = await navigator.mediaDevices.getUserMedia({
+        audio: { channelCount: { exact: 1 } },
+      });
 
       if (!isMountedRef.current || recordingAttemptRef.current !== attempt) {
         stream.getTracks().forEach((track) => track.stop());
         return;
       }
 
-      const { recorder: mediaRecorder, mimeType } = await createAudioMediaRecorder(
+      const { recorder: mediaRecorder, mimeType } = await createOggOpusRecorder(
         stream,
       );
       recorder = mediaRecorder;
@@ -220,13 +127,25 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
       replaceAudioUrl(null);
       setIsPlaying(false);
 
+      mediaRecorder.onstart = () => {
+        if (!isMountedRef.current || recordingAttemptRef.current !== attempt) {
+          return;
+        }
+        setIsPreparing(false);
+        setIsRecording(true);
+        setIsPaused(false);
+        timerRef.current = setInterval(() => {
+          setRecordingTime((prev) => prev + 1);
+        }, 1000);
+      };
+
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
           audioChunksRef.current.push(event.data);
         }
       };
 
-      mediaRecorder.onstop = () => {
+      mediaRecorder.onstop = async () => {
         stopTimer();
         stopMediaStream(stream);
         mediaRecorderRef.current = null;
@@ -254,7 +173,17 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
           return;
         }
 
-        if (completedAudio.size === 0) {
+        let validRecording = false;
+        try {
+          validRecording = await isOggOpusRecording(completedAudio);
+        } catch {
+          // An unreadable recording is rejected before it reaches the send queue.
+        }
+        if (!isMountedRef.current || recordingAttemptRef.current !== attempt) {
+          return;
+        }
+
+        if (!validRecording) {
           reportSendError();
           showRecordingError();
           onCancel();
@@ -298,13 +227,6 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
       };
 
       mediaRecorder.start();
-      setIsRecording(true);
-      setIsPaused(false);
-
-      // Start timer
-      timerRef.current = setInterval(() => {
-        setRecordingTime((prev) => prev + 1);
-      }, 1000);
     } catch {
       if (recorder) {
         recorder.ondataavailable = null;
@@ -493,12 +415,21 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
       {audioUrl && <audio ref={audioRef} src={audioUrl} />}
 
       {/* Recording state */}
-      {isRecording || isPaused ? (
+      {isPreparing ? (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Preparando gravador…
+          <Button variant="ghost" size="icon" aria-label="Cancelar gravação" onClick={deleteRecording}>
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      ) : isRecording || isPaused ? (
         <div className="flex items-center gap-2 bg-muted/50 rounded-full px-4 py-2">
           {/* Delete button */}
           <Button
             variant="ghost"
             size="icon"
+            aria-label="Descartar áudio"
             onClick={deleteRecording}
             className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
           >
@@ -522,6 +453,7 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
           <Button
             variant="ghost"
             size="icon"
+            aria-label={isPaused ? "Retomar gravação" : "Pausar gravação"}
             onClick={isPaused ? resumeRecording : pauseRecording}
             className="h-8 w-8 hover:bg-background"
           >
@@ -535,6 +467,7 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
           {/* Send button */}
           <Button
             size="icon"
+            aria-label="Enviar áudio"
             onClick={stopRecordingAndSend}
             className="h-9 w-9 rounded-full bg-primary hover:bg-primary/90"
           >
@@ -591,6 +524,7 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
           {/* Send button */}
           <Button
             size="icon"
+            aria-label="Enviar áudio"
             onClick={handleSend}
             className="h-9 w-9 rounded-full bg-primary hover:bg-primary/90"
           >
