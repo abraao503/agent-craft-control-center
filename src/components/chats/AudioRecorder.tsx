@@ -2,6 +2,94 @@ import React, { useState, useRef, useEffect } from "react";
 import { Trash2, Play, Pause, Send, Mic as MicIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import opusMediaRecorderScriptUrl from "opus-media-recorder/OpusMediaRecorder.umd.js?url";
+import opusMediaRecorderWorkerUrl from "opus-media-recorder/encoderWorker.umd.js?url";
+import oggOpusEncoderWasmUrl from "opus-media-recorder/OggOpusEncoder.wasm?url";
+
+const OGG_OPUS_MIME_TYPE = "audio/ogg; codecs=opus";
+const MP4_AUDIO_MIME_TYPE = "audio/mp4";
+
+let opusMediaRecorderLoadPromise: Promise<OpusMediaRecorderConstructor> | null =
+  null;
+
+const loadOpusMediaRecorder = () => {
+  if (window.OpusMediaRecorder) {
+    return Promise.resolve(window.OpusMediaRecorder);
+  }
+
+  if (!opusMediaRecorderLoadPromise) {
+    opusMediaRecorderLoadPromise = new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = opusMediaRecorderScriptUrl;
+      script.onload = () => {
+        if (window.OpusMediaRecorder) {
+          resolve(window.OpusMediaRecorder);
+          return;
+        }
+
+        opusMediaRecorderLoadPromise = null;
+        reject(new Error("OPUS_MEDIA_RECORDER_UNAVAILABLE"));
+      };
+      script.onerror = () => {
+        opusMediaRecorderLoadPromise = null;
+        script.remove();
+        reject(new Error("OPUS_MEDIA_RECORDER_LOAD_FAILED"));
+      };
+
+      document.head.appendChild(script);
+    });
+  }
+
+  return opusMediaRecorderLoadPromise;
+};
+
+const createAudioMediaRecorder = async (stream: MediaStream) => {
+  if (
+    typeof MediaRecorder !== "undefined" &&
+    typeof MediaRecorder.isTypeSupported === "function"
+  ) {
+    const nativeFormats = [OGG_OPUS_MIME_TYPE, MP4_AUDIO_MIME_TYPE];
+
+    for (const mimeType of nativeFormats) {
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        continue;
+      }
+
+      try {
+        const recorder = new MediaRecorder(stream, { mimeType });
+        const reportedType = recorder.mimeType.toLowerCase();
+        const baseReportedType = reportedType.split(";", 1)[0].trim();
+        const expectedBaseType = mimeType.split(";", 1)[0].trim();
+
+        if (baseReportedType && baseReportedType !== expectedBaseType) {
+          continue;
+        }
+
+        return {
+          recorder,
+          mimeType:
+            expectedBaseType === "audio/ogg"
+              ? OGG_OPUS_MIME_TYPE
+              : MP4_AUDIO_MIME_TYPE,
+        };
+      } catch {
+        // Fall through to the next native format or the bundled Opus encoder.
+      }
+    }
+  }
+
+  const OpusMediaRecorder = await loadOpusMediaRecorder();
+  const recorder = new OpusMediaRecorder(
+    stream,
+    { mimeType: OGG_OPUS_MIME_TYPE },
+    {
+      encoderWorkerFactory: () => new Worker(opusMediaRecorderWorkerUrl),
+      OggOpusEncoderWasmPath: oggOpusEncoderWasmUrl,
+    },
+  );
+
+  return { recorder, mimeType: OGG_OPUS_MIME_TYPE };
+};
 
 interface AudioRecorderProps {
   onSend: (audioBlob: Blob) => void;
@@ -21,31 +109,87 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const mediaStreamRef = useRef<MediaStream | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+  const recordingMimeTypeRef = useRef(OGG_OPUS_MIME_TYPE);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioUrlRef = useRef<string | null>(null);
+  const onSendRef = useRef(onSend);
+  const isMountedRef = useRef(false);
+  const recordingAttemptRef = useRef(0);
+  const sendWhenStoppedRef = useRef(false);
+  const discardWhenStoppedRef = useRef(false);
+  const recordingFailedRef = useRef(false);
 
-  useEffect(() => {
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
-      if (audioUrl) {
-        URL.revokeObjectURL(audioUrl);
-      }
-      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-        mediaRecorderRef.current.stop();
-      }
-    };
-  }, [audioUrl]);
+  onSendRef.current = onSend;
 
+  const replaceAudioUrl = (url: string | null) => {
+    if (audioUrlRef.current && audioUrlRef.current !== url) {
+      URL.revokeObjectURL(audioUrlRef.current);
+    }
+
+    audioUrlRef.current = url;
+    setAudioUrl(url);
+  };
+
+  const stopTimer = () => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+  };
+
+  const stopMediaStream = (stream = mediaStreamRef.current) => {
+    stream?.getTracks().forEach((track) => track.stop());
+
+    if (mediaStreamRef.current === stream) {
+      mediaStreamRef.current = null;
+    }
+  };
+
+  const showRecordingError = () => {
+    toast({
+      title: "Não foi possível preparar o áudio",
+      description: "Tente gravar novamente.",
+      variant: "destructive",
+    });
+  };
 
   const startRecording = async () => {
+    const attempt = ++recordingAttemptRef.current;
+    let stream: MediaStream | null = null;
+    let recorder: MediaRecorder | null = null;
+
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+      if (!isMountedRef.current || recordingAttemptRef.current !== attempt) {
+        stream.getTracks().forEach((track) => track.stop());
+        return;
+      }
+
+      const { recorder: mediaRecorder, mimeType } = await createAudioMediaRecorder(
+        stream,
+      );
+      recorder = mediaRecorder;
+
+      if (!isMountedRef.current || recordingAttemptRef.current !== attempt) {
+        stream.getTracks().forEach((track) => track.stop());
+        return;
+      }
+
+      mediaStreamRef.current = stream;
       mediaRecorderRef.current = mediaRecorder;
+      recordingMimeTypeRef.current = mimeType;
       audioChunksRef.current = [];
+      sendWhenStoppedRef.current = false;
+      discardWhenStoppedRef.current = false;
+      recordingFailedRef.current = false;
+      setRecordingTime(0);
+      setAudioBlob(null);
+      replaceAudioUrl(null);
+      setIsPlaying(false);
 
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
@@ -54,14 +198,70 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
       };
 
       mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/ogg; codecs=opus" });
-        setAudioBlob(audioBlob);
-        const url = URL.createObjectURL(audioBlob);
-        setAudioUrl(url);
+        stopTimer();
+        stopMediaStream(stream);
+        mediaRecorderRef.current = null;
+
+        const shouldSend = sendWhenStoppedRef.current;
+        const shouldDiscard = discardWhenStoppedRef.current;
+        const recordingFailed = recordingFailedRef.current;
+        sendWhenStoppedRef.current = false;
+        discardWhenStoppedRef.current = false;
+        recordingFailedRef.current = false;
+
+        const completedAudio = new Blob(audioChunksRef.current, {
+          type: recordingMimeTypeRef.current,
+        });
+        audioChunksRef.current = [];
+
+        if (!isMountedRef.current) {
+          return;
+        }
+
         setIsRecording(false);
-        
-        // Stop all tracks
-        stream.getTracks().forEach(track => track.stop());
+        setIsPaused(false);
+
+        if (shouldDiscard || recordingFailed) {
+          return;
+        }
+
+        if (completedAudio.size === 0) {
+          showRecordingError();
+          onCancel();
+          return;
+        }
+
+        if (shouldSend) {
+          onSendRef.current(completedAudio);
+          return;
+        }
+
+        setAudioBlob(completedAudio);
+        replaceAudioUrl(URL.createObjectURL(completedAudio));
+      };
+
+      mediaRecorder.onerror = () => {
+        recordingFailedRef.current = true;
+        discardWhenStoppedRef.current = true;
+        sendWhenStoppedRef.current = false;
+        stopTimer();
+
+        if (mediaRecorder.state !== "inactive") {
+          try {
+            mediaRecorder.stop();
+          } catch {
+            // The stream is stopped below even if the encoder already stopped.
+          }
+        }
+
+        stopMediaStream(stream);
+
+        if (isMountedRef.current) {
+          setIsRecording(false);
+          setIsPaused(false);
+          showRecordingError();
+          onCancel();
+        }
       };
 
       mediaRecorder.start();
@@ -72,44 +272,88 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
       timerRef.current = setInterval(() => {
         setRecordingTime((prev) => prev + 1);
       }, 1000);
-    } catch (error) {
-      console.error("Error accessing microphone:", error);
-      toast({
-        title: "Microphone access denied",
-        description: "Please allow microphone access to record audio.",
-        variant: "destructive",
-      });
+    } catch {
+      if (recorder) {
+        recorder.ondataavailable = null;
+        recorder.onstop = null;
+        recorder.onerror = null;
+
+        if (recorder.state !== "inactive") {
+          try {
+            recorder.stop();
+          } catch {
+            // The failed recording is cleaned up below.
+          }
+        }
+      }
+
+      stream?.getTracks().forEach((track) => track.stop());
+      if (mediaStreamRef.current === stream) {
+        mediaStreamRef.current = null;
+      }
+      if (mediaRecorderRef.current === recorder) {
+        mediaRecorderRef.current = null;
+      }
+
+      if (!isMountedRef.current || recordingAttemptRef.current !== attempt) {
+        return;
+      }
+
+      setIsRecording(false);
+      setIsPaused(false);
+      showRecordingError();
+      onCancel();
     }
   };
 
   const pauseRecording = () => {
-    setIsPaused(true);
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
+    if (mediaRecorderRef.current?.state !== "recording") {
+      return;
     }
+
+    mediaRecorderRef.current.pause();
+    setIsPaused(true);
+    stopTimer();
   };
 
   const resumeRecording = () => {
+    if (mediaRecorderRef.current?.state !== "paused") {
+      return;
+    }
+
+    mediaRecorderRef.current.resume();
     setIsPaused(false);
-    // Resume timer
     timerRef.current = setInterval(() => {
       setRecordingTime((prev) => prev + 1);
     }, 1000);
   };
 
   const stopRecordingAndSend = () => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-      mediaRecorderRef.current.stop();
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
-      // Wait for onstop to create blob, then send
-      setTimeout(() => {
-        if (audioChunksRef.current.length > 0) {
-          const audioBlob = new Blob(audioChunksRef.current, { type: "audio/ogg; codecs=opus" });
-          onSend(audioBlob);
-        }
-      }, 100);
+    const mediaRecorder = mediaRecorderRef.current;
+
+    if (
+      !mediaRecorder ||
+      mediaRecorder.state === "inactive" ||
+      sendWhenStoppedRef.current
+    ) {
+      return;
+    }
+
+    sendWhenStoppedRef.current = true;
+    stopTimer();
+
+    try {
+      mediaRecorder.stop();
+    } catch {
+      sendWhenStoppedRef.current = false;
+      discardWhenStoppedRef.current = true;
+      recordingFailedRef.current = true;
+      stopMediaStream();
+      mediaRecorderRef.current = null;
+      setIsRecording(false);
+      setIsPaused(false);
+      showRecordingError();
+      onCancel();
     }
   };
 
@@ -128,23 +372,41 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
   };
 
   const deleteRecording = () => {
-    if (audioUrl) {
-      URL.revokeObjectURL(audioUrl);
+    const mediaRecorder = mediaRecorderRef.current;
+    discardWhenStoppedRef.current = true;
+    sendWhenStoppedRef.current = false;
+
+    if (mediaRecorder && mediaRecorder.state !== "inactive") {
+      try {
+        mediaRecorder.stop();
+      } catch {
+        // The recording is discarded even if the encoder already stopped.
+      }
     }
-    setAudioBlob(null);
-    setAudioUrl(null);
-    setRecordingTime(0);
+
+    recordingAttemptRef.current += 1;
+    stopTimer();
+    stopMediaStream();
+    mediaRecorderRef.current = null;
     audioChunksRef.current = [];
+    setAudioBlob(null);
+    replaceAudioUrl(null);
+    setRecordingTime(0);
+    setIsRecording(false);
+    setIsPaused(false);
+    setIsPlaying(false);
     onCancel();
   };
 
   const handleSend = () => {
-    if (audioBlob) {
-      onSend(audioBlob);
-      if (audioUrl) {
-        URL.revokeObjectURL(audioUrl);
-      }
+    if (!audioBlob || audioBlob.size === 0) {
+      showRecordingError();
+      return;
     }
+
+    onSend(audioBlob);
+    setAudioBlob(null);
+    replaceAudioUrl(null);
   };
 
   const formatTime = (seconds: number) => {
@@ -154,7 +416,29 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
   };
 
   useEffect(() => {
-    startRecording();
+    isMountedRef.current = true;
+    void startRecording();
+
+    return () => {
+      isMountedRef.current = false;
+      recordingAttemptRef.current += 1;
+      stopTimer();
+
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+        try {
+          mediaRecorderRef.current?.stop();
+        } catch {
+          // The component is unmounting; the stream is stopped below.
+        }
+      }
+
+      stopMediaStream();
+
+      if (audioUrlRef.current) {
+        URL.revokeObjectURL(audioUrlRef.current);
+        audioUrlRef.current = null;
+      }
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

@@ -451,9 +451,17 @@ export function AttendanceComposer({
     }
 
     setIsRecordingAudio(false);
-    const audioFile = new File([audioBlob], `audio-${Date.now()}.ogg`, {
-      type: "audio/ogg; codecs=opus",
-    });
+    const mimeType = audioBlob.type;
+    const extension = mimeType.toLowerCase().startsWith("audio/mp4")
+      ? "m4a"
+      : "ogg";
+    const audioFile = new File(
+      [audioBlob],
+      `audio-${Date.now()}.${extension}`,
+      {
+        type: mimeType,
+      },
+    );
 
     enqueueSend({
       workspaceId,
