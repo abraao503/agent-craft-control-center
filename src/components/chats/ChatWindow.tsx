@@ -712,6 +712,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
 
     const imageTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
     const audioTypes = [
+      "audio/mp4",
       "audio/mp3",
       "audio/mpeg",
       "audio/ogg",
@@ -774,9 +775,17 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     if (!canSend || !effectiveReplyChannelId) return;
 
     const tempId = `temp-${Date.now()}-${Math.random()}`;
-    const audioFile = new File([audioBlob], `audio-${Date.now()}.ogg`, {
-      type: "audio/ogg; codecs=opus",
-    });
+    const mimeType = audioBlob.type;
+    const extension = mimeType.toLowerCase().startsWith("audio/mp4")
+      ? "m4a"
+      : "ogg";
+    const audioFile = new File(
+      [audioBlob],
+      `audio-${Date.now()}.${extension}`,
+      {
+        type: mimeType,
+      },
+    );
 
     const pendingMessage: MessageWithStatus = {
       id: tempId,
@@ -786,7 +795,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       content: "Audio message",
       type: "audio",
       mediaUrl: URL.createObjectURL(audioBlob),
-      mediaMimetype: "audio/ogg; codecs=opus",
+      mediaMimetype: mimeType,
       createdAt: new Date().toISOString(),
       status: "pending",
       replyChannelId: effectiveReplyChannelId,
