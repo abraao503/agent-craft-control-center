@@ -106,12 +106,16 @@ const createAudioMediaRecorder = async (stream: MediaStream) => {
 };
 
 interface AudioRecorderProps {
-  onSend: (audioBlob: Blob) => void;
+  onSend: (audioBlob: Blob, optimisticId?: string) => void;
+  onSendStart?: (optimisticId: string, durationSeconds: number) => void;
+  onSendError?: (optimisticId: string) => void;
   onCancel: () => void;
 }
 
 export const AudioRecorder: React.FC<AudioRecorderProps> = ({
   onSend,
+  onSendStart,
+  onSendError,
   onCancel,
 }) => {
   const { toast } = useToast();
@@ -130,6 +134,9 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioUrlRef = useRef<string | null>(null);
   const onSendRef = useRef(onSend);
+  const onSendStartRef = useRef(onSendStart);
+  const onSendErrorRef = useRef(onSendError);
+  const optimisticSendIdRef = useRef<string | null>(null);
   const isMountedRef = useRef(false);
   const recordingAttemptRef = useRef(0);
   const sendWhenStoppedRef = useRef(false);
@@ -137,6 +144,14 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
   const recordingFailedRef = useRef(false);
 
   onSendRef.current = onSend;
+  onSendStartRef.current = onSendStart;
+  onSendErrorRef.current = onSendError;
+
+  const reportSendError = () => {
+    const optimisticId = optimisticSendIdRef.current;
+    optimisticSendIdRef.current = null;
+    if (optimisticId) onSendErrorRef.current?.(optimisticId);
+  };
 
   const replaceAudioUrl = (url: string | null) => {
     if (audioUrlRef.current && audioUrlRef.current !== url) {
@@ -240,13 +255,16 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
         }
 
         if (completedAudio.size === 0) {
+          reportSendError();
           showRecordingError();
           onCancel();
           return;
         }
 
         if (shouldSend) {
-          onSendRef.current(completedAudio);
+          const optimisticId = optimisticSendIdRef.current ?? undefined;
+          optimisticSendIdRef.current = null;
+          onSendRef.current(completedAudio, optimisticId);
           return;
         }
 
@@ -255,6 +273,7 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
       };
 
       mediaRecorder.onerror = () => {
+        reportSendError();
         recordingFailedRef.current = true;
         discardWhenStoppedRef.current = true;
         sendWhenStoppedRef.current = false;
@@ -354,11 +373,15 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
     }
 
     sendWhenStoppedRef.current = true;
+    const optimisticId = crypto.randomUUID();
+    optimisticSendIdRef.current = optimisticId;
+    onSendStartRef.current?.(optimisticId, recordingTime);
     stopTimer();
 
     try {
       mediaRecorder.stop();
     } catch {
+      reportSendError();
       sendWhenStoppedRef.current = false;
       discardWhenStoppedRef.current = true;
       recordingFailedRef.current = true;
@@ -387,6 +410,7 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
 
   const deleteRecording = () => {
     const mediaRecorder = mediaRecorderRef.current;
+    reportSendError();
     discardWhenStoppedRef.current = true;
     sendWhenStoppedRef.current = false;
 

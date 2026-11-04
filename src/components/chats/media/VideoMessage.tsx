@@ -9,7 +9,7 @@ export const VideoMessage: React.FC<VideoMessageProps> = ({ url, caption }) => (
   <div className="flex max-w-full flex-col gap-2">
     <video
       aria-label={caption || "Vídeo"}
-      className="max-h-[400px] max-w-full rounded-lg bg-black"
+      className="h-auto w-auto max-h-[min(24rem,40vh)] max-w-[min(32rem,80vw)] rounded-lg bg-black"
       controls
       playsInline
       preload="metadata"
