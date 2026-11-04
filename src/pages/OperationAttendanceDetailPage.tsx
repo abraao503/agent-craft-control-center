@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   AlertCircle,
@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   ChevronDown,
   Loader2,
+  Clock,
   MessageSquare,
   MoreHorizontal,
   PanelRightClose,
@@ -55,6 +56,7 @@ import { AttendanceFollowUpsCard } from "@/components/operation/AttendanceFollow
 import { AttendanceChecklistPanel } from "@/components/operation/AttendanceChecklistPanel";
 import { AttendanceInternalNote } from "@/components/operation/AttendanceInternalNote";
 import { AttendanceMessageMedia } from "@/components/operation/AttendanceMessageMedia";
+import { AudioMessage } from "@/components/chats/media/AudioMessage";
 import { MessageReactions } from "@/components/chats/MessageReactions";
 import { MessageReplyPreview } from "@/components/chats/MessageReplyPreview";
 import { useQuotedMessageNavigation } from "@/hooks/useQuotedMessageNavigation";
@@ -161,6 +163,16 @@ interface OperationAttendanceDetailPageProps {
   embedded?: boolean;
 }
 
+interface OptimisticAudioMessage {
+  id: string;
+  createdAt: string;
+  durationSeconds: number;
+  mediaUrl?: string;
+  mediaMimetype?: string;
+  serverMessageId?: string;
+  status: "preparing" | "sending" | "accepted" | "failed";
+}
+
 export default function OperationAttendanceDetailPage({
   realtimeEnabled = true,
   embedded = false,
@@ -184,6 +196,55 @@ export default function OperationAttendanceDetailPage({
   const [migrationDialogOpen, setMigrationDialogOpen] = useState(false);
   const [secondaryPanelOpen, setSecondaryPanelOpen] = useState(
     getStoredSecondaryPanelOpen,
+  );
+  const [optimisticAudioMessages, setOptimisticAudioMessages] = useState<
+    OptimisticAudioMessage[]
+  >([]);
+  const optimisticAudioUrlsRef = useRef(new Set<string>());
+
+  const startOptimisticAudio = (id: string, durationSeconds: number) => {
+    setOptimisticAudioMessages((current) => [
+      ...current.filter((message) => message.id !== id),
+      { id, durationSeconds, createdAt: new Date().toISOString(), status: "preparing" },
+    ]);
+  };
+
+  const attachOptimisticAudio = (id: string, audioBlob: Blob) => {
+    const mediaUrl = URL.createObjectURL(audioBlob);
+    optimisticAudioUrlsRef.current.add(mediaUrl);
+    setOptimisticAudioMessages((current) =>
+      current.map((message) =>
+        message.id === id
+          ? { ...message, mediaUrl, mediaMimetype: audioBlob.type, status: "sending" }
+          : message,
+      ),
+    );
+  };
+
+  const markOptimisticAudioAccepted = (id: string, serverMessageId: string) => {
+    setOptimisticAudioMessages((current) =>
+      current.map((message) =>
+        message.id === id
+          ? { ...message, serverMessageId, status: "accepted" }
+          : message,
+      ),
+    );
+  };
+
+  const markOptimisticAudioFailed = (id: string) => {
+    setOptimisticAudioMessages((current) =>
+      current.map((message) =>
+        message.id === id ? { ...message, status: "failed" } : message,
+      ),
+    );
+  };
+
+  useEffect(
+    () => () => {
+      optimisticAudioUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+      optimisticAudioUrlsRef.current.clear();
+    },
+    [],
   );
 
   useEffect(() => {
@@ -215,6 +276,33 @@ export default function OperationAttendanceDetailPage({
     { limit: 50 },
     canViewAttendances,
   );
+  const timelineMessageIds = useMemo(
+    () =>
+      new Set(
+        (timelineQuery.data?.pages.flatMap((page) => page.items) ?? [])
+          .filter((item) => item.kind === "message")
+          .map((item) => item.id),
+      ),
+    [timelineQuery.data],
+  );
+  useEffect(() => {
+    const confirmed = optimisticAudioMessages.filter(
+      (message) =>
+        message.serverMessageId && timelineMessageIds.has(message.serverMessageId),
+    );
+    if (confirmed.length === 0) return;
+
+    const confirmedIds = new Set(confirmed.map((message) => message.id));
+    confirmed.forEach((message) => {
+      if (message.mediaUrl) {
+        URL.revokeObjectURL(message.mediaUrl);
+        optimisticAudioUrlsRef.current.delete(message.mediaUrl);
+      }
+    });
+    setOptimisticAudioMessages((current) =>
+      current.filter((message) => !confirmedIds.has(message.id)),
+    );
+  }, [optimisticAudioMessages, timelineMessageIds]);
   const [remoteAnchorId, setRemoteAnchorId] = useState<string | null>(null);
   const remoteTimelineQuery = useOperationalAttendanceTimeline(
     workspaceId,
@@ -253,6 +341,12 @@ export default function OperationAttendanceDetailPage({
           : "idle"
     : "idle";
   const messagesViewportRef = useRef<HTMLDivElement>(null);
+  const shouldStickToBottomRef = useRef(true);
+  const handleMessagesScroll = (event: React.UIEvent<HTMLDivElement>) => {
+    const viewport = event.currentTarget;
+    shouldStickToBottomRef.current =
+      viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight <= 80;
+  };
   const navigation = useQuotedMessageNavigation({
     scopeKey: `${workspaceId ?? ""}:${attendanceId ?? ""}`,
     containerRef: messagesViewportRef,
@@ -263,6 +357,16 @@ export default function OperationAttendanceDetailPage({
       found: remoteFound,
     },
   });
+  useEffect(() => {
+    if (optimisticAudioMessages.length === 0) return;
+    requestAnimationFrame(() => {
+      const viewport = messagesViewportRef.current;
+      if (viewport) {
+        viewport.scrollTop = viewport.scrollHeight;
+        shouldStickToBottomRef.current = true;
+      }
+    });
+  }, [optimisticAudioMessages.length]);
   const returnToRecentRef = useRef(false);
   const showRemoteTimeline = Boolean(remoteAnchorId && remoteTimelineQuery.data);
   const activeTimelineQuery = showRemoteTimeline ? remoteTimelineQuery : timelineQuery;
@@ -301,6 +405,9 @@ export default function OperationAttendanceDetailPage({
   useEffect(() => {
     setRemoteAnchorId(null);
     returnToRecentRef.current = false;
+    shouldStickToBottomRef.current = true;
+    timelinePageCountRef.current = 0;
+    timelineScrollSnapshotRef.current = null;
   }, [attendanceId, workspaceId]);
 
   useEffect(() => {
@@ -322,7 +429,7 @@ export default function OperationAttendanceDetailPage({
   }, [remoteAnchorId, remoteFound, remoteTimelineQuery.data]);
 
   useEffect(() => {
-    if (!embedded || !timelineQuery.data) return;
+    if (!timelineQuery.data) return;
     if (remoteAnchorId || navigation.isNavigating) return;
     const viewport = messagesViewportRef.current;
     if (!viewport) return;
@@ -332,18 +439,25 @@ export default function OperationAttendanceDetailPage({
 
     if (returnToRecentRef.current) {
       viewport.scrollTop = viewport.scrollHeight;
+      shouldStickToBottomRef.current = true;
       returnToRecentRef.current = false;
       timelineScrollSnapshotRef.current = null;
     } else if (previousPosition && pageCount > timelinePageCountRef.current) {
       viewport.scrollTop =
         viewport.scrollHeight - previousPosition.height + previousPosition.top;
+      shouldStickToBottomRef.current =
+        viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight <= 80;
       timelineScrollSnapshotRef.current = null;
-    } else {
+    } else if (
+      timelinePageCountRef.current === 0 ||
+      shouldStickToBottomRef.current
+    ) {
       viewport.scrollTop = viewport.scrollHeight;
+      shouldStickToBottomRef.current = true;
     }
 
     timelinePageCountRef.current = pageCount;
-  }, [embedded, navigation.isNavigating, remoteAnchorId, timelineQuery.data, timelineQuery.dataUpdatedAt]);
+  }, [navigation.isNavigating, remoteAnchorId, timelineQuery.data, timelineQuery.dataUpdatedAt]);
 
   const returnToRecent = () => {
     returnToRecentRef.current = true;
@@ -646,8 +760,8 @@ export default function OperationAttendanceDetailPage({
       }
     >
       {embedded ? (
-        <header className="flex shrink-0 flex-col gap-2 border-b bg-card px-4 py-2.5 [@container(min-width:48rem)]:flex-row [@container(min-width:48rem)]:items-center [@container(min-width:48rem)]:justify-between lg:px-5">
-          <div className="flex min-w-0 items-center gap-3">
+        <header className="flex shrink-0 items-center justify-between gap-3 border-b bg-card px-4 py-2 [@container(min-width:64rem)]:py-2.5 lg:px-5">
+          <div className="flex min-w-0 flex-1 items-center gap-3">
             <Link
               to="/operation/attendances"
               className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground lg:hidden"
@@ -655,7 +769,7 @@ export default function OperationAttendanceDetailPage({
             >
               <ArrowLeft className="h-4 w-4" />
             </Link>
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 font-semibold text-primary">
+            <div className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 font-semibold text-primary [@container(min-width:32rem)]:flex">
               {customerName.slice(0, 1).toUpperCase()}
             </div>
             <div className="min-w-0">
@@ -676,12 +790,13 @@ export default function OperationAttendanceDetailPage({
               </p>
             </div>
           </div>
-          <div className="flex min-w-0 flex-wrap items-center justify-end gap-2 [@container(min-width:48rem)]:flex-1">
+          <div className="flex shrink-0 items-center gap-2">
             <OperationalRealtimeStatus
               status={realtime.status}
               joinedWorkspace={realtime.joinedWorkspace}
             />
             <AttendanceActionControls
+              responsiveCompact
               status={attendance.status}
               hasAssignee={Boolean(attendance.assignee)}
               canResume={attendance.actionCapabilities?.canResume === true}
@@ -694,6 +809,22 @@ export default function OperationAttendanceDetailPage({
               onQuickAction={(action) => void runQuickAction(action)}
               onAction={setActiveAction}
               onMigrateChannel={() => setMigrationDialogOpen(true)}
+              viewControl={
+                <Button
+                  type="button"
+                  variant={secondaryPanelOpen ? "secondary" : "outline"}
+                  size="sm"
+                  className="h-8 shrink-0 px-2 [@container(min-width:40rem)]:px-3 [@container(min-width:64rem)]:hidden"
+                  aria-label={secondaryPanelOpen ? "Ocultar detalhes" : "Mostrar detalhes"}
+                  aria-expanded={secondaryPanelOpen}
+                  aria-controls="attendance-details-panel"
+                  title={secondaryPanelOpen ? "Ocultar detalhes" : "Mostrar detalhes"}
+                  onClick={() => setSecondaryPanelOpen((open) => !open)}
+                >
+                  <PanelRightOpen className="h-4 w-4 [@container(min-width:40rem)]:mr-1.5" />
+                  <span className="hidden [@container(min-width:40rem)]:inline">Detalhes</span>
+                </Button>
+              }
             />
           </div>
         </header>
@@ -774,15 +905,24 @@ export default function OperationAttendanceDetailPage({
         className={
           embedded
             ? secondaryPanelOpen
-              ? "min-h-0 flex-1 overflow-y-auto [@container(min-width:64rem)]:grid [@container(min-width:64rem)]:overflow-hidden [@container(min-width:64rem)]:grid-cols-[minmax(0,1fr)_19rem]"
-              : "min-h-0 flex-1 overflow-y-auto [@container(min-width:64rem)]:grid [@container(min-width:64rem)]:overflow-hidden [@container(min-width:64rem)]:grid-cols-[minmax(0,1fr)_3.25rem]"
+              ? "relative flex min-h-0 flex-1 overflow-hidden [@container(min-width:64rem)]:grid [@container(min-width:64rem)]:grid-cols-[minmax(0,1fr)_19rem]"
+              : "relative flex min-h-0 flex-1 overflow-hidden [@container(min-width:64rem)]:grid [@container(min-width:64rem)]:grid-cols-[minmax(0,1fr)_3.25rem]"
             : "grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]"
         }
       >
+        {embedded && secondaryPanelOpen ? (
+          <button
+            type="button"
+            tabIndex={-1}
+            aria-label="Fechar painel de detalhes"
+            onClick={() => setSecondaryPanelOpen(false)}
+            className="absolute inset-0 z-20 cursor-default border-0 bg-black/20 p-0 [@container(min-width:64rem)]:hidden"
+          />
+        ) : null}
         <div
           className={
             embedded
-              ? "min-h-[42rem] min-w-0 xl:min-h-0"
+              ? "min-h-0 min-w-0 flex-1"
               : "min-w-0 space-y-6"
           }
         >
@@ -848,43 +988,44 @@ export default function OperationAttendanceDetailPage({
                 </Alert>
               ) : activeTimelineQuery.isLoading ? (
                 <ConversationLoading />
-              ) : timelineItems.length === 0 ? (
+              ) : timelineItems.length === 0 && optimisticAudioMessages.length === 0 ? (
                 <EmptyConversation />
               ) : (
                 <>
-                  {activeTimelineQuery.hasNextPage ? (
-                    <div className="mb-4 flex justify-center">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          const viewport = messagesViewportRef.current;
-                          if (viewport) {
-                            timelineScrollSnapshotRef.current = {
-                              height: viewport.scrollHeight,
-                              top: viewport.scrollTop,
-                            };
-                          }
-                          void activeTimelineQuery.fetchNextPage();
-                        }}
-                        disabled={activeTimelineQuery.isFetchingNextPage}
-                      >
-                        {activeTimelineQuery.isFetchingNextPage ? (
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        ) : null}
-                        Carregar itens anteriores
-                      </Button>
-                    </div>
-                  ) : null}
                   <ScrollArea
                     ref={messagesViewportRef}
+                    onScroll={handleMessagesScroll}
                     className={
                       embedded
                         ? "min-h-0 flex-1 bg-slate-50/70 px-4 py-4 dark:bg-slate-950/30"
                         : "h-[min(62vh,42rem)] pr-3"
                     }
                   >
-                    <div className="space-y-3">
+                    <div className="space-y-3 pb-24">
+                      {activeTimelineQuery.hasNextPage ? (
+                        <div className="flex justify-center">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const viewport = messagesViewportRef.current;
+                              if (viewport) {
+                                timelineScrollSnapshotRef.current = {
+                                  height: viewport.scrollHeight,
+                                  top: viewport.scrollTop,
+                                };
+                              }
+                              void activeTimelineQuery.fetchNextPage();
+                            }}
+                            disabled={activeTimelineQuery.isFetchingNextPage}
+                          >
+                            {activeTimelineQuery.isFetchingNextPage ? (
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : null}
+                            Carregar itens anteriores
+                          </Button>
+                        </div>
+                      ) : null}
                       {timelineItems.map((item) =>
                         item.kind === "message" ? (
                           <ConversationMessage
@@ -910,6 +1051,22 @@ export default function OperationAttendanceDetailPage({
                           />
                         ),
                       )}
+                      {optimisticAudioMessages
+                        .filter(
+                          (message) =>
+                            !message.serverMessageId ||
+                            !timelineItems.some(
+                              (item) =>
+                                item.kind === "message" &&
+                                item.id === message.serverMessageId,
+                            ),
+                        )
+                        .map((message) => (
+                          <OptimisticAudioTimelineMessage
+                            key={message.id}
+                            message={message}
+                          />
+                        ))}
                     </div>
                   </ScrollArea>
                 </>
@@ -926,17 +1083,24 @@ export default function OperationAttendanceDetailPage({
                 claimPending={attendanceMutations.claim.isPending}
                 sticky
                 embedded={embedded}
+                onAudioSendStart={startOptimisticAudio}
+                onAudioReady={attachOptimisticAudio}
+                onAudioSendSuccess={markOptimisticAudioAccepted}
+                onAudioSendError={markOptimisticAudioFailed}
               />
             </CardContent>
           </Card>
         </div>
 
         <Collapsible
+          id="attendance-details-panel"
           open={secondaryPanelOpen}
           onOpenChange={setSecondaryPanelOpen}
           className={
             embedded
-              ? "min-w-0 border-t bg-card [@container(min-width:64rem)]:flex [@container(min-width:64rem)]:min-h-0 [@container(min-width:64rem)]:flex-col [@container(min-width:64rem)]:border-l [@container(min-width:64rem)]:border-t-0"
+              ? secondaryPanelOpen
+                ? "absolute inset-y-0 right-0 z-30 flex w-[min(19rem,100%)] min-w-0 flex-col border-l bg-card shadow-xl [@container(min-width:64rem)]:static [@container(min-width:64rem)]:z-auto [@container(min-width:64rem)]:w-auto [@container(min-width:64rem)]:shadow-none"
+                : "hidden [@container(min-width:64rem)]:static [@container(min-width:64rem)]:flex [@container(min-width:64rem)]:min-h-0 [@container(min-width:64rem)]:flex-col [@container(min-width:64rem)]:border-l [@container(min-width:64rem)]:bg-card"
               : "min-w-0"
           }
         >
@@ -978,7 +1142,7 @@ export default function OperationAttendanceDetailPage({
           <CollapsibleContent
             className={
               embedded
-                ? "space-y-4 p-3 [@container(min-width:64rem)]:min-h-0 [@container(min-width:64rem)]:flex-1 [@container(min-width:64rem)]:overflow-y-auto"
+                ? "min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-3"
                 : "space-y-6"
             }
           >
@@ -1187,6 +1351,9 @@ export default function OperationAttendanceDetailPage({
 }
 
 function AttendanceActionControls({
+  compact: fixedCompact = false,
+  responsiveCompact = false,
+  viewControl,
   status,
   hasAssignee,
   canResume,
@@ -1200,6 +1367,9 @@ function AttendanceActionControls({
   onAction,
   onMigrateChannel,
 }: {
+  compact?: boolean;
+  responsiveCompact?: boolean;
+  viewControl?: ReactNode;
   status: AttendanceStatus;
   hasAssignee: boolean;
   canResume: boolean;
@@ -1213,11 +1383,29 @@ function AttendanceActionControls({
   onAction: (action: AttendanceAction) => void;
   onMigrateChannel: () => void;
 }) {
+  const toolbarRef = useRef<HTMLDivElement>(null);
+  const [narrowHeader, setNarrowHeader] = useState(true);
+
+  useEffect(() => {
+    if (!responsiveCompact) return;
+    const header = toolbarRef.current?.closest("header");
+    if (!header) return;
+
+    const updateLayout = () => setNarrowHeader(header.clientWidth < 1024);
+    updateLayout();
+    const observer = new ResizeObserver(updateLayout);
+    observer.observe(header);
+    return () => observer.disconnect();
+  }, [responsiveCompact]);
+
+  const compact = responsiveCompact ? narrowHeader : fixedCompact;
+
   if (!canOperate) {
     return (
-      <p className="shrink-0 text-xs text-muted-foreground">
-        Visualização somente
-      </p>
+      <div ref={toolbarRef} className="flex items-center gap-2">
+        <p className="shrink-0 text-xs text-muted-foreground">Visualização somente</p>
+        {viewControl}
+      </div>
     );
   }
 
@@ -1227,11 +1415,16 @@ function AttendanceActionControls({
   const canUnassign =
     hasAssignee && ["IN_PROGRESS", "PENDING"].includes(status);
   const canClose = ["IN_PROGRESS", "PENDING"].includes(status);
+  const canTransferAttendance =
+    canTransfer && ["WAITING_QUEUE", "IN_PROGRESS", "PENDING"].includes(status);
+  const hasSecondaryActions =
+    canTransferAttendance || status === "IN_PROGRESS" || canMigrateChannel;
   const hasManagementActions = canAssign || canUnassign;
-  const hasMoreActions = canAssign || canUnassign || canClose;
+  const hasMoreActions =
+    canAssign || canUnassign || canClose || (compact && hasSecondaryActions);
 
   return (
-    <div className="flex min-w-0 flex-wrap items-center justify-end gap-1.5" role="toolbar" aria-label="Ações do atendimento">
+    <div ref={toolbarRef} className={compact ? "flex shrink-0 items-center gap-1.5" : "flex min-w-0 flex-wrap items-center justify-end gap-1.5"} role="toolbar" aria-label="Ações do atendimento">
       {status === "WAITING_QUEUE" ? (
         <Button size="sm" className="h-8" onClick={() => onQuickAction("CLAIM")} disabled={pending}>
           <CheckCircle2 className="mr-1.5 h-4 w-4" />
@@ -1250,19 +1443,19 @@ function AttendanceActionControls({
           Retomar
         </Button>
       ) : null}
-      {canTransfer && ["WAITING_QUEUE", "IN_PROGRESS", "PENDING"].includes(status) ? (
+      {!compact && canTransferAttendance ? (
         <Button size="sm" variant="outline" className="h-8" onClick={() => onAction("TRANSFER")} disabled={pending}>
           <ArrowRightLeft className="mr-1.5 h-4 w-4" />
           Transferir
         </Button>
       ) : null}
-      {status === "IN_PROGRESS" ? (
+      {!compact && status === "IN_PROGRESS" ? (
         <Button size="sm" variant="outline" className="h-8" onClick={() => onAction("PENDING")} disabled={pending}>
           <PauseCircle className="mr-1.5 h-4 w-4" />
           Aguardar
         </Button>
       ) : null}
-      {canMigrateChannel ? (
+      {!compact && canMigrateChannel ? (
         <Button
           size="sm"
           variant="outline"
@@ -1274,21 +1467,42 @@ function AttendanceActionControls({
           Migrar canal
         </Button>
       ) : null}
+      {viewControl}
       {hasMoreActions ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 size="sm"
                 variant="ghost"
-                className="h-8 px-2 sm:px-3"
+                className={compact ? "h-8 px-2 [@container(min-width:40rem)]:px-3" : "h-8 px-2 sm:px-3"}
                 disabled={pending}
-                aria-label="Mais ações"
+                aria-label={compact ? "Ações do atendimento" : "Mais ações"}
+                title={compact ? "Ações do atendimento" : "Mais ações"}
               >
-                <MoreHorizontal className="h-4 w-4 sm:mr-1.5" />
-                <span className="hidden sm:inline">Mais ações</span>
+                <MoreHorizontal className={compact ? "h-4 w-4 [@container(min-width:40rem)]:mr-1.5" : "h-4 w-4 sm:mr-1.5"} />
+                <span className={compact ? "hidden [@container(min-width:40rem)]:inline" : "hidden sm:inline"}>{compact ? "Ações" : "Mais ações"}</span>
               </Button>
             </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-52">
+            {compact && canTransferAttendance ? (
+              <DropdownMenuItem onSelect={() => onAction("TRANSFER")}>
+                <ArrowRightLeft className="mr-2 h-4 w-4" />
+                Transferir
+              </DropdownMenuItem>
+            ) : null}
+            {compact && status === "IN_PROGRESS" ? (
+              <DropdownMenuItem onSelect={() => onAction("PENDING")}>
+                <PauseCircle className="mr-2 h-4 w-4" />
+                Aguardar
+              </DropdownMenuItem>
+            ) : null}
+            {compact && canMigrateChannel ? (
+              <DropdownMenuItem onSelect={onMigrateChannel}>
+                <ArrowRightLeft className="mr-2 h-4 w-4" />
+                Migrar canal
+              </DropdownMenuItem>
+            ) : null}
+            {compact && hasSecondaryActions && (hasManagementActions || canClose) ? <DropdownMenuSeparator /> : null}
             {canAssign ? (
               <DropdownMenuItem onSelect={() => onAction("ASSIGN")}>
                 <UserPlus className="mr-2 h-4 w-4" />
@@ -1350,6 +1564,65 @@ function DetailField({ label, value }: { label: string; value: string }) {
       </p>
       <p className="break-words text-sm font-medium [overflow-wrap:anywhere]">{value}</p>
     </div>
+  );
+}
+
+function OptimisticAudioTimelineMessage({
+  message,
+}: {
+  message: OptimisticAudioMessage;
+}) {
+  const duration = Number.isFinite(message.durationSeconds)
+    ? Math.max(0, Math.floor(message.durationSeconds))
+    : 0;
+  const durationLabel = `${Math.floor(duration / 60)}:${String(duration % 60).padStart(2, "0")}`;
+  const statusLabel =
+    message.status === "preparing"
+      ? "Preparando áudio"
+      : message.status === "sending"
+        ? "Enviando"
+        : message.status === "failed"
+          ? "Falha no envio"
+          : "Enviado";
+
+  return (
+    <article
+      className="flex justify-end"
+      data-message-id={message.id}
+      aria-live="polite"
+    >
+      <div className="flex max-w-[min(90%,42rem)] flex-col">
+        <div className="w-fit max-w-full rounded-2xl rounded-tr-sm bg-primary px-4 py-3 text-sm text-primary-foreground shadow-sm">
+          {message.mediaUrl ? (
+            <AudioMessage
+              url={message.mediaUrl}
+              mimetype={message.mediaMimetype}
+            />
+          ) : (
+            <div className="flex min-h-10 min-w-56 items-center gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-current/15">
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+              </span>
+              <span className="flex flex-1 flex-col">
+                <span className="font-medium">Preparando áudio…</span>
+                <span className="text-xs opacity-75">{durationLabel}</span>
+              </span>
+            </div>
+          )}
+          <div className="mt-2 flex items-center justify-end gap-1.5 text-xs opacity-75">
+            <span>{formatDateTime(message.createdAt)}</span>
+            {message.status === "failed" ? (
+              <AlertCircle className="h-3.5 w-3.5" aria-label={statusLabel} />
+            ) : message.status === "accepted" ? (
+              <CheckCircle2 className="h-3.5 w-3.5" aria-label={statusLabel} />
+            ) : (
+              <Clock className="h-3.5 w-3.5" aria-label={statusLabel} />
+            )}
+            <span className="sr-only">{statusLabel}</span>
+          </div>
+        </div>
+      </div>
+    </article>
   );
 }
 

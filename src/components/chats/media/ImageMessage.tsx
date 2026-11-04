@@ -58,7 +58,7 @@ export const ImageMessage: React.FC<ImageMessageProps> = ({
 
   return (
     <>
-      <div className="relative group">
+      <div className="relative group w-fit max-w-[min(24rem,80vw)]">
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center bg-muted/50 rounded-lg">
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
@@ -67,8 +67,7 @@ export const ImageMessage: React.FC<ImageMessageProps> = ({
         <img
           src={url}
           alt={caption || "Image"}
-          className="max-w-full rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
-          style={{ maxHeight: "400px", objectFit: "contain" }}
+          className="block max-h-[min(18rem,35vh)] max-w-full rounded-lg object-contain cursor-pointer hover:opacity-90 transition-opacity"
           onLoad={() => setIsLoading(false)}
           onError={() => {
             setIsLoading(false);

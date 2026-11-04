@@ -76,13 +76,15 @@ export const DocumentMessage: React.FC<DocumentMessageProps> = ({
   const extension = getExtension().toUpperCase();
 
   return (
-    <div className="flex items-center gap-3 p-3 bg-white/50 rounded-lg min-w-[280px] max-w-[400px] border border-border/50">
-      <div className="flex-shrink-0 p-2 bg-muted rounded-lg">
+    <div className="flex min-w-[16rem] max-w-[min(24rem,80vw)] items-center gap-3 rounded-lg border border-border/70 bg-background/95 p-3 text-foreground shadow-sm">
+      <div className="shrink-0 rounded-lg bg-muted p-2">
         {getFileIcon()}
       </div>
 
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium truncate">{displayName}</p>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium" title={displayName}>
+          {displayName}
+        </p>
         <p className="text-xs text-muted-foreground">{extension}</p>
       </div>
 
@@ -90,7 +92,9 @@ export const DocumentMessage: React.FC<DocumentMessageProps> = ({
         variant="ghost"
         size="icon"
         onClick={handleDownload}
-        className="flex-shrink-0"
+        className="shrink-0"
+        aria-label={`Baixar ${displayName}`}
+        title={`Baixar ${displayName}`}
       >
         <Download className="h-4 w-4" />
       </Button>

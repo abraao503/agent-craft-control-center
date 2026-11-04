@@ -50,6 +50,8 @@ interface QueuedAttendanceSend {
   body: SendOperationalAttendanceMessageBody;
   file?: File;
   errorTitle: string;
+  onSuccess?: (messageId: string) => void;
+  onError?: () => void;
 }
 
 interface AttendanceComposerProps {
@@ -60,6 +62,10 @@ interface AttendanceComposerProps {
   claimPending?: boolean;
   sticky?: boolean;
   embedded?: boolean;
+  onAudioSendStart?: (optimisticId: string, durationSeconds: number) => void;
+  onAudioReady?: (optimisticId: string, audioBlob: Blob) => void;
+  onAudioSendSuccess?: (optimisticId: string, messageId: string) => void;
+  onAudioSendError?: (optimisticId: string) => void;
 }
 
 type TemplateComponent = Record<string, unknown>;
@@ -192,14 +198,6 @@ function getBindingSelectorValue(
   return `${binding.source}:${binding.field}`;
 }
 
-function isAllowedMediaType(file: File, mediaType: "image" | "audio" | "document") {
-  if (mediaType === "image") return file.type.startsWith("image/");
-  if (mediaType === "audio") {
-    return file.type.startsWith("audio/") || file.type === "application/ogg";
-  }
-  return !file.type.startsWith("image/") && !file.type.startsWith("audio/");
-}
-
 function getMediaTypeFromFile(file: File): "image" | "audio" | "document" {
   if (file.type.startsWith("image/")) return "image";
   if (file.type.startsWith("audio/") || file.type === "application/ogg") {
@@ -221,6 +219,10 @@ export function AttendanceComposer({
   claimPending = false,
   sticky = false,
   embedded = false,
+  onAudioSendStart,
+  onAudioReady,
+  onAudioSendSuccess,
+  onAudioSendError,
 }: AttendanceComposerProps) {
   const { toast } = useToast();
   const mutations = useOperationalAttendanceMutations(workspaceId);
@@ -266,9 +268,9 @@ export function AttendanceComposer({
   }, [attendance.id, mode]);
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [mediaType, setMediaType] = useState<"image" | "audio" | "document">(
-    "image",
-  );
+  const [selectedFilePreviewUrl, setSelectedFilePreviewUrl] = useState<
+    string | null
+  >(null);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [templateBindings, setTemplateBindings] = useState<
     Record<string, OperationalTemplateBinding>
@@ -282,6 +284,17 @@ export function AttendanceComposer({
   const sendQueueRef = useRef<QueuedAttendanceSend[]>([]);
   const isProcessingSendQueueRef = useRef(false);
 
+  useEffect(() => {
+    if (!selectedFile?.type.startsWith("image/")) {
+      setSelectedFilePreviewUrl(null);
+      return;
+    }
+
+    const previewUrl = URL.createObjectURL(selectedFile);
+    setSelectedFilePreviewUrl(previewUrl);
+    return () => URL.revokeObjectURL(previewUrl);
+  }, [selectedFile]);
+
   const processSendQueue = async () => {
     if (isProcessingSendQueueRef.current) return;
 
@@ -292,13 +305,15 @@ export function AttendanceComposer({
         if (!queuedSend) continue;
 
         try {
-          await mutations.sendMessage.mutateAsync({
+          const response = await mutations.sendMessage.mutateAsync({
             workspaceId: queuedSend.workspaceId,
             attendanceId: queuedSend.attendanceId,
             body: queuedSend.body,
             file: queuedSend.file,
           });
+          queuedSend.onSuccess?.(response.message.id);
         } catch (error) {
+          queuedSend.onError?.();
           toast({
             title: queuedSend.errorTitle,
             description: getOperationalAttendanceErrorMessage(
@@ -383,11 +398,7 @@ export function AttendanceComposer({
     });
   }, [templateSlots]);
 
-  const handleFileChange = (
-    file: File | undefined,
-    nextMediaType = mediaType,
-    switchToMedia = false,
-  ) => {
+  const handleFileChange = (file: File | undefined, switchToMedia = false) => {
     if (!file) return;
     if (file.size > MAX_MEDIA_SIZE) {
       toast({
@@ -397,15 +408,6 @@ export function AttendanceComposer({
       });
       return;
     }
-    if (!isAllowedMediaType(file, nextMediaType)) {
-      toast({
-        title: "Tipo de mídia incompatível",
-        description: `Selecione um arquivo compatível com ${nextMediaType}.`,
-        variant: "destructive",
-      });
-      return;
-    }
-    setMediaType(nextMediaType);
     setSelectedFile(file);
     if (switchToMedia) setMode("MEDIA");
   };
@@ -441,16 +443,18 @@ export function AttendanceComposer({
     });
   };
 
-  const handleSendAudio = (audioBlob: Blob) => {
+  const handleSendAudio = (audioBlob: Blob, optimisticId?: string) => {
     if (
       !canCompose ||
       !supportedModes.includes("MEDIA") ||
       mutations.createInternalNote.isPending
     ) {
+      if (optimisticId) onAudioSendError?.(optimisticId);
       return;
     }
 
     setIsRecordingAudio(false);
+    if (optimisticId) onAudioReady?.(optimisticId, audioBlob);
     const mimeType = audioBlob.type;
     const extension = mimeType.toLowerCase().startsWith("audio/mp4")
       ? "m4a"
@@ -473,6 +477,12 @@ export function AttendanceComposer({
       },
       file: audioFile,
       errorTitle: "Não foi possível enviar o áudio",
+      onSuccess: (messageId) => {
+        if (optimisticId) onAudioSendSuccess?.(optimisticId, messageId);
+      },
+      onError: () => {
+        if (optimisticId) onAudioSendError?.(optimisticId);
+      },
     });
   };
 
@@ -528,14 +538,7 @@ export function AttendanceComposer({
         });
         return;
       }
-      if (!isAllowedMediaType(selectedFile, mediaType)) {
-        toast({
-          title: "Tipo de mídia incompatível",
-          description: "Selecione outro arquivo ou ajuste o tipo de mídia.",
-          variant: "destructive",
-        });
-        return;
-      }
+      const mediaType = getMediaTypeFromFile(selectedFile);
       body = {
         kind: "MEDIA",
         expectedVersion: attendance.version,
@@ -735,7 +738,11 @@ export function AttendanceComposer({
         </Alert>
       ) : isRecordingAudio && mode === "TEXT" && !isInternalNoteMode ? (
         <AudioRecorder
-          onSend={(audioBlob) => void handleSendAudio(audioBlob)}
+          onSend={(audioBlob, optimisticId) =>
+            void handleSendAudio(audioBlob, optimisticId)
+          }
+          onSendStart={onAudioSendStart}
+          onSendError={onAudioSendError}
           onCancel={() => setIsRecordingAudio(false)}
         />
       ) : (
@@ -822,11 +829,7 @@ export function AttendanceComposer({
                             onChange={(event) => {
                               const file = event.target.files?.[0];
                               if (file) {
-                                handleFileChange(
-                                  file,
-                                  getMediaTypeFromFile(file),
-                                  true,
-                                );
+                                handleFileChange(file, true);
                               }
                               event.currentTarget.value = "";
                             }}
@@ -908,63 +911,49 @@ export function AttendanceComposer({
 
             {mode === "MEDIA" ? (
               <div className="space-y-3">
-                <div className="grid gap-3 sm:grid-cols-[12rem_minmax(0,1fr)]">
-                  <div className="space-y-2">
-                    <Label htmlFor="operational-media-type">Tipo</Label>
-                    <select
-                      id="operational-media-type"
-                      value={mediaType}
-                      onChange={(event) => {
-                        const nextType = event.target.value as typeof mediaType;
-                        setMediaType(nextType);
-                        if (selectedFile && !isAllowedMediaType(selectedFile, nextType)) {
-                          setSelectedFile(null);
-                          setMode("TEXT");
-                        }
-                      }}
-                      disabled={mutations.createInternalNote.isPending}
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                <div className="space-y-2">
+                  <Label htmlFor="operational-media-file">Arquivo</Label>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <label
+                      htmlFor="operational-media-file"
+                      className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-md border border-input bg-background px-3 text-sm font-medium hover:bg-accent"
                     >
-                      <option value="image">Imagem</option>
-                      <option value="audio">Áudio</option>
-                      <option value="document">Documento</option>
-                    </select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="operational-media-file">Arquivo</Label>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <label
-                        htmlFor="operational-media-file"
-                        className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-md border border-input bg-background px-3 text-sm font-medium hover:bg-accent"
-                      >
-                        <Paperclip className="h-4 w-4" />
-                        Selecionar arquivo
-                      </label>
-                      <input
-                        id="operational-media-file"
-                        type="file"
-                        className="sr-only"
-                        accept={
-                          mediaType === "image"
-                            ? "image/*"
-                            : mediaType === "audio"
-                              ? "audio/*,application/ogg"
-                              : undefined
-                        }
-                        onChange={(event) => handleFileChange(event.target.files?.[0])}
-                        disabled={mutations.createInternalNote.isPending}
-                      />
-                      <span className="text-xs text-muted-foreground">Até 50 MB</span>
-                    </div>
+                      <Paperclip className="h-4 w-4" />
+                      Selecionar arquivo
+                    </label>
+                    <input
+                      id="operational-media-file"
+                      type="file"
+                      className="sr-only"
+                      accept="image/*,audio/*,application/ogg,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv,.zip,.rar"
+                      onChange={(event) => handleFileChange(event.target.files?.[0])}
+                      disabled={mutations.createInternalNote.isPending}
+                    />
+                    <span className="text-xs text-muted-foreground">Até 50 MB</span>
                   </div>
                 </div>
                 {selectedFile ? (
                   <div className="flex items-center justify-between gap-3 rounded-md border bg-muted/20 px-3 py-2 text-sm">
                     <span className="flex min-w-0 items-center gap-2">
-                      <FileText className="h-4 w-4 shrink-0 text-primary" />
-                      <span className="truncate">{selectedFile.name}</span>
-                      <span className="shrink-0 text-xs text-muted-foreground">
-                        {formatFileSize(selectedFile.size)}
+                      {selectedFilePreviewUrl ? (
+                        <img
+                          src={selectedFilePreviewUrl}
+                          alt=""
+                          aria-hidden="true"
+                          className="h-8 w-8 shrink-0 rounded object-cover"
+                        />
+                      ) : (
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-muted">
+                          <FileText className="h-4 w-4 text-primary" />
+                        </span>
+                      )}
+                      <span className="flex min-w-0 flex-1 flex-col">
+                        <span className="truncate" title={selectedFile.name}>
+                          {selectedFile.name}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {formatFileSize(selectedFile.size)}
+                        </span>
                       </span>
                     </span>
                     <Button
