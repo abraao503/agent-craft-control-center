@@ -30,9 +30,13 @@ function DeliveryStatusIcon({
   const isDelivered = ["DELIVERED", "DELIVERY_ACK", "RECEIVED"].includes(
     normalizedStatus,
   );
-  const isPending = ["PENDING", "PROCESSING", "QUEUED", "UNKNOWN"].includes(
-    normalizedStatus,
-  );
+  const isPending = [
+    "ACCEPTED",
+    "PENDING",
+    "PROCESSING",
+    "QUEUED",
+    "UNKNOWN",
+  ].includes(normalizedStatus);
   const isFailure = ["FAILED", "ERROR"].includes(normalizedStatus);
   const label = isRead
     ? "Mensagem lida"

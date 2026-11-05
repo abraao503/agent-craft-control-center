@@ -1787,7 +1787,7 @@ function OptimisticAudioTimelineMessage({
         ? "Enviando"
         : message.status === "failed"
           ? "Falha no envio"
-          : "Enviado";
+          : "Aguardando confirmação";
 
   return (
     <article
@@ -1817,8 +1817,6 @@ function OptimisticAudioTimelineMessage({
             <span>{formatDateTime(message.createdAt)}</span>
             {message.status === "failed" ? (
               <AlertCircle className="h-3.5 w-3.5" aria-label={statusLabel} />
-            ) : message.status === "accepted" ? (
-              <CheckCircle2 className="h-3.5 w-3.5" aria-label={statusLabel} />
             ) : (
               <Clock className="h-3.5 w-3.5" aria-label={statusLabel} />
             )}
@@ -1840,7 +1838,7 @@ function OptimisticFileTimelineMessage({
       ? "Enviando arquivo"
       : message.status === "failed"
         ? "Falha no envio"
-        : "Enviado";
+        : "Aguardando confirmação";
 
   return (
     <article
@@ -1865,7 +1863,7 @@ function OptimisticFileTimelineMessage({
             ) : message.status === "failed" ? (
               <AlertCircle className="h-3.5 w-3.5" aria-label={statusLabel} />
             ) : (
-              <CheckCircle2 className="h-3.5 w-3.5" aria-label={statusLabel} />
+              <Clock className="h-3.5 w-3.5" aria-label={statusLabel} />
             )}
             <span>{statusLabel}</span>
             <span aria-hidden="true">·</span>
@@ -1887,7 +1885,7 @@ function OptimisticTextTimelineMessage({
       ? "Enviando mensagem"
       : message.status === "failed"
         ? "Falha no envio"
-        : "Enviado";
+        : "Aguardando confirmação";
 
   return (
     <article
@@ -1908,7 +1906,7 @@ function OptimisticTextTimelineMessage({
             ) : message.status === "failed" ? (
               <AlertCircle className="h-3.5 w-3.5" aria-label={statusLabel} />
             ) : (
-              <CheckCircle2 className="h-3.5 w-3.5" aria-label={statusLabel} />
+              <Clock className="h-3.5 w-3.5" aria-label={statusLabel} />
             )}
             <span className="sr-only">{statusLabel}</span>
           </div>
