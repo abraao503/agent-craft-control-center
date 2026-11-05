@@ -45,6 +45,7 @@ type ComposerFormValues = z.infer<typeof composerSchema>;
 type ComposerMode = "TEXT" | "MEDIA" | "TEMPLATE";
 
 interface QueuedAttendanceSend {
+  idempotencyKey: string;
   workspaceId: string;
   attendanceId: string;
   body: SendOperationalAttendanceMessageBody;
@@ -69,6 +70,9 @@ interface AttendanceComposerProps {
   onMediaSendStart?: (optimisticId: string, file: File) => void;
   onMediaSendSuccess?: (optimisticId: string, messageId: string) => void;
   onMediaSendError?: (optimisticId: string) => void;
+  onTextSendStart?: (optimisticId: string, text: string) => void;
+  onTextSendSuccess?: (optimisticId: string, messageId: string) => void;
+  onTextSendError?: (optimisticId: string) => void;
 }
 
 type TemplateComponent = Record<string, unknown>;
@@ -229,6 +233,9 @@ export function AttendanceComposer({
   onMediaSendStart,
   onMediaSendSuccess,
   onMediaSendError,
+  onTextSendStart,
+  onTextSendSuccess,
+  onTextSendError,
 }: AttendanceComposerProps) {
   const { toast } = useToast();
   const mutations = useOperationalAttendanceMutations(workspaceId);
@@ -316,6 +323,7 @@ export function AttendanceComposer({
             attendanceId: queuedSend.attendanceId,
             body: queuedSend.body,
             file: queuedSend.file,
+            idempotencyKey: queuedSend.idempotencyKey,
           });
           queuedSend.onSuccess?.(response.message.id);
         } catch (error) {
@@ -474,6 +482,7 @@ export function AttendanceComposer({
     );
 
     enqueueSend({
+      idempotencyKey: optimisticId ?? crypto.randomUUID(),
       workspaceId,
       attendanceId: attendance.id,
       body: {
@@ -589,20 +598,31 @@ export function AttendanceComposer({
     if (optimisticMediaId && file) {
       onMediaSendStart?.(optimisticMediaId, file);
     }
+    const optimisticTextId =
+      body.kind === "TEXT" ? crypto.randomUUID() : undefined;
+    if (optimisticTextId && body.kind === "TEXT") {
+      onTextSendStart?.(optimisticTextId, body.text);
+    }
 
     enqueueSend({
+      idempotencyKey:
+        optimisticMediaId ?? optimisticTextId ?? crypto.randomUUID(),
       workspaceId,
       attendanceId: attendance.id,
       body,
       file,
       errorTitle: "Não foi possível enviar a mensagem",
+      onError: () => {
+        if (optimisticMediaId) onMediaSendError?.(optimisticMediaId);
+        if (optimisticTextId) onTextSendError?.(optimisticTextId);
+      },
       onSuccess: (messageId) => {
         if (optimisticMediaId) {
           onMediaSendSuccess?.(optimisticMediaId, messageId);
         }
-      },
-      onError: () => {
-        if (optimisticMediaId) onMediaSendError?.(optimisticMediaId);
+        if (optimisticTextId) {
+          onTextSendSuccess?.(optimisticTextId, messageId);
+        }
       },
     });
     form.reset({ text: "", caption: "" });

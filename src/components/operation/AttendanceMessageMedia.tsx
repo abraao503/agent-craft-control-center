@@ -27,8 +27,13 @@ export function AttendanceMessageMedia({
     let objectUrl: string | null = null;
 
     setMediaUrl(null);
-    setIsLoading(true);
     setHasError(false);
+    if (message.type === 'document') {
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
 
     if (!workspaceId || !attendanceId) {
       setHasError(true);
@@ -62,13 +67,32 @@ export function AttendanceMessageMedia({
       isCancelled = true;
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [attendanceId, message.id, workspaceId]);
+  }, [attendanceId, message.id, message.type, workspaceId]);
+
+  if (message.type === 'document') {
+    return (
+      <DocumentMessage
+        url=""
+        filename={message.content || undefined}
+        mimetype={message.mediaMimetype || undefined}
+        loadDocument={async () => {
+          if (!workspaceId || !attendanceId) {
+            throw new Error('Atendimento indisponível para baixar o documento.');
+          }
+          return getOperationalAttendanceMessageMedia({
+            workspaceId,
+            attendanceId,
+            messageId: message.id,
+          });
+        }}
+      />
+    );
+  }
 
   if (isLoading) {
     return (
-      <div className="flex items-center gap-2 py-2 text-sm opacity-75">
-        <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-        <span>Carregando mídia…</span>
+      <div className="flex justify-center py-2" role="status" aria-label="Carregando mídia">
+        <Loader2 className="h-4 w-4 animate-spin opacity-75" aria-hidden="true" />
       </div>
     );
   }
@@ -98,16 +122,6 @@ export function AttendanceMessageMedia({
 
   if (message.type === 'video') {
     return <VideoMessage url={mediaUrl} caption={message.content || undefined} />;
-  }
-
-  if (message.type === 'document') {
-    return (
-      <DocumentMessage
-        url={mediaUrl}
-        filename={message.content || undefined}
-        mimetype={message.mediaMimetype || undefined}
-      />
-    );
   }
 
   return null;

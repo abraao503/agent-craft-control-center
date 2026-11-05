@@ -1,22 +1,29 @@
-import React from "react";
-import { Download, FileText, File } from "lucide-react";
+import React, { useState } from "react";
+import { Download, FileText, File, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface DocumentMessageProps {
   url: string;
   filename?: string;
   mimetype?: string;
+  loadDocument?: () => Promise<Blob>;
 }
 
 export const DocumentMessage: React.FC<DocumentMessageProps> = ({
   url,
   filename,
   mimetype,
+  loadDocument,
 }) => {
+  const [isDownloading, setIsDownloading] = useState(false);
+
   const handleDownload = async () => {
+    if (isDownloading) return;
+    setIsDownloading(true);
     try {
-      const response = await fetch(url);
-      const blob = await response.blob();
+      const blob = loadDocument
+        ? await loadDocument()
+        : await fetch(url).then((response) => response.blob());
       const downloadUrl = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = downloadUrl;
@@ -27,6 +34,8 @@ export const DocumentMessage: React.FC<DocumentMessageProps> = ({
       window.URL.revokeObjectURL(downloadUrl);
     } catch (error) {
       console.error("Error downloading document:", error);
+    } finally {
+      setIsDownloading(false);
     }
   };
 
@@ -91,12 +100,17 @@ export const DocumentMessage: React.FC<DocumentMessageProps> = ({
       <Button
         variant="ghost"
         size="icon"
-        onClick={handleDownload}
+        onClick={() => void handleDownload()}
+        disabled={isDownloading}
         className="shrink-0"
         aria-label={`Baixar ${displayName}`}
         title={`Baixar ${displayName}`}
       >
-        <Download className="h-4 w-4" />
+        {isDownloading ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <Download className="h-4 w-4" />
+        )}
       </Button>
     </div>
   );

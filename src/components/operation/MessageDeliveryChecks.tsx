@@ -1,4 +1,4 @@
-import { AlertCircle, Check, CheckCheck, Clock } from "lucide-react";
+import { AlertCircle, Check, CheckCheck, Clock, Loader2 } from "lucide-react";
 import type { ReactNode } from "react";
 import type {
   MessageDeliveryCheckSummary,
@@ -30,9 +30,13 @@ function DeliveryStatusIcon({
   const isDelivered = ["DELIVERED", "DELIVERY_ACK", "RECEIVED"].includes(
     normalizedStatus,
   );
-  const isPending = ["PENDING", "PROCESSING", "QUEUED", "UNKNOWN"].includes(
-    normalizedStatus,
-  );
+  const isPending = [
+    "ACCEPTED",
+    "PENDING",
+    "PROCESSING",
+    "QUEUED",
+    "UNKNOWN",
+  ].includes(normalizedStatus);
   const isFailure = ["FAILED", "ERROR"].includes(normalizedStatus);
   const label = isRead
     ? "Mensagem lida"
@@ -95,10 +99,30 @@ export function MessageDeliveryChecks({
   summary?: MessageDeliveryCheckSummary;
   state?: Exclude<MessageDeliveryChecksQueryState, "disabled">;
 }) {
+  if (summary?.statusTrackingSupported) {
+    const latestCheck = summary.checks[summary.checks.length - 1];
+    const status = summary.deliveryStatus || latestCheck?.status;
+
+    if (status) {
+      const observedAt = summary.deliveryUpdatedAt || latestCheck?.observedAt;
+
+      return (
+        <span className="inline-flex items-center" aria-label="Status da mensagem">
+          <DeliveryStatusIcon status={status} observedAt={observedAt} />
+        </span>
+      );
+    }
+  }
+
   if (state === "loading") {
     return (
-      <span className="text-xs opacity-75" role="status" aria-live="polite">
-        Carregando confirmações de entrega...
+      <span
+        className="inline-flex"
+        role="status"
+        aria-label="Carregando confirmações de entrega"
+        title="Carregando confirmações de entrega"
+      >
+        <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
       </span>
     );
   }
@@ -111,19 +135,5 @@ export function MessageDeliveryChecks({
     );
   }
 
-  if (!summary) return null;
-
-  if (!summary.statusTrackingSupported) return null;
-
-  const latestCheck = summary.checks[summary.checks.length - 1];
-  const status = summary.deliveryStatus || latestCheck?.status;
-  if (!status) return null;
-
-  const observedAt = summary.deliveryUpdatedAt || latestCheck?.observedAt;
-
-  return (
-    <span className="inline-flex items-center" aria-label="Status da mensagem">
-      <DeliveryStatusIcon status={status} observedAt={observedAt} />
-    </span>
-  );
+  return null;
 }
