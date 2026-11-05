@@ -35,6 +35,7 @@ import { useOperationalAttendanceMutations } from "@/hooks/useOperationalAttenda
 import { usePermissions } from "@/hooks/usePermissions";
 import { useToast } from "@/hooks/use-toast";
 import { getOperationalAttendanceErrorMessage } from "@/utils/operationalAttendanceErrors";
+import { getAttendanceTimelineKey, reconcileAttendanceTimeline, type LocalTimelineSlot } from "@/utils/reconcileAttendanceTimeline";
 import {
   getSafeObservabilityEntries,
   sanitizeObservabilityText,
@@ -228,15 +229,48 @@ export default function OperationAttendanceDetailPage({
   const [optimisticTextMessages, setOptimisticTextMessages] = useState<
     OptimisticTextMessage[]
   >([]);
+  const localTimelineSlotsRef = useRef(new Map<string, LocalTimelineSlot>());
+  const lastDisplayEntryRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    setOptimisticAudioMessages([]);
+    setOptimisticFileMessages([]);
+    setOptimisticTextMessages([]);
+    optimisticAudioUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+    optimisticAudioUrlsRef.current.clear();
+    optimisticFileUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+    optimisticFileUrlsRef.current.clear();
+    localTimelineSlotsRef.current.clear();
+    lastDisplayEntryRef.current = null;
+  }, [workspaceId, attendanceId]);
+
+  const registerLocalMessage = (id: string) => {
+    const createdAt = new Date().toISOString();
+    const key = `local:${id}`;
+    localTimelineSlotsRef.current.set(key, {
+      afterKey: lastDisplayEntryRef.current,
+      createdAt,
+    });
+    // Also covers multiple submissions before React renders again.
+    lastDisplayEntryRef.current = key;
+    return createdAt;
+  };
+
+  const confirmLocalMessage = (id: string, serverMessageId: string) => {
+    const slot = localTimelineSlotsRef.current.get(`local:${id}`);
+    if (slot) slot.serverMessageId = serverMessageId;
+  };
 
   const startOptimisticText = (id: string, text: string) => {
+    const createdAt = registerLocalMessage(id);
     setOptimisticTextMessages((current) => [
       ...current.filter((message) => message.id !== id),
-      { id, createdAt: new Date().toISOString(), text, status: "sending" },
+      { id, createdAt, text, status: "sending" },
     ]);
   };
 
   const markOptimisticTextAccepted = (id: string, serverMessageId: string) => {
+    confirmLocalMessage(id, serverMessageId);
     setOptimisticTextMessages((current) =>
       current.map((message) =>
         message.id === id
@@ -255,13 +289,14 @@ export default function OperationAttendanceDetailPage({
   };
 
   const startOptimisticFile = (id: string, file: File) => {
+    const createdAt = registerLocalMessage(id);
     const mediaUrl = URL.createObjectURL(file);
     optimisticFileUrlsRef.current.add(mediaUrl);
     setOptimisticFileMessages((current) => [
       ...current.filter((message) => message.id !== id),
       {
         id,
-        createdAt: new Date().toISOString(),
+        createdAt,
         filename: file.name,
         mimetype: file.type,
         size: file.size,
@@ -272,6 +307,7 @@ export default function OperationAttendanceDetailPage({
   };
 
   const markOptimisticFileAccepted = (id: string, serverMessageId: string) => {
+    confirmLocalMessage(id, serverMessageId);
     setOptimisticFileMessages((current) =>
       current.map((message) =>
         message.id === id
@@ -290,9 +326,10 @@ export default function OperationAttendanceDetailPage({
   };
 
   const startOptimisticAudio = (id: string, durationSeconds: number) => {
+    const createdAt = registerLocalMessage(id);
     setOptimisticAudioMessages((current) => [
       ...current.filter((message) => message.id !== id),
-      { id, durationSeconds, createdAt: new Date().toISOString(), status: "preparing" },
+      { id, durationSeconds, createdAt, status: "preparing" },
     ]);
   };
 
@@ -309,6 +346,7 @@ export default function OperationAttendanceDetailPage({
   };
 
   const markOptimisticAudioAccepted = (id: string, serverMessageId: string) => {
+    confirmLocalMessage(id, serverMessageId);
     setOptimisticAudioMessages((current) =>
       current.map((message) =>
         message.id === id
@@ -374,10 +412,24 @@ export default function OperationAttendanceDetailPage({
       ),
     [timelineQuery.data],
   );
+  const timelineClientMessageIds = useMemo(
+    () =>
+      new Set(
+        (timelineQuery.data?.pages.flatMap((page) => page.items) ?? [])
+          .flatMap((item) =>
+            item.kind === "message" && item.clientMessageId
+              ? [item.clientMessageId]
+              : [],
+          ),
+      ),
+    [timelineQuery.data],
+  );
   useEffect(() => {
     const confirmed = optimisticAudioMessages.filter(
       (message) =>
-        message.serverMessageId && timelineMessageIds.has(message.serverMessageId),
+        (message.serverMessageId &&
+          timelineMessageIds.has(message.serverMessageId)) ||
+        timelineClientMessageIds.has(message.id),
     );
     if (confirmed.length === 0) return;
 
@@ -391,11 +443,13 @@ export default function OperationAttendanceDetailPage({
     setOptimisticAudioMessages((current) =>
       current.filter((message) => !confirmedIds.has(message.id)),
     );
-  }, [optimisticAudioMessages, timelineMessageIds]);
+  }, [optimisticAudioMessages, timelineClientMessageIds, timelineMessageIds]);
   useEffect(() => {
     const confirmed = optimisticFileMessages.filter(
       (message) =>
-        message.serverMessageId && timelineMessageIds.has(message.serverMessageId),
+        (message.serverMessageId &&
+          timelineMessageIds.has(message.serverMessageId)) ||
+        timelineClientMessageIds.has(message.id),
     );
     if (confirmed.length === 0) return;
 
@@ -407,11 +461,13 @@ export default function OperationAttendanceDetailPage({
     setOptimisticFileMessages((current) =>
       current.filter((message) => !confirmedIds.has(message.id)),
     );
-  }, [optimisticFileMessages, timelineMessageIds]);
+  }, [optimisticFileMessages, timelineClientMessageIds, timelineMessageIds]);
   useEffect(() => {
     const confirmed = optimisticTextMessages.filter(
       (message) =>
-        message.serverMessageId && timelineMessageIds.has(message.serverMessageId),
+        (message.serverMessageId &&
+          timelineMessageIds.has(message.serverMessageId)) ||
+        timelineClientMessageIds.has(message.id),
     );
     if (confirmed.length === 0) return;
 
@@ -419,7 +475,7 @@ export default function OperationAttendanceDetailPage({
     setOptimisticTextMessages((current) =>
       current.filter((message) => !confirmedIds.has(message.id)),
     );
-  }, [optimisticTextMessages, timelineMessageIds]);
+  }, [optimisticTextMessages, timelineClientMessageIds, timelineMessageIds]);
   const [remoteAnchorId, setRemoteAnchorId] = useState<string | null>(null);
   const remoteTimelineQuery = useOperationalAttendanceTimeline(
     workspaceId,
@@ -684,55 +740,58 @@ export default function OperationAttendanceDetailPage({
     .slice()
     .reverse()
     .flatMap((page) => page.items) ?? [];
-  const timelineDisplayItems = [
-    ...timelineItems.map((item) => ({
-      type: "timeline" as const,
-      key: `${item.kind}:${item.id}`,
-      createdAt: item.createdAt,
-      item,
-    })),
+  const timelineEntries = timelineItems.map((item) => ({
+    type: "timeline" as const,
+    key: getAttendanceTimelineKey(item, localTimelineSlotsRef.current),
+    createdAt: item.createdAt,
+    item,
+  }));
+  const optimisticTimelineItems = [
     ...optimisticAudioMessages
       .filter(
         (message) =>
-          !message.serverMessageId ||
           !timelineItems.some(
             (item) =>
-              item.kind === "message" && item.id === message.serverMessageId,
+              item.kind === "message" &&
+              (item.id === message.serverMessageId ||
+                item.clientMessageId === message.id),
           ),
       )
       .map((message) => ({
         type: "audio" as const,
-        key: `optimistic-audio:${message.id}`,
+        key: `local:${message.id}`,
         createdAt: message.createdAt,
         message,
       })),
     ...optimisticFileMessages
       .filter(
         (message) =>
-          !message.serverMessageId ||
           !timelineItems.some(
             (item) =>
-              item.kind === "message" && item.id === message.serverMessageId,
+              item.kind === "message" &&
+              (item.id === message.serverMessageId ||
+                item.clientMessageId === message.id),
           ),
       )
       .map((message) => ({
         type: "file" as const,
-        key: `optimistic-file:${message.id}`,
+        key: `local:${message.id}`,
         createdAt: message.createdAt,
         message,
       })),
     ...optimisticTextMessages
       .filter(
         (message) =>
-          !message.serverMessageId ||
           !timelineItems.some(
             (item) =>
-              item.kind === "message" && item.id === message.serverMessageId,
+              item.kind === "message" &&
+              (item.id === message.serverMessageId ||
+                item.clientMessageId === message.id),
           ),
       )
       .map((message) => ({
         type: "text" as const,
-        key: `optimistic-text:${message.id}`,
+        key: `local:${message.id}`,
         createdAt: message.createdAt,
         message,
       })),
@@ -740,6 +799,10 @@ export default function OperationAttendanceDetailPage({
     (left, right) =>
       new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime(),
   );
+  const timelineDisplayItems = reconcileAttendanceTimeline<
+    (typeof timelineEntries)[number] | (typeof optimisticTimelineItems)[number]
+  >(timelineEntries, optimisticTimelineItems, localTimelineSlotsRef.current);
+  lastDisplayEntryRef.current = timelineDisplayItems.at(-1)?.key ?? null;
   const hasExternalHandoff = timelineItems.some(
     (item) =>
       item.kind === "event" &&

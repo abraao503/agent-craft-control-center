@@ -199,6 +199,7 @@ export type AttendanceMessageSender = "CUSTOMER" | "HUMAN" | "ASSISTANT";
 
 export interface AttendanceMessageItem {
   id: string;
+  clientMessageId?: string | null;
   sender: AttendanceMessageSender;
   type: string;
   content: string;

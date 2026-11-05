@@ -45,6 +45,7 @@ type ComposerFormValues = z.infer<typeof composerSchema>;
 type ComposerMode = "TEXT" | "MEDIA" | "TEMPLATE";
 
 interface QueuedAttendanceSend {
+  idempotencyKey: string;
   workspaceId: string;
   attendanceId: string;
   body: SendOperationalAttendanceMessageBody;
@@ -322,6 +323,7 @@ export function AttendanceComposer({
             attendanceId: queuedSend.attendanceId,
             body: queuedSend.body,
             file: queuedSend.file,
+            idempotencyKey: queuedSend.idempotencyKey,
           });
           queuedSend.onSuccess?.(response.message.id);
         } catch (error) {
@@ -480,6 +482,7 @@ export function AttendanceComposer({
     );
 
     enqueueSend({
+      idempotencyKey: optimisticId ?? crypto.randomUUID(),
       workspaceId,
       attendanceId: attendance.id,
       body: {
@@ -602,6 +605,8 @@ export function AttendanceComposer({
     }
 
     enqueueSend({
+      idempotencyKey:
+        optimisticMediaId ?? optimisticTextId ?? crypto.randomUUID(),
       workspaceId,
       attendanceId: attendance.id,
       body,
