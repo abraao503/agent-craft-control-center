@@ -1,4 +1,4 @@
-import { AlertCircle, Check, CheckCheck, Clock } from "lucide-react";
+import { AlertCircle, Check, CheckCheck, Clock, Loader2 } from "lucide-react";
 import type { ReactNode } from "react";
 import type {
   MessageDeliveryCheckSummary,
@@ -97,8 +97,13 @@ export function MessageDeliveryChecks({
 }) {
   if (state === "loading") {
     return (
-      <span className="text-xs opacity-75" role="status" aria-live="polite">
-        Carregando confirmações de entrega...
+      <span
+        className="inline-flex"
+        role="status"
+        aria-label="Carregando confirmações de entrega"
+        title="Carregando confirmações de entrega"
+      >
+        <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
       </span>
     );
   }
