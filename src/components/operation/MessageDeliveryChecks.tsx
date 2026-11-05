@@ -95,6 +95,21 @@ export function MessageDeliveryChecks({
   summary?: MessageDeliveryCheckSummary;
   state?: Exclude<MessageDeliveryChecksQueryState, "disabled">;
 }) {
+  if (summary?.statusTrackingSupported) {
+    const latestCheck = summary.checks[summary.checks.length - 1];
+    const status = summary.deliveryStatus || latestCheck?.status;
+
+    if (status) {
+      const observedAt = summary.deliveryUpdatedAt || latestCheck?.observedAt;
+
+      return (
+        <span className="inline-flex items-center" aria-label="Status da mensagem">
+          <DeliveryStatusIcon status={status} observedAt={observedAt} />
+        </span>
+      );
+    }
+  }
+
   if (state === "loading") {
     return (
       <span
@@ -116,19 +131,5 @@ export function MessageDeliveryChecks({
     );
   }
 
-  if (!summary) return null;
-
-  if (!summary.statusTrackingSupported) return null;
-
-  const latestCheck = summary.checks[summary.checks.length - 1];
-  const status = summary.deliveryStatus || latestCheck?.status;
-  if (!status) return null;
-
-  const observedAt = summary.deliveryUpdatedAt || latestCheck?.observedAt;
-
-  return (
-    <span className="inline-flex items-center" aria-label="Status da mensagem">
-      <DeliveryStatusIcon status={status} observedAt={observedAt} />
-    </span>
-  );
+  return null;
 }

@@ -1184,11 +1184,11 @@ export default function OperationAttendanceDetailPage({
                     onScroll={handleMessagesScroll}
                     className={
                       embedded
-                        ? "min-h-0 flex-1 bg-slate-50/70 px-4 py-4 dark:bg-slate-950/30"
+                        ? "min-h-0 flex-1 bg-slate-50/70 px-4 pt-4 pb-0 dark:bg-slate-950/30"
                         : "h-[min(62vh,42rem)] pr-3"
                     }
                   >
-                    <div className="space-y-3 pb-24">
+                    <div className="space-y-3 pb-5">
                       {activeTimelineQuery.hasNextPage ? (
                         <div className="flex justify-center">
                           <Button

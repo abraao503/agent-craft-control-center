@@ -52,6 +52,11 @@ export function useMessageDeliveryChecks({
         messageIds: stableMessageIds,
       }),
     enabled: queryEnabled,
+    placeholderData: (previousData, previousQuery) =>
+      previousQuery?.queryKey[2] === workspaceId &&
+      previousQuery?.queryKey[3] === attendanceId
+        ? previousData
+        : undefined,
     staleTime: 30_000,
     refetchOnWindowFocus: false,
   });
