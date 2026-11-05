@@ -57,6 +57,7 @@ import { AttendanceChecklistPanel } from "@/components/operation/AttendanceCheck
 import { AttendanceInternalNote } from "@/components/operation/AttendanceInternalNote";
 import { AttendanceMessageMedia } from "@/components/operation/AttendanceMessageMedia";
 import { AudioMessage } from "@/components/chats/media/AudioMessage";
+import { DocumentMessage } from "@/components/chats/media/DocumentMessage";
 import { MessageReactions } from "@/components/chats/MessageReactions";
 import { MessageReplyPreview } from "@/components/chats/MessageReplyPreview";
 import { useQuotedMessageNavigation } from "@/hooks/useQuotedMessageNavigation";
@@ -173,6 +174,17 @@ interface OptimisticAudioMessage {
   status: "preparing" | "sending" | "accepted" | "failed";
 }
 
+interface OptimisticFileMessage {
+  id: string;
+  createdAt: string;
+  filename: string;
+  mimetype: string;
+  size: number;
+  mediaUrl: string;
+  serverMessageId?: string;
+  status: "sending" | "accepted" | "failed";
+}
+
 export default function OperationAttendanceDetailPage({
   realtimeEnabled = true,
   embedded = false,
@@ -201,6 +213,45 @@ export default function OperationAttendanceDetailPage({
     OptimisticAudioMessage[]
   >([]);
   const optimisticAudioUrlsRef = useRef(new Set<string>());
+  const [optimisticFileMessages, setOptimisticFileMessages] = useState<
+    OptimisticFileMessage[]
+  >([]);
+  const optimisticFileUrlsRef = useRef(new Set<string>());
+
+  const startOptimisticFile = (id: string, file: File) => {
+    const mediaUrl = URL.createObjectURL(file);
+    optimisticFileUrlsRef.current.add(mediaUrl);
+    setOptimisticFileMessages((current) => [
+      ...current.filter((message) => message.id !== id),
+      {
+        id,
+        createdAt: new Date().toISOString(),
+        filename: file.name,
+        mimetype: file.type,
+        size: file.size,
+        mediaUrl,
+        status: "sending",
+      },
+    ]);
+  };
+
+  const markOptimisticFileAccepted = (id: string, serverMessageId: string) => {
+    setOptimisticFileMessages((current) =>
+      current.map((message) =>
+        message.id === id
+          ? { ...message, serverMessageId, status: "accepted" }
+          : message,
+      ),
+    );
+  };
+
+  const markOptimisticFileFailed = (id: string) => {
+    setOptimisticFileMessages((current) =>
+      current.map((message) =>
+        message.id === id ? { ...message, status: "failed" } : message,
+      ),
+    );
+  };
 
   const startOptimisticAudio = (id: string, durationSeconds: number) => {
     setOptimisticAudioMessages((current) => [
@@ -243,6 +294,8 @@ export default function OperationAttendanceDetailPage({
     () => () => {
       optimisticAudioUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
       optimisticAudioUrlsRef.current.clear();
+      optimisticFileUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+      optimisticFileUrlsRef.current.clear();
     },
     [],
   );
@@ -303,6 +356,22 @@ export default function OperationAttendanceDetailPage({
       current.filter((message) => !confirmedIds.has(message.id)),
     );
   }, [optimisticAudioMessages, timelineMessageIds]);
+  useEffect(() => {
+    const confirmed = optimisticFileMessages.filter(
+      (message) =>
+        message.serverMessageId && timelineMessageIds.has(message.serverMessageId),
+    );
+    if (confirmed.length === 0) return;
+
+    const confirmedIds = new Set(confirmed.map((message) => message.id));
+    confirmed.forEach((message) => {
+      URL.revokeObjectURL(message.mediaUrl);
+      optimisticFileUrlsRef.current.delete(message.mediaUrl);
+    });
+    setOptimisticFileMessages((current) =>
+      current.filter((message) => !confirmedIds.has(message.id)),
+    );
+  }, [optimisticFileMessages, timelineMessageIds]);
   const [remoteAnchorId, setRemoteAnchorId] = useState<string | null>(null);
   const remoteTimelineQuery = useOperationalAttendanceTimeline(
     workspaceId,
@@ -358,7 +427,9 @@ export default function OperationAttendanceDetailPage({
     },
   });
   useEffect(() => {
-    if (optimisticAudioMessages.length === 0) return;
+    if (optimisticAudioMessages.length === 0 && optimisticFileMessages.length === 0) {
+      return;
+    }
     requestAnimationFrame(() => {
       const viewport = messagesViewportRef.current;
       if (viewport) {
@@ -366,7 +437,7 @@ export default function OperationAttendanceDetailPage({
         shouldStickToBottomRef.current = true;
       }
     });
-  }, [optimisticAudioMessages.length]);
+  }, [optimisticAudioMessages.length, optimisticFileMessages.length]);
   const returnToRecentRef = useRef(false);
   const showRemoteTimeline = Boolean(remoteAnchorId && remoteTimelineQuery.data);
   const activeTimelineQuery = showRemoteTimeline ? remoteTimelineQuery : timelineQuery;
@@ -988,7 +1059,10 @@ export default function OperationAttendanceDetailPage({
                 </Alert>
               ) : activeTimelineQuery.isLoading ? (
                 <ConversationLoading />
-              ) : timelineItems.length === 0 && optimisticAudioMessages.length === 0 ? (
+              ) :
+                timelineItems.length === 0 &&
+                optimisticAudioMessages.length === 0 &&
+                optimisticFileMessages.length === 0 ? (
                 <EmptyConversation />
               ) : (
                 <>
@@ -1067,6 +1141,22 @@ export default function OperationAttendanceDetailPage({
                             message={message}
                           />
                         ))}
+                      {optimisticFileMessages
+                        .filter(
+                          (message) =>
+                            !message.serverMessageId ||
+                            !timelineItems.some(
+                              (item) =>
+                                item.kind === "message" &&
+                                item.id === message.serverMessageId,
+                            ),
+                        )
+                        .map((message) => (
+                          <OptimisticFileTimelineMessage
+                            key={message.id}
+                            message={message}
+                          />
+                        ))}
                     </div>
                   </ScrollArea>
                 </>
@@ -1087,6 +1177,9 @@ export default function OperationAttendanceDetailPage({
                 onAudioReady={attachOptimisticAudio}
                 onAudioSendSuccess={markOptimisticAudioAccepted}
                 onAudioSendError={markOptimisticAudioFailed}
+                onMediaSendStart={startOptimisticFile}
+                onMediaSendSuccess={markOptimisticFileAccepted}
+                onMediaSendError={markOptimisticFileFailed}
               />
             </CardContent>
           </Card>
@@ -1619,6 +1712,53 @@ function OptimisticAudioTimelineMessage({
               <Clock className="h-3.5 w-3.5" aria-label={statusLabel} />
             )}
             <span className="sr-only">{statusLabel}</span>
+          </div>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function OptimisticFileTimelineMessage({
+  message,
+}: {
+  message: OptimisticFileMessage;
+}) {
+  const statusLabel =
+    message.status === "sending"
+      ? "Enviando arquivo"
+      : message.status === "failed"
+        ? "Falha no envio"
+        : "Enviado";
+
+  return (
+    <article
+      className="flex justify-end"
+      data-message-id={message.id}
+      aria-live="polite"
+    >
+      <div className="flex max-w-[min(90%,42rem)] flex-col">
+        <div className="w-fit max-w-full rounded-2xl rounded-tr-sm bg-primary px-3 py-3 text-sm text-primary-foreground shadow-sm">
+          <DocumentMessage
+            url={message.mediaUrl}
+            filename={message.filename}
+            mimetype={message.mimetype}
+          />
+          <div className="mt-2 flex items-center justify-end gap-1.5 text-xs opacity-80">
+            <span>{formatDateTime(message.createdAt)}</span>
+            {message.status === "sending" ? (
+              <Loader2
+                className="h-3.5 w-3.5 animate-spin"
+                aria-label={statusLabel}
+              />
+            ) : message.status === "failed" ? (
+              <AlertCircle className="h-3.5 w-3.5" aria-label={statusLabel} />
+            ) : (
+              <CheckCircle2 className="h-3.5 w-3.5" aria-label={statusLabel} />
+            )}
+            <span>{statusLabel}</span>
+            <span aria-hidden="true">·</span>
+            <span>{(message.size / (1024 * 1024)).toFixed(1)} MB</span>
           </div>
         </div>
       </div>

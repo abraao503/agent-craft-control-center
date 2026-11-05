@@ -66,6 +66,9 @@ interface AttendanceComposerProps {
   onAudioReady?: (optimisticId: string, audioBlob: Blob) => void;
   onAudioSendSuccess?: (optimisticId: string, messageId: string) => void;
   onAudioSendError?: (optimisticId: string) => void;
+  onMediaSendStart?: (optimisticId: string, file: File) => void;
+  onMediaSendSuccess?: (optimisticId: string, messageId: string) => void;
+  onMediaSendError?: (optimisticId: string) => void;
 }
 
 type TemplateComponent = Record<string, unknown>;
@@ -223,6 +226,9 @@ export function AttendanceComposer({
   onAudioReady,
   onAudioSendSuccess,
   onAudioSendError,
+  onMediaSendStart,
+  onMediaSendSuccess,
+  onMediaSendError,
 }: AttendanceComposerProps) {
   const { toast } = useToast();
   const mutations = useOperationalAttendanceMutations(workspaceId);
@@ -578,12 +584,26 @@ export function AttendanceComposer({
       };
     }
 
+    const optimisticMediaId =
+      body.kind === "MEDIA" && file ? crypto.randomUUID() : undefined;
+    if (optimisticMediaId && file) {
+      onMediaSendStart?.(optimisticMediaId, file);
+    }
+
     enqueueSend({
       workspaceId,
       attendanceId: attendance.id,
       body,
       file,
       errorTitle: "Não foi possível enviar a mensagem",
+      onSuccess: (messageId) => {
+        if (optimisticMediaId) {
+          onMediaSendSuccess?.(optimisticMediaId, messageId);
+        }
+      },
+      onError: () => {
+        if (optimisticMediaId) onMediaSendError?.(optimisticMediaId);
+      },
     });
     form.reset({ text: "", caption: "" });
     setSelectedFile(null);
