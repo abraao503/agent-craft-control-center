@@ -17,6 +17,7 @@ interface Props {
 
 const textPayload = {
   phone: "+5511999887766",
+  customerName: "João Silva",
   targetQueueId: "<UUID da fila ativa>",
   text: "Olá! Sua solicitação foi recebida.",
   correlationId: "pedido-123",
@@ -24,6 +25,7 @@ const textPayload = {
 
 const templatePayload = {
   phone: "+5511999887766",
+  customerName: "João Silva",
   targetQueueId: "<UUID da fila ativa>",
   template: {
     name: "pedido_atualizado",
@@ -105,6 +107,14 @@ export function OperationWebhookDocumentation({ endpoint, onCopy }: Props) {
         <CardContent className="space-y-5">
           <CodeBlock label="Mensagem de texto" value={JSON.stringify(textPayload, null, 2)} onCopy={onCopy} />
           <CodeBlock label="Template Meta" value={JSON.stringify(templatePayload, null, 2)} onCopy={onCopy} />
+          <div className="space-y-1 rounded-md border bg-muted/30 p-3 text-sm">
+            <p className="font-medium">Nome do contato</p>
+            <p className="text-muted-foreground">
+              <code>customerName</code> é opcional. Quando informado, define o
+              nome do contato encontrado pelo telefone ou do novo contato. Se
+              omitido ou vazio, o nome atual é mantido.
+            </p>
+          </div>
           <div className="space-y-1 rounded-md border bg-muted/30 p-3 text-sm">
             <p className="font-medium">Direcionar para uma fila</p>
             <p className="text-muted-foreground">
