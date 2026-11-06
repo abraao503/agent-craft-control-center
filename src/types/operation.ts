@@ -58,6 +58,20 @@ export interface ServiceQueue {
   updatedAt: string;
 }
 
+export interface OperationalQueueTransferDestinationOption {
+  queueId: string;
+  queueName: string;
+  areaId: string;
+  areaName: string;
+  active: boolean;
+}
+
+export interface OperationalQueueTransferDestinations {
+  version: number;
+  destinations: OperationalQueueTransferDestinationOption[];
+  availableDestinations: OperationalQueueTransferDestinationOption[];
+}
+
 export interface AreaMembership {
   id: string;
   companyId: string;

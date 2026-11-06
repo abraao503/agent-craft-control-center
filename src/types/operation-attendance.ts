@@ -238,6 +238,8 @@ export interface AttendanceOptionArea {
   queues: AttendanceOptionQueue[];
 }
 
+export type AttendanceTransferOptions = AttendanceOptionArea[];
+
 export interface AttendanceOptionUser {
   id: string;
   name: string;
