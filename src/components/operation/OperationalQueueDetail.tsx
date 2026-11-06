@@ -11,6 +11,7 @@ import {
   OperationalQueueFormValues,
 } from "@/components/operation/OperationalQueueFormDialog";
 import { OperationalQueueAccess } from "@/components/operation/OperationalQueueAccess";
+import { OperationalQueueTransferDestinations } from "@/components/operation/OperationalQueueTransferDestinations";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -252,6 +253,15 @@ export function OperationalQueueDetail({
           />
         </CardContent>
       </Card>
+
+      {canManage ? (
+        <OperationalQueueTransferDestinations
+          workspaceId={workspaceId}
+          areaId={area.id}
+          queueId={queue.id}
+          queueName={queue.name}
+        />
+      ) : null}
 
       <Button asChild variant="ghost" className="px-0">
         <Link to={"/operation/areas/" + area.id}>

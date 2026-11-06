@@ -40,6 +40,7 @@ import {
   useOperationalAttendanceKanban,
   useOperationalAttendanceOptions,
 } from "@/hooks/useOperationalAttendances";
+import { useOperationalAttendanceTransferOptions } from "@/hooks/useOperationalAttendanceTransferOptions";
 import { useOperationalRealtime } from "@/hooks/useOperationalRealtime";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useToast } from "@/hooks/use-toast";
@@ -154,6 +155,13 @@ export default function OperationAttendanceKanbanPage() {
   const optionsQuery = useOperationalAttendanceOptions(
     workspaceId,
     canViewAttendances,
+  );
+  const transferOptionsQuery = useOperationalAttendanceTransferOptions(
+    workspaceId,
+    activeAction?.action === "TRANSFER"
+      ? activeAction.attendance.id
+      : undefined,
+    canOperateAttendances && activeAction?.action === "TRANSFER",
   );
   const attendanceMutations = useOperationalAttendanceMutations(workspaceId);
   const realtime = useOperationalRealtime({
@@ -640,6 +648,10 @@ export default function OperationAttendanceKanbanPage() {
           action={activeAction.action as AttendanceAction}
           attendance={activeAction.attendance}
           options={options}
+          transferAreas={transferOptionsQuery.data}
+          transferOptionsLoading={transferOptionsQuery.isFetching}
+          transferOptionsError={transferOptionsQuery.isError}
+          onRetryTransferOptions={() => void transferOptionsQuery.refetch()}
           isSubmitting={isMutationPending}
           onOpenChange={(open) => {
             if (!open && !isMutationPending) setActiveAction(null);

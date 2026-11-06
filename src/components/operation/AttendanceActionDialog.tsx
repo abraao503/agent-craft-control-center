@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/form";
 import {
   AttendanceDetail,
+  AttendanceOptionArea,
   AttendanceOptions,
 } from "@/types/operation-attendance";
 
@@ -76,6 +77,10 @@ interface AttendanceActionDialogProps {
     "id" | "workspaceId" | "targetAreaId" | "targetQueueId"
   >;
   options?: AttendanceOptions;
+  transferAreas?: AttendanceOptionArea[];
+  transferOptionsLoading?: boolean;
+  transferOptionsError?: boolean;
+  onRetryTransferOptions?: () => void;
   isSubmitting: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (values: AttendanceActionFormValues) => void;
@@ -142,6 +147,10 @@ export function AttendanceActionDialog({
   action,
   attendance,
   options,
+  transferAreas,
+  transferOptionsLoading = false,
+  transferOptionsError = false,
+  onRetryTransferOptions,
   isSubmitting,
   onOpenChange,
   onSubmit,
@@ -153,22 +162,34 @@ export function AttendanceActionDialog({
   const selectedAreaId = form.watch("targetAreaId");
   const selectedQueueId = form.watch("targetQueueId");
   const includeFollowUp = form.watch("includeFollowUp");
-  const selectedArea = options?.areas.find((area) => area.id === selectedAreaId);
-  const copy = action ? ACTION_COPY[action] : ACTION_COPY.PENDING;
+  const actionAreas = action === "TRANSFER" ? transferAreas ?? [] : options?.areas ?? [];
+  const selectedArea = actionAreas.find((area) => area.id === selectedAreaId);
+  const copy =
+    action === "TRANSFER" && !options?.capabilities.canTransferToUser
+      ? {
+          ...ACTION_COPY.TRANSFER,
+          description:
+            "Ao confirmar, você deixará de atender e o atendimento ficará aguardando na fila escolhida.",
+        }
+      : action
+        ? ACTION_COPY[action]
+        : ACTION_COPY.PENDING;
+  const canChooseTransferUser =
+    action === "TRANSFER" && Boolean(options?.capabilities.canTransferToUser);
+  const requiresUserEligibility = action === "ASSIGN" || canChooseTransferUser;
 
   const userEligibilityAreaId =
-    action === "ASSIGN"
-      ? attendance.targetAreaId ?? undefined
-      : action === "TRANSFER"
-        ? selectedAreaId || undefined
-        : undefined;
+    !requiresUserEligibility
+      ? undefined
+      : action === "ASSIGN"
+        ? attendance.targetAreaId ?? undefined
+        : selectedAreaId || undefined;
   const userEligibilityQueueId =
-    action === "ASSIGN"
-      ? attendance.targetQueueId ?? undefined
-      : action === "TRANSFER"
-        ? selectedQueueId || undefined
-        : undefined;
-  const requiresUserEligibility = action === "ASSIGN" || action === "TRANSFER";
+    !requiresUserEligibility
+      ? undefined
+      : action === "ASSIGN"
+        ? attendance.targetQueueId ?? undefined
+        : selectedQueueId || undefined;
   const hasUserDestination = Boolean(
     userEligibilityAreaId && userEligibilityQueueId,
   );
@@ -258,6 +279,15 @@ export function AttendanceActionDialog({
     !hasUserDestination ||
     userEligibilityLoading ||
     userEligibilityError;
+  const hasTransferDestination = (transferAreas ?? []).some(
+    (area) => area.active && area.queues.some((queue) => queue.active),
+  );
+  const transferOptionsUnavailable =
+    action === "TRANSFER" &&
+    (!transferAreas ||
+      transferOptionsLoading ||
+      transferOptionsError ||
+      !hasTransferDestination);
 
   useEffect(() => {
     if (open) {
@@ -346,7 +376,12 @@ export function AttendanceActionDialog({
                           form.setValue("targetQueueId", "");
                           form.setValue("targetUserId", "");
                         }}
-                        disabled={isSubmitting || !options}
+                        disabled={
+                          isSubmitting ||
+                          (action === "TRANSFER"
+                            ? transferOptionsUnavailable
+                            : !options)
+                        }
                       >
                         <FormControl>
                           <SelectTrigger>
@@ -354,7 +389,7 @@ export function AttendanceActionDialog({
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {options?.areas
+                          {actionAreas
                             .filter((area) => area.active)
                             .map((area) => (
                               <SelectItem key={area.id} value={area.id}>
@@ -379,7 +414,11 @@ export function AttendanceActionDialog({
                           field.onChange(value);
                           form.setValue("targetUserId", "");
                         }}
-                        disabled={isSubmitting || !selectedArea}
+                        disabled={
+                          isSubmitting ||
+                          !selectedArea ||
+                          transferOptionsUnavailable
+                        }
                       >
                         <FormControl>
                           <SelectTrigger>
@@ -399,6 +438,38 @@ export function AttendanceActionDialog({
                   )}
                 />
               </div>
+            ) : null}
+
+            {action === "TRANSFER" && transferOptionsLoading ? (
+              <p className="flex items-center gap-2 text-sm text-muted-foreground" role="status">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Carregando filas permitidas para este atendimento…
+              </p>
+            ) : null}
+            {action === "TRANSFER" && transferOptionsError ? (
+              <div className="flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:justify-between" role="alert">
+                <p className="text-destructive">
+                  Não foi possível carregar os destinos permitidos.
+                </p>
+                {onRetryTransferOptions ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={onRetryTransferOptions}
+                    disabled={transferOptionsLoading}
+                  >
+                    Tentar novamente
+                  </Button>
+                ) : null}
+              </div>
+            ) : null}
+            {action === "TRANSFER" &&
+            transferAreas &&
+            !hasTransferDestination ? (
+              <p className="text-sm text-muted-foreground">
+                Não há filas disponíveis para transferência neste atendimento.
+              </p>
             ) : null}
 
             {action === "ASSIGN" ? (
@@ -449,7 +520,7 @@ export function AttendanceActionDialog({
               />
             ) : null}
 
-            {action === "TRANSFER" && options?.capabilities.canTransferToUser ? (
+            {canChooseTransferUser ? (
               <FormField
                 control={form.control}
                 name="targetUserId"
@@ -626,7 +697,11 @@ export function AttendanceActionDialog({
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
                 Cancelar
               </Button>
-              <Button type="submit" variant={action === "CLOSE" ? "destructive" : "default"} disabled={isSubmitting}>
+              <Button
+                type="submit"
+                variant={action === "CLOSE" ? "destructive" : "default"}
+                disabled={isSubmitting || transferOptionsUnavailable}
+              >
                 {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                 {copy.submit}
               </Button>

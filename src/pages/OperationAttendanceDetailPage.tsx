@@ -30,6 +30,7 @@ import {
   useOperationalAttendanceDetail,
   useOperationalAttendanceTimeline,
 } from "@/hooks/useOperationalAttendances";
+import { useOperationalAttendanceTransferOptions } from "@/hooks/useOperationalAttendanceTransferOptions";
 import { useOperationalRealtime } from "@/hooks/useOperationalRealtime";
 import { useOperationalAttendanceMutations } from "@/hooks/useOperationalAttendanceMutations";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -214,6 +215,11 @@ export default function OperationAttendanceDetailPage({
   );
   const attendanceMutations = useOperationalAttendanceMutations(workspaceId);
   const [activeAction, setActiveAction] = useState<AttendanceAction | null>(null);
+  const transferOptionsQuery = useOperationalAttendanceTransferOptions(
+    workspaceId,
+    attendanceId,
+    activeAction === "TRANSFER" && canViewAttendances && canOperateAttendances,
+  );
   const [migrationDialogOpen, setMigrationDialogOpen] = useState(false);
   const [secondaryPanelOpen, setSecondaryPanelOpen] = useState(
     getStoredSecondaryPanelOpen,
@@ -972,7 +978,11 @@ export default function OperationAttendanceDetailPage({
         description: "O atendimento, a timeline e os follow-ups foram atualizados.",
       });
       setActiveAction(null);
-      if (activeAction === "CLOSE") {
+      if (
+        activeAction === "CLOSE" ||
+        (activeAction === "TRANSFER" &&
+          !options?.capabilities.canTransferToUser)
+      ) {
         navigate("/operation/attendances", { replace: true });
       }
     } catch (error) {
@@ -1599,6 +1609,10 @@ export default function OperationAttendanceDetailPage({
         action={activeAction}
         attendance={attendance}
         options={options}
+        transferAreas={transferOptionsQuery.data}
+        transferOptionsLoading={transferOptionsQuery.isFetching}
+        transferOptionsError={transferOptionsQuery.isError}
+        onRetryTransferOptions={() => void transferOptionsQuery.refetch()}
         isSubmitting={isActionPending}
         onOpenChange={(open) => !open && setActiveAction(null)}
         onSubmit={(values) => void submitAction(values)}
