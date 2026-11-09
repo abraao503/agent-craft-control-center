@@ -213,6 +213,8 @@ export interface AttendanceMessageItem {
   } | null;
   dispatchStatus?: string | null;
   deliveryStatus?: string | null;
+  deliveryErrorCode?: string | null;
+  deliveryErrorMessage?: string | null;
   reactions?: WhatsappMessageReactionSummary[];
   replyContext?: MessageReplyContext;
   createdAt: string;

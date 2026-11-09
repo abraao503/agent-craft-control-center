@@ -17,12 +17,26 @@ function formatDeliveryCheckTime(observedAt?: string | null): string | null {
   });
 }
 
+function buildFailureDetails(
+  errorCode?: string | null,
+  errorMessage?: string | null,
+): string[] {
+  return [
+    errorCode?.trim() ? `Código: ${errorCode.trim()}` : null,
+    errorMessage?.trim() || null,
+  ].filter((detail): detail is string => Boolean(detail));
+}
+
 function DeliveryStatusIcon({
   status,
   observedAt,
+  errorCode,
+  errorMessage,
 }: {
   status: string;
   observedAt?: string | null;
+  errorCode?: string | null;
+  errorMessage?: string | null;
 }) {
   const normalizedStatus = status.trim().toUpperCase();
   const observedTime = formatDeliveryCheckTime(observedAt);
@@ -47,13 +61,17 @@ function DeliveryStatusIcon({
         : isPending
           ? "Mensagem pendente"
           : "Mensagem enviada";
-  const title = observedTime ? `${label} · ${observedTime}` : label;
+  const failureDetails = isFailure
+    ? buildFailureDetails(errorCode, errorMessage)
+    : [];
+  const headline = observedTime ? `${label} · ${observedTime}` : label;
+  const title = [headline, ...failureDetails].join("\n");
   const iconClassName = "h-4 w-4 shrink-0";
   const renderIcon = (icon: ReactNode, isFailure = false) => (
     <span
       className={isFailure ? "inline-flex cursor-help" : "inline-flex"}
       role="img"
-      aria-label={label}
+      aria-label={isFailure ? title : label}
       title={title}
     >
       {icon}
@@ -101,9 +119,13 @@ function DeliveryStatusIcon({
 export function MessageDeliveryChecks({
   summary,
   state = "ready",
+  errorCode,
+  errorMessage,
 }: {
   summary?: MessageDeliveryCheckSummary;
   state?: Exclude<MessageDeliveryChecksQueryState, "disabled">;
+  errorCode?: string | null;
+  errorMessage?: string | null;
 }) {
   if (summary?.statusTrackingSupported) {
     const latestCheck = summary.checks[summary.checks.length - 1];
@@ -114,7 +136,12 @@ export function MessageDeliveryChecks({
 
       return (
         <span className="inline-flex items-center" aria-label="Status da mensagem">
-          <DeliveryStatusIcon status={status} observedAt={observedAt} />
+          <DeliveryStatusIcon
+            status={status}
+            observedAt={observedAt}
+            errorCode={errorCode}
+            errorMessage={errorMessage}
+          />
         </span>
       );
     }
