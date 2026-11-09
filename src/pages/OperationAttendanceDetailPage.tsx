@@ -2072,6 +2072,8 @@ function ConversationMessage({
               <MessageDeliveryChecks
                 summary={deliveryChecks}
                 state={deliveryChecksState}
+                errorCode={message.deliveryErrorCode}
+                errorMessage={message.deliveryErrorMessage}
               />
             )}
           </div>
