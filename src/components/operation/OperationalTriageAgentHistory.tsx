@@ -59,6 +59,10 @@ const STAGE_PRESENTATIONS: Record<
     label: "TRANSFER · Transferido para fila humana",
     description: "A triagem encaminhou o atendimento para a fila configurada.",
   },
+  CLOSED: {
+    label: "Atendimento encerrado",
+    description: "Este atendimento foi encerrado e não está mais ativo.",
+  },
   HUMAN_QUEUE: {
     label: "Fila humana",
     description: "O atendimento aguarda um operador na fila configurada.",
@@ -152,6 +156,8 @@ function getCurrentStage(
   context: OperationalTriageAgentHistoryContext,
 ): OperationalTriageAgentStage {
   const latest = getLatestExecution(executions);
+
+  if (context.attendanceStatus === "CLOSED") return "CLOSED";
 
   if (latest?.status === "QUEUED" || latest?.status === "PROCESSING") {
     return getExecutionStage(latest);

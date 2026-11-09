@@ -366,7 +366,25 @@ function TimelineMessage({
           <div className="mt-1 text-right text-xs text-muted-foreground">
             {format(new Date(event.createdAt), "dd/MM/yyyy HH:mm")}
             {message.deliveryStatus && message.sender !== "customer" && (
-              <span className="ml-2" title={message.deliveryErrorMessage ?? undefined}>
+              <span
+                className={`ml-2 ${
+                  ["FAILED", "UNKNOWN"].includes(
+                    message.deliveryStatus.toUpperCase(),
+                  )
+                    ? "cursor-help"
+                    : ""
+                }`}
+                title={
+                  [
+                    message.deliveryErrorCode
+                      ? `Código: ${message.deliveryErrorCode}`
+                      : null,
+                    message.deliveryErrorMessage,
+                  ]
+                    .filter(Boolean)
+                    .join("\n") || "Falha no envio da mensagem"
+                }
+              >
                 <DeliveryStatusIcon status={message.deliveryStatus} />
               </span>
             )}

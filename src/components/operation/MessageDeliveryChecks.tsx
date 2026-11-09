@@ -49,8 +49,13 @@ function DeliveryStatusIcon({
           : "Mensagem enviada";
   const title = observedTime ? `${label} · ${observedTime}` : label;
   const iconClassName = "h-4 w-4 shrink-0";
-  const renderIcon = (icon: ReactNode) => (
-    <span className="inline-flex" role="img" aria-label={label} title={title}>
+  const renderIcon = (icon: ReactNode, isFailure = false) => (
+    <span
+      className={isFailure ? "inline-flex cursor-help" : "inline-flex"}
+      role="img"
+      aria-label={label}
+      title={title}
+    >
       {icon}
     </span>
   );
@@ -69,7 +74,8 @@ function DeliveryStatusIcon({
       <AlertCircle
         className={`${iconClassName} text-red-300`}
         aria-hidden="true"
-      />
+      />,
+      true,
     );
   }
 
