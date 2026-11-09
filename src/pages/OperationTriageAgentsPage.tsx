@@ -263,10 +263,12 @@ export default function OperationTriageAgentsPage() {
         <Radio className="h-4 w-4" />
         <AlertTitle>{OPERATIONAL_TRIAGE_AGENT_PROTOCOL_LABEL}</AlertTitle>
         <AlertDescription>
-          O agente externo conduz a conversa e informa quando ela continua em
-          <strong> CONVERSATION</strong> ou deve seguir em
-          <strong> TRANSFER</strong>. A área e a fila são definidas na rota do
-          canal operacional.
+          O agente externo informa se a conversa continua em
+          <strong> CONVERSATION</strong>, deve seguir para atendimento humano em
+          <strong> TRANSFER</strong> ou foi encerrada em
+          <strong> ENCERRADO</strong>. Para encerrar, envie ao menos uma mensagem
+          em <code>messages</code>. A área e a fila usadas na transferência são
+          definidas na rota do canal operacional.
         </AlertDescription>
       </Alert>
 

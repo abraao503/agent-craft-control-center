@@ -13,6 +13,7 @@ export type OperationalTriageAgentStage =
   | "WAITING_EXTERNAL_AGENT"
   | "CONVERSATION"
   | "TRANSFER"
+  | "CLOSED"
   | "HUMAN_QUEUE"
   | "HUMAN_CONTINGENCY"
   | "HUMAN_SERVICE"
