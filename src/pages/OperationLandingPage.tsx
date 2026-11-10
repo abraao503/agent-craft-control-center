@@ -12,6 +12,8 @@ import { useWorkspaceContext } from "@/contexts/workspace/WorkspaceContext";
 import { useOperationalSetup } from "@/hooks/useOperationalSetup";
 import { useOperationalChannels } from "@/hooks/useOperationalChannels";
 import { usePermissions } from "@/hooks/usePermissions";
+import { AudioTranscriptionKeyAlert } from "@/components/operation/AudioTranscriptionKeyAlert";
+import { AudioTranscriptionConfigCard } from "@/components/operation/AudioTranscriptionConfigCard";
 import {
   AlertCircle,
   ArrowRight,
@@ -105,6 +107,8 @@ export default function OperationLandingPage() {
           ) : null}
         </div>
       </header>
+
+      <AudioTranscriptionKeyAlert />
 
       {setupQuery.isLoading ? (
         <Card>
@@ -214,6 +218,8 @@ export default function OperationLandingPage() {
           </AlertDescription>
         </Alert>
       )}
+
+      {has("manage:operation-setup") ? <AudioTranscriptionConfigCard /> : null}
     </section>
   );
 }

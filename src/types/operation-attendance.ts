@@ -1,5 +1,6 @@
 import type { WhatsappMessageReactionSummary } from "./message";
 import type { MessageReplyContext } from "./message";
+import type { AttendanceMessageTranscription } from "./audio-transcription";
 
 export type AttendanceStatus =
   | "TRIAGE"
@@ -217,6 +218,7 @@ export interface AttendanceMessageItem {
   deliveryErrorMessage?: string | null;
   reactions?: WhatsappMessageReactionSummary[];
   replyContext?: MessageReplyContext;
+  transcription?: AttendanceMessageTranscription | null;
   createdAt: string;
   updatedAt: string;
 }

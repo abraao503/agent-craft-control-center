@@ -3,8 +3,11 @@ import { Loader2, Pause, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface AudioMessageProps {
-  url: string;
+  /** Null/undefined while the media is still being fetched: the player shell renders in loading state. */
+  url?: string | null;
   mimetype?: string;
+  /** The media could not be fetched (distinct from a playback error). */
+  fetchFailed?: boolean;
 }
 
 const waveform = [
@@ -12,7 +15,7 @@ const waveform = [
   24, 12, 20, 29, 16, 23, 13, 27, 17, 31, 12, 22, 15, 26, 10, 19, 28, 14,
 ];
 
-export const AudioMessage: React.FC<AudioMessageProps> = ({ url }) => {
+export const AudioMessage: React.FC<AudioMessageProps> = ({ url, fetchFailed = false }) => {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -26,6 +29,7 @@ export const AudioMessage: React.FC<AudioMessageProps> = ({ url }) => {
 
     setIsLoading(true);
     setHasError(false);
+    if (!url) return;
     setIsPlaying(false);
     setCurrentTime(0);
     setDuration(0);
@@ -125,8 +129,10 @@ export const AudioMessage: React.FC<AudioMessageProps> = ({ url }) => {
 
   return (
     <div className="w-[min(18rem,68vw)] min-w-[14rem] max-w-full py-1">
-      <audio ref={audioRef} src={url} preload="metadata" />
-      {hasError ? (
+      <audio ref={audioRef} src={url || undefined} preload="metadata" />
+      {fetchFailed ? (
+        <p className="text-sm opacity-80">Não foi possível carregar o áudio.</p>
+      ) : hasError ? (
         <div className="flex items-center gap-2 text-sm">
           <span className="flex-1 opacity-80">
             Não foi possível reproduzir o áudio.
@@ -139,7 +145,7 @@ export const AudioMessage: React.FC<AudioMessageProps> = ({ url }) => {
               setIsLoading(true);
               audioRef.current?.load();
             }}
-            className="h-8 px-2 text-current hover:bg-current/10"
+            className="h-8 px-2 text-current hover:bg-[color-mix(in_srgb,currentColor_12%,transparent)]"
           >
             Tentar novamente
           </Button>
@@ -152,7 +158,7 @@ export const AudioMessage: React.FC<AudioMessageProps> = ({ url }) => {
             onClick={() => void togglePlayPause()}
             disabled={isLoading}
             aria-label={isPlaying ? "Pausar áudio" : "Reproduzir áudio"}
-            className="h-10 w-10 shrink-0 rounded-full bg-current/15 p-0 text-current hover:bg-current/25 disabled:opacity-60"
+            className="h-10 w-10 shrink-0 rounded-full bg-[color-mix(in_srgb,currentColor_15%,transparent)] p-0 text-current hover:bg-[color-mix(in_srgb,currentColor_25%,transparent)] disabled:opacity-60"
           >
             {isLoading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -174,7 +180,7 @@ export const AudioMessage: React.FC<AudioMessageProps> = ({ url }) => {
               aria-valuetext={`${formatTime(currentTime)} de ${formatTime(duration)}`}
               onClick={handleWaveformClick}
               onKeyDown={handleWaveformKeyDown}
-              className={`flex h-10 min-w-0 flex-1 items-center justify-between gap-[2px] rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-current/60 ${duration ? "cursor-pointer" : "cursor-wait"}`}
+              className={`flex h-10 min-w-0 flex-1 items-center justify-between gap-[2px] rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,currentColor_60%,transparent)] ${duration ? "cursor-pointer" : "cursor-wait"}`}
             >
               {waveform.map((height, index) => {
                 const played = (index / waveform.length) * 100 <= progress;
@@ -182,7 +188,7 @@ export const AudioMessage: React.FC<AudioMessageProps> = ({ url }) => {
                   <span
                     key={index}
                     aria-hidden="true"
-                    className={`w-[2px] shrink-0 rounded-full transition-colors ${played ? "bg-current" : "bg-current/35"}`}
+                    className={`w-[2px] shrink-0 rounded-full transition-colors ${played ? "bg-current" : "bg-[color-mix(in_srgb,currentColor_35%,transparent)]"}`}
                     style={{ height: `${height}px` }}
                   />
                 );

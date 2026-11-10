@@ -17,6 +17,18 @@ import type {
 } from "@/types/operation-attendance";
 
 const EVENT_NAMES = Object.values(OPERATIONAL_PUBLIC_EVENTS) as OperationalPublicEventName[];
+
+/**
+ * The API publishes audio transcription results (completed/failed) on the
+ * already-subscribed `operation:message.status:v1` event, distinguished only by
+ * `kind`. They therefore reach the handler through EVENT_NAMES, with no extra
+ * event name to register.
+ */
+const TRANSCRIPTION_EVENT_NAME = OPERATIONAL_PUBLIC_EVENTS.MESSAGE_STATUS;
+const TRANSCRIPTION_KIND_PREFIX = "TRANSCRIPTION_";
+if (!EVENT_NAMES.includes(TRANSCRIPTION_EVENT_NAME)) {
+  throw new Error("Transcription events must be subscribed by the realtime hook");
+}
 const MAX_REMEMBERED_EVENTS = 500;
 
 function isReactionSummary(value: unknown): value is { emoji: string; count: number } {
@@ -396,9 +408,13 @@ export function useOperationalRealtime({
 
       const isCurrentAttendance = rawEvent.attendanceId === targetAttendanceId;
       const isReactionEvent = rawEvent.kind === "REACTION";
+      // Transcription results do not bump the attendance version, so the
+      // version-based stale check must not drop them.
+      const isTranscriptionEvent = rawEvent.kind.startsWith(TRANSCRIPTION_KIND_PREFIX);
       const isKnownStaleEvent =
         isCurrentAttendance &&
         !isReactionEvent &&
+        !isTranscriptionEvent &&
         rawEvent.aggregateVersion !== null &&
         currentVersionRef.current !== undefined &&
         rawEvent.aggregateVersion <= currentVersionRef.current;
@@ -406,7 +422,7 @@ export function useOperationalRealtime({
 
       setLastEventAt(rawEvent.occurredAt);
 
-      if (!isReactionEvent) patchKanbanCache(rawEvent);
+      if (!isReactionEvent && !isTranscriptionEvent) patchKanbanCache(rawEvent);
       const reactionPatched = isReactionEvent
         ? patchAttendanceReactionCache(rawEvent)
         : false;

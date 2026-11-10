@@ -6,6 +6,7 @@ import { AudioMessage } from '@/components/chats/media/AudioMessage';
 import { DocumentMessage } from '@/components/chats/media/DocumentMessage';
 import { VideoMessage } from '@/components/chats/media/VideoMessage';
 import { getOperationalAttendanceMessageMedia } from '@/services/operation/getOperationalAttendanceMessageMedia';
+import { AudioTranscription } from '@/components/operation/AudioTranscription';
 
 type AttendanceMessageMediaProps = {
   workspaceId?: string;
@@ -89,6 +90,28 @@ export function AttendanceMessageMedia({
     );
   }
 
+  // Audio keeps its player in place while the file loads, so the type is
+  // identifiable right away and the transcription does not wait for the media.
+  if (message.type === 'audio') {
+    return (
+      <>
+        <AudioMessage
+          url={mediaUrl}
+          fetchFailed={hasError || (!isLoading && !mediaUrl)}
+          mimetype={message.mediaMimetype || undefined}
+        />
+        {message.transcription ? (
+          <AudioTranscription
+            workspaceId={workspaceId}
+            attendanceId={attendanceId}
+            messageId={message.id}
+            transcription={message.transcription}
+          />
+        ) : null}
+      </>
+    );
+  }
+
   if (isLoading) {
     return (
       <div className="flex justify-center py-2" role="status" aria-label="Carregando mídia">
@@ -106,15 +129,6 @@ export function AttendanceMessageMedia({
       <ImageMessage
         url={mediaUrl}
         caption={message.content || undefined}
-        mimetype={message.mediaMimetype || undefined}
-      />
-    );
-  }
-
-  if (message.type === 'audio') {
-    return (
-      <AudioMessage
-        url={mediaUrl}
         mimetype={message.mediaMimetype || undefined}
       />
     );
