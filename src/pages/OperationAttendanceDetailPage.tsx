@@ -15,6 +15,7 @@ import {
   PanelRightOpen,
   PauseCircle,
   PlayCircle,
+  Radio,
   RefreshCw,
   UserMinus,
   UserPlus,
@@ -158,7 +159,7 @@ function getStoredSecondaryPanelOpen(): boolean {
     // Ignore storage errors and keep the default state.
   }
 
-  return true;
+  return false;
 }
 
 interface OperationAttendanceDetailPageProps {
@@ -1006,6 +1007,8 @@ export default function OperationAttendanceDetailPage({
     attendance.channel &&
       (!attendance.channel.active || attendance.channel.deletedAt),
   );
+  const channelLabel = attendance.channel?.displayName?.trim() || "WhatsApp";
+  const queueLabel = attendance.destination?.queueName ?? "";
 
   return (
     <section
@@ -1040,10 +1043,30 @@ export default function OperationAttendanceDetailPage({
                   {STATUS_LABELS[attendance.status]}
                 </Badge>
               </div>
-              <p className="truncate text-xs text-muted-foreground">
-                {attendance.customer?.phone || "Telefone não informado"}
-                {destination ? ` · ${destination}` : ""}
-              </p>
+              <div className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+                {attendance.channel ? (
+                  <span
+                    className={`inline-flex min-w-0 max-w-[10rem] shrink-0 items-center gap-1 rounded-full border px-1.5 py-0.5 text-[11px] font-medium leading-none ${
+                      channelUnavailable
+                        ? "border-amber-300 bg-amber-50 text-amber-800"
+                        : "border-border bg-muted/40 text-foreground"
+                    }`}
+                    title={
+                      channelUnavailable
+                        ? `Canal: ${channelLabel} (pausado ou arquivado)`
+                        : `Canal: ${channelLabel}`
+                    }
+                  >
+                    <Radio className="h-3 w-3 shrink-0" aria-hidden="true" />
+                    <span className="sr-only">Canal: </span>
+                    <span className="truncate">{channelLabel}</span>
+                  </span>
+                ) : null}
+                <span className="truncate">
+                  {attendance.customer?.phone || "Telefone não informado"}
+                  {queueLabel ? ` · ${queueLabel}` : ""}
+                </span>
+              </div>
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-2">
@@ -1160,9 +1183,7 @@ export default function OperationAttendanceDetailPage({
       <div
         className={
           embedded
-            ? secondaryPanelOpen
-              ? "relative flex min-h-0 flex-1 overflow-hidden [@container(min-width:64rem)]:grid [@container(min-width:64rem)]:grid-cols-[minmax(0,1fr)_19rem]"
-              : "relative flex min-h-0 flex-1 overflow-hidden [@container(min-width:64rem)]:grid [@container(min-width:64rem)]:grid-cols-[minmax(0,1fr)_3.25rem]"
+            ? "relative flex min-h-0 flex-1 overflow-hidden [@container(min-width:64rem)]:grid [@container(min-width:64rem)]:grid-cols-[minmax(0,1fr)_3.25rem] [@container(min-width:64rem)]:grid-rows-[minmax(0,1fr)]"
             : "grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]"
         }
       >
@@ -1172,7 +1193,7 @@ export default function OperationAttendanceDetailPage({
             tabIndex={-1}
             aria-label="Fechar painel de detalhes"
             onClick={() => setSecondaryPanelOpen(false)}
-            className="absolute inset-0 z-20 cursor-default border-0 bg-black/20 p-0 [@container(min-width:64rem)]:hidden"
+            className="absolute inset-0 z-20 cursor-default border-0 bg-black/20 p-0"
           />
         ) : null}
         <div
@@ -1376,7 +1397,7 @@ export default function OperationAttendanceDetailPage({
           className={
             embedded
               ? secondaryPanelOpen
-                ? "absolute inset-y-0 right-0 z-30 flex w-[min(19rem,100%)] min-w-0 flex-col border-l bg-card shadow-xl [@container(min-width:64rem)]:static [@container(min-width:64rem)]:z-auto [@container(min-width:64rem)]:w-auto [@container(min-width:64rem)]:shadow-none"
+                ? "absolute inset-y-0 right-0 z-30 flex w-[min(26rem,100%)] min-w-0 flex-col border-l bg-card shadow-xl"
                 : "hidden [@container(min-width:64rem)]:static [@container(min-width:64rem)]:flex [@container(min-width:64rem)]:min-h-0 [@container(min-width:64rem)]:flex-col [@container(min-width:64rem)]:border-l [@container(min-width:64rem)]:bg-card"
               : "min-w-0"
           }
