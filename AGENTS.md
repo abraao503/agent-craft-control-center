@@ -46,7 +46,7 @@ confirmação no código ou no contrato atual da API.
 ### Execução com Flow
 
 Para planos, consentimento, emendas e recuperação, siga o
-[protocolo operacional compartilhado](../flow/docs/agent-workflow.md).
+[protocolo operacional compartilhado](../../flow/docs/agent-workflow.md).
 Execute o CLI com `--workspace ..` a partir de `front/`.
 Os checks e a verificação visual deste arquivo continuam aplicáveis.
 
@@ -139,7 +139,7 @@ rtk npm run build
 
 O script `lint:modified` recebe explicitamente os arquivos alterados e evita
 que erros preexistentes em outras áreas bloqueiem a tarefa. No workspace que
-usa o Flow, prefira `rtk node ../flow/dist/src/main.js check modified --repo
+usa o Flow, prefira `rtk node ../../flow/dist/src/main.js check modified --repo
 front --workspace ..`, que descobre os arquivos rastreados e não rastreados automaticamente.
 Use `rtk npm run lint` somente quando houver mudança em configuração global do
 ESLint/parser, dependências ou quando a validação completa for solicitada.

@@ -25,6 +25,22 @@ export interface OperationalTriageAgentConnectionTest {
   latencyMs: number;
 }
 
+export interface OperationalTriageAgentCallbackKeyStatus {
+  configured: boolean;
+  keyPrefix: string | null;
+  createdAt: string | null;
+}
+
+export interface OperationalTriageAgentCallbackKeyIssue
+  extends OperationalTriageAgentCallbackKeyStatus {
+  secret: string;
+}
+
+export interface OperationalTriageAgentCallbackKeyParams {
+  workspaceId: string;
+  agentId: string;
+}
+
 export interface OperationalTriageAgentListResponse {
   items: OperationalTriageAgent[];
 }

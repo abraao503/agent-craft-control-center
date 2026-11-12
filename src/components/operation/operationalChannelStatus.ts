@@ -169,6 +169,20 @@ export function deriveOperationalChannelState(
     };
   }
 
+  if (channel.diagnostic.code === "CONNECTION_STATUS_UNCONFIRMED") {
+    return {
+      key: "NEEDS_ATTENTION",
+      label: "Conexão não confirmada",
+      description: "Não foi possível consultar a conexão com o provedor. Atualize o status para tentar novamente.",
+      tone: "warning",
+      nextStep: "Atualizar status do canal",
+      priority: OPERATIONAL_CHANNEL_STATE_PRIORITIES.NEEDS_ATTENTION,
+      primaryAction: canManageConnectionActions
+        ? { action: "refresh-status", label: "Atualizar status" }
+        : null,
+    };
+  }
+
   if (providerReportsError(channel)) {
     return {
       key: "NEEDS_ATTENTION",

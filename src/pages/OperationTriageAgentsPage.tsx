@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import {
   AlertCircle,
   ArrowLeft,
+  FileText,
   KeyRound,
   Loader2,
   Pencil,
@@ -21,7 +22,6 @@ import { usePermissions } from "@/hooks/usePermissions";
 import {
   OperationalTriageAgent,
   CreateOperationalTriageAgentBody,
-  OPERATIONAL_TRIAGE_AGENT_PROTOCOL_LABEL,
   UpdateOperationalTriageAgentBody,
 } from "@/types/operation-triage-agent";
 import {
@@ -55,6 +55,9 @@ import {
 import { ToastAction } from "@/components/ui/toast";
 import { useToast } from "@/hooks/use-toast";
 import { formatOperationalDateTime } from "@/components/operation/operationalChannelLabels";
+import { OperationalTriageAgentCallbackKey } from "@/components/operation/OperationalTriageAgentCallbackKey";
+import { OperationalTriageAgentDocumentation } from "@/components/operation/OperationalTriageAgentDocumentation";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function OperationTriageAgentsPage() {
   const { currentWorkspace } = useWorkspaceContext();
@@ -85,6 +88,19 @@ export default function OperationTriageAgentsPage() {
   const closeDialog = (open: boolean) => {
     setDialogOpen(open);
     if (!open) setEditingAgent(null);
+  };
+
+  const handleCopyDocumentation = async (value: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      toast({ title: "Conteúdo copiado" });
+    } catch {
+      toast({
+        title: "Não foi possível copiar automaticamente",
+        description: "Selecione o conteúdo e copie manualmente.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleSubmit = async (values: OperationalTriageAgentFormValues) => {
@@ -250,94 +266,86 @@ export default function OperationTriageAgentsPage() {
         </div>
       </header>
 
-      <Alert>
-        <KeyRound className="h-4 w-4" />
-        <AlertTitle>Credenciais protegidas</AlertTitle>
-        <AlertDescription>
-          O segredo é somente para gravação (não pode ser lido depois). A API valida a empresa, a configuração e a
-          versão do registro antes de persistir qualquer alteração.
-        </AlertDescription>
-      </Alert>
-
-      <Alert>
-        <Radio className="h-4 w-4" />
-        <AlertTitle>{OPERATIONAL_TRIAGE_AGENT_PROTOCOL_LABEL}</AlertTitle>
-        <AlertDescription>
-          O agente externo informa se a conversa continua em
-          <strong> CONVERSATION</strong>, deve seguir para atendimento humano em
-          <strong> TRANSFER</strong> ou foi encerrada em
-          <strong> ENCERRADO</strong>. Para encerrar, envie ao menos uma mensagem
-          em <code>messages</code>. A área e a fila usadas na transferência são
-          definidas na rota do canal operacional.
-        </AlertDescription>
-      </Alert>
-
-      {agentsQuery.isLoading ? (
-        <Card>
-          <CardContent className="flex min-h-48 items-center justify-center gap-2">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            <span className="sr-only">Carregando agentes externos de triagem</span>
-          </CardContent>
-        </Card>
-      ) : agentsQuery.isError ? (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Não foi possível carregar os agentes externos</AlertTitle>
-          <AlertDescription className="flex flex-wrap items-center gap-3">
-            {getOperationalTriageAgentErrorMessage(
-              agentsQuery.error,
-              "Verifique sua permissão e tente novamente.",
-            )}
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => void agentsQuery.refetch()}
-              disabled={agentsQuery.isFetching}
-            >
-              <RefreshCw className="h-4 w-4" />
-              Tentar novamente
-            </Button>
-          </AlertDescription>
-        </Alert>
-      ) : (
-        <Card>
-          <CardHeader>
-            <CardTitle>Agentes externos deste ambiente</CardTitle>
-            <CardDescription>
-              Somente agentes externos ativos aparecem como destino de novas rotas.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {agentsQuery.data?.items.length ? (
-              <div className="space-y-3">
-                {agentsQuery.data.items.map((agent) => (
-                  <AgentRow
-                    key={agent.id}
-                    agent={agent}
-                    isTesting={mutations.test.isPending}
-                    canEdit={canManage}
-                    onEdit={openEditDialog}
-                    onTest={(item) => void handleTest(item)}
-                    onDeactivate={setAgentToDeactivate}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="rounded-lg border border-dashed p-8 text-center">
-                <Radio className="mx-auto h-8 w-8 text-muted-foreground" />
-                <p className="mt-3 font-medium">Nenhum agente externo de triagem</p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Cadastre o primeiro agente externo para habilitar rotas de triagem.
-                </p>
-                <Button className="mt-4" onClick={openCreateDialog} disabled={!canManage}>
-                  <Plus className="h-4 w-4" />
-                  Criar agente externo
+      <Tabs defaultValue="agents">
+        <TabsList className="grid w-full grid-cols-2 sm:w-fit">
+          <TabsTrigger value="agents">Agentes</TabsTrigger>
+          <TabsTrigger value="documentation">
+            <FileText className="mr-2 h-4 w-4" />
+            Documentação
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value="agents" className="mt-6">
+          {agentsQuery.isLoading ? (
+            <Card>
+              <CardContent className="flex min-h-48 items-center justify-center gap-2">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                <span className="sr-only">Carregando agentes externos de triagem</span>
+              </CardContent>
+            </Card>
+          ) : agentsQuery.isError ? (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Não foi possível carregar os agentes externos</AlertTitle>
+              <AlertDescription className="flex flex-wrap items-center gap-3">
+                {getOperationalTriageAgentErrorMessage(
+                  agentsQuery.error,
+                  "Verifique sua permissão e tente novamente.",
+                )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => void agentsQuery.refetch()}
+                  disabled={agentsQuery.isFetching}
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  Tentar novamente
                 </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
+              </AlertDescription>
+            </Alert>
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle>Agentes externos deste ambiente</CardTitle>
+                <CardDescription>
+                  Somente agentes externos ativos aparecem como destino de novas rotas.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {agentsQuery.data?.items.length ? (
+                  <div className="space-y-3">
+                    {agentsQuery.data.items.map((agent) => (
+                      <AgentRow
+                        key={agent.id}
+                        agent={agent}
+                        isTesting={mutations.test.isPending}
+                        canEdit={canManage}
+                        onEdit={openEditDialog}
+                        onTest={(item) => void handleTest(item)}
+                        onDeactivate={setAgentToDeactivate}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-lg border border-dashed p-8 text-center">
+                    <Radio className="mx-auto h-8 w-8 text-muted-foreground" />
+                    <p className="mt-3 font-medium">Nenhum agente externo de triagem</p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Cadastre o primeiro agente externo para habilitar rotas de triagem.
+                    </p>
+                    <Button className="mt-4" onClick={openCreateDialog} disabled={!canManage}>
+                      <Plus className="h-4 w-4" />
+                      Criar agente externo
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+        <TabsContent value="documentation" className="mt-6">
+          <OperationalTriageAgentDocumentation onCopy={handleCopyDocumentation} />
+        </TabsContent>
+      </Tabs>
 
       <OperationalTriageAgentDialog
         open={dialogOpen}
@@ -397,58 +405,61 @@ function AgentRow({
   onDeactivate: (agent: OperationalTriageAgent) => void;
 }) {
   return (
-    <div className="flex flex-col gap-4 rounded-lg border p-4 lg:flex-row lg:items-center lg:justify-between">
-      <div className="min-w-0 space-y-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <Radio className="h-4 w-4 text-primary" />
-          <p className="font-medium">{agent.name}</p>
-          <Badge variant={agent.enabled ? "secondary" : "outline"}>
-            {agent.enabled ? "Ativo" : "Desativado"}
-          </Badge>
-          {agent.credentialConfigured ? (
-            <Badge variant="outline">
-              <KeyRound className="mr-1 h-3 w-3" />
-              Chave de acesso configurada
+    <div className="flex flex-col gap-4 rounded-lg border p-4">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="min-w-0 space-y-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <Radio className="h-4 w-4 text-primary" />
+            <p className="font-medium">{agent.name}</p>
+            <Badge variant={agent.enabled ? "secondary" : "outline"}>
+              {agent.enabled ? "Ativo" : "Desativado"}
             </Badge>
-          ) : (
-            <Badge variant="outline">Chave de acesso ausente</Badge>
-          )}
+            {agent.credentialConfigured ? (
+              <Badge variant="outline">
+                <KeyRound className="mr-1 h-3 w-3" />
+                Credencial de saída configurada
+              </Badge>
+            ) : (
+              <Badge variant="outline">Credencial de saída ausente</Badge>
+            )}
+          </div>
+          <p className="truncate text-sm text-muted-foreground">{agent.baseUrl}</p>
+          <p className="text-xs text-muted-foreground">
+            Resposta: {agent.timeoutMs} ms · até {agent.maxAttempts} tentativas
+            {agent.updatedAt ? ` · atualizado em ${formatOperationalDateTime(agent.updatedAt)}` : ""}
+          </p>
         </div>
-        <p className="truncate text-sm text-muted-foreground">{agent.baseUrl}</p>
-        <p className="text-xs text-muted-foreground">
-          Resposta: {agent.timeoutMs} ms · até {agent.maxAttempts} tentativas
-          {agent.updatedAt ? ` · atualizado em ${formatOperationalDateTime(agent.updatedAt)}` : ""}
-        </p>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => onTest(agent)}
+            disabled={!canEdit || isTesting}
+          >
+            {isTesting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <TestTube2 className="h-4 w-4" />
+            )}
+            Testar agente
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => onEdit(agent)} disabled={!canEdit}>
+            <Pencil className="h-4 w-4" />
+            Editar
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="text-destructive hover:text-destructive"
+            onClick={() => onDeactivate(agent)}
+            disabled={!canEdit || !agent.enabled}
+          >
+            <Trash2 className="h-4 w-4" />
+            Desativar
+          </Button>
+        </div>
       </div>
-      <div className="flex flex-wrap gap-2">
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => onTest(agent)}
-          disabled={!canEdit || isTesting}
-        >
-          {isTesting ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <TestTube2 className="h-4 w-4" />
-          )}
-          Testar agente
-        </Button>
-        <Button size="sm" variant="ghost" onClick={() => onEdit(agent)} disabled={!canEdit}>
-          <Pencil className="h-4 w-4" />
-          Editar
-        </Button>
-        <Button
-          size="sm"
-          variant="ghost"
-          className="text-destructive hover:text-destructive"
-          onClick={() => onDeactivate(agent)}
-          disabled={!canEdit || !agent.enabled}
-        >
-          <Trash2 className="h-4 w-4" />
-          Desativar
-        </Button>
-      </div>
+      {canEdit ? <OperationalTriageAgentCallbackKey agent={agent} /> : null}
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { refreshOperationalChannelStatus } from "@/services/operation/refreshOperationalChannelStatus";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useWorkspaceContext } from "@/contexts/workspace/WorkspaceContext";
 import { connectSocket } from "@/lib/socket";
@@ -243,7 +244,18 @@ export function useOperationalChannelMutations(workspaceId?: string) {
     },
   });
 
+  const refreshStatus = useMutation({
+    mutationFn: (params: { channelId: string }) => {
+      if (!resolvedWorkspaceId) {
+        throw new Error("Workspace operacional não selecionado");
+      }
+      return refreshOperationalChannelStatus({ ...params, workspaceId: resolvedWorkspaceId });
+    },
+    onSettled: invalidateChannels,
+  });
+
   return {
+    refreshStatus,
     create,
     update,
     deactivate,

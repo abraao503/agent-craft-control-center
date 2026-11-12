@@ -126,7 +126,8 @@ export type OperationalChannelOnboardingProps = {
   ) => Promise<void>;
   onActivateChannel: (channelId: string) => Promise<void>;
   onRequestQrCode: (channelId: string) => Promise<string>;
-  onRefreshStatus: () => Promise<void> | void;
+  onRefreshStatus: (channelId?: string) => Promise<void> | void;
+  isRefreshingStatus?: boolean;
 };
 
 export function OperationalChannelOnboarding({
@@ -145,6 +146,7 @@ export function OperationalChannelOnboarding({
   onActivateChannel,
   onRequestQrCode,
   onRefreshStatus,
+  isRefreshingStatus = false,
 }: OperationalChannelOnboardingProps) {
   const navigate = useNavigate();
   const [step, setStep] = useState<OnboardingStep>("provider");
@@ -746,8 +748,8 @@ export function OperationalChannelOnboarding({
                 <Button
                   type="button"
                   variant="secondary"
-                  onClick={() => void onRefreshStatus()}
-                  disabled={isActivating || isRequestingQr}
+                  onClick={() => void onRefreshStatus(createdChannel?.id)}
+                  disabled={isActivating || isRequestingQr || isRefreshingStatus}
                 >
                   Atualizar status
                 </Button>
