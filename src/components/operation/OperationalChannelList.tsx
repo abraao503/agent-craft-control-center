@@ -44,7 +44,7 @@ type OperationalChannelListProps = {
   canMigrateAttendances: boolean;
   isMigratingAttendances: boolean;
   onMigrateAttendances: (channel: OperationalChannel) => void;
-  onRefresh: () => void;
+  onRefresh: (channel: OperationalChannel) => void;
   page: number;
   totalPages: number;
   onPageChange: (page: number) => void;
@@ -229,7 +229,7 @@ export function OperationalChannelList({
     canMigrateAttendances,
     isMigratingAttendances,
     onMigrateAttendances,
-    onRefresh,
+    onRefresh: () => selectedChannel && onRefresh(selectedChannel),
   };
 
   return (

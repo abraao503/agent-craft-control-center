@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   AlertCircle,
@@ -120,6 +120,8 @@ export function OperationalChannelsManager({
   );
   const [qrCode, setQrCode] = useState<QrCodeState | null>(null);
   const [webhookUrls, setWebhookUrls] = useState<Record<string, string>>({});
+  const refreshingStatus = useRef(false);
+  const [unconfirmedStatusVersions, setUnconfirmedStatusVersions] = useState<Record<string, number>>({});
 
   const canManageChannels = has("manage:operation-channels");
   const canManageTriageAgents = has("manage:operation-setup");
@@ -237,7 +239,19 @@ export function OperationalChannelsManager({
       ),
     [metaAccountsQuery.data],
   );
-  const channels = channelsQuery.data?.items ?? [];
+  const channels = (channelsQuery.data?.items ?? []).map((channel) =>
+    unconfirmedStatusVersions[`${channel.workspaceId}:${channel.id}`] === channel.version
+      ? {
+          ...channel,
+          status: "error",
+          connectionStatus: "UNKNOWN",
+          diagnostic: {
+            code: "CONNECTION_STATUS_UNCONFIRMED",
+            message: "Não foi possível confirmar a conexão com o provedor.",
+          },
+        }
+      : channel,
+  );
   const defaultProvider: OperationalChannelProviderName =
     providersQuery.data?.[0]?.name ?? "z-api";
   const channelDialogPending =
@@ -261,6 +275,42 @@ export function OperationalChannelsManager({
 
   const refreshOperationalState = async () => {
     await Promise.all([channelsQuery.refetch(), routesQuery.refetch()]);
+  };
+
+  const refreshChannelStatus = async (channel: OperationalChannel) => {
+    if (channel.provider !== "evolux") {
+      await refreshOperationalState();
+      return;
+    }
+    if (!canManageChannels || refreshingStatus.current) return;
+    refreshingStatus.current = true;
+    try {
+      const result = await channelMutations.refreshStatus.mutateAsync({ channelId: channel.id });
+      setUnconfirmedStatusVersions((current) => {
+        const next = { ...current };
+        delete next[`${channel.workspaceId}:${channel.id}`];
+        return next;
+      });
+      if (!result.confirmed) {
+        toast({
+          title: "Conexão não confirmada",
+          description: "O provedor não confirmou a conexão. Aguarde e atualize o status novamente.",
+          variant: "destructive",
+        });
+      }
+    } catch {
+      setUnconfirmedStatusVersions((current) => ({
+        ...current,
+        [`${channel.workspaceId}:${channel.id}`]: channel.version,
+      }));
+      toast({
+        title: "Não foi possível atualizar o status",
+        description: "A conexão não pôde ser confirmada. Tente novamente em instantes.",
+        variant: "destructive",
+      });
+    } finally {
+      refreshingStatus.current = false;
+    }
   };
 
   const handleSyncMetaTemplates = (channel: OperationalChannel) => {
@@ -697,7 +747,7 @@ export function OperationalChannelsManager({
           channels={channels}
           routesByChannelId={routesByChannelId}
           isLoading={channelsQuery.isLoading}
-          isFetching={channelsQuery.isFetching}
+          isFetching={channelsQuery.isFetching || channelMutations.refreshStatus.isPending}
           isError={channelsQuery.isError}
           onRetryChannels={() => channelsQuery.refetch()}
           routesIsError={routesQuery.isError}
@@ -721,7 +771,7 @@ export function OperationalChannelsManager({
           canMigrateAttendances={canManageChannels}
           isMigratingAttendances={channelMigration.isPending}
           onMigrateAttendances={setChannelToMigrate}
-          onRefresh={() => void refreshOperationalState()}
+          onRefresh={(channel) => void refreshChannelStatus(channel)}
           page={channelsQuery.data?.page ?? channelsPage}
           totalPages={channelsQuery.data?.totalPages ?? 1}
           onPageChange={setChannelsPage}
@@ -790,7 +840,13 @@ export function OperationalChannelsManager({
           await refreshOperationalState();
           return response.qrCode;
         }}
-        onRefreshStatus={refreshOperationalState}
+        isRefreshingStatus={channelMutations.refreshStatus.isPending}
+        onRefreshStatus={async (channelId) => {
+          const target = channels.find((channel) => channel.id === channelId)
+            ?? (onboardingChannelSnapshot?.id === channelId ? onboardingChannelSnapshot : null);
+          if (target) await refreshChannelStatus(target);
+          else await refreshOperationalState();
+        }}
       />
 
       <OperationalChannelDialog

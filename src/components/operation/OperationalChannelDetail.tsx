@@ -238,7 +238,7 @@ function ChannelDetailContent({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onSelect={onRefresh} disabled={isRefreshing}>
+              <DropdownMenuItem onSelect={onRefresh} disabled={isRefreshing || (channel.provider === "evolux" && !canManageRoute)}>
                 <RefreshCw
                   className={cn("mr-2 h-4 w-4", isRefreshing && "animate-spin")}
                 />

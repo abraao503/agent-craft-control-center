@@ -52,6 +52,7 @@ export const OPERATIONAL_CHANNEL_ROUTE_MISSING_LABELS: Record<
 };
 
 const STATUS_LABELS: Record<string, string> = {
+  UNKNOWN: "Não confirmada",
   CONNECTED: "Conectado",
   DISCONNECTED: "Desconectado",
   CONNECTING: "Conectando",
