@@ -813,6 +813,7 @@ export default function OperationAttendanceDetailPage({
   const hasExternalHandoff = timelineItems.some(
     (item) =>
       item.kind === "event" &&
+      item.attendanceId === attendance.id &&
       (item.action === "ROUTE" || item.action === "TRANSFER") &&
       item.actorType === "INTEGRATION",
   );
