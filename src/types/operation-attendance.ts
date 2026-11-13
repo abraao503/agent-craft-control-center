@@ -147,6 +147,14 @@ export interface AttendanceReplyCapabilities {
   supportsMedia: boolean;
   supportsTemplate: boolean;
   latestInboundMessageId: string | null;
+  serviceWindow?: {
+    status: "OPEN" | "EXPIRED" | "NO_INBOUND";
+    lastInboundAt: string | null;
+    latestInboundOnAnotherChannel: {
+      channelName: string;
+      createdAt: string;
+    } | null;
+  };
 }
 
 export type OperationalTemplateBinding =
@@ -201,6 +209,7 @@ export type AttendanceMessageSender = "CUSTOMER" | "HUMAN" | "ASSISTANT";
 export interface AttendanceMessageItem {
   id: string;
   clientMessageId?: string | null;
+  channelName?: string | null;
   sender: AttendanceMessageSender;
   type: string;
   content: string;

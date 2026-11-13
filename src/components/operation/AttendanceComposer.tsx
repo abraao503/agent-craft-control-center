@@ -218,6 +218,16 @@ function formatFileSize(size: number) {
   return `${(size / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function formatChannelDateTime(value: string | Date) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Data indisponível";
+
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(date);
+}
+
 export function AttendanceComposer({
   workspaceId,
   attendance,
@@ -274,11 +284,11 @@ export function AttendanceComposer({
     isTemplateRequired ? "TEMPLATE" : "TEXT",
   );
   const [isInternalNoteMode, setIsInternalNoteMode] = useState(false);
-  const [templateCollapsed, setTemplateCollapsed] = useState(false);
+  const [templateCollapsed, setTemplateCollapsed] = useState(isTemplateRequired);
 
   useEffect(() => {
-    setTemplateCollapsed(false);
-  }, [attendance.id, mode]);
+    setTemplateCollapsed(isTemplateRequired);
+  }, [attendance.id, mode, isTemplateRequired]);
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedFilePreviewUrl, setSelectedFilePreviewUrl] = useState<
@@ -648,6 +658,47 @@ export function AttendanceComposer({
           ? "O atendimento precisa estar em andamento ou pendente."
           : "Não há um modo de resposta disponível para este canal.";
 
+  const serviceWindow = attendance.replyCapabilities.serviceWindow;
+  const channelName = attendance.channel?.displayName || "canal atual";
+  const latestInboundOnAnotherChannel =
+    serviceWindow?.latestInboundOnAnotherChannel;
+  const showServiceWindowContext =
+    statusAllowsSend &&
+    ["TEMPLATE_REQUIRED", "NOT_ASSIGNEE"].includes(
+      attendance.replyCapabilities.status,
+    );
+  const serviceWindowNotice = !serviceWindow
+    ? `O ${channelName} exige um template aprovado para iniciar a conversa.`
+    : serviceWindow.status === "OPEN"
+      ? `A janela do ${channelName} está aberta${
+          attendance.serviceWindowExpiresAt
+            ? ` até ${formatChannelDateTime(attendance.serviceWindowExpiresAt)}`
+            : ""
+        }. ${disabledReason}`
+      : serviceWindow.status === "EXPIRED"
+        ? `A janela do ${channelName} expirou${
+            attendance.serviceWindowExpiresAt
+              ? ` em ${formatChannelDateTime(attendance.serviceWindowExpiresAt)}`
+              : ""
+          }.${
+            latestInboundOnAnotherChannel
+              ? ` A mensagem de ${formatChannelDateTime(latestInboundOnAnotherChannel.createdAt)} chegou pelo ${latestInboundOnAnotherChannel.channelName} e não renovou a janela do ${channelName}.`
+              : ""
+          } Envie um template aprovado para iniciar uma nova conversa.${
+            latestInboundOnAnotherChannel
+              ? attendance.actionCapabilities?.canMigrateChannel
+                ? ` Para continuar pelo ${latestInboundOnAnotherChannel.channelName}, use “Migrar canal” acima.`
+                : " Para continuar por outro canal, solicite a migração do atendimento."
+              : ""
+          }`
+        : latestInboundOnAnotherChannel
+          ? `Nenhuma mensagem da cliente foi recebida pelo ${channelName}. A última chegou pelo ${latestInboundOnAnotherChannel.channelName} em ${formatChannelDateTime(latestInboundOnAnotherChannel.createdAt)}. Envie um template pelo ${channelName}.${
+              attendance.actionCapabilities?.canMigrateChannel
+                ? ` Para continuar pelo ${latestInboundOnAnotherChannel.channelName}, use “Migrar canal” acima.`
+                : " Para continuar por outro canal, solicite a migração do atendimento."
+            }`
+          : `Ainda não há mensagem da cliente recebida pelo ${channelName}. Para iniciar a conversa, envie um template aprovado.`;
+
   const catalogFeedback = templateCatalogQuery.isError
     ? {
         title: "Catálogo de templates indisponível",
@@ -702,17 +753,17 @@ export function AttendanceComposer({
           </Button>
         </div>
       ) : null}
-      {isTemplateRequired && !templateCollapsed ? (
-        <p
-          className={
-            embedded
-              ? "mb-3 text-xs text-muted-foreground"
-              : "mb-4 text-sm text-muted-foreground"
-          }
-        >
-          A janela de 24 horas foi encerrada. Para iniciar uma nova conversa,
-          envie um template aprovado.
-        </p>
+      {showServiceWindowContext ? (
+        <Alert className="mb-3 bg-muted/20" aria-live="polite">
+          <AlertTitle>
+            {serviceWindow?.status === "OPEN"
+              ? "Janela aberta neste canal"
+              : serviceWindow?.status === "EXPIRED"
+                ? "Janela expirada neste canal"
+                : "Sem mensagem recebida neste canal"}
+          </AlertTitle>
+          <AlertDescription>{serviceWindowNotice}</AlertDescription>
+        </Alert>
       ) : null}
 
       {canCompose && catalogFeedback ? (

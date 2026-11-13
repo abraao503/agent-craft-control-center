@@ -1342,6 +1342,7 @@ export default function OperationAttendanceDetailPage({
                               message={item}
                               workspaceId={workspaceId}
                               attendanceId={attendanceId}
+                              currentChannelName={attendance.channel?.displayName}
                               deliveryChecks={checksByMessageId.get(item.id)}
                               deliveryChecksState={deliveryChecksState}
                               highlighted={navigation.highlightedMessageId === item.id}
@@ -1480,6 +1481,14 @@ export default function OperationAttendanceDetailPage({
                       <DetailField
                         label="Canal"
                         value={attendance.channel?.displayName || "Não informado"}
+                      />
+                      <DetailField
+                        label="Janela de atendimento"
+                        value={formatServiceWindowStatus(
+                          attendance.replyCapabilities,
+                          attendance.channel?.displayName || "canal atual",
+                          attendance.serviceWindowExpiresAt,
+                        )}
                       />
                     </div>
                     <p className="mt-3 border-t pt-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
@@ -2019,6 +2028,7 @@ function ConversationMessage({
   message,
   workspaceId,
   attendanceId,
+  currentChannelName,
   deliveryChecks,
   deliveryChecksState,
   highlighted,
@@ -2028,6 +2038,7 @@ function ConversationMessage({
   message: AttendanceMessageItem;
   workspaceId?: string;
   attendanceId?: string;
+  currentChannelName?: string;
   deliveryChecks?: MessageDeliveryCheckSummary;
   deliveryChecksState: MessageDeliveryChecksQueryState;
   highlighted: boolean;
@@ -2042,6 +2053,12 @@ function ConversationMessage({
         ? message.sentByUser?.name || "Operador"
         : "Agente";
   const content = message.content?.trim();
+  const messageChannelName = message.channelName?.trim() || "Canal não identificado";
+  const isOtherChannelMessage = Boolean(
+    message.channelName &&
+      currentChannelName &&
+      message.channelName.trim() !== currentChannelName.trim(),
+  );
   const normalizedType = message.type.toLowerCase();
   const isTemplate = normalizedType === "template";
   const hasMedia = ["image", "audio", "video", "document"].includes(normalizedType);
@@ -2090,6 +2107,15 @@ function ConversationMessage({
           ) : null}
           <div className="mt-2 flex flex-wrap items-center gap-1 text-xs opacity-75">
             <span>{formatDateTime(message.createdAt)}</span>
+            <span aria-hidden="true">·</span>
+            <span
+              className={isOtherChannelMessage ? "font-medium text-amber-700" : ""}
+              aria-label={`Canal: ${messageChannelName}`}
+            >
+              {isOtherChannelMessage
+                ? `Outro canal: ${messageChannelName}`
+                : messageChannelName}
+            </span>
             {hasDeliveryChecks && (
               <MessageDeliveryChecks
                 summary={deliveryChecks}
@@ -2288,6 +2314,34 @@ function formatCompactDateTime(value: string) {
   })
     .format(date)
     .replace(", ", " ");
+}
+
+function formatServiceWindowStatus(
+  capabilities: AttendanceReplyCapabilities,
+  channelName: string,
+  expiresAt?: string | null,
+) {
+  const serviceWindow = capabilities.serviceWindow;
+  if (!serviceWindow) return "Consulte o status de resposta abaixo.";
+
+  if (serviceWindow.status === "OPEN") {
+    return expiresAt
+      ? `Aberta até ${formatDateTime(expiresAt)} no ${channelName}.`
+      : `Aberta no ${channelName}.`;
+  }
+
+  if (serviceWindow.status === "EXPIRED") {
+    return expiresAt
+      ? `Expirou em ${formatDateTime(expiresAt)} no ${channelName}.`
+      : `Expirada no ${channelName}.`;
+  }
+
+  const otherChannelMessage = serviceWindow.latestInboundOnAnotherChannel;
+  if (otherChannelMessage) {
+    return `Sem mensagem recebida no ${channelName}. A última chegou pelo ${otherChannelMessage.channelName} em ${formatDateTime(otherChannelMessage.createdAt)}.`;
+  }
+
+  return `Nenhuma mensagem recebida no ${channelName}.`;
 }
 
 function getTimeZone() {
