@@ -14,6 +14,7 @@ import { useOperationalChannels } from "@/hooks/useOperationalChannels";
 import { usePermissions } from "@/hooks/usePermissions";
 import { AudioTranscriptionKeyAlert } from "@/components/operation/AudioTranscriptionKeyAlert";
 import { AudioTranscriptionConfigCard } from "@/components/operation/AudioTranscriptionConfigCard";
+import { OperationPageHeader } from "@/components/operation/OperationPageHeader";
 import {
   AlertCircle,
   ArrowRight,
@@ -57,56 +58,47 @@ export default function OperationLandingPage() {
 
   return (
     <section className="mx-auto w-full max-w-6xl space-y-6">
-      <header className="flex flex-col gap-5 border-b pb-6 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
-            Visão geral da operação
-          </p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight">
-            {currentWorkspace?.name || "Operação"}
-          </h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-            Acesse a fila de atendimentos e mantenha áreas, canais e distribuição
-            prontos para a equipe.
-          </p>
-        </div>
-        <div className="grid w-full max-w-md grid-cols-2 gap-2 sm:w-[24rem] sm:shrink-0">
-          {has("view:operation-attendances") ? (
-            <Link
-              to="/operation/attendances"
-              className={buttonVariants({
-                size: "lg",
-                className: "col-span-2 w-full",
-              })}
-            >
-              <Inbox className="mr-2 h-4 w-4" />
-              Abrir atendimentos
-            </Link>
-          ) : null}
-          {hasAny(["view:assistant", "manage:operation-setup"]) ? (
-            <Link
-              to="/operation/agents"
-              className={buttonVariants({ variant: "outline", size: "lg" })}
-            >
-              <Bot className="mr-2 h-4 w-4" />
-              Agentes
-            </Link>
-          ) : null}
-          {has("manage:operation-setup") ? (
-            <Link
-              to="/operation/distribution"
-              className={buttonVariants({
-                variant: "outline",
-                size: "lg",
-                className: "w-full",
-              })}
-            >
-              <SlidersHorizontal className="mr-2 h-4 w-4" />
-              Distribuição
-            </Link>
-          ) : null}
-        </div>
-      </header>
+      <OperationPageHeader
+        eyebrow="Visão geral da operação"
+        title={currentWorkspace?.name || "Operação"}
+        description="Acesse a fila de atendimentos e mantenha áreas, canais e distribuição prontos para a equipe."
+        actions={
+          <div className="grid w-full max-w-md grid-cols-2 gap-2 sm:w-[24rem] sm:shrink-0">
+            {has("view:operation-attendances") ? (
+              <Link
+                to="/operation/attendances"
+                className={buttonVariants({
+                  className: "col-span-2 w-full",
+                })}
+              >
+                <Inbox className="mr-2 h-4 w-4" />
+                Abrir atendimentos
+              </Link>
+            ) : null}
+            {hasAny(["view:assistant", "manage:operation-setup"]) ? (
+              <Link
+                to="/operation/agents"
+                className={buttonVariants({ variant: "outline" })}
+              >
+                <Bot className="mr-2 h-4 w-4" />
+                Agentes
+              </Link>
+            ) : null}
+            {has("manage:operation-setup") ? (
+              <Link
+                to="/operation/distribution"
+                className={buttonVariants({
+                  variant: "outline",
+                  className: "w-full",
+                })}
+              >
+                <SlidersHorizontal className="mr-2 h-4 w-4" />
+                Distribuição
+              </Link>
+            ) : null}
+          </div>
+        }
+      />
 
       <AudioTranscriptionKeyAlert />
 

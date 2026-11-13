@@ -19,6 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ServiceArea } from "@/types/operation";
 import { OperationalAreaFormDialog, OperationalAreaFormValues } from "@/components/operation/OperationalAreaFormDialog";
 import { OperationalAreaList } from "@/components/operation/OperationalAreaList";
+import { OperationPageHeader } from "@/components/operation/OperationPageHeader";
 import { SmartPagination } from "@/components/common/SmartPagination";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -132,36 +133,22 @@ export default function OperationStructurePage() {
 
   return (
     <section className="mx-auto w-full max-w-6xl space-y-6">
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Link
-          to="/operation"
-          className="rounded-sm hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          Operação
-        </Link>
-        <span aria-hidden="true">/</span>
-        <span className="text-foreground">Estrutura</span>
-      </div>
-
-      <header className="flex flex-col gap-4 border-b pb-6 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
-            Configuração operacional
-          </p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight">
-            Estrutura de atendimento
-          </h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-            Cada área reúne suas filas e a equipe responsável pelo atendimento.
-          </p>
-        </div>
-        {canManage ? (
-          <Button size="lg" onClick={openCreate}>
-            <Plus className="h-4 w-4" />
-            Nova área
-          </Button>
-        ) : null}
-      </header>
+      <OperationPageHeader
+        breadcrumb={{
+          parent: { label: "Operação", to: "/operation" },
+          current: "Estrutura",
+        }}
+        title="Estrutura de atendimento"
+        description="Cada área reúne suas filas e a equipe responsável pelo atendimento."
+        actions={
+          canManage ? (
+            <Button className="w-full sm:w-auto" onClick={openCreate}>
+              <Plus className="h-4 w-4" />
+              Nova área
+            </Button>
+          ) : undefined
+        }
+      />
 
       {currentWorkspace?.type !== "OPERATION" ? (
         <Alert>

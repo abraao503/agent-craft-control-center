@@ -5,6 +5,7 @@ import { useOperationalWebhooks, useOperationalWebhookMutations } from "@/hooks/
 import { useWorkspaceContext } from "@/contexts/workspace/WorkspaceContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { OperationWebhookStatusBadge } from "@/components/operation-webhooks/OperationWebhookStatusBadge";
+import { OperationPageHeader } from "@/components/operation/OperationPageHeader";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -49,14 +50,25 @@ export default function OperationWebhooksPage() {
   const items = query.data?.items ?? [];
   return (
     <section className="mx-auto w-full max-w-6xl space-y-6">
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="text-sm font-medium uppercase tracking-wide text-primary">Operação / integrações</p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight">Webhooks de mensagens</h1>
-          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">Dispare mensagens de texto ou templates Meta usando o canal operacional conectado.</p>
-        </div>
-        {canManage && <Link to="/operation/webhooks/create" className={buttonVariants()}><Plus className="mr-2 h-4 w-4" />Novo webhook</Link>}
-      </header>
+      <OperationPageHeader
+        breadcrumb={{
+          parent: { label: "Operação", to: "/operation" },
+          current: "Webhooks",
+        }}
+        title="Webhooks de mensagens"
+        description="Dispare mensagens de texto ou templates Meta usando o canal operacional conectado."
+        actions={
+          canManage ? (
+            <Link
+              to="/operation/webhooks/create"
+              className={buttonVariants({ className: "w-full sm:w-auto" })}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Novo webhook
+            </Link>
+          ) : undefined
+        }
+      />
 
       <div className="flex flex-wrap items-center gap-2">
         <Button variant={!status ? "secondary" : "outline"} size="sm" onClick={() => { setStatus(undefined); setPage(1); }}>Todos</Button>

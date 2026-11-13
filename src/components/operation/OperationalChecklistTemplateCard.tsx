@@ -42,7 +42,7 @@ export function OperationalChecklistTemplateCard({
       <CardHeader className="p-4 pb-3">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <CardTitle className="break-words text-base leading-5">
+            <CardTitle className="break-words text-lg leading-7">
               {template.name}
             </CardTitle>
             <CardDescription className="mt-1.5 text-xs">

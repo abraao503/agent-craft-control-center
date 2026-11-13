@@ -35,6 +35,7 @@ import {
   UpdateOperationalChannelRouteBody,
 } from "@/types/operation-channels";
 import { Button } from "@/components/ui/button";
+import { OperationPageHeader } from "@/components/operation/OperationPageHeader";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ToastAction } from "@/components/ui/toast";
 import {
@@ -612,65 +613,67 @@ export function OperationalChannelsManager({
 
   return (
     <section className="mx-auto w-full max-w-6xl space-y-6">
-      <header className="flex flex-col gap-4 border-b pb-5 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-            Canais
-          </h1>
-          <p className="mt-1.5 max-w-2xl text-sm leading-6 text-muted-foreground">
-            Gerencie as entradas de {workspaceName || "este ambiente"} e o
-            destino de cada mensagem.
-          </p>
-        </div>
-        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
-          <OperationalMetaManualAccountCard
-            workspaceId={workspaceId}
-            presentation="trigger"
-          />
-          {canConnectChannels ? (
-            <Button onClick={openCreateChannel} disabled={!canOpenCreateChannel}>
-              <Plus className="h-4 w-4" />
-              Adicionar canal
-            </Button>
-          ) : null}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+      <OperationPageHeader
+        breadcrumb={{
+          parent: { label: "Operação", to: "/operation" },
+          current: "Canais",
+        }}
+        title="Canais"
+        description={`Gerencie as entradas de ${workspaceName || "este ambiente"} e o destino de cada mensagem.`}
+        actions={
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
+            <OperationalMetaManualAccountCard
+              workspaceId={workspaceId}
+              presentation="trigger"
+            />
+            {canConnectChannels ? (
               <Button
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9"
-                aria-label="Mais ações dos canais"
+                onClick={openCreateChannel}
+                disabled={!canOpenCreateChannel}
               >
-                <MoreHorizontal className="h-4 w-4" />
+                <Plus className="h-4 w-4" />
+                Adicionar canal
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                onSelect={() => void refreshOperationalState()}
-                disabled={channelsQuery.isFetching || routesQuery.isFetching}
-              >
-                <RefreshCw
-                  className={`mr-2 h-4 w-4 ${
-                    channelsQuery.isFetching || routesQuery.isFetching
-                      ? "animate-spin"
-                      : ""
-                  }`}
-                />
-                Atualizar canais
-              </DropdownMenuItem>
-              {onOpenTestTools ? (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onSelect={onOpenTestTools}>
-                    <FlaskConical className="mr-2 h-4 w-4" />
-                    Simular mensagem
-                  </DropdownMenuItem>
-                </>
-              ) : null}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </header>
+            ) : null}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9"
+                  aria-label="Mais ações dos canais"
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onSelect={() => void refreshOperationalState()}
+                  disabled={channelsQuery.isFetching || routesQuery.isFetching}
+                >
+                  <RefreshCw
+                    className={`mr-2 h-4 w-4 ${
+                      channelsQuery.isFetching || routesQuery.isFetching
+                        ? "animate-spin"
+                        : ""
+                    }`}
+                  />
+                  Atualizar canais
+                </DropdownMenuItem>
+                {onOpenTestTools ? (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onSelect={onOpenTestTools}>
+                      <FlaskConical className="mr-2 h-4 w-4" />
+                      Simular mensagem
+                    </DropdownMenuItem>
+                  </>
+                ) : null}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        }
+      />
 
       <OperationalMetaManualAccountCard
         workspaceId={workspaceId}
