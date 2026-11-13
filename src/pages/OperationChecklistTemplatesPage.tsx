@@ -7,7 +7,6 @@ import {
   RefreshCw,
   UserRound,
 } from "lucide-react";
-import { Link } from "react-router-dom";
 import {
   useOperationalChecklistTemplateMutations,
   useOperationalChecklistTemplates,
@@ -20,6 +19,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { useToast } from "@/hooks/use-toast";
 import { useWorkspaceContext } from "@/contexts/workspace/WorkspaceContext";
 import { OperationalChecklistTemplateCard } from "@/components/operation/OperationalChecklistTemplateCard";
+import { OperationPageHeader } from "@/components/operation/OperationPageHeader";
 import {
   OperationalChecklistTemplateFormDialog,
   OperationalChecklistTemplateFormValues,
@@ -286,33 +286,22 @@ export default function OperationChecklistTemplatesPage() {
 
   return (
     <section className="mx-auto w-full max-w-6xl space-y-6">
-      <nav aria-label="Navegação estrutural" className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Link
-          to="/operation"
-          className="rounded-sm hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          Operação
-        </Link>
-        <span aria-hidden="true">/</span>
-        <span className="text-foreground">Checklists</span>
-      </nav>
-
-      <header className="flex flex-col gap-4 border-b pb-5 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0">
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Modelos de checklist
-          </h1>
-          <p className="mt-1 max-w-2xl text-sm leading-5 text-muted-foreground">
-            {pageDescription}
-          </p>
-        </div>
-        {canCreate ? (
-          <Button className="w-full shrink-0 sm:w-auto" onClick={openCreate}>
-            <Plus className="mr-2 h-4 w-4" />
-            {createButtonLabel}
-          </Button>
-        ) : null}
-      </header>
+      <OperationPageHeader
+        breadcrumb={{
+          parent: { label: "Operação", to: "/operation" },
+          current: "Checklists",
+        }}
+        title="Modelos de checklist"
+        description={pageDescription}
+        actions={
+          canCreate ? (
+            <Button className="w-full sm:w-auto" onClick={openCreate}>
+              <Plus className="h-4 w-4" />
+              {createButtonLabel}
+            </Button>
+          ) : undefined
+        }
+      />
 
       {isOperator && workspaceId ? (
         <Card aria-labelledby="operator-checklist-default-title">
@@ -589,7 +578,10 @@ function TemplateSection({
             <SectionIcon className="h-4 w-4" aria-hidden="true" />
           </span>
           <div className="min-w-0">
-            <h2 id={sectionId} className="text-base font-semibold tracking-tight">
+            <h2
+              id={sectionId}
+              className="text-xl font-semibold leading-7 tracking-tight"
+            >
               {title}
             </h2>
             <p className="mt-1 text-sm leading-5 text-muted-foreground">

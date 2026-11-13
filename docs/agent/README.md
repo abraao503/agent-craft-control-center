@@ -10,6 +10,7 @@ estes guias.
 | Tarefa | Fonte principal | Confirme no código |
 | --- | --- | --- |
 | Nova página, rota, provider ou layout | [Arquitetura](arquitetura.md) | `src/App.tsx`, `src/contexts/` |
+| Nova tela ou padronização visual de página | [Padrões de telas](padroes-de-telas.md) | `OperationPageHeader`, `src/components/ui/` |
 | Buscar, criar, editar ou remover dados | [Dados e API](dados-e-api.md) | `src/services/`, `src/types/`, `../api` |
 | Empresa, workspace, usuário ou permissão | [Autorização e tenancy](autorizacao-e-tenancy.md) | `src/hooks/usePermissions.ts`, `src/utils/permissions.ts` |
 | Preparar contas de teste para validar outros roles | [Contas de teste por role](test-accounts.md) | criação/edição de usuário e escopo de empresa/workspace |

@@ -11,6 +11,7 @@ import { ArrowRight, Bot, Radio, ShieldCheck } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useWorkspaceContext } from "@/contexts/workspace/WorkspaceContext";
+import { OperationPageHeader } from "@/components/operation/OperationPageHeader";
 
 export default function OperationAgentsPage() {
   const { currentWorkspace } = useWorkspaceContext();
@@ -35,27 +36,14 @@ export default function OperationAgentsPage() {
 
   return (
     <section className="mx-auto w-full max-w-6xl space-y-6">
-      <header className="border-b pb-6">
-        <Link
-          to="/operation"
-          className={buttonVariants({
-            variant: "ghost",
-            size: "sm",
-            className: "-ml-3 mb-2",
-          })}
-        >
-          Configuração operacional
-        </Link>
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
-          Configuração operacional
-        </p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight">Agentes</h1>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-          Escolha o tipo de recurso que deseja configurar. Agentes de
-          atendimento são recursos nativos; integrações de triagem conectam
-          serviços externos ao fluxo operacional.
-        </p>
-      </header>
+      <OperationPageHeader
+        breadcrumb={{
+          parent: { label: "Operação", to: "/operation" },
+          current: "Agentes",
+        }}
+        title="Agentes"
+        description="Escolha o tipo de recurso que deseja configurar. Agentes de atendimento são recursos nativos; integrações de triagem conectam serviços externos ao fluxo operacional."
+      />
 
       <div className="grid gap-5 lg:grid-cols-2">
         {canViewAssistants ? (
@@ -82,7 +70,9 @@ export default function OperationAgentsPage() {
       {canViewChannels ? (
         <Card>
           <CardHeader>
-            <CardTitle>Onde os agentes são usados?</CardTitle>
+            <CardTitle className="text-xl leading-7">
+              Onde os agentes são usados?
+            </CardTitle>
             <CardDescription>
               Depois de configurar um recurso, vincule-o a uma rota de entrada
               em Canais.
@@ -119,11 +109,11 @@ function AgentCategoryCard({
   return (
     <Card className="flex h-full flex-col">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle className="flex items-center gap-2 text-xl leading-7">
           {icon}
           {title}
         </CardTitle>
-        <CardDescription className="leading-6">{description}</CardDescription>
+        <CardDescription className="leading-5">{description}</CardDescription>
       </CardHeader>
       <CardContent className="mt-auto">
         <Link to={to} className={buttonVariants({ variant: "outline" })}>

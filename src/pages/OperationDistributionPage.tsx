@@ -1,11 +1,9 @@
 import { useEffect, useMemo } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Link } from "react-router-dom";
 import { z } from "zod";
 import {
   AlertCircle,
-  ArrowLeft,
   Info,
   Loader2,
   RefreshCw,
@@ -27,7 +25,8 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
+import { OperationPageHeader } from "@/components/operation/OperationPageHeader";
 import {
   Card,
   CardContent,
@@ -158,31 +157,14 @@ export default function OperationDistributionPage() {
 
   return (
     <section className="mx-auto w-full max-w-6xl space-y-6">
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <Link
-            to="/operation"
-            className={buttonVariants({
-              variant: "ghost",
-              size: "sm",
-              className: "-ml-3 mb-2",
-            })}
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Configuração estrutural
-          </Link>
-          <p className="text-sm font-medium uppercase tracking-wide text-primary">
-            Administração operacional
-          </p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight">
-            Distribuição uniforme
-          </h1>
-          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-            Configure a roleta por fila e defina quais canais, áreas, filas ou
-            operadores devem ficar fora da atribuição automática.
-          </p>
-        </div>
-      </header>
+      <OperationPageHeader
+        breadcrumb={{
+          parent: { label: "Operação", to: "/operation" },
+          current: "Distribuição",
+        }}
+        title="Distribuição uniforme"
+        description="Configure a roleta por fila e defina quais canais, áreas, filas ou operadores devem ficar fora da atribuição automática."
+      />
 
       <Alert>
         <Info className="h-4 w-4" />
@@ -229,7 +211,9 @@ export default function OperationDistributionPage() {
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Configuração da roleta</CardTitle>
+                <CardTitle className="text-xl leading-7">
+                  Configuração da roleta
+                </CardTitle>
                 <CardDescription>
                   A estratégia disponível nesta etapa é uniforme e mantém um
                   cursor independente para cada fila.
@@ -271,7 +255,9 @@ export default function OperationDistributionPage() {
 
                 <div className="space-y-4 border-t pt-6">
                   <div>
-                    <h2 className="font-semibold">Exceções</h2>
+                    <h2 className="text-xl font-semibold leading-7">
+                      Exceções
+                    </h2>
                     <p className="mt-1 text-sm text-muted-foreground">
                       Itens selecionados não acionam a roleta. Remova uma
                       seleção para voltar a considerar o item.

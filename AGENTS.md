@@ -13,6 +13,7 @@ confirmação no código ou no contrato atual da API.
 | Se a mudança envolve | Leia também |
 | --- | --- |
 | Estrutura, rota ou provider | `docs/agent/arquitetura.md` |
+| Nova tela ou padronização visual de página | [`docs/agent/padroes-de-telas.md`](docs/agent/padroes-de-telas.md) |
 | Endpoint, type, cache ou mutation | `docs/agent/dados-e-api.md` |
 | Role, workspace, empresa ou usuário | `docs/agent/autorizacao-e-tenancy.md` |
 | Formulário, UI, toast, socket ou acessibilidade | `docs/agent/ui-e-tempo-real.md` |
