@@ -140,8 +140,7 @@ rtk npm run build
 
 O script `lint:modified` recebe explicitamente os arquivos alterados e evita
 que erros preexistentes em outras áreas bloqueiem a tarefa. No workspace que
-usa o Flow, prefira `rtk node ../../flow/dist/src/main.js check modified --repo
-front --workspace ..`, que descobre os arquivos rastreados e não rastreados automaticamente.
+usa o Flow, prefira `rtk flow check modified --repo front`, que descobre os arquivos rastreados e não rastreados automaticamente.
 Use `rtk npm run lint` somente quando houver mudança em configuração global do
 ESLint/parser, dependências ou quando a validação completa for solicitada.
 
