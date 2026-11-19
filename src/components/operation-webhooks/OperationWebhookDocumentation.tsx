@@ -34,6 +34,33 @@ const templatePayload = {
   },
 };
 
+const imageTemplatePayload = {
+  ...templatePayload,
+  template: {
+    ...templatePayload.template,
+    name: "pedido_com_imagem",
+    headerMedia: { type: "image", link: "https://example.com/pedidos/12345.jpg" },
+  },
+};
+
+const pdfTemplatePayload = {
+  ...templatePayload,
+  template: {
+    ...templatePayload.template,
+    name: "pedido_com_pdf",
+    headerMedia: { type: "document", link: "https://example.com/pedidos/12345.pdf" },
+  },
+};
+
+const urlButtonTemplatePayload = {
+  ...templatePayload,
+  template: {
+    ...templatePayload.template,
+    name: "acompanhar_pedido",
+    urlButtonParameters: { "0": "pedido-12345" },
+  },
+};
+
 export function OperationWebhookDocumentation({ endpoint, onCopy }: Props) {
   const curlExample = `curl -X POST "${endpoint}" \\
   -H "Content-Type: application/json" \\
@@ -107,6 +134,26 @@ export function OperationWebhookDocumentation({ endpoint, onCopy }: Props) {
         <CardContent className="space-y-5">
           <CodeBlock label="Mensagem de texto" value={JSON.stringify(textPayload, null, 2)} onCopy={onCopy} />
           <CodeBlock label="Template Meta" value={JSON.stringify(templatePayload, null, 2)} onCopy={onCopy} />
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Use <code>headerMedia</code> quando o template aprovado exigir imagem
+              ou PDF no cabeçalho. O <code>type</code> deve corresponder ao
+              cabeçalho aprovado e o <code>link</code> HTTPS deve estar acessível
+              à Meta no momento do envio.
+            </p>
+            <CodeBlock label="Cabeçalho com imagem" value={JSON.stringify(imageTemplatePayload, null, 2)} onCopy={onCopy} />
+            <CodeBlock label="Cabeçalho com PDF" value={JSON.stringify(pdfTemplatePayload, null, 2)} onCopy={onCopy} />
+          </div>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Em <code>urlButtonParameters</code>, use a posição do botão no
+              template, contando todos os botões a partir de <code>0</code>.
+              Informe o sufixo que completa a URL aprovada e use codificação
+              percentual para caracteres especiais, como <code>%2F</code> para
+              uma barra que faça parte do valor.
+            </p>
+            <CodeBlock label="Botão com URL dinâmica" value={JSON.stringify(urlButtonTemplatePayload, null, 2)} onCopy={onCopy} />
+          </div>
           <div className="space-y-1 rounded-md border bg-muted/30 p-3 text-sm">
             <p className="font-medium">Nome do contato</p>
             <p className="text-muted-foreground">
@@ -138,7 +185,11 @@ export function OperationWebhookDocumentation({ endpoint, onCopy }: Props) {
           <CodeBlock label="Exemplo com cURL" value={curlExample} onCopy={onCopy} />
           <div className="flex items-start gap-2 rounded-md border bg-muted/30 p-3 text-sm text-muted-foreground">
             <ExternalLink className="mt-0.5 h-4 w-4 shrink-0" />
-            <span>A plataforma valida telefone, conexão, template, idioma e parâmetros antes de enfileirar o envio.</span>
+            <span>
+              O HTTP <code>202</code> confirma que o disparo entrou na fila.
+              Consulte a aba Execuções pelo <code>executionId</code> para ver o
+              resultado da validação do template e do envio.
+            </span>
           </div>
         </CardContent>
       </Card>
