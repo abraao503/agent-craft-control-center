@@ -24,6 +24,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -54,6 +55,21 @@ export const MENU_ACTION_DEFAULT_RESPONSE: Record<
 };
 
 export const MAX_MENU_OPTIONS = 9;
+
+export const TRIAGE_INACTIVITY_MIN_MINUTES = 5;
+export const TRIAGE_INACTIVITY_MAX_MINUTES = 10080;
+export const DEFAULT_TRIAGE_INACTIVITY_MINUTES = 60;
+
+const TRIAGE_INACTIVITY_ENTRY_MODES: OperationalChannelEntryMode[] = [
+  "TRIAGE",
+  "EXTERNAL_AGENT",
+];
+
+export function supportsTriageInactivity(
+  entryMode: OperationalChannelEntryMode,
+): boolean {
+  return TRIAGE_INACTIVITY_ENTRY_MODES.includes(entryMode);
+}
 
 export const menuOptionSchema = z.object({
   number: z.number().int().min(1).max(99),
@@ -96,9 +112,34 @@ export const routeFormSchema = z
     handoffAreaId: z.string().uuid("Selecione uma área").nullable(),
     handoffQueueId: z.string().uuid("Selecione uma fila").nullable(),
     menuOptions: z.array(menuOptionSchema),
+    triageInactivityEnabled: z.boolean(),
+    triageInactivityTimeoutMinutes: z.number().nullable(),
+    triageInactivityCloseMessage: z
+      .string()
+      .max(2000, "A mensagem deve ter no máximo 2000 caracteres")
+      .nullable(),
     active: z.boolean(),
   })
   .superRefine((values, context) => {
+    if (
+      values.triageInactivityEnabled &&
+      supportsTriageInactivity(values.entryMode)
+    ) {
+      const minutes = values.triageInactivityTimeoutMinutes;
+      if (
+        minutes === null ||
+        !Number.isInteger(minutes) ||
+        minutes < TRIAGE_INACTIVITY_MIN_MINUTES ||
+        minutes > TRIAGE_INACTIVITY_MAX_MINUTES
+      ) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["triageInactivityTimeoutMinutes"],
+          message: `Informe um número inteiro de minutos entre ${TRIAGE_INACTIVITY_MIN_MINUTES} e ${TRIAGE_INACTIVITY_MAX_MINUTES}`,
+        });
+      }
+    }
+
     if (values.entryMode === "QUEUE") {
       if (!values.targetAreaId) {
         context.addIssue({
@@ -214,6 +255,48 @@ export const routeFormSchema = z
   });
 
 export type OperationalRouteFormValues = z.infer<typeof routeFormSchema>;
+
+export function getTriageInactivityFormDefaults(
+  route: Pick<
+    OperationalChannelRoute,
+    "triageInactivityTimeoutMinutes" | "triageInactivityCloseMessage"
+  > | null,
+): Pick<
+  OperationalRouteFormValues,
+  | "triageInactivityEnabled"
+  | "triageInactivityTimeoutMinutes"
+  | "triageInactivityCloseMessage"
+> {
+  const minutes = route?.triageInactivityTimeoutMinutes ?? null;
+  return {
+    triageInactivityEnabled: minutes !== null,
+    triageInactivityTimeoutMinutes: minutes,
+    triageInactivityCloseMessage: route?.triageInactivityCloseMessage ?? null,
+  };
+}
+
+export function buildTriageInactivityConfiguration(
+  values: OperationalRouteFormValues,
+): Pick<
+  CreateOperationalChannelRouteBody,
+  "triageInactivityTimeoutMinutes" | "triageInactivityCloseMessage"
+> {
+  if (
+    !values.triageInactivityEnabled ||
+    !supportsTriageInactivity(values.entryMode)
+  ) {
+    return {
+      triageInactivityTimeoutMinutes: null,
+      triageInactivityCloseMessage: null,
+    };
+  }
+
+  return {
+    triageInactivityTimeoutMinutes: values.triageInactivityTimeoutMinutes,
+    triageInactivityCloseMessage:
+      values.triageInactivityCloseMessage?.trim() || null,
+  };
+}
 
 export function buildRouteMenuConfiguration(
   values: OperationalRouteFormValues,
@@ -425,6 +508,10 @@ export function OperationalRouteFields({
               ? "O agente de atendimento fica registrado como destino e usa as áreas alternativas configuradas."
               : "O chatbot apresenta um menu de entrada com as opções configuradas e usa a integração de triagem na conversa; o encaminhamento humano recebe as falhas e os destinos de fila."}
       </div>
+
+      {supportsTriageInactivity(entryMode) ? (
+        <TriageInactivityFields form={form} isPending={isPending} />
+      ) : null}
 
       {entryMode === "EXTERNAL_AGENT" ? (
         <div className="space-y-4 rounded-md border p-4">
@@ -997,6 +1084,119 @@ function SelectField({
         </SelectContent>
       </Select>
       {error ? <p className="text-xs text-destructive">{error}</p> : null}
+    </div>
+  );
+}
+
+function TriageInactivityFields({
+  form,
+  isPending,
+}: {
+  form: UseFormReturn<OperationalRouteFormValues>;
+  isPending: boolean;
+}) {
+  const fieldId = useId();
+  const enabled = form.watch("triageInactivityEnabled");
+  const minutes = form.watch("triageInactivityTimeoutMinutes");
+  const message = form.watch("triageInactivityCloseMessage");
+  const minutesError =
+    form.formState.errors.triageInactivityTimeoutMinutes?.message;
+  const messageError =
+    form.formState.errors.triageInactivityCloseMessage?.message;
+
+  return (
+    <div className="space-y-4 rounded-md border p-4">
+      <div className="flex items-start justify-between gap-4">
+        <div className="space-y-1">
+          <Label htmlFor={`${fieldId}-enabled`}>
+            Encerrar triagem por inatividade
+          </Label>
+          <p className="text-xs text-muted-foreground">
+            Encerra automaticamente o atendimento em triagem quando o cliente
+            não responde à última mensagem dentro do prazo. Se ele escrever
+            depois, um novo atendimento é aberto.
+          </p>
+        </div>
+        <Switch
+          id={`${fieldId}-enabled`}
+          checked={enabled}
+          disabled={isPending}
+          onCheckedChange={(checked) => {
+            form.setValue("triageInactivityEnabled", checked, {
+              shouldDirty: true,
+            });
+            if (checked && form.getValues("triageInactivityTimeoutMinutes") === null) {
+              form.setValue(
+                "triageInactivityTimeoutMinutes",
+                DEFAULT_TRIAGE_INACTIVITY_MINUTES,
+                { shouldDirty: true },
+              );
+            }
+            void form.trigger("triageInactivityTimeoutMinutes");
+          }}
+        />
+      </div>
+
+      {enabled ? (
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor={`${fieldId}-minutes`}>
+              Tempo sem resposta (minutos)
+            </Label>
+            <Input
+              id={`${fieldId}-minutes`}
+              type="number"
+              inputMode="numeric"
+              min={TRIAGE_INACTIVITY_MIN_MINUTES}
+              max={TRIAGE_INACTIVITY_MAX_MINUTES}
+              step={1}
+              value={minutes ?? ""}
+              onChange={(event) => {
+                const raw = event.target.value;
+                form.setValue(
+                  "triageInactivityTimeoutMinutes",
+                  raw === "" ? null : Number(raw),
+                  { shouldDirty: true, shouldValidate: true },
+                );
+              }}
+              disabled={isPending}
+              aria-invalid={Boolean(minutesError)}
+              className="max-w-40"
+            />
+            <p className="text-xs text-muted-foreground">
+              Entre {TRIAGE_INACTIVITY_MIN_MINUTES} minutos e 7 dias (
+              {TRIAGE_INACTIVITY_MAX_MINUTES} minutos).
+            </p>
+            {minutesError ? (
+              <p className="text-xs text-destructive">{minutesError}</p>
+            ) : null}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor={`${fieldId}-message`}>
+              Mensagem de encerramento (opcional)
+            </Label>
+            <Textarea
+              id={`${fieldId}-message`}
+              value={message ?? ""}
+              onChange={(event) =>
+                form.setValue(
+                  "triageInactivityCloseMessage",
+                  event.target.value,
+                  { shouldDirty: true, shouldValidate: true },
+                )
+              }
+              placeholder="Enviada ao cliente antes de encerrar. Deixe em branco para encerrar sem mensagem."
+              disabled={isPending}
+              aria-invalid={Boolean(messageError)}
+              maxLength={2000}
+            />
+            {messageError ? (
+              <p className="text-xs text-destructive">{messageError}</p>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

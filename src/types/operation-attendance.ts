@@ -139,6 +139,7 @@ export type AttendanceReplyCapabilityStatus =
 export interface AttendanceActionCapabilities {
   canResume: boolean;
   canMigrateChannel: boolean;
+  canCloseTriage?: boolean;
 }
 
 export interface AttendanceReplyCapabilities {

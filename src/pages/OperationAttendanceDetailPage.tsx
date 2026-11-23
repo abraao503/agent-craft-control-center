@@ -1080,6 +1080,7 @@ export default function OperationAttendanceDetailPage({
               status={attendance.status}
               hasAssignee={Boolean(attendance.assignee)}
               canResume={attendance.actionCapabilities?.canResume === true}
+              canCloseTriage={attendance.actionCapabilities?.canCloseTriage === true}
               canOperate={canOperateAttendances}
               canManageAssignments={canManageAssignments}
               canTransfer={canTransfer}
@@ -1553,6 +1554,7 @@ export default function OperationAttendanceDetailPage({
                         status={attendance.status}
                         hasAssignee={Boolean(attendance.assignee)}
                         canResume={attendance.actionCapabilities?.canResume === true}
+                        canCloseTriage={attendance.actionCapabilities?.canCloseTriage === true}
                         canOperate={canOperateAttendances}
                         canManageAssignments={canManageAssignments}
                         canTransfer={canTransfer}
@@ -1669,6 +1671,7 @@ function AttendanceActionControls({
   status,
   hasAssignee,
   canResume,
+  canCloseTriage,
   canOperate,
   canManageAssignments,
   canTransfer,
@@ -1685,6 +1688,7 @@ function AttendanceActionControls({
   status: AttendanceStatus;
   hasAssignee: boolean;
   canResume: boolean;
+  canCloseTriage: boolean;
   canOperate: boolean;
   canManageAssignments: boolean;
   canTransfer: boolean;
@@ -1726,7 +1730,9 @@ function AttendanceActionControls({
     ["WAITING_QUEUE", "IN_PROGRESS", "PENDING"].includes(status);
   const canUnassign =
     hasAssignee && ["IN_PROGRESS", "PENDING"].includes(status);
-  const canClose = ["IN_PROGRESS", "PENDING"].includes(status);
+  const canClose =
+    ["IN_PROGRESS", "PENDING"].includes(status) ||
+    (status === "TRIAGE" && canCloseTriage);
   const canTransferAttendance =
     canTransfer && ["WAITING_QUEUE", "IN_PROGRESS", "PENDING"].includes(status);
   const hasSecondaryActions =

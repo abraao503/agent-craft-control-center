@@ -8,6 +8,8 @@ import { OperationalTriageAgent } from "@/types/operation-triage-agent";
 import { ServiceArea, ServiceQueue } from "@/types/operation";
 import {
   buildRouteMenuConfiguration,
+  buildTriageInactivityConfiguration,
+  getTriageInactivityFormDefaults,
   OperationalRouteFields,
   OperationalRouteFormValues,
   routeFormSchema,
@@ -185,6 +187,7 @@ function getDefaultValues(
     fallbackQueueId: route?.fallbackQueueId ?? null,
     menuGreeting: route?.menuGreeting ?? null,
     invalidMenuMessage: route?.invalidMenuMessage ?? null,
+    ...getTriageInactivityFormDefaults(route ?? null),
     handoffAreaId: route?.handoffAreaId ?? null,
     handoffQueueId: route?.handoffQueueId ?? null,
     menuOptions: (route?.menuOptions ?? []).map((option) => ({
@@ -199,4 +202,4 @@ function getDefaultValues(
   };
 }
 
-export { buildRouteMenuConfiguration };
+export { buildRouteMenuConfiguration, buildTriageInactivityConfiguration };
