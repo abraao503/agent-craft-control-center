@@ -135,6 +135,8 @@ export interface OperationalChannelRoute {
   fallbackQueueId: string | null;
   menuGreeting: string | null;
   invalidMenuMessage: string | null;
+  triageInactivityTimeoutMinutes?: number | null;
+  triageInactivityCloseMessage?: string | null;
   handoffAreaId: string | null;
   handoffQueueId: string | null;
   menuOptions: OperationalChannelMenuOption[];
@@ -290,6 +292,8 @@ export interface CreateOperationalChannelRouteBody {
   fallbackQueueId: string | null;
   menuGreeting?: string | null;
   invalidMenuMessage?: string | null;
+  triageInactivityTimeoutMinutes?: number | null;
+  triageInactivityCloseMessage?: string | null;
   handoffAreaId?: string | null;
   handoffQueueId?: string | null;
   menuOptions?: OperationalChannelMenuOptionInput[];
@@ -305,6 +309,8 @@ export interface UpdateOperationalChannelRouteBody {
   fallbackQueueId: string | null;
   menuGreeting?: string | null;
   invalidMenuMessage?: string | null;
+  triageInactivityTimeoutMinutes?: number | null;
+  triageInactivityCloseMessage?: string | null;
   handoffAreaId?: string | null;
   handoffQueueId?: string | null;
   menuOptions?: OperationalChannelMenuOptionInput[];

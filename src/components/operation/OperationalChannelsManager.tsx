@@ -68,6 +68,7 @@ import { OperationalChannelMigrationDialog } from "@/components/operation/Operat
 import { OperationalChannelOnboarding } from "@/components/operation/OperationalChannelOnboarding";
 import { OperationalMetaManualAccountCard } from "@/components/operation/OperationalMetaManualAccountCard";
 import {
+  buildTriageInactivityConfiguration,
   OperationalRouteDialog,
   OperationalRouteFormValues,
 } from "@/components/operation/OperationalRouteDialog";
@@ -398,6 +399,7 @@ export function OperationalChannelsManager({
         fallbackAreaId: values.fallbackAreaId,
         fallbackQueueId: values.fallbackQueueId,
         ...buildRouteMenuConfiguration(values),
+        ...buildTriageInactivityConfiguration(values),
       };
 
       if (editingRoute) {
@@ -565,6 +567,7 @@ export function OperationalChannelsManager({
       fallbackAreaId: values.fallbackAreaId,
       fallbackQueueId: values.fallbackQueueId,
       ...buildRouteMenuConfiguration(values),
+      ...buildTriageInactivityConfiguration(values),
     };
     await routeMutations.create.mutateAsync({
       body: { ...configuration, channelId },
