@@ -249,9 +249,15 @@ export function AttendanceComposer({
 }: AttendanceComposerProps) {
   const { toast } = useToast();
   const mutations = useOperationalAttendanceMutations(workspaceId);
-  const statusAllowsSend = ["IN_PROGRESS", "PENDING"].includes(attendance.status);
   const isTemplateRequired =
     attendance.replyCapabilities.status === "TEMPLATE_REQUIRED";
+  const canSendTemplateWhileWaiting =
+    attendance.status === "WAITING_CUSTOMER_REPLY" &&
+    isTemplateRequired &&
+    attendance.replyCapabilities.supportsTemplate;
+  const statusAllowsSend =
+    canSendTemplateWhileWaiting ||
+    ["IN_PROGRESS", "PENDING"].includes(attendance.status);
   const canCompose =
     canOperate &&
     statusAllowsSend &&
@@ -664,6 +670,7 @@ export function AttendanceComposer({
     serviceWindow?.latestInboundOnAnotherChannel;
   const showServiceWindowContext =
     statusAllowsSend &&
+    !canSendTemplateWhileWaiting &&
     ["TEMPLATE_REQUIRED", "NOT_ASSIGNEE"].includes(
       attendance.replyCapabilities.status,
     );
@@ -749,7 +756,11 @@ export function AttendanceComposer({
             onClick={() => setTemplateCollapsed((collapsed) => !collapsed)}
           >
             {templateCollapsed ? <ChevronUp className="mr-2 h-4 w-4" /> : <ChevronDown className="mr-2 h-4 w-4" />}
-            {templateCollapsed ? "Expandir template" : "Recolher template"}
+            {templateCollapsed
+              ? canSendTemplateWhileWaiting
+                ? "Escolher template"
+                : "Expandir template"
+              : "Recolher template"}
           </Button>
         </div>
       ) : null}
