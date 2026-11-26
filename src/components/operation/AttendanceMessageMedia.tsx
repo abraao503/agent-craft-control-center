@@ -7,6 +7,7 @@ import { DocumentMessage } from '@/components/chats/media/DocumentMessage';
 import { VideoMessage } from '@/components/chats/media/VideoMessage';
 import { getOperationalAttendanceMessageMedia } from '@/services/operation/getOperationalAttendanceMessageMedia';
 import { AudioTranscription } from '@/components/operation/AudioTranscription';
+import { DeferredChatImage } from '@/components/chats/media/DeferredChatImage';
 
 type AttendanceMessageMediaProps = {
   workspaceId?: string;
@@ -14,7 +15,18 @@ type AttendanceMessageMediaProps = {
   message: AttendanceMessageItem;
 };
 
-export function AttendanceMessageMedia({
+export function AttendanceMessageMedia(props: AttendanceMessageMediaProps) {
+  if (props.message.type === 'image') {
+    return (
+      <DeferredChatImage key={props.message.id}>
+        <AttendanceMessageMediaContent {...props} />
+      </DeferredChatImage>
+    );
+  }
+  return <AttendanceMessageMediaContent {...props} />;
+}
+
+function AttendanceMessageMediaContent({
   workspaceId,
   attendanceId,
   message,

@@ -6,6 +6,7 @@ import { AudioMessage } from "./AudioMessage";
 import { DocumentMessage } from "./DocumentMessage";
 import { VideoMessage } from "./VideoMessage";
 import { TemplateMessage } from "./TemplateMessage";
+import { DeferredChatImage } from "./DeferredChatImage";
 
 interface MessageContentProps {
   message: Message;
@@ -20,11 +21,13 @@ export const MessageContent: React.FC<MessageContentProps> = ({ message }) => {
         return <TextMessage content={message.content} />;
       }
       return (
-        <ImageMessage
-          url={message.mediaUrl}
-          caption={message.content}
-          mimetype={message.mediaMimetype || undefined}
-        />
+        <DeferredChatImage key={message.id}>
+          <ImageMessage
+            url={message.mediaUrl}
+            caption={message.content}
+            mimetype={message.mediaMimetype || undefined}
+          />
+        </DeferredChatImage>
       );
 
     case "audio":
