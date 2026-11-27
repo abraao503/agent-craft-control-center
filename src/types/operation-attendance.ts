@@ -140,6 +140,7 @@ export interface AttendanceActionCapabilities {
   canResume: boolean;
   canMigrateChannel: boolean;
   canCloseTriage?: boolean;
+  canManageWaitingCustomerReply?: boolean;
 }
 
 export interface AttendanceReplyCapabilities {
