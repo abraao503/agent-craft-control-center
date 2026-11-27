@@ -1081,6 +1081,7 @@ export default function OperationAttendanceDetailPage({
               hasAssignee={Boolean(attendance.assignee)}
               canResume={attendance.actionCapabilities?.canResume === true}
               canCloseTriage={attendance.actionCapabilities?.canCloseTriage === true}
+              canManageWaitingCustomerReply={attendance.actionCapabilities?.canManageWaitingCustomerReply === true}
               canOperate={canOperateAttendances}
               canManageAssignments={canManageAssignments}
               canTransfer={canTransfer}
@@ -1555,6 +1556,7 @@ export default function OperationAttendanceDetailPage({
                         hasAssignee={Boolean(attendance.assignee)}
                         canResume={attendance.actionCapabilities?.canResume === true}
                         canCloseTriage={attendance.actionCapabilities?.canCloseTriage === true}
+                        canManageWaitingCustomerReply={attendance.actionCapabilities?.canManageWaitingCustomerReply === true}
                         canOperate={canOperateAttendances}
                         canManageAssignments={canManageAssignments}
                         canTransfer={canTransfer}
@@ -1672,6 +1674,7 @@ function AttendanceActionControls({
   hasAssignee,
   canResume,
   canCloseTriage,
+  canManageWaitingCustomerReply,
   canOperate,
   canManageAssignments,
   canTransfer,
@@ -1689,6 +1692,7 @@ function AttendanceActionControls({
   hasAssignee: boolean;
   canResume: boolean;
   canCloseTriage: boolean;
+  canManageWaitingCustomerReply: boolean;
   canOperate: boolean;
   canManageAssignments: boolean;
   canTransfer: boolean;
@@ -1732,9 +1736,12 @@ function AttendanceActionControls({
     hasAssignee && ["IN_PROGRESS", "PENDING"].includes(status);
   const canClose =
     ["IN_PROGRESS", "PENDING"].includes(status) ||
-    (status === "TRIAGE" && canCloseTriage);
+    (status === "TRIAGE" && canCloseTriage) ||
+    (status === "WAITING_CUSTOMER_REPLY" && canManageWaitingCustomerReply);
   const canTransferAttendance =
-    canTransfer && ["WAITING_QUEUE", "IN_PROGRESS", "PENDING"].includes(status);
+    canTransfer &&
+    (["WAITING_QUEUE", "IN_PROGRESS", "PENDING"].includes(status) ||
+      (status === "WAITING_CUSTOMER_REPLY" && canManageWaitingCustomerReply));
   const hasSecondaryActions =
     canTransferAttendance || status === "IN_PROGRESS" || canMigrateChannel;
   const hasManagementActions = canAssign || canUnassign;

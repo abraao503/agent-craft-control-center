@@ -74,7 +74,7 @@ interface AttendanceActionDialogProps {
   action: AttendanceAction | null;
   attendance: Pick<
     AttendanceDetail,
-    "id" | "workspaceId" | "targetAreaId" | "targetQueueId"
+    "id" | "workspaceId" | "targetAreaId" | "targetQueueId" | "status"
   >;
   options?: AttendanceOptions;
   transferAreas?: AttendanceOptionArea[];
@@ -165,7 +165,13 @@ export function AttendanceActionDialog({
   const actionAreas = action === "TRANSFER" ? transferAreas ?? [] : options?.areas ?? [];
   const selectedArea = actionAreas.find((area) => area.id === selectedAreaId);
   const copy =
-    action === "TRANSFER" && !options?.capabilities.canTransferToUser
+    action === "TRANSFER" && attendance.status === "WAITING_CUSTOMER_REPLY"
+      ? {
+          ...ACTION_COPY.TRANSFER,
+          description:
+            "Sem responsável, o atendimento continuará aguardando a resposta do cliente na fila escolhida. Ao escolher um responsável, o atendimento ficará em andamento.",
+        }
+      : action === "TRANSFER" && !options?.capabilities.canTransferToUser
       ? {
           ...ACTION_COPY.TRANSFER,
           description:
